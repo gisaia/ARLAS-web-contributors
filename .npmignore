@@ -1,0 +1,7 @@
+node_module
+contributors
+*.json
+*.log
+*.md 
+*.lock 
+.gitignore

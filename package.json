@@ -1,8 +1,9 @@
 {
-  "name": "ARLAS-web-contributors",
-  "version": "1.0.0",
+  "name": "arlas-web-contributors",
+  "version": "1.0.0-rc.3",
   "description": "Contributors Library for ARLAS Components",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "typings":  "dist/index.d.ts",
   "scripts": {
     "start": "npm run server:dev",
     "server": "npm run server:dev",
@@ -16,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors.git"
+    "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors.git"
   },
   "author": "gisaia",
   "license": "MIT",
