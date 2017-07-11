@@ -51,7 +51,9 @@ export class HistogramContributor {
         })
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributor === this) {
-                let data: Observable<ArlasAggregation> = this.collaborativeSearcheService.resolveButNot(value.eventType)
+                return
+            } else {
+                let data: Observable<ArlasAggregation> = this.collaborativeSearcheService.resolveButNot(eventType.aggregate)
                 let dataTab = new Array<any>()
                 data.subscribe(value => {
                     value.elements.forEach(element => {
@@ -60,9 +62,6 @@ export class HistogramContributor {
                     this.chartData.next(dataTab)
                 })
                 return
-            } else {
-                let data = this.collaborativeSearcheService.resolveButNot(value.eventType)
-                this.chartData.next(data)
             }
         })
     }

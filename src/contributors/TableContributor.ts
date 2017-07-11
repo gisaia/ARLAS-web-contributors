@@ -17,6 +17,33 @@ export class TableContributor {
         private source: Object,
         private valuesChangedEvent: Subject<any>,
         private collaborativeSearcheService: CollaborativesearchService) {
+        this.valuesChangedEvent.subscribe(value => {
+            let arrayString = new Array<string>()
+            value.forEach(element => {
+                arrayString.push(element.field + ":like:" + element.value)
+            });
+            let filter: Filter = {
+                f: arrayString
+            }
+            let detail: arlasProjection = {
+                filter: filter
+            }
+            let data = {
+                contributor: this,
+                eventType: eventType.search,
+                detail: detail
+            }
+            if (arrayString.length > 0) {
+                this.collaborativeSearcheService.setFilter(data)
+
+            } else {
+                this.collaborativeSearcheService.contributions.forEach(x=>{
+                    if(x.contributor==this){
+                    this.collaborativeSearcheService.removeFilter(x)
+                    }
+                })
+            }
+        })
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributor === this) {
                 return
