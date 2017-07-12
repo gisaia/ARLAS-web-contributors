@@ -1,6 +1,6 @@
 
 import { Subject } from 'rxjs/Subject';
-import { CollaborativesearchService } from 'arlas-web-core';
+import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from "rxjs/Observable";
 import { ArlasAggregation } from "api-arlas/model/arlasAggregation";
 import { AggregationModel } from "api-arlas/model/aggregationModel";
@@ -10,28 +10,31 @@ import { Aggregations } from "api-arlas/model/aggregations";
 import { AggregationRequest } from "api-arlas/model/aggregationRequest";
 import { ArlasHits } from "api-arlas/model/arlasHits";
 
-export class TableContributor {
+export class TableContributor extends Contributor {
     constructor(
+        identifier,
         private settings: Object,
         private dataSubject: Subject<any>,
         private source: Object,
         private valuesChangedEvent: Subject<any>,
-        private collaborativeSearcheService: CollaborativesearchService) {
+        private collaborativeSearcheService: CollaborativesearchService, configService: ConfigService) {
+        super(identifier, configService);
+        this.settings = this.getConfigValue("settings")
         let data: Observable<ArlasHits> = this.collaborativeSearcheService.resolveButNot(eventType.search)
         let dataForTab = new Array<Object>();
         data.subscribe(value => {
             value.hits.forEach(h => {
-                dataForTab.push({
-                    id: h.md.id,
-                    name: h.data.name,
-                    address: h.data.address,
-                    contract_name: h.data.contract_name,
-                    bike_stands: h.data.bike_stands,
-                    available_bike_stands: h.data.available_bike_stands,
-                    available_bikes: h.data.available_bikes,
-                })
+                let line = {};
+                Object.keys(this.settings["columns"]).forEach(element => {
+                    if (element == "id") {
+                        line["id"] = h.md.id
+                    } else {
+                        line[element] = h.data[element]
+                    }
+                });
+                dataForTab.push(line)
             })
-            this.dataSubject.next(dataForTab)
+            this.dataSubject.next({ data: dataForTab, settings: this.settings })
         })
         this.valuesChangedEvent.subscribe(value => {
             let arrayString = new Array<string>()
@@ -72,20 +75,23 @@ export class TableContributor {
                 let dataForTab = new Array<Object>();
                 data.subscribe(value => {
                     value.hits.forEach(h => {
-                        dataForTab.push({
-                            id: h.md.id,
-                            name: h.data.name,
-                            address: h.data.address,
-                            contract_name: h.data.contract_name,
-                            bike_stands: h.data.bike_stands,
-                            available_bike_stands: h.data.available_bike_stands,
-                            available_bikes: h.data.available_bikes,
-                        })
+                        let line = {};
+                        Object.keys(this.settings["columns"]).forEach(element => {
+                            if (element == "id") {
+                                line["id"] = h.md.id
+                            } else {
+                                line[element] = h.data[element]
+                            }
+                        });
+                        dataForTab.push(line)
                     })
-                    this.dataSubject.next(dataForTab)
+                    this.dataSubject.next({ data: dataForTab, settings: this.settings })
                 })
 
             }
         })
+    }
+    getPackageName(): string {
+        return "arlas.catalog.web.app.components.table";
     }
 }

@@ -1,6 +1,6 @@
 
 import { Subject } from 'rxjs/Subject';
-import { CollaborativesearchService } from 'arlas-web-core';
+import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from "rxjs/Observable";
 import { ArlasAggregation } from "api-arlas/model/arlasAggregation";
 import { AggregationModel } from "api-arlas/model/aggregationModel";
@@ -10,21 +10,15 @@ import { Aggregations } from "api-arlas/model/aggregations";
 import { AggregationRequest } from "api-arlas/model/aggregationRequest";
 
 
-export class HistogramContributor {
+export class HistogramContributor extends Contributor {
     constructor(
+        identifier: string,
         private valueChangedEvent: Subject<any>,
         private chartData: Subject<any>,
-        private collaborativeSearcheService: CollaborativesearchService) {
+        private collaborativeSearcheService: CollaborativesearchService,configService:ConfigService) {
+        super(identifier,configService)
         let aggregationsModels = new Array<AggregationModel>()
-        let aggregationModel: AggregationModel = {
-            type: "term",
-            field: "timestamp",
-            collectField: "available_bikes",
-            collectFct: "sum",
-            size: "100",
-            order: "asc",
-            on: "field"
-        }
+        let aggregationModel: AggregationModel = this.getConfigValue("aggregationmodel")
         aggregationsModels.push(aggregationModel)
         let aggregations: Aggregations = { aggregations: aggregationsModels }
         this.valueChangedEvent.subscribe(value => {
@@ -49,7 +43,6 @@ export class HistogramContributor {
             }
             this.collaborativeSearcheService.setFilter(data)
         })
-
         let aggregationRequest: AggregationRequest = {
             aggregations: aggregations
         }
@@ -64,7 +57,6 @@ export class HistogramContributor {
         this.collaborativeSearcheService.setFilter(data)
         let obs = this.collaborativeSearcheService.resolveButNot(eventType.aggregate)
         let dataTab = new Array<any>()
-
         obs.subscribe(value => {
             value.elements.forEach(element => {
                 dataTab.push({ key: element.key, value: element.elements[0].metric.value })
@@ -86,5 +78,8 @@ export class HistogramContributor {
                 return
             }
         })
+    }
+    getPackageName(): string {
+        return  "arlas.catalog.web.app.components.histogram";
     }
 }

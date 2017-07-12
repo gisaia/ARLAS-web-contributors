@@ -1,6 +1,6 @@
 
 import { Subject } from 'rxjs/Subject';
-import { CollaborativesearchService } from 'arlas-web-core';
+import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from "rxjs/Observable";
 import { ArlasAggregation } from "api-arlas/model/arlasAggregation";
 import { AggregationModel } from "api-arlas/model/aggregationModel";
@@ -11,10 +11,13 @@ import { AggregationRequest } from "api-arlas/model/aggregationRequest";
 import { ArlasHits } from "api-arlas/model/arlasHits";
 import { FeatureCollection } from "api-arlas/model/featureCollection";
 
-export class MapContributor {
+export class MapContributor extends Contributor {
+
     constructor(
+        public identifier,
         private layerSubject: Subject<any>,
-        private collaborativeSearcheService: CollaborativesearchService) {
+        private collaborativeSearcheService: CollaborativesearchService, configService:ConfigService) {
+        super(identifier,configService);
         let data: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNot(eventType.geosearch)
         data.subscribe(value => { this.layerSubject.next(value) })
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
@@ -25,5 +28,8 @@ export class MapContributor {
                 data.subscribe(value => { this.layerSubject.next(value) })
             }
         })
+    }
+    getPackageName(): string {
+        return  "arlas.catalog.web.app.components.map";
     }
 }
