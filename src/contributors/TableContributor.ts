@@ -2,13 +2,13 @@
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from "rxjs/Observable";
-import { ArlasAggregation } from "api-arlas/model/arlasAggregation";
-import { AggregationModel } from "api-arlas/model/aggregationModel";
-import { Filter } from "api-arlas/model/filter";
+import { ArlasAggregation } from "arlas-api/model/arlasAggregation";
+import { AggregationModel } from "arlas-api/model/aggregationModel";
+import { Filter } from "arlas-api/model/filter";
 import { arlasProjection, eventType } from "arlas-web-core/models/collaborationEvent";
-import { Aggregations } from "api-arlas/model/aggregations";
-import { AggregationRequest } from "api-arlas/model/aggregationRequest";
-import { ArlasHits } from "api-arlas/model/arlasHits";
+import { Aggregations } from "arlas-api/model/aggregations";
+import { AggregationRequest } from "arlas-api/model/aggregationRequest";
+import { ArlasHits } from "arlas-api/model/arlasHits";
 
 export class TableContributor extends Contributor {
     constructor(
@@ -20,7 +20,7 @@ export class TableContributor extends Contributor {
         private collaborativeSearcheService: CollaborativesearchService, configService: ConfigService) {
         super(identifier, configService);
         this.settings = this.getConfigValue("settings")
-        let data: Observable<ArlasHits> = this.collaborativeSearcheService.resolveButNot(eventType.search)
+        let data = this.collaborativeSearcheService.resolveButNot(eventType.search)
         let dataForTab = new Array<Object>();
         data.subscribe(value => {
             value.hits.forEach(h => {
@@ -71,7 +71,7 @@ export class TableContributor extends Contributor {
             if (value.contributor === this) {
                 return
             } else {
-                let data: Observable<ArlasHits> = this.collaborativeSearcheService.resolveButNot(eventType.search)
+                let data = this.collaborativeSearcheService.resolveButNot(eventType.search)
                 let dataForTab = new Array<Object>();
                 data.subscribe(value => {
                     value.hits.forEach(h => {

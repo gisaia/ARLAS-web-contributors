@@ -2,12 +2,12 @@
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from "rxjs/Observable";
-import { ArlasAggregation } from "api-arlas/model/arlasAggregation";
-import { AggregationModel } from "api-arlas/model/aggregationModel";
-import { Filter } from "api-arlas/model/filter";
+import { ArlasAggregation } from "arlas-api/model/arlasAggregation";
+import { AggregationModel } from "arlas-api/model/aggregationModel";
+import { Filter } from "arlas-api/model/filter";
 import { arlasProjection, eventType } from "arlas-web-core/models/collaborationEvent";
-import { Aggregations } from "api-arlas/model/aggregations";
-import { AggregationRequest } from "api-arlas/model/aggregationRequest";
+import { Aggregations } from "arlas-api/model/aggregations";
+import { AggregationRequest } from "arlas-api/model/aggregationRequest";
 
 
 export class HistogramContributor extends Contributor {
@@ -67,7 +67,7 @@ export class HistogramContributor extends Contributor {
             if (value.contributor === this) {
                 return
             } else {
-                let data: Observable<ArlasAggregation> = this.collaborativeSearcheService.resolveButNot(eventType.aggregate)
+                let data = this.collaborativeSearcheService.resolveButNot(eventType.aggregate)
                 let dataTab = new Array<any>()
                 data.subscribe(value => {
                     value.elements.forEach(element => {
