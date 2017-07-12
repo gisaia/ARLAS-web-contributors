@@ -15,12 +15,14 @@ export class MapContributor {
     constructor(
         private layerSubject: Subject<any>,
         private collaborativeSearcheService: CollaborativesearchService) {
+        let data: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNot(eventType.geosearch)
+        data.subscribe(value => { this.layerSubject.next(value) })
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributor === this) {
                 return
             } else {
                 let data: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNot(eventType.geosearch)
-                data.subscribe(value => {this.layerSubject.next(value)})
+                data.subscribe(value => { this.layerSubject.next(value) })
             }
         })
     }

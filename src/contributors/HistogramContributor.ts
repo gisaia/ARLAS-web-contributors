@@ -31,8 +31,8 @@ export class HistogramContributor {
             let endDate = new Date(value.endvalue)
             let startDate = new Date(value.startvalue)
             let filter: Filter = {
-                before: endDate.valueOf()/1000,
-                after: startDate.valueOf()/1000
+                before: endDate.valueOf() / 1000,
+                after: startDate.valueOf() / 1000
             }
             let aggregationRequest: AggregationRequest = {
                 filter: filter,
@@ -40,7 +40,7 @@ export class HistogramContributor {
             }
             let detail: arlasProjection = {
                 aggregationRequest: aggregationRequest,
-                filter:filter
+                filter: filter
             }
             let data = {
                 contributor: this,
@@ -48,6 +48,28 @@ export class HistogramContributor {
                 detail: detail
             }
             this.collaborativeSearcheService.setFilter(data)
+        })
+
+        let aggregationRequest: AggregationRequest = {
+            aggregations: aggregations
+        }
+        let detail: arlasProjection = {
+            aggregationRequest: aggregationRequest,
+        }
+        let data = {
+            contributor: this,
+            eventType: eventType.aggregate,
+            detail: detail
+        }
+        this.collaborativeSearcheService.setFilter(data)
+        let obs = this.collaborativeSearcheService.resolveButNot(eventType.aggregate)
+        let dataTab = new Array<any>()
+
+        obs.subscribe(value => {
+            value.elements.forEach(element => {
+                dataTab.push({ key: element.key, value: element.elements[0].metric.value })
+            })
+            this.chartData.next(dataTab)
         })
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributor === this) {
