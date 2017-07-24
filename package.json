@@ -41,7 +41,7 @@
     "webpack-dev-server": "2.2.0"
   },
   "dependencies": {
-    "arlas-web-core": "^0.0.6",
+    "arlas-web-core": "^0.0.7",
     "gulp": "^3.9.1",
     "gulp-clean": "^0.3.2",
     "gulp-sourcemaps": "^2.6.0",
