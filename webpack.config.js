@@ -7,7 +7,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 var config = {
   devtool: isProd ? 'hidden-source-map' : 'cheap-eval-source-map',
-  context: path.resolve('./contributors'),
+  context: path.resolve('./src'),
   entry: {
     app: './index.ts'
   },
