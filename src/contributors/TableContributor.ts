@@ -5,7 +5,7 @@ import { Observable } from "rxjs/Observable";
 import { ArlasAggregation } from "arlas-api/model/arlasAggregation";
 import { AggregationModel } from "arlas-api/model/aggregationModel";
 import { Filter } from "arlas-api/model/filter";
-import {  eventType, CollaborationEvent } from 'arlas-web-core/models/collaborationEvent';
+import { eventType, CollaborationEvent } from 'arlas-web-core/models/collaborationEvent';
 import { Aggregations } from "arlas-api/model/aggregations";
 import { AggregationRequest } from "arlas-api/model/aggregationRequest";
 import { ArlasHits } from "arlas-api/model/arlasHits";
@@ -23,6 +23,7 @@ export class TableContributor extends Contributor {
         configService: ConfigService) {
 
         super(identifier, configService);
+
         this.settings = this.getConfigValue("settings")
         this.feedTable();
         this.valuesChangedEvent.subscribe(value => {
@@ -33,19 +34,12 @@ export class TableContributor extends Contributor {
             let filter: Filter = {
                 f: filters
             }
-  
+
             let data: CollaborationEvent = {
                 contributorId: this.identifier,
                 detail: filter
             }
-            this.collaborativeSearcheService.setFilter(data)
-            if (filters.length <= 0) {
-                this.collaborativeSearcheService.collaborationsEvents.forEach((k, v) => {
-                    if (v == this.identifier) {
-                        this.collaborativeSearcheService.removeFilter(k)
-                    }
-                })
-            }
+
             this.collaborativeSearcheService.setFilter(data)
         })
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
@@ -62,24 +56,42 @@ export class TableContributor extends Contributor {
         let search: Search = {}
 
         if (contributorId) {
-            data = this.collaborativeSearcheService.resolveButNot([eventType.search,search], contributorId)
+            data = this.collaborativeSearcheService.resolveButNot([eventType.search, search], contributorId)
         } else {
-            data = this.collaborativeSearcheService.resolveButNot([eventType.search,search])
+            data = this.collaborativeSearcheService.resolveButNot([eventType.search, search])
         }
         let dataForTab = new Array<Object>();
         data.subscribe(value => {
-            value.hits.forEach(h => {
-                let line = {};
-                Object.keys(this.settings["columns"]).forEach(element => {
-                    if (element == "id") {
-                        line["id"] = h.md.id
-                    } else {
-                        line[element] = h.data[element]
-                    }
-                });
-                dataForTab.push(line)
-            })
+            if (value.nbhits > 0) {
+                value.hits.forEach(h => {
+                    let line = {};
+                    Object.keys(this.settings["columns"]).forEach(element => {
+                        if (element === "id") {
+                            line["id"] = h.md.id
+                        } else {
+                            line[element] = this.getElementFromJsonObject(h.data, element);
+                        }
+                    });
+                    dataForTab.push(line)
+                })
+            }
             this.dataSubject.next({ data: dataForTab, settings: this.settings })
+
         })
+    }
+
+    public getElementFromJsonObject(jsonObject: any, pathstring: string): any {
+        let path = pathstring.split('.');
+        if (jsonObject == null) {
+            return null;
+        }
+        if (path.length === 0) {
+            return null;
+        }
+        if (path.length === 1) {
+            return jsonObject[path[0]];
+        } else {
+            return this.getElementFromJsonObject(jsonObject[path[0]], path.slice(1).join('.'));
+        }
     }
 }
