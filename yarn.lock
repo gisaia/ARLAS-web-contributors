@@ -157,9 +157,9 @@ arlas-api@0.0.0:
   version "0.0.0"
   resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-0.0.0.tgz#23637e65dde66b9197d17c394de2680e7e37040a"
 
-arlas-web-core@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-0.0.3.tgz#b43b4f6e1d77c59126c004c12827c0aef9d14475"
+arlas-web-core@^0.0.6:
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-0.0.6.tgz#9d3f43ba28728a07231e9d8f2b28e9f1f3fb1dcf"
   dependencies:
     arlas-api "0.0.0"
     gulp "^3.9.1"
@@ -4158,13 +4158,7 @@ rx-lite@^3.1.2:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/rx-lite/-/rx-lite-3.1.2.tgz#19ce502ca572665f3b647b10939f97fd1615f102"
 
-rxjs@^5.1.0:
-  version "5.4.2"
-  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-5.4.2.tgz#2a3236fcbf03df57bae06fd6972fd99e5c08fcf7"
-  dependencies:
-    symbol-observable "^1.0.1"
-
-rxjs@^5.4.1:
+rxjs@^5.1.0, rxjs@^5.4.1:
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-5.4.1.tgz#b62f757f279445d265a18a58fb0a70dc90e91626"
   dependencies:
