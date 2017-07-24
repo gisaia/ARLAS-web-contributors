@@ -7,8 +7,10 @@ import { AggregationModel } from "arlas-api/model/aggregationModel";
 import { Filter } from "arlas-api/model/filter";
 import { CollaborationEvent, eventType } from 'arlas-web-core/models/collaborationEvent';
 import { Aggregations } from "arlas-api/model/aggregations";
-import { AggregationRequest } from "arlas-api/model/aggregationRequest";
 
+export enum DateType {
+    second, millisecond
+}
 
 export class TimelineContributor extends Contributor {
     constructor(
@@ -17,51 +19,53 @@ export class TimelineContributor extends Contributor {
         private valueChangedEvent: Subject<any>,
         private chartData: Subject<any>,
         private collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService) {
+        configService: ConfigService,
+        dateType: DateType) {
+
         super(identifier, configService)
-        let aggregationsModels = new Array<AggregationModel>()
+
         let aggregationModel: AggregationModel = this.getConfigValue("aggregationmodel")
+        let aggregationsModels = new Array<AggregationModel>()
         aggregationsModels.push(aggregationModel)
-        let aggregations: Aggregations = { aggregations: aggregationsModels }
-        let aggregationRequest: AggregationRequest = {
-            aggregations: aggregations
-        }
-        let filter: Filter = {
-        }
-        let data: CollaborationEvent = {
-            contributorId: this.identifier,
-            detail: filter
-        }
-        this.collaborativeSearcheService.setFilter(data)
+
+        let filter: Filter = {}
+
         this.plotChart(aggregationsModels)
 
         this.valueChangedEvent.subscribe(value => {
             let endDate = new Date(value.endvalue)
             let startDate = new Date(value.startvalue)
-            let filter: Filter = {
-                before: endDate.valueOf() / 1000,
-                after: startDate.valueOf() / 1000
+            let multiplier = 1
+            if (dateType === DateType.second) {
+                multiplier = 1000
             }
-            let aggregationRequest: AggregationRequest = {
-                filter: filter,
-                aggregations: aggregations
+            let filter: Filter = {
+                before: endDate.valueOf() / 1 * multiplier,
+                after: startDate.valueOf() / 1 * multiplier
             }
 
-            let data: CollaborationEvent = {
-                contributorId: this.identifier,
-                detail: filter
-            }
-            this.collaborativeSearcheService.setFilter(data)
+            this.updateAndSetCollaborationEvent(this.identifier, filter);
         })
+
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributorId !== this.identifier) {
                 this.plotChart(aggregationsModels, this.identifier)
             }
         })
     }
+
+    updateAndSetCollaborationEvent(identifier: string, filter: Filter): void {
+        let data: CollaborationEvent = {
+            contributorId: identifier,
+            detail: filter
+        }
+        this.collaborativeSearcheService.setFilter(data);
+    }
+
     getPackageName(): string {
         return "arlas.catalog.web.app.components.histogram";
     }
+
     plotChart(aggregationsModels: Array<AggregationModel>, contributorId?: string) {
         let data;
         let aggregations: Aggregations = { aggregations: aggregationsModels }
@@ -72,9 +76,11 @@ export class TimelineContributor extends Contributor {
         }
         let dataTab = new Array<any>()
         data.subscribe(value => {
-            value.elements.forEach(element => {
-                dataTab.push({ key: element.key, value: element.elements[0].metric.value })
-            })
+            if (value.totalnb > 0) {
+                value.elements.forEach(element => {
+                    dataTab.push({ key: element.key, value: element.count })
+                })
+            }
             this.chartData.next(dataTab)
         })
     }
