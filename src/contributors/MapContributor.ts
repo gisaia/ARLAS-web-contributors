@@ -11,6 +11,7 @@ import { AggregationRequest } from "arlas-api/model/aggregationRequest";
 import { ArlasHits } from "arlas-api/model/arlasHits";
 import { FeatureCollection } from "arlas-api/model/featureCollection";
 import { Search } from "arlas-api/model/search";
+import { Size } from 'arlas-api/model/size';
 
 export class MapContributor extends Contributor {
 
@@ -34,6 +35,8 @@ export class MapContributor extends Contributor {
     addLayer(contributorId?: string) {
         let data;
         let search :Search ={}
+        let size: Size = {size :this.getConfigValue("search_size")}
+        search["size"]=size
         if (contributorId) {
             data = this.collaborativeSearcheService.resolveButNot([eventType.geosearch,search], contributorId)
         } else {

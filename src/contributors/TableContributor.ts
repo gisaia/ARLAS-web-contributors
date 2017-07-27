@@ -10,6 +10,7 @@ import { Aggregations } from "arlas-api/model/aggregations";
 import { AggregationRequest } from "arlas-api/model/aggregationRequest";
 import { ArlasHits } from "arlas-api/model/arlasHits";
 import { Search } from 'arlas-api/model/search';
+import { Size } from "arlas-api/model/size";
 
 export class TableContributor extends Contributor {
     constructor(
@@ -54,7 +55,8 @@ export class TableContributor extends Contributor {
     feedTable(contributorId?: string) {
         let data;
         let search: Search = {}
-
+        let size: Size = {size :this.getConfigValue("search_size")}
+        search["size"]=size
         if (contributorId) {
             data = this.collaborativeSearcheService.resolveButNot([eventType.search, search], contributorId)
         } else {
