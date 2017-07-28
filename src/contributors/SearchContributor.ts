@@ -16,25 +16,25 @@ export class SearchContributor extends Contributor {
         super(identifier, configService);
 
         this.valuesChangedEvent.subscribe(value => {
-            let filter: Filter = {
+            const filter: Filter = {
                 q: value
-            }
+            };
 
-            let data: CollaborationEvent = {
+            const data: CollaborationEvent = {
                 contributorId: this.identifier,
                 detail: filter
-            }
+            };
 
-            this.collaborativeSearcheService.setFilter(data)
-        })
+            this.collaborativeSearcheService.setFilter(data);
+        });
 
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributorId !== this.identifier) {
                 // TODO : Update Count
             }
-        })
+        });
     }
-    getPackageName(): string {
-        return "arlas.catalog.web.app.components.search";
+    public getPackageName(): string {
+        return 'arlas.catalog.web.app.components.search';
     }
 }
