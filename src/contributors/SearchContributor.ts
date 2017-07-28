@@ -22,7 +22,8 @@ export class SearchContributor extends Contributor {
 
             const data: CollaborationEvent = {
                 contributorId: this.identifier,
-                detail: filter
+                detail: filter,
+                enabled: true
             };
 
             this.collaborativeSearcheService.setFilter(data);

@@ -57,7 +57,8 @@ export class TimelineContributor extends Contributor {
     private updateAndSetCollaborationEvent(identifier: string, filter: Filter): void {
         const data: CollaborationEvent = {
             contributorId: identifier,
-            detail: filter
+            detail: filter,
+            enabled: true
         };
         this.collaborativeSearcheService.setFilter(data);
     }
