@@ -27,28 +27,38 @@ export class TableContributor extends Contributor {
 
         this.settings = this.getConfigValue('settings');
         this.feedTable();
-        this.valuesChangedEvent.subscribe(value => {
-            const filters = new Array<string>();
-            value.forEach(element => {
-                filters.push(element.field + ':like:' + element.value);
-            });
-            const filter: Filter = {
-                f: filters
-            };
+        this.valuesChangedEvent.subscribe(
+            value => {
+                const filters = new Array<string>();
+                value.forEach(element => {
+                    filters.push(element.field + ':like:' + element.value);
+                });
+                const filter: Filter = {
+                    f: filters
+                };
 
-            const data: CollaborationEvent = {
-                contributorId: this.identifier,
-                detail: filter,
-                enabled: true
-            };
+                const data: CollaborationEvent = {
+                    contributorId: this.identifier,
+                    detail: filter,
+                    enabled: true
+                };
 
-            this.collaborativeSearcheService.setFilter(data);
-        });
-        this.collaborativeSearcheService.collaborationBus.subscribe(value => {
-            if (value.contributorId !== this.identifier) {
-                this.feedTable(this.identifier);
+                this.collaborativeSearcheService.setFilter(data);
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
-        });
+        );
+        this.collaborativeSearcheService.collaborationBus.subscribe(
+            value => {
+                if (value.contributorId !== this.identifier) {
+                    this.feedTable(this.identifier);
+                }
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next((error));
+            }
+        );
     }
     public getPackageName(): string {
         return 'arlas.catalog.web.app.components.table';
@@ -64,22 +74,27 @@ export class TableContributor extends Contributor {
             data = this.collaborativeSearcheService.resolveButNot([eventType.search, search]);
         }
         const dataForTab = new Array<Object>();
-        data.subscribe(value => {
-            if (value.nbhits > 0) {
-                value.hits.forEach(h => {
-                    const line = {};
-                    Object.keys(this.settings['columns']).forEach(element => {
-                        if (element === 'id') {
-                            line['id'] = h.md.id;
-                        } else {
-                            line[element] = this.getElementFromJsonObject(h.data, element);
-                        }
+        data.subscribe(
+            value => {
+                if (value.nbhits > 0) {
+                    value.hits.forEach(h => {
+                        const line = {};
+                        Object.keys(this.settings['columns']).forEach(element => {
+                            if (element === 'id') {
+                                line['id'] = h.md.id;
+                            } else {
+                                line[element] = this.getElementFromJsonObject(h.data, element);
+                            }
+                        });
+                        dataForTab.push(line);
                     });
-                    dataForTab.push(line);
-                });
+                }
+                this.dataSubject.next({ data: dataForTab, settings: this.settings });
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
-            this.dataSubject.next({ data: dataForTab, settings: this.settings });
-        });
+        );
     }
 
     private getElementFromJsonObject(jsonObject: any, pathstring: string): any {

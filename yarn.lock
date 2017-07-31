@@ -157,9 +157,9 @@ arlas-api@0.0.0:
   version "0.0.0"
   resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-0.0.0.tgz#23637e65dde66b9197d17c394de2680e7e37040a"
 
-arlas-web-core@^0.0.6:
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-0.0.6.tgz#9d3f43ba28728a07231e9d8f2b28e9f1f3fb1dcf"
+arlas-web-core@^0.0.10:
+  version "0.0.10"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-0.0.10.tgz#646fba1c92d210211ae99256ab953534f33ea647"
   dependencies:
     arlas-api "0.0.0"
     gulp "^3.9.1"

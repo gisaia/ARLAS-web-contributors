@@ -23,15 +23,22 @@ export class MapContributor extends Contributor {
         configService: ConfigService) {
         super(identifier, configService);
         this.addLayer();
-        this.collaborativeSearcheService.collaborationBus.subscribe(value => {
-            if (value.contributorId !== this.identifier) {
-                this.addLayer();
+        this.collaborativeSearcheService.collaborationBus.subscribe(
+            value => {
+                if (value.contributorId !== this.identifier) {
+                    this.addLayer();
+                }
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
-        });
+        );
     }
+
     public getPackageName(): string {
         return 'arlas.catalog.web.app.components.map';
     }
+
     private addLayer(contributorId?: string) {
         let data;
         const search: Search = {};
@@ -42,7 +49,13 @@ export class MapContributor extends Contributor {
         } else {
             data = this.collaborativeSearcheService.resolveButNot([eventType.geosearch, search]);
         }
-        data.subscribe(value => { this.layerSubject.next(value); });
+        data.subscribe(
+            value => {
+                this.layerSubject.next(value);
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
+            }
+        );
     }
-
 }

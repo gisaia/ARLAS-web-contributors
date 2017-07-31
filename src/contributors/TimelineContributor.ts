@@ -21,34 +21,34 @@ export class TimelineContributor extends Contributor {
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
         dateType: DateType) {
-
         super(identifier, configService);
-
         const aggregationModel: AggregationModel = this.getConfigValue('aggregationmodel');
         const aggregationsModels = new Array<AggregationModel>();
         aggregationsModels.push(aggregationModel);
         const filter: Filter = {};
         this.plotChart(aggregationsModels);
-        this.valueChangedEvent.subscribe(value => {
-            const endDate = new Date(value.endvalue);
-            const startDate = new Date(value.startvalue);
-            let multiplier = 1;
-            if (dateType === DateType.second) {
-                multiplier = 1000;
-            }
-            const filterValue: Filter = {
-                before: endDate.valueOf() / 1 * multiplier,
-                after: startDate.valueOf() / 1 * multiplier
-            };
-
-            this.updateAndSetCollaborationEvent(this.identifier, filterValue);
-        });
+        this.valueChangedEvent.subscribe(
+            value => {
+                const endDate = new Date(value.endvalue);
+                const startDate = new Date(value.startvalue);
+                let multiplier = 1;
+                if (dateType === DateType.second) {
+                    multiplier = 1000;
+                }
+                const filterValue: Filter = {
+                    before: endDate.valueOf() / 1 * multiplier,
+                    after: startDate.valueOf() / 1 * multiplier
+                };
+                this.updateAndSetCollaborationEvent(this.identifier, filterValue);
+            },
+            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); });
 
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributorId !== this.identifier) {
                 this.plotChart(aggregationsModels, this.identifier);
             }
-        });
+        },
+            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); });
     }
     public getPackageName(): string {
         return 'arlas.catalog.web.app.components.histogram';
@@ -79,6 +79,7 @@ export class TimelineContributor extends Contributor {
                 });
             }
             this.chartData.next(dataTab);
-        });
+        },
+            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); });
     }
 }

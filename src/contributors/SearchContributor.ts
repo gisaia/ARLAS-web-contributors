@@ -15,19 +15,24 @@ export class SearchContributor extends Contributor {
 
         super(identifier, configService);
 
-        this.valuesChangedEvent.subscribe(value => {
-            const filter: Filter = {
-                q: value
-            };
+        this.valuesChangedEvent.subscribe(
+            value => {
+                const filter: Filter = {
+                    q: value
+                };
 
-            const data: CollaborationEvent = {
-                contributorId: this.identifier,
-                detail: filter,
-                enabled: true
-            };
+                const data: CollaborationEvent = {
+                    contributorId: this.identifier,
+                    detail: filter,
+                    enabled: true
+                };
 
-            this.collaborativeSearcheService.setFilter(data);
-        });
+                this.collaborativeSearcheService.setFilter(data);
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
+            }
+        );
 
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributorId !== this.identifier) {
