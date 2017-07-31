@@ -1,16 +1,16 @@
 
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
-import { Observable } from "rxjs/Observable";
-import { ArlasAggregation } from "arlas-api/model/arlasAggregation";
-import { AggregationModel } from "arlas-api/model/aggregationModel";
-import { Filter } from "arlas-api/model/filter";
+import { Observable } from 'rxjs/Observable';
+import { ArlasAggregation } from 'arlas-api/model/arlasAggregation';
+import { AggregationModel } from 'arlas-api/model/aggregationModel';
+import { Filter } from 'arlas-api/model/filter';
 import { eventType, CollaborationEvent } from 'arlas-web-core/models/collaborationEvent';
-import { Aggregations } from "arlas-api/model/aggregations";
-import { AggregationRequest } from "arlas-api/model/aggregationRequest";
-import { ArlasHits } from "arlas-api/model/arlasHits";
+import { Aggregations } from 'arlas-api/model/aggregations';
+import { AggregationRequest } from 'arlas-api/model/aggregationRequest';
+import { ArlasHits } from 'arlas-api/model/arlasHits';
 import { Search } from 'arlas-api/model/search';
-import { Size } from "arlas-api/model/size";
+import { Size } from 'arlas-api/model/size';
 
 export class TableContributor extends Contributor {
     constructor(
@@ -25,65 +25,80 @@ export class TableContributor extends Contributor {
 
         super(identifier, configService);
 
-        this.settings = this.getConfigValue("settings")
+        this.settings = this.getConfigValue('settings');
         this.feedTable();
-        this.valuesChangedEvent.subscribe(value => {
-            let filters = new Array<string>()
-            value.forEach(element => {
-                filters.push(element.field + ":like:" + element.value)
-            });
-            let filter: Filter = {
-                f: filters
-            }
+        this.valuesChangedEvent.subscribe(
+            value => {
+                const filters = new Array<string>();
+                value.forEach(element => {
+                    filters.push(element.field + ':like:' + element.value);
+                });
+                const filter: Filter = {
+                    f: filters
+                };
 
-            let data: CollaborationEvent = {
-                contributorId: this.identifier,
-                detail: filter
-            }
+                const data: CollaborationEvent = {
+                    contributorId: this.identifier,
+                    detail: filter,
+                    enabled: true
+                };
 
-            this.collaborativeSearcheService.setFilter(data)
-        })
-        this.collaborativeSearcheService.collaborationBus.subscribe(value => {
-            if (value.contributorId !== this.identifier) {
-                this.feedTable(this.identifier);
+                this.collaborativeSearcheService.setFilter(data);
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
-        })
+        );
+        this.collaborativeSearcheService.collaborationBus.subscribe(
+            value => {
+                if (value.contributorId !== this.identifier) {
+                    this.feedTable(this.identifier);
+                }
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next((error));
+            }
+        );
     }
-    getPackageName(): string {
-        return "arlas.catalog.web.app.components.table";
+    public getPackageName(): string {
+        return 'arlas.catalog.web.app.components.table';
     }
-    feedTable(contributorId?: string) {
+    private feedTable(contributorId?: string) {
         let data;
-        let search: Search = {}
-        let size: Size = {size :this.getConfigValue("search_size")}
-        search["size"]=size
+        const search: Search = {};
+        const size: Size = { size: this.getConfigValue('search_size') };
+        search['size'] = size;
         if (contributorId) {
-            data = this.collaborativeSearcheService.resolveButNot([eventType.search, search], contributorId)
+            data = this.collaborativeSearcheService.resolveButNot([eventType.search, search], contributorId);
         } else {
-            data = this.collaborativeSearcheService.resolveButNot([eventType.search, search])
+            data = this.collaborativeSearcheService.resolveButNot([eventType.search, search]);
         }
-        let dataForTab = new Array<Object>();
-        data.subscribe(value => {
-            if (value.nbhits > 0) {
-                value.hits.forEach(h => {
-                    let line = {};
-                    Object.keys(this.settings["columns"]).forEach(element => {
-                        if (element === "id") {
-                            line["id"] = h.md.id
-                        } else {
-                            line[element] = this.getElementFromJsonObject(h.data, element);
-                        }
+        const dataForTab = new Array<Object>();
+        data.subscribe(
+            value => {
+                if (value.nbhits > 0) {
+                    value.hits.forEach(h => {
+                        const line = {};
+                        Object.keys(this.settings['columns']).forEach(element => {
+                            if (element === 'id') {
+                                line['id'] = h.md.id;
+                            } else {
+                                line[element] = this.getElementFromJsonObject(h.data, element);
+                            }
+                        });
+                        dataForTab.push(line);
                     });
-                    dataForTab.push(line)
-                })
+                }
+                this.dataSubject.next({ data: dataForTab, settings: this.settings });
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
-            this.dataSubject.next({ data: dataForTab, settings: this.settings })
-
-        })
+        );
     }
 
-    public getElementFromJsonObject(jsonObject: any, pathstring: string): any {
-        let path = pathstring.split('.');
+    private getElementFromJsonObject(jsonObject: any, pathstring: string): any {
+        const path = pathstring.split('.');
         if (jsonObject == null) {
             return null;
         }
