@@ -39,6 +39,10 @@ export class MapContributor extends Contributor {
         return 'arlas.catalog.web.app.components.map';
     }
 
+    public getFilterDisplayName(): string {
+        return '';
+    }
+
     private addLayer(contributorId?: string) {
         let data;
         const search: Search = {};

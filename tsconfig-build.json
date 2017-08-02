@@ -16,7 +16,9 @@
       "node_modules/@types"
     ],
     "paths": {
-
+      "arlas-web-core": ["../node_modules/@gisaia-team/arlas-web-core"],
+      "arlas-web-core/models/collaborationEvent": ["../node_modules/@gisaia-team/arlas-web-core/models/collaborationEvent"],
+      "arlas-web-core/*": ["../node_modules/@gisaia-team/arlas-web-core/*"]
     },
     "lib": [
       "es2015",

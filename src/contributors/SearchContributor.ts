@@ -40,6 +40,10 @@ export class SearchContributor extends Contributor {
             }
         });
     }
+
+    public getFilterDisplayName(): string {
+        return '';
+    }
     public getPackageName(): string {
         return 'arlas.catalog.web.app.components.search';
     }

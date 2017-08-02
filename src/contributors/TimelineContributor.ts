@@ -50,6 +50,11 @@ export class TimelineContributor extends Contributor {
         },
             error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); });
     }
+
+    public getFilterDisplayName(): string {
+        return '';
+    }
+
     public getPackageName(): string {
         return 'arlas.catalog.web.app.components.histogram';
     }
