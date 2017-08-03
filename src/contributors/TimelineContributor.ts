@@ -26,11 +26,11 @@ export class TimelineContributor extends Contributor {
     }
 
     public getValueChangedEvent() {
-        return this.valueChangedEvent
+        return this.valueChangedEvent;
     }
 
     public setValueChangedEvent(valueChangedEvent: Subject<any>, dateType) {
-        if (valueChangedEvent != undefined) {
+        if (valueChangedEvent !== undefined) {
             this.valueChangedEvent = valueChangedEvent;
             this.initValueChangeEvent(dateType);
         } else {
@@ -43,7 +43,7 @@ export class TimelineContributor extends Contributor {
     }
 
     public setCharData(chartData: Subject<any>) {
-        if (chartData != undefined) {
+        if (chartData !== undefined) {
             this.chartData = chartData;
             this.initChartDataValue();
         } else {
@@ -91,7 +91,6 @@ export class TimelineContributor extends Contributor {
 
                 let end = value.endvalue;
                 let start = value.startvalue;
-                let toto = new Date();
                 if ((typeof end.getMonth === 'function') && (typeof start.getMonth === 'function')) {
                     const endDate = new Date(value.endvalue);
                     const startDate = new Date(value.startvalue);
@@ -99,12 +98,12 @@ export class TimelineContributor extends Contributor {
                     if (dateType === DateType.second) {
                         multiplier = 1000;
                     }
-                    end = endDate.valueOf() / 1 * multiplier,
-                        start = startDate.valueOf() / 1 * multiplier
+                    end = endDate.valueOf() / 1 * multiplier;
+                    start = startDate.valueOf() / 1 * multiplier;
                 }
 
-                const gt: string = field + ":gt:" + start
-                const lt: string = field + ":lt:" + end
+                const gt: string = field + ':gt:' + start;
+                const lt: string = field + ':lt:' + end;
 
                 const filterValue: Filter = {
                     f: [gt, lt]
@@ -122,7 +121,6 @@ export class TimelineContributor extends Contributor {
         this.plotChart(aggregationsModels, this.identifier);
         this.collaborativeSearcheService.collaborationBus.subscribe(value => {
             if (value.contributorId !== this.identifier) {
-                console.log
                 this.plotChart(aggregationsModels, this.identifier);
             }
         },
