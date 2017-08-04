@@ -5,10 +5,10 @@ import { CollaborationEvent } from 'arlas-web-core/models/collaborationEvent';
 
 
 
-export class SearchContributor extends Contributor {
+export class ChipsSearchContributor extends Contributor {
     constructor(
         identifier: string,
-        private displayName: string,
+        private searchWords: Array<string>,
         private valuesChangedEvent: Subject<any>,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService) {
@@ -26,6 +26,7 @@ export class SearchContributor extends Contributor {
                     detail: filter,
                     enabled: true
                 };
+
                 this.collaborativeSearcheService.setFilter(data);
             },
             error => {
