@@ -46,7 +46,7 @@ export class TimelineContributor extends Contributor {
         if (valueChangedEvent !== null) {
             this.valueChangedEvent = valueChangedEvent;
             this.initValueChangeEvent(dateType);
-        } 
+        }
     }
 
     public getCharData() {
@@ -57,7 +57,7 @@ export class TimelineContributor extends Contributor {
         if (chartData !== null) {
             this.chartData = chartData;
             this.initChartDataValue();
-        } 
+        }
     }
 
     public getFilterDisplayName(): string {

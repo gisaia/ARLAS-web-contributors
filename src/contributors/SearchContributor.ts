@@ -6,7 +6,7 @@ import { CollaborationEvent } from 'arlas-web-core/models/collaborationEvent';
 
 
 export class SearchContributor extends Contributor {
-    private addWordEvent: Subject<any> = new Subject<any>()
+    private addWordEvent: Subject<any> = new Subject<any>();
     constructor(
         identifier: string,
         private displayName: string,

@@ -5,8 +5,8 @@ import { CollaborationEvent, eventType } from 'arlas-web-core/models/collaborati
 import { Observable } from 'rxjs/Observable';
 import { ArlasHits } from 'arlas-api/model/arlasHits';
 import 'rxjs/add/observable/from';
-import 'rxjs/add/operator/map'
-import 'rxjs/add/operator/mergeAll'
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/mergeAll';
 
 
 export class ChipsSearchContributor extends Contributor {
@@ -29,14 +29,18 @@ export class ChipsSearchContributor extends Contributor {
                         const filter: Filter = {
                             q: value
                         };
-                        const countData: Observable<ArlasHits> = this.collaborativeSearcheService.resolveButNot([eventType.count, {}], this.identifier, filter)
+                        const countData: Observable<ArlasHits> = this.collaborativeSearcheService.resolveButNot(
+                            [eventType.count, {}],
+                            this.identifier,
+                            filter
+                        );
                         countData.subscribe(
                             count => {
-                                this.wordToCount.set(value, count.totalnb)
+                                this.wordToCount.set(value, count.totalnb);
                                 this.wordsSubject.next(this.wordToCount);
                                 this.setFilterFromMap();
                             }
-                        )
+                        );
                     }
                 }
 
@@ -48,31 +52,35 @@ export class ChipsSearchContributor extends Contributor {
 
         this.removeWordEvent.subscribe(
             value => {
-                this.wordToCount.delete(value)
+                this.wordToCount.delete(value);
                 this.wordsSubject.next(this.wordToCount);
                 this.setFilterFromMap();
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
-        )
+        );
 
         this.collaborativeSearcheService.collaborationBus.subscribe(
             value => {
                 if (value.contributorId !== this.identifier) {
-                    const tabOfCount: Array<Observable<[ArlasHits, string]>> = []
+                    const tabOfCount: Array<Observable<[ArlasHits, string]>> = [];
                     this.wordToCount.forEach((k, v) => {
-                        let filter: Filter = {
+                        const filter: Filter = {
                             q: v
                         };
-                        const countData: Observable<ArlasHits> = this.collaborativeSearcheService.resolveButNot([eventType.count, {}], this.identifier, filter)
-                        tabOfCount.push(countData.map(c => [c, v]))
+                        const countData: Observable<ArlasHits> = this.collaborativeSearcheService.resolveButNot(
+                            [eventType.count,
+                            {}],
+                            this.identifier,
+                            filter
+                        );
+                        tabOfCount.push(countData.map(c => [c, v]));
 
-                    })
+                    });
                     Observable.from(tabOfCount).mergeAll().subscribe(
                         result => {
-                            result[0].totalnb
-                            this.wordToCount.set(result[1], result[0].totalnb)
+                            this.wordToCount.set(result[1], result[0].totalnb);
                         },
                         error => {
                             this.collaborativeSearcheService.collaborationErrorBus.next(error);
@@ -98,7 +106,7 @@ export class ChipsSearchContributor extends Contributor {
         let query = '';
         this.wordToCount.forEach((k, q) => {
             query = query + q + ' ';
-        })
+        });
         const filters: Filter = {
             q: query
         };
