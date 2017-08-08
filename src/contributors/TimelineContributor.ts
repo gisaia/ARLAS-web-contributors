@@ -1,3 +1,4 @@
+import { DESCRIPTOR_LOCATIONS } from 'tslint/lib/rules/completedDocsRule';
 
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
@@ -23,6 +24,18 @@ export class TimelineContributor extends Contributor {
         configService: ConfigService
     ) {
         super(identifier, configService);
+        const aggregationModel: AggregationModel = this.getConfigValue('aggregationmodel');
+        const aggregationsModels = new Array<AggregationModel>();
+        aggregationsModels.push(aggregationModel);
+        this.collaborativeSearcheService.collaborationBus.subscribe(value => {
+            if (value.contributorId !== this.identifier) {
+                if (this.chartData !== null && this.chartData !== undefined) {
+                    this.plotChart(aggregationsModels, this.identifier);
+                }
+            }
+        },
+            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); });
+
     }
 
     public getValueChangedEvent() {
@@ -30,12 +43,10 @@ export class TimelineContributor extends Contributor {
     }
 
     public setValueChangedEvent(valueChangedEvent: Subject<any>, dateType) {
-        if (valueChangedEvent !== undefined) {
+        if (valueChangedEvent !== null) {
             this.valueChangedEvent = valueChangedEvent;
             this.initValueChangeEvent(dateType);
-        } else {
-            this.valueChangedEvent = null;
-        }
+        } 
     }
 
     public getCharData() {
@@ -43,12 +54,10 @@ export class TimelineContributor extends Contributor {
     }
 
     public setCharData(chartData: Subject<any>) {
-        if (chartData !== undefined) {
+        if (chartData !== null) {
             this.chartData = chartData;
             this.initChartDataValue();
-        } else {
-            this.chartData = null;
-        }
+        } 
     }
 
     public getFilterDisplayName(): string {
@@ -88,7 +97,6 @@ export class TimelineContributor extends Contributor {
         const field: string = aggregationModel.field;
         this.valueChangedEvent.subscribe(
             value => {
-
                 let end = value.endvalue;
                 let start = value.startvalue;
                 if ((typeof end.getMonth === 'function') && (typeof start.getMonth === 'function')) {
@@ -101,7 +109,6 @@ export class TimelineContributor extends Contributor {
                     end = endDate.valueOf() / 1 * multiplier;
                     start = startDate.valueOf() / 1 * multiplier;
                 }
-
                 const gt: string = field + ':gt:' + start;
                 const lt: string = field + ':lt:' + end;
 
@@ -119,11 +126,5 @@ export class TimelineContributor extends Contributor {
         const aggregationsModels = new Array<AggregationModel>();
         aggregationsModels.push(aggregationModel);
         this.plotChart(aggregationsModels, this.identifier);
-        this.collaborativeSearcheService.collaborationBus.subscribe(value => {
-            if (value.contributorId !== this.identifier) {
-                this.plotChart(aggregationsModels, this.identifier);
-            }
-        },
-            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); });
     }
 }
