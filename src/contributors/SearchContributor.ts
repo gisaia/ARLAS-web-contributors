@@ -6,38 +6,27 @@ import { CollaborationEvent } from 'arlas-web-core/models/collaborationEvent';
 
 
 export class SearchContributor extends Contributor {
+    private addWordEvent: Subject<any> = new Subject<any>();
     constructor(
         identifier: string,
         private displayName: string,
-        private valuesChangedEvent: Subject<any>,
+        private valuesChangedEvent: Subject<string>,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService) {
-
         super(identifier, configService);
-
         this.valuesChangedEvent.subscribe(
             value => {
-                const filter: Filter = {
-                    q: value
-                };
+                if (value !== null) {
+                    if (value.length > 0) {
+                        this.addWordEvent.next(value);
+                    }
+                }
 
-                const data: CollaborationEvent = {
-                    contributorId: this.identifier,
-                    detail: filter,
-                    enabled: true
-                };
-                this.collaborativeSearcheService.setFilter(data);
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
-
-        this.collaborativeSearcheService.collaborationBus.subscribe(value => {
-            if (value.contributorId !== this.identifier) {
-                // TODO : Update Count
-            }
-        });
     }
 
     public getFilterDisplayName(): string {
