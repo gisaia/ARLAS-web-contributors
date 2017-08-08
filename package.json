@@ -42,7 +42,7 @@
     "webpack-dev-server": "2.2.0"
   },
   "dependencies": {
-    "@gisaia-team/arlas-web-core": "0.1.0-dev3",
+    "@gisaia-team/arlas-web-core": "0.1.0-dev4",
     "gulp": "^3.9.1",
     "gulp-clean": "^0.3.2",
     "gulp-sourcemaps": "^2.6.0",
