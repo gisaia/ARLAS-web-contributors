@@ -139,8 +139,8 @@ export class TimelineContributor extends Contributor {
                 if ((typeof end.getMonth === 'function') && (typeof start.getMonth === 'function')) {
                     const endDate = new Date(value.endvalue);
                     const startDate = new Date(value.startvalue);
-                    this.startValue =startDate.toLocaleString();
-                    this.endValue =endDate.toLocaleString();
+                    this.startValue = startDate.toLocaleString();
+                    this.endValue = endDate.toLocaleString();
                     let multiplier = 1;
                     if (dateType === DateType.second) {
                         multiplier = 1000;

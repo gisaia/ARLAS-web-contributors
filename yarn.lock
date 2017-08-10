@@ -2,11 +2,11 @@
 # yarn lockfile v1
 
 
-"@gisaia-team/arlas-web-core@0.1.0-dev5":
-  version "0.1.0-dev5"
-  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.1.0-dev5.tgz#f10f8e680e6e021dba1f70cc8e3862b3db8a06b7"
+"@gisaia-team/arlas-web-core@0.1.0-dev6":
+  version "0.1.0-dev6"
+  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.1.0-dev6.tgz#0ee21a59eaf86b541bc12ef47961b974f0e713c2"
   dependencies:
-    arlas-api "0.0.0"
+    arlas-api "~1.0.9"
     gulp "^3.9.1"
     gulp-clean "^0.3.2"
     gulp-sourcemaps "^2.6.0"
@@ -164,9 +164,9 @@ argparse@^1.0.7:
   dependencies:
     sprintf-js "~1.0.2"
 
-arlas-api@0.0.0:
-  version "0.0.0"
-  resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-0.0.0.tgz#23637e65dde66b9197d17c394de2680e7e37040a"
+arlas-api@~1.0.9:
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-1.0.9.tgz#2533339cb611e8135b23cd1d6bec745b8745e76e"
 
 arr-diff@^2.0.0:
   version "2.0.0"

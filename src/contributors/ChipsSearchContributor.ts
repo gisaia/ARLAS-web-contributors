@@ -7,7 +7,7 @@ import 'rxjs/add/operator/mergeAll';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Filter } from 'arlas-api/model/filter';
-import { Hits } from "arlas-api";
+import { Hits } from 'arlas-api';
 
 
 export class ChipsSearchContributor extends Contributor {
@@ -21,7 +21,7 @@ export class ChipsSearchContributor extends Contributor {
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService) {
         super(identifier, configService);
-        this.collaborativeSearcheService.register(this.identifier,this);
+        this.collaborativeSearcheService.register(this.identifier, this);
         this.addWordEvent.subscribe(
             value => {
                 if (value !== null) {
