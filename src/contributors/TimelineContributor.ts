@@ -150,7 +150,7 @@ export class TimelineContributor extends Contributor {
 
                 } else {
                     this.startValue = Math.round(start).toString();
-                    this.endValue = Math.round(end).toString();;
+                    this.endValue = Math.round(end).toString();
                 };
                 const startExpression: Expression = {
                     field: this.field,
