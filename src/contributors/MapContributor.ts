@@ -2,14 +2,7 @@
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { ArlasAggregation } from 'arlas-api/model/arlasAggregation';
-import { AggregationModel } from 'arlas-api/model/aggregationModel';
-import { Filter } from 'arlas-api/model/filter';
-import { eventType } from 'arlas-web-core/models/collaborationEvent';
-import { Aggregations } from 'arlas-api/model/aggregations';
-import { AggregationRequest } from 'arlas-api/model/aggregationRequest';
-import { ArlasHits } from 'arlas-api/model/arlasHits';
-import { FeatureCollection } from 'arlas-api/model/featureCollection';
+import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Search } from 'arlas-api/model/search';
 import { Size } from 'arlas-api/model/size';
 
@@ -22,10 +15,11 @@ export class MapContributor extends Contributor {
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService) {
         super(identifier, configService);
+        this.collaborativeSearcheService.register(this.identifier, this);
         this.addLayer();
         this.collaborativeSearcheService.collaborationBus.subscribe(
-            value => {
-                if (value.contributorId !== this.identifier) {
+            contributorId => {
+                if (contributorId !== this.identifier) {
                     this.addLayer();
                 }
             },
@@ -40,7 +34,7 @@ export class MapContributor extends Contributor {
     }
 
     public getFilterDisplayName(): string {
-        return '';
+        return 'GeoBox';
     }
 
     private addLayer(contributorId?: string) {
@@ -49,9 +43,9 @@ export class MapContributor extends Contributor {
         const size: Size = { size: this.getConfigValue('search_size') };
         search['size'] = size;
         if (contributorId) {
-            data = this.collaborativeSearcheService.resolveButNot([eventType.geosearch, search], contributorId);
+            data = this.collaborativeSearcheService.resolveButNot([projType.geosearch, search], contributorId);
         } else {
-            data = this.collaborativeSearcheService.resolveButNot([eventType.geosearch, search]);
+            data = this.collaborativeSearcheService.resolveButNot([projType.geosearch, search]);
         }
         data.subscribe(
             value => {
