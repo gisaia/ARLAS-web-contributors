@@ -2,15 +2,12 @@
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { ArlasAggregation } from 'arlas-api/model/arlasAggregation';
-import { AggregationModel } from 'arlas-api/model/aggregationModel';
+import { Collaboration } from 'arlas-web-core/models/collaboration';
+import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Filter } from 'arlas-api/model/filter';
-import { eventType, CollaborationEvent } from 'arlas-web-core/models/collaborationEvent';
-import { Aggregations } from 'arlas-api/model/aggregations';
-import { AggregationRequest } from 'arlas-api/model/aggregationRequest';
-import { ArlasHits } from 'arlas-api/model/arlasHits';
 import { Search } from 'arlas-api/model/search';
 import { Size } from 'arlas-api/model/size';
+import { Expression } from 'arlas-api';
 
 export class TableContributor extends Contributor {
     constructor(
@@ -22,36 +19,40 @@ export class TableContributor extends Contributor {
         private valuesChangedEvent: Subject<any>,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService) {
-
         super(identifier, configService);
-
+        this.collaborativeSearcheService.register(this.identifier, this);
         this.settings = this.getConfigValue('settings');
         this.feedTable();
         this.valuesChangedEvent.subscribe(
             value => {
-                const filters = new Array<string>();
+                const fs = new Array<Expression>();
                 value.forEach(element => {
-                    filters.push(element.field + ':like:' + element.value);
+                    const expression: Expression = {
+                        field: element.field,
+                        op: Expression.OpEnum.Like,
+                        value: element.value
+                    };
+
+                    fs.push(element.field + ':like:' + element.value);
                 });
                 const filter: Filter = {
-                    f: filters
+                    f: fs
                 };
 
-                const data: CollaborationEvent = {
-                    contributorId: this.identifier,
-                    detail: filter,
+                const data: Collaboration = {
+                    filter: filter,
                     enabled: true
                 };
 
-                this.collaborativeSearcheService.setFilter(data);
+                this.collaborativeSearcheService.setFilter(this.identifier, data);
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
         this.collaborativeSearcheService.collaborationBus.subscribe(
-            value => {
-                if (value.contributorId !== this.identifier) {
+            contributorId => {
+                if (contributorId !== this.identifier) {
                     this.feedTable(this.identifier);
                 }
             },
@@ -62,7 +63,7 @@ export class TableContributor extends Contributor {
     }
 
     public getFilterDisplayName(): string {
-        return '';
+        return 'List';
     }
 
     public getPackageName(): string {
@@ -74,9 +75,9 @@ export class TableContributor extends Contributor {
         const size: Size = { size: this.getConfigValue('search_size') };
         search['size'] = size;
         if (contributorId) {
-            data = this.collaborativeSearcheService.resolveButNot([eventType.search, search], contributorId);
+            data = this.collaborativeSearcheService.resolveButNot([projType.search, search], contributorId);
         } else {
-            data = this.collaborativeSearcheService.resolveButNot([eventType.search, search]);
+            data = this.collaborativeSearcheService.resolveButNot([projType.search, search]);
         }
         const dataForTab = new Array<Object>();
         data.subscribe(
