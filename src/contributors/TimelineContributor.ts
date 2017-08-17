@@ -98,7 +98,10 @@ export class TimelineContributor extends Contributor {
     }
 
     private plotChart(aggregations: Array<Aggregation>, contributorId?: string) {
-        const data: Observable<AggregationResponse> = this.collaborativeSearcheService.resolveButNot([projType.aggregate, aggregations], contributorId);
+        const data: Observable<AggregationResponse> = this.collaborativeSearcheService.resolveButNot(
+            [projType.aggregate, aggregations],
+            contributorId
+        );
         const dataTab = new Array<any>();
         data.subscribe(
             value => {

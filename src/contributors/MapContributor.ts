@@ -31,26 +31,24 @@ export class MapContributor extends Contributor {
         );
         this.selectedBbox.subscribe(
             value => {
-                let pwithin = ''
-                value.forEach(v => pwithin = pwithin + ',' + v)
+                let pwithin = '';
+                value.forEach(v => pwithin = pwithin + ',' + v);
                 const filters: Filter = {
                     pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
                 };
-                console.log(filters)
                 const data: Collaboration = {
                     filter: filters,
                     enabled: true
                 };
-                console.log(data)
                 this.collaborativeSearcheService.setFilter(this.identifier, data);
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
-        )
+        );
         this.removeBbox.subscribe(
-            value=>{if(value){this.collaborativeSearcheService.removeFilter(this.identifier)}}
-        )
+            value => { if (value) { this.collaborativeSearcheService.removeFilter(this.identifier); } }
+        );
     }
 
     public getPackageName(): string {
