@@ -3,7 +3,7 @@ import { Observable } from 'rxjs/Observable';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Aggregation } from 'arlas-api/model/aggregation';
 import { Filter } from 'arlas-api/model/filter';
-import { Expression } from 'arlas-api';
+import { Expression, AggregationResponse } from 'arlas-api';
 import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
 
@@ -98,7 +98,7 @@ export class TimelineContributor extends Contributor {
     }
 
     private plotChart(aggregations: Array<Aggregation>, contributorId?: string) {
-        const data = this.collaborativeSearcheService.resolveButNot([projType.aggregate, aggregations], contributorId);
+        const data: Observable<AggregationResponse> = this.collaborativeSearcheService.resolveButNot([projType.aggregate, aggregations], contributorId);
         const dataTab = new Array<any>();
         data.subscribe(
             value => {

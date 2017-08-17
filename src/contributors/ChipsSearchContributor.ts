@@ -1,9 +1,8 @@
 import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/from';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/mergeAll';
+
+
 import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Filter } from 'arlas-api/model/filter';
@@ -14,6 +13,7 @@ export class ChipsSearchContributor extends Contributor {
     public wordToCount: Map<string, number> = new Map<string, number>();
     public wordsSubject: Subject<Map<string, number>> = new Subject<Map<string, number>>();
     public removeWordEvent: Subject<string> = new Subject<string>();
+    public query: string;
     constructor(
         identifier: string,
         private displayName: string,
@@ -43,7 +43,6 @@ export class ChipsSearchContributor extends Contributor {
                         );
                     }
                 }
-
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
@@ -105,7 +104,7 @@ export class ChipsSearchContributor extends Contributor {
     }
 
     public getFilterDisplayName(): string {
-        return 'Search';
+        return this.query;
     }
     public getPackageName(): string {
         return 'arlas.catalog.web.app.components.chipssearch';
@@ -119,6 +118,7 @@ export class ChipsSearchContributor extends Contributor {
         const filters: Filter = {
             q: query
         };
+        this.query = query;
         const data: Collaboration = {
             filter: filters,
             enabled: true
