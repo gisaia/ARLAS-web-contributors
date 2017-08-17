@@ -2,16 +2,16 @@
 # yarn lockfile v1
 
 
-"@gisaia-team/arlas-web-core@0.1.0-dev7":
-  version "0.1.0-dev7"
-  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.1.0-dev7.tgz#6467bdf71705324d920004c7f8ea12b6d53d5bce"
+"@gisaia-team/arlas-web-core@0.1.0-dev8":
+  version "0.1.0-dev8"
+  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.1.0-dev8.tgz#cbb89c32fd3afcf60847d9dcc100b071bc53a72c"
   dependencies:
     arlas-api "~1.0.9"
     gulp "^3.9.1"
     gulp-clean "^0.3.2"
     gulp-sourcemaps "^2.6.0"
     run-sequence "^2.0.0"
-    rxjs "^5.1.0"
+    rxjs "^5.4.2"
 
 "@gulp-sourcemaps/identity-map@1.X":
   version "1.0.1"
@@ -4158,9 +4158,9 @@ rx-lite@^3.1.2:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/rx-lite/-/rx-lite-3.1.2.tgz#19ce502ca572665f3b647b10939f97fd1615f102"
 
-rxjs@^5.1.0, rxjs@^5.4.1:
-  version "5.4.1"
-  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-5.4.1.tgz#b62f757f279445d265a18a58fb0a70dc90e91626"
+rxjs@^5.4.2:
+  version "5.4.3"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-5.4.3.tgz#0758cddee6033d68e0fd53676f0f3596ce3d483f"
   dependencies:
     symbol-observable "^1.0.1"
 
