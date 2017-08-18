@@ -9,7 +9,6 @@ import { Filter } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 
 export class MapContributor extends Contributor {
-
     constructor(
         public identifier,
         private displayName: string,
@@ -22,7 +21,9 @@ export class MapContributor extends Contributor {
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
-                    // TO DO addLayer
+                    if (contributorId === 'remove-all' || contributorId === 'remove-' + this.identifier) {
+                        this.removeBbox.next(true);
+                    }
                 }
             },
             error => {
@@ -47,7 +48,13 @@ export class MapContributor extends Contributor {
             }
         );
         this.removeBbox.subscribe(
-            value => { if (value) { this.collaborativeSearcheService.removeFilter(this.identifier); } }
+            value => {
+                if (value) {
+                    if (this.collaborativeSearcheService.getFilter(this.identifier) !== null) {
+                        this.collaborativeSearcheService.removeFilter(this.identifier);
+                    };
+                }
+            }
         );
     }
 
