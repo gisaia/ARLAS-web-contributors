@@ -5,7 +5,7 @@ import { Observable } from 'rxjs/Observable';
 
 import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Filter } from 'arlas-api/model/filter';
+import { Filter } from 'arlas-api';
 import { Hits } from 'arlas-api';
 
 

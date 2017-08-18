@@ -1,6 +1,6 @@
 import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
 import { Subject } from 'rxjs/Subject';
-import { Filter } from 'arlas-api/model/filter';
+import { Filter } from 'arlas-api';
 
 
 export class CountAllContributor extends Contributor {

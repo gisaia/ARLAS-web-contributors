@@ -1,8 +1,8 @@
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Aggregation } from 'arlas-api/model/aggregation';
-import { Filter } from 'arlas-api/model/filter';
+import { Aggregation } from 'arlas-api';
+import { Filter } from 'arlas-api';
 import { Expression, AggregationResponse } from 'arlas-api';
 import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
 import { projType } from 'arlas-web-core/models/collaborativesearch';

@@ -3,9 +3,9 @@ import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
-import { Search } from 'arlas-api/model/search';
-import { Size } from 'arlas-api/model/size';
-import { Filter } from 'arlas-api/model/filter';
+import { Search } from 'arlas-api';
+import { Size } from 'arlas-api';
+import { Filter } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 
 export class MapContributor extends Contributor {

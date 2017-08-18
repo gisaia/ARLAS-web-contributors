@@ -4,9 +4,9 @@ import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-we
 import { Observable } from 'rxjs/Observable';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
-import { Filter } from 'arlas-api/model/filter';
-import { Search } from 'arlas-api/model/search';
-import { Size } from 'arlas-api/model/size';
+import { Filter } from 'arlas-api';
+import { Search } from 'arlas-api';
+import { Size } from 'arlas-api';
 import { Expression } from 'arlas-api';
 
 export class TableContributor extends Contributor {
