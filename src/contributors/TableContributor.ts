@@ -13,47 +13,33 @@ export class TableContributor extends Contributor {
     constructor(
         identifier: string,
         private displayName: string,
-        private settings: Object,
-        private dataSubject: Subject<any>,
-        private source: Object,
-        private valuesChangedEvent: Subject<any>,
+        private data: Array<Map<string, string | number | Date>>,
+        private fieldsList: Array<{ columnName: string, fieldName: string, dataType: string }>,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService) {
         super(identifier, configService);
         this.collaborativeSearcheService.register(this.identifier, this);
-        this.settings = this.getConfigValue('settings');
-        this.feedTable();
-        this.valuesChangedEvent.subscribe(
-            value => {
-                const fs = new Array<Expression>();
-                value.forEach(element => {
-                    const expression: Expression = {
-                        field: element.field,
-                        op: Expression.OpEnum.Like,
-                        value: element.value
-                    };
 
-                    fs.push(element.field + ':like:' + element.value);
-                });
-                const filter: Filter = {
-                    f: fs
-                };
-
-                const data: Collaboration = {
-                    filter: filter,
-                    enabled: true
-                };
-
-                this.collaborativeSearcheService.setFilter(this.identifier, data);
-            },
-            error => {
-                this.collaborativeSearcheService.collaborationErrorBus.next(error);
-            }
-        );
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
-                    this.feedTable(this.identifier);
+                    console.log("updateTableau")
+                    this.fieldsList = new Array<{ columnName: string, fieldName: string, dataType: string }>();
+                    this.fieldsList.push({ columnName: 'Source', fieldName: 'source', dataType: '' });
+                    this.fieldsList.push({ columnName: 'Acquired', fieldName: 'acquired', dataType: '' });
+                    this.fieldsList.push({ columnName: 'Cloud', fieldName: 'cloud', dataType: '%' });
+                    this.fieldsList.push({ columnName: 'Incidence', fieldName: 'incidence', dataType: '°' });
+                    this.fieldsList.push({ columnName: 'Id', fieldName: 'id', dataType: '' });
+                }
+                this.data = new Array<Map<string, string | number | Date>>();
+                for (let i = 0; i < 5; i++) {
+                    const map = new Map<string, string | number | Date>();
+                    map.set('source', 'SPOT' + (i + 1));
+                    map.set('acquired', '2017-0' + (i + 1) + '-' + (i + 3));
+                    map.set('cloud', (i + 1) + '.0');
+                    map.set('incidence', (i + 10));
+                    map.set('id', (i + 10));
+                    this.data.push(map);
                 }
             },
             error => {
@@ -69,38 +55,12 @@ export class TableContributor extends Contributor {
     public getPackageName(): string {
         return 'arlas.catalog.web.app.components.table';
     }
-    private feedTable(contributorId?: string) {
-        let data;
-        const search: Search = {};
-        const size: Size = { size: this.getConfigValue('search_size') };
-        search['size'] = size;
-        if (contributorId) {
-            data = this.collaborativeSearcheService.resolveButNot([projType.search, search], contributorId);
-        } else {
-            data = this.collaborativeSearcheService.resolveButNot([projType.search, search]);
-        }
-        const dataForTab = new Array<Object>();
-        data.subscribe(
-            value => {
-                if (value.nbhits > 0) {
-                    value.hits.forEach(h => {
-                        const line = {};
-                        Object.keys(this.settings['columns']).forEach(element => {
-                            if (element === 'id') {
-                                line['id'] = h.md.id;
-                            } else {
-                                line[element] = this.getElementFromJsonObject(h.data, element);
-                            }
-                        });
-                        dataForTab.push(line);
-                    });
-                }
-                this.dataSubject.next({ data: dataForTab, settings: this.settings });
-            },
-            error => {
-                this.collaborativeSearcheService.collaborationErrorBus.next(error);
-            }
-        );
+
+    public getData(){
+        return this.data;
+    }
+    getFieldsList(){
+        return this.fieldsList;
     }
 
     private getElementFromJsonObject(jsonObject: any, pathstring: string): any {
