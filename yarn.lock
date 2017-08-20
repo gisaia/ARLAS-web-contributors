@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@gisaia-team/arlas-web-core@0.1.0-dev8":
-  version "0.1.0-dev8"
-  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.1.0-dev8.tgz#cbb89c32fd3afcf60847d9dcc100b071bc53a72c"
+"@gisaia-team/arlas-web-core@0.1.0-dev9":
+  version "0.1.0-dev9"
+  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.1.0-dev9.tgz#c89bcc486259b8a8a61077de6eec768efa8789cf"
   dependencies:
     arlas-api "~1.0.9"
     gulp "^3.9.1"
