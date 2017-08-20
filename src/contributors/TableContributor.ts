@@ -23,7 +23,6 @@ export class TableContributor extends Contributor {
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
-                    console.log("updateTableau")
                     this.fieldsList = new Array<{ columnName: string, fieldName: string, dataType: string }>();
                     this.fieldsList.push({ columnName: 'Source', fieldName: 'source', dataType: '' });
                     this.fieldsList.push({ columnName: 'Acquired', fieldName: 'acquired', dataType: '' });
@@ -56,10 +55,10 @@ export class TableContributor extends Contributor {
         return 'arlas.catalog.web.app.components.table';
     }
 
-    public getData(){
+    public getData() {
         return this.data;
     }
-    getFieldsList(){
+    public getFieldsList() {
         return this.fieldsList;
     }
 
