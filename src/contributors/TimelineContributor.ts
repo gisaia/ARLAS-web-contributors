@@ -110,7 +110,6 @@ export class TimelineContributor extends Contributor {
                     });
                 }
                 this.chartData.next(dataTab);
-
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
@@ -122,8 +121,10 @@ export class TimelineContributor extends Contributor {
                     endvalue: null
                 };
                 if (f === null) {
-                    interval.startvalue = <number>dataTab[0].key;
-                    interval.endvalue = <number>dataTab[dataTab.length - 1].key;
+                    if (dataTab.length > 0) {
+                        interval.startvalue = <number>dataTab[0].key;
+                        interval.endvalue = <number>dataTab[dataTab.length - 1].key;
+                    }
                 } else {
                     interval.startvalue = <number>parseFloat(f.f[0].value);
                     interval.endvalue = <number>parseFloat(f.f[1].value);

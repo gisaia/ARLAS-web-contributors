@@ -1,7 +1,6 @@
 export { SearchContributor } from './contributors/SearchContributor';
 export { TimelineContributor } from './contributors/TimelineContributor';
-export { TableContributor } from './contributors/TableContributor';
+export { ResultListContributor } from './contributors/ResultListContributor';
 export { MapContributor } from './contributors/MapContributor';
 export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
-export { CountAllContributor } from './contributors/CountAllContributor';
 
