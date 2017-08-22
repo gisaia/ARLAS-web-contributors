@@ -11,7 +11,7 @@
   "author": "gisaia-team",
   "license": "apache2",
   "dependencies": {
-    "@gisaia-team/arlas-web-core": "0.1.0-dev9",
+    "@gisaia-team/arlas-web-core": "0.1.0-dev10",
     "gulp": "^3.9.1",
     "gulp-clean": "^0.3.2",
     "gulp-sourcemaps": "^2.6.0",
