@@ -3,20 +3,37 @@ import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
-import { Search } from 'arlas-api';
+import { Search, Expression, Hits } from 'arlas-api';
 import { Size } from 'arlas-api';
 import { Filter } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 
 export class MapContributor extends Contributor {
+    public actions: Array<{ id: string, label: string, actionBus: Subject<{ idFieldName: string, idValue: string }> }> = [];
+    public addLayeActionrDetailBus: Subject<{ idFieldName: string, idValue: string }> = new Subject<{ idFieldName: string, idValue: string }>();
+    public removeLayerActionDetailBus: Subject<{ idFieldName: string, idValue: string }> = new Subject<{ idFieldName: string, idValue: string }>()
     constructor(
         public identifier,
         private displayName: string,
         private selectedBbox: Subject<Array<number>>,
         private removeBbox: Subject<boolean>,
+        private addLayerDetailBus: Subject<Object>,
+        private removeLayerDetailBus: Subject<Object>,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService) {
         super(identifier, configService);
+        this.actions.push(
+            {
+                id: "showonmap",
+                label: "Show on map",
+                actionBus: this.addLayeActionrDetailBus
+            })
+        this.actions.push(
+            {
+                id: "removefrommap",
+                label: "Remove from map",
+                actionBus: this.removeLayerActionDetailBus
+            })
         this.collaborativeSearcheService.register(this.identifier, this);
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
@@ -25,6 +42,9 @@ export class MapContributor extends Contributor {
                         this.removeBbox.next(true);
                     }
                 }
+                this.removeLayerDetailBus.next("all")
+
+
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
@@ -56,6 +76,35 @@ export class MapContributor extends Contributor {
                 }
             }
         );
+
+        this.addLayeActionrDetailBus.subscribe(id => {
+            let searchResult: Observable<Hits>;
+            const search: Search = { size: { size: 1 } };
+            const expression: Expression = {
+                field: id.idFieldName,
+                op: Expression.OpEnum.Eq,
+                value: id.idValue
+            };
+            const filter: Filter = {
+                f: [expression]
+
+            };
+            const actionsList = new Array<string>();
+            searchResult = this.collaborativeSearcheService.resolve([projType.search, search], null, filter);
+            searchResult.subscribe(h => {
+                let geojsonData = h.hits[0].data["geographicBoundingPolygon"]["geometry"];
+                this.addLayerDetailBus.next(
+                    {
+                        geometry: geojsonData,
+                        id: id.idValue
+                    }
+                );
+            })
+        });
+
+        this.removeLayerActionDetailBus.subscribe(id => {
+            this.removeLayerDetailBus.next(id)
+        })
     }
 
     public getPackageName(): string {

@@ -20,7 +20,6 @@ export class SearchContributor extends Contributor {
                         this.addWordEvent.next(value);
                     }
                 }
-
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
