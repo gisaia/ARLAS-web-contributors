@@ -6,11 +6,11 @@ import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Filter, Hits, Search, Size, Expression } from 'arlas-api';
 import { getElementFromJsonObject } from '../utils/utils';
-import { action } from '../utils/models';
+import { Action } from '../utils/models';
 
 export class DetailedDataRetriever {
     private contributor: ResultListContributor;
-    public getData(identifier: string): Observable<{ details: Map<string, string>, actions: Array<action> }> {
+    public getData(identifier: string): Observable<{ details: Map<string, string>, actions: Array<Action> }> {
         let searchResult: Observable<Hits>;
         const search: Search = { size: { size: 1 } };
         const expression: Expression = {

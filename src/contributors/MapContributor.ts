@@ -7,14 +7,14 @@ import { Search, Expression, Hits } from 'arlas-api';
 import { Size } from 'arlas-api';
 import { Filter } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { idObject, action } from '../utils/models';
+import { Action, IdObject } from '../utils/models';
 
 
 
 export class MapContributor extends Contributor {
-    public actions: Array<action> = [];
-    public addLayeActionrDetailBus: Subject<idObject> = new Subject<idObject>();
-    public removeLayerActionDetailBus: Subject<idObject> = new Subject<idObject>();
+    public actions: Array<Action> = [];
+    public addLayeActionrDetailBus: Subject<IdObject> = new Subject<IdObject>();
+    public removeLayerActionDetailBus: Subject<IdObject> = new Subject<IdObject>();
     constructor(
         public identifier,
         private displayName: string,
