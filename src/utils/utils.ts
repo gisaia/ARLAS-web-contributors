@@ -12,4 +12,3 @@ export function getElementFromJsonObject(jsonObject: any, pathstring: string): a
         return getElementFromJsonObject(jsonObject[path[0]], path.slice(1).join('.'));
     }
 }
-

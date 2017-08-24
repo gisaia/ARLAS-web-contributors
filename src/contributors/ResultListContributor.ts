@@ -6,16 +6,11 @@ import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Filter, Hits, Search, Size, Expression } from 'arlas-api';
 import { getElementFromJsonObject } from '../utils/utils';
+import { action } from '../utils/models';
 
 export class DetailedDataRetriever {
     private contributor: ResultListContributor;
-    public getData(identifier: string): Observable<{
-        details: Map<string, string>,
-        actions: Array<{
-            id: string, label: string,
-            actionBus: Subject<{ idFieldName: string, idValue: string }>
-        }>
-    }> {
+    public getData(identifier: string): Observable<{ details: Map<string, string>, actions: Array<action> }> {
         let searchResult: Observable<Hits>;
         const search: Search = { size: { size: 1 } };
         const expression: Expression = {
@@ -25,9 +20,7 @@ export class DetailedDataRetriever {
         };
         const filter: Filter = {
             f: [expression]
-
         };
-
         searchResult = this.contributor.collaborativeSearcheService.resolve([projType.search, search], this.contributor.identifier, filter);
         const obs: Observable<{
             details: Map<string, string>, actions: Array<{
@@ -36,14 +29,14 @@ export class DetailedDataRetriever {
             }>
         }> = searchResult.map(c => {
             const detailedDataMap = new Map<string, string>();
-            const details = this.contributor.getConfigValue("details")
+            const details = this.contributor.getConfigValue('details');
             Object.keys(details).forEach(element => {
                 const confEntrie = details[element];
                 this.feedDetailledMap(element, detailedDataMap, confEntrie, c.hits[0].data);
-            })
-            const objectResult = { details: detailedDataMap, actions: this.contributor.actionList }
+            });
+            const objectResult = { details: detailedDataMap, actions: this.contributor.actionList };
             return objectResult;
-        })
+        });
         return obs;
     }
 
@@ -61,23 +54,23 @@ export class DetailedDataRetriever {
                     if (data[element] !== undefined) {
                         data[element].forEach(e => {
                             this.feedDetailledMap(subelement, detailedDataMap, i[subelement], e);
-                        })
+                        });
                     }
                 });
             });
         } else {
-            const result = data[element]
+            const result = data[element];
             let resultset = null;
             if (confEntrie.process.trim().length > 0) {
-                resultset = eval(confEntrie.process.trim())
+                resultset = eval(confEntrie.process.trim());
             } else {
                 resultset = result;
             }
             if (detailedDataMap.get(confEntrie.label) === null || detailedDataMap.get(confEntrie.label) === undefined) {
-                detailedDataMap.set(confEntrie.label, resultset)
+                detailedDataMap.set(confEntrie.label, resultset);
             } else {
-                const newvalue = detailedDataMap.get(confEntrie.label) + "," + resultset
-                detailedDataMap.set(confEntrie.label, newvalue)
+                const newvalue = detailedDataMap.get(confEntrie.label) + ',' + resultset;
+                detailedDataMap.set(confEntrie.label, newvalue);
             }
 
         }
@@ -119,8 +112,8 @@ export class ResultListContributor extends Contributor {
                 this.collaborativeSearcheService.collaborationErrorBus.next((error));
             }
         );
-        this.actionOnItemEvent.subscribe(action =>{
-            action.action.actionBus.next(action.productIdentifier)
+        this.actionOnItemEvent.subscribe(action => {
+            action.action.actionBus.next(action.productIdentifier);
         });
     }
 
@@ -132,8 +125,23 @@ export class ResultListContributor extends Contributor {
         return 'arlas.catalog.web.app.components.table';
     }
 
-    public getDetailData(id: string) {
+    public addAction(action: {
+        id: string, label: string,
+        actionBus: Subject<{ idFieldName: string, idValue: string }>
+    }) {
+        if (this.actionList.indexOf(action, 0) < 0) {
+            this.actionList.push(action);
+        }
+    }
 
+    public removeAction(action: {
+        id: string, label: string,
+        actionBus: Subject<{ idFieldName: string, idValue: string }>
+    }) {
+        const index = this.actionList.indexOf(action, 0);
+        if (index > -1) {
+            this.actionList.splice(index, 1);
+        }
     }
 
     private feedTable() {
@@ -168,22 +176,5 @@ export class ResultListContributor extends Contributor {
         });
     }
 
-    public addAction(action: {
-        id: string, label: string,
-        actionBus: Subject<{ idFieldName: string, idValue: string }>
-    }) {
-        if (this.actionList.indexOf(action, 0) < 0) {
-            this.actionList.push(action);
-        }
-    }
 
-    public removeAction(action: {
-        id: string, label: string,
-        actionBus: Subject<{ idFieldName: string, idValue: string }>
-    }) {
-        const index = this.actionList.indexOf(action, 0);
-        if (index > -1) {
-            this.actionList.splice(index, 1)
-        }
-    }
 }
