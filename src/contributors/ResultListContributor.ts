@@ -111,27 +111,27 @@ export class ResultListContributor extends Contributor {
             action.action.actionBus.next(action.productIdentifier);
         });
         this.setFiltersEvent.subscribe(filterMap => {
-            if (filterMap.size===0) {
+            if (filterMap.size === 0) {
                 this.collaborativeSearcheService.removeFilter(this.identifier);
 
             } else {
-                let expressions: Array<Expression> = []
+                const expressions: Array<Expression> = [];
                 filterMap.forEach((k, v) => {
                     const expression: Expression = {
                         field: v,
                         op: Expression.OpEnum.Like,
                         value: <string>k
                     };
-                    expressions.push(expression)
-                })
+                    expressions.push(expression);
+                });
                 const filterValue: Filter = {
                     f: expressions
                 };
-                const collaboration : Collaboration =  {filter:filterValue,enabled:true}
-                this.collaborativeSearcheService.setFilter(this.identifier,collaboration )
+                const collaboration: Collaboration = { filter: filterValue, enabled: true };
+                this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
 
             }
-        })
+        });
     }
 
     public getFilterDisplayName(): string {
@@ -156,7 +156,6 @@ export class ResultListContributor extends Contributor {
     }
 
     private feedTable() {
-        console.log("feedTable")
         let searchResult: Observable<Hits>;
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
         this.fieldsList = [];
