@@ -6,7 +6,7 @@ import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Filter, Hits, Search, Size, Expression } from 'arlas-api';
 import { getElementFromJsonObject } from '../utils/utils';
-import { Action } from '../utils/models';
+import { Action, IdObject } from '../utils/models';
 
 export class DetailedDataRetriever {
     private contributor: ResultListContributor;
@@ -81,28 +81,23 @@ export class ResultListContributor extends Contributor {
     public data: Array<Map<string, string | number | Date>>;
     public fieldsList: Array<{ columnName: string, fieldName: string, dataType: string }> = [];
     public detailedDataRetriever = new DetailedDataRetriever();
-    public actionList: Array<{
-        id: string, label: string,
-        actionBus: Subject<{ idFieldName: string, idValue: string }>
-    }> = [];
+    public actionList: Array<Action> = [];
 
     constructor(
         identifier: string,
         private displayName: string,
         public idFieldName: string,
         private actionOnItemEvent: Subject<{
-            action: {
-                id: string, label: string,
-                actionBus: Subject<{ idFieldName: string, idValue: string }>
-            },
-            productIdentifier: { idFieldName: string, idValue: string }
+            action: Action,
+            productIdentifier: IdObject
         }>,
+        private setFiltersEvent: Subject<Map<string, string | number | Date>>,
         public collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
         super(identifier, configService);
-        this.detailedDataRetriever.setContributor(this);
         this.collaborativeSearcheService.register(this.identifier, this);
+        this.detailedDataRetriever.setContributor(this);
         this.feedTable();
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
@@ -115,6 +110,28 @@ export class ResultListContributor extends Contributor {
         this.actionOnItemEvent.subscribe(action => {
             action.action.actionBus.next(action.productIdentifier);
         });
+        this.setFiltersEvent.subscribe(filterMap => {
+            if (filterMap.size===0) {
+                this.collaborativeSearcheService.removeFilter(this.identifier);
+
+            } else {
+                let expressions: Array<Expression> = []
+                filterMap.forEach((k, v) => {
+                    const expression: Expression = {
+                        field: v,
+                        op: Expression.OpEnum.Like,
+                        value: <string>k
+                    };
+                    expressions.push(expression)
+                })
+                const filterValue: Filter = {
+                    f: expressions
+                };
+                const collaboration : Collaboration =  {filter:filterValue,enabled:true}
+                this.collaborativeSearcheService.setFilter(this.identifier,collaboration )
+
+            }
+        })
     }
 
     public getFilterDisplayName(): string {
@@ -125,19 +142,13 @@ export class ResultListContributor extends Contributor {
         return 'arlas.catalog.web.app.components.table';
     }
 
-    public addAction(action: {
-        id: string, label: string,
-        actionBus: Subject<{ idFieldName: string, idValue: string }>
-    }) {
+    public addAction(action: Action) {
         if (this.actionList.indexOf(action, 0) < 0) {
             this.actionList.push(action);
         }
     }
 
-    public removeAction(action: {
-        id: string, label: string,
-        actionBus: Subject<{ idFieldName: string, idValue: string }>
-    }) {
+    public removeAction(action: Action) {
         const index = this.actionList.indexOf(action, 0);
         if (index > -1) {
             this.actionList.splice(index, 1);
@@ -145,6 +156,7 @@ export class ResultListContributor extends Contributor {
     }
 
     private feedTable() {
+        console.log("feedTable")
         let searchResult: Observable<Hits>;
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
         this.fieldsList = [];
