@@ -129,7 +129,9 @@ export class TimelineContributor extends Contributor {
                     interval.startvalue = <number>parseFloat(f.f[0].value);
                     interval.endvalue = <number>parseFloat(f.f[1].value);
                 }
-                this.intervalSelection.next(interval);
+                if (interval.endvalue !== null && interval.startvalue !== null) {
+                    this.intervalSelection.next(interval);
+                }
             }
         );
     }

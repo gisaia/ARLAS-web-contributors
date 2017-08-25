@@ -8,6 +8,7 @@ import { Size } from 'arlas-api';
 import { Filter } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Action, IdObject } from '../utils/models';
+import { getElementFromJsonObject } from '../utils/utils';
 
 
 
@@ -96,7 +97,7 @@ export class MapContributor extends Contributor {
             const actionsList = new Array<string>();
             searchResult = this.collaborativeSearcheService.resolve([projType.search, search], null, filter);
             searchResult.subscribe(h => {
-                const geojsonData = h.hits[0].data['geographicBoundingPolygon']['geometry'];
+                const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
                 this.addLayerDetailBus.next(
                     {
                         geometry: geojsonData,

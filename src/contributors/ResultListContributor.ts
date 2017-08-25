@@ -4,9 +4,14 @@ import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-we
 import { Observable } from 'rxjs/Observable';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { projType } from 'arlas-web-core/models/collaborativesearch';
-import { Filter, Hits, Search, Size, Expression } from 'arlas-api';
+import { Filter, Hits, Search, Size, Expression, Sort } from 'arlas-api';
 import { getElementFromJsonObject } from '../utils/utils';
 import { Action, IdObject } from '../utils/models';
+import * as FileSaver from 'file-saver';
+
+export enum SortEnum {
+    asc, desc, none
+}
 
 export class DetailedDataRetriever {
     private contributor: ResultListContributor;
@@ -82,6 +87,9 @@ export class ResultListContributor extends Contributor {
     public fieldsList: Array<{ columnName: string, fieldName: string, dataType: string }> = [];
     public detailedDataRetriever = new DetailedDataRetriever();
     public actionList: Array<Action> = [];
+    public actions: Array<Action> = [];
+    public downloadAction: Action;
+    private downloadActinBus: Subject<IdObject> = new Subject<IdObject>();
 
     constructor(
         identifier: string,
@@ -91,6 +99,7 @@ export class ResultListContributor extends Contributor {
             action: Action,
             productIdentifier: IdObject
         }>,
+        private sortColumnsEvent: Subject<{ fieldName: string, sortDirection: SortEnum }>,
         private setFiltersEvent: Subject<Map<string, string | number | Date>>,
         public collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
@@ -132,6 +141,55 @@ export class ResultListContributor extends Contributor {
 
             }
         });
+
+        this.sortColumnsEvent.subscribe(s => {
+            let prefix = null;
+            if (s.sortDirection.toString() === '0') {
+                prefix = '';
+            } else if (s.sortDirection.toString() === '1') {
+                prefix = '-';
+            }
+            let sort: Sort = {};
+            if (prefix !== null) {
+                sort = {
+                    'sort': prefix + s.fieldName
+                };
+            }
+            this.feedTable(sort);
+        });
+
+        this.downloadAction = {
+            id: 'download',
+            label: 'Download',
+            actionBus: this.downloadActinBus
+        };
+        this.actions.push(this.downloadAction);
+
+        this.downloadActinBus.subscribe(id => {
+            let searchResult: Observable<Hits>;
+            const search: Search = {
+                size: { size: 1 },
+                form: {
+                    pretty: true,
+                    human: true
+                }
+            };
+            const expression: Expression = {
+                field: id.idFieldName,
+                op: Expression.OpEnum.Eq,
+                value: id.idValue
+            };
+            const filter: Filter = {
+                f: [expression]
+            };
+            const actionsList = new Array<string>();
+            searchResult = this.collaborativeSearcheService.resolve([projType.search, search], null, filter);
+            searchResult.map(data => JSON.stringify(data)).subscribe(
+                data => {
+                    this.download(data.toString(), id.idValue + '.json', 'text/json');
+                }
+            );
+        });
     }
 
     public getFilterDisplayName(): string {
@@ -155,9 +213,17 @@ export class ResultListContributor extends Contributor {
         }
     }
 
-    private feedTable() {
+    private download(text, name, type) {
+        const file = new Blob([text], { type: type });
+        FileSaver.saveAs(file, name);
+    }
+
+    private feedTable(sort?: Sort) {
         let searchResult: Observable<Hits>;
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
+        if (sort) {
+            search.sort = sort;
+        }
         this.fieldsList = [];
         Object.keys(this.getConfigValue('columns')).forEach(element => {
             this.fieldsList.push(this.getConfigValue('columns')[element]);
