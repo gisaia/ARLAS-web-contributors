@@ -89,7 +89,9 @@ export class ResultListContributor extends Contributor {
     public actionList: Array<Action> = [];
     public actions: Array<Action> = [];
     public downloadAction: Action;
-    private downloadActinBus: Subject<IdObject> = new Subject<IdObject>();
+    public consultActionSubjects: Array<Subject<string>> = [];
+    private downloadActionBus: Subject<IdObject> = new Subject<IdObject>();
+
 
     constructor(
         identifier: string,
@@ -101,6 +103,7 @@ export class ResultListContributor extends Contributor {
         }>,
         private sortColumnsEvent: Subject<{ fieldName: string, sortDirection: SortEnum }>,
         private setFiltersEvent: Subject<Map<string, string | number | Date>>,
+        private consultedItemEvent: Subject<string>,
         public collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -108,6 +111,7 @@ export class ResultListContributor extends Contributor {
         this.collaborativeSearcheService.register(this.identifier, this);
         this.detailedDataRetriever.setContributor(this);
         this.feedTable();
+
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 this.feedTable();
@@ -158,14 +162,20 @@ export class ResultListContributor extends Contributor {
             this.feedTable(sort);
         });
 
+        this.consultedItemEvent.subscribe(value =>
+            this.consultActionSubjects.forEach(o => {
+                o.next(value);
+            })
+        );
+
         this.downloadAction = {
             id: 'download',
             label: 'Download',
-            actionBus: this.downloadActinBus
+            actionBus: this.downloadActionBus
         };
         this.actions.push(this.downloadAction);
 
-        this.downloadActinBus.subscribe(id => {
+        this.downloadActionBus.subscribe(id => {
             let searchResult: Observable<Hits>;
             const search: Search = {
                 size: { size: 1 },
@@ -213,6 +223,19 @@ export class ResultListContributor extends Contributor {
         }
     }
 
+    public addConsultActionSubject(consultActionsSubject: Subject<string>) {
+        if (this.consultActionSubjects.indexOf(consultActionsSubject, 0) < 0) {
+            this.consultActionSubjects.push(consultActionsSubject);
+        }
+    }
+
+    public removeConsultActionSubject(consultActionsSubject: Subject<string>) {
+        const index = this.consultActionSubjects.indexOf(consultActionsSubject, 0);
+        if (index > -1) {
+            this.consultActionSubjects.splice(index, 1);
+        }
+    }
+
     private download(text, name, type) {
         const file = new Blob([text], { type: type });
         FileSaver.saveAs(file, name);
@@ -251,6 +274,7 @@ export class ResultListContributor extends Contributor {
                 });
             }
         });
+
     }
 
 
