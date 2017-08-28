@@ -1,22 +1,42 @@
-import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
+import { CollaborativesearchService, ConfigService, Contributor, projType, Collaboration } from 'arlas-web-core';
+import { Filter, Hits } from 'arlas-api';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 
-
-import { projType } from 'arlas-web-core/models/collaborativesearch';
-import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Filter } from 'arlas-api';
-import { Hits } from 'arlas-api';
-
-
+/**
+ * This contributor must work with SearchContributor and a component
+ * to display several chips label from SearchComponent.
+ * This class make the brigde between the component which displays the data and the
+ * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
+ */
 export class ChipsSearchContributor extends Contributor {
+    /**
+    * Registry of all chips words present with their own count
+    */
     public wordToCount: Map<string, number> = new Map<string, number>();
+    /**
+    * Bus of wordToCount map, notify when a chips is closed or add, the map is send for a global compute.
+    */
     public wordsSubject: Subject<Map<string, number>> = new Subject<Map<string, number>>();
+    /**
+    * Bus of string, notify when a chips is closed, the closed string is send in the bus.
+    */
     public removeWordEvent: Subject<string> = new Subject<string>();
+    /**
+    * Global query based on all concatenate chips word
+    */
     public query: string;
+
+    /**
+    * Build a new contributor.
+    * @param identifier  Identifier of contributor.
+    * @param addWordEvent  @Output of Angular SearchComponent, listen when a new search is coming.
+    * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
+    * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
+    * @param configService  Instance of ConfigService from Arlas-web-core.
+    */
     constructor(
         identifier: string,
-        private displayName: string,
         private addWordEvent: Subject<string>,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService) {
@@ -102,14 +122,21 @@ export class ChipsSearchContributor extends Contributor {
             }
         );
     }
-
+    /**
+    * @returns Pretty name of contributor based on query propoerty.
+    */
     public getFilterDisplayName(): string {
         return this.query;
     }
+    /**
+    * @returns Package name for the configuration service.
+    */
     public getPackageName(): string {
-        return 'arlas.catalog.web.app.components.chipssearch';
+        return 'catalog.web.app.components.chipssearch';
     }
-
+    /**
+    * Set Filter for collaborative search service from wordToCount map.
+    */
     private setFilterFromMap() {
         let query = '';
         this.wordToCount.forEach((k, q) => {

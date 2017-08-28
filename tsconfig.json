@@ -19,8 +19,11 @@
       "arlas-web-core/models/collaboration": [
         "../node_modules/@gisaia-team/arlas-web-core/models/collaboration"
       ],
-      "arlas-web-core/models/collaborativesearch": [
-        "../node_modules/@gisaia-team/arlas-web-core/models/collaborativesearch"
+      "arlas-web-core/models/projections": [
+        "../node_modules/@gisaia-team/arlas-web-core/models/projections"
+      ],
+        "arlas-web-core/models/contributor": [
+        "../node_modules/@gisaia-team/arlas-web-core/models/contributor"
       ]
     },
     "lib": [

@@ -4,23 +4,27 @@ import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Filter, Aggregation } from 'arlas-api';
 import { Expression, AggregationResponse } from 'arlas-api';
 import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
-import { projType } from 'arlas-web-core/models/collaborativesearch';
+import { projType } from 'arlas-web-core/models/projections';
 
 export enum DateType {
     second, millisecond
 }
 
-export class TimelineContributor extends Contributor {
-    private valueChangedEvent: Subject<any>;
-    private chartData: Subject<any>;
-    private intervalSelection: Subject<any>;
+export interface SelectedOutputValues {
+  startvalue: Date|number;
+  endvalue: Date|number;
+}
+
+export class HistogramContributor extends Contributor {
+    private valueChangedEvent: Subject<SelectedOutputValues>;
+    private chartData: Subject<Array<{ key: number, value: number }>>;
+    private intervalSelection: Subject<SelectedOutputValues>;
     private aggregation: Aggregation = this.getConfigValue('aggregationmodel');
     private field: string = this.aggregation.field;
     private startValue: string;
     private endValue: string;
     constructor(
         identifier: string,
-        private displayName: string,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -43,7 +47,7 @@ export class TimelineContributor extends Contributor {
         return this.valueChangedEvent;
     }
 
-    public setValueChangedEvent(valueChangedEvent: Subject<any>, dateType) {
+    public setValueChangedEvent(valueChangedEvent: Subject<SelectedOutputValues>, dateType) {
         if (valueChangedEvent !== null) {
             this.valueChangedEvent = valueChangedEvent;
             this.initValueChangeEvent(dateType);
@@ -54,7 +58,7 @@ export class TimelineContributor extends Contributor {
         return this.chartData;
     }
 
-    public setCharData(chartData: Subject<any>) {
+    public setCharData(chartData: Subject<Array<{ key: number, value: number }>>) {
         if (chartData !== null) {
             this.chartData = chartData;
             this.initChartDataValue();
@@ -65,7 +69,7 @@ export class TimelineContributor extends Contributor {
         return this.intervalSelection;
     }
 
-    public setIntervalSelection(intervalSelection: Subject<any>) {
+    public setIntervalSelection(intervalSelection: Subject<SelectedOutputValues>) {
         if (intervalSelection !== null) {
             this.intervalSelection = intervalSelection;
         }
@@ -85,7 +89,7 @@ export class TimelineContributor extends Contributor {
     }
 
     public getPackageName(): string {
-        return 'arlas.catalog.web.app.components.histogram';
+        return 'catalog.web.app.components.histogram';
     }
 
     private updateAndSetCollaborationEvent(identifier: string, filter: Filter): void {
@@ -101,7 +105,7 @@ export class TimelineContributor extends Contributor {
             [projType.aggregate, aggregations],
             contributorId
         );
-        const dataTab = new Array<any>();
+        const dataTab = new Array<{ key: number, value: number }>();
         data.subscribe(
             value => {
                 if (value.totalnb > 0) {
@@ -141,9 +145,9 @@ export class TimelineContributor extends Contributor {
             value => {
                 let end = value.endvalue;
                 let start = value.startvalue;
-                if ((typeof end.getMonth === 'function') && (typeof start.getMonth === 'function')) {
-                    const endDate = new Date(value.endvalue);
-                    const startDate = new Date(value.startvalue);
+                if ((typeof (<Date>end).getMonth === 'function') && (typeof  (<Date>start).getMonth === 'function')) {
+                    const endDate = new Date(value.endvalue.toString());
+                    const startDate = new Date(value.startvalue.toString());
                     this.startValue = startDate.toLocaleString();
                     this.endValue = endDate.toLocaleString();
                     let multiplier = 1;
@@ -154,18 +158,18 @@ export class TimelineContributor extends Contributor {
                     start = startDate.valueOf() / 1 * multiplier;
 
                 } else {
-                    this.startValue = Math.round(start).toString();
-                    this.endValue = Math.round(end).toString();
+                    this.startValue = Math.round(<number>start).toString();
+                    this.endValue = Math.round(<number>end).toString();
                 };
                 const startExpression: Expression = {
                     field: this.field,
                     op: Expression.OpEnum.Gt,
-                    value: start
+                    value: start.toString()
                 };
                 const endExpression: Expression = {
                     field: this.field,
                     op: Expression.OpEnum.Lt,
-                    value: end
+                    value: end.toString()
                 };
                 const filterValue: Filter = {
                     f: [startExpression, endExpression]

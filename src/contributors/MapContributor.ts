@@ -1,14 +1,13 @@
-
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { projType } from 'arlas-web-core/models/collaborativesearch';
 import { Search, Expression, Hits } from 'arlas-api';
 import { Size } from 'arlas-api';
 import { Filter } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Action, IdObject } from '../utils/models';
+import { Action, IdObject } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
+import { projType } from 'arlas-web-core/models/projections';
 
 
 
@@ -18,7 +17,6 @@ export class MapContributor extends Contributor {
     public removeLayerActionDetailBus: Subject<IdObject> = new Subject<IdObject>();
     constructor(
         public identifier,
-        private displayName: string,
         private selectedBbox: Subject<Array<number>>,
         private removeBbox: Subject<boolean>,
         private addLayerDetailBus: Subject<{
@@ -113,7 +111,7 @@ export class MapContributor extends Contributor {
     }
 
     public getPackageName(): string {
-        return 'arlas.catalog.web.app.components.map';
+        return 'catalog.web.app.components.map';
     }
 
     public getFilterDisplayName(): string {

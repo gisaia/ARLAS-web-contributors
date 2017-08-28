@@ -1,4 +1,5 @@
 import { Subject } from 'rxjs/Subject';
+
 export interface Action {
     id: string;
     label: string;

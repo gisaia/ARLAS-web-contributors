@@ -1,12 +1,11 @@
-
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { projType } from 'arlas-web-core/models/collaborativesearch';
-import { Filter, Hits, Search, Size, Expression, Sort } from 'arlas-api';
+import { projType } from 'arlas-web-core/models/projections';
+import { Filter, Hits, Search, Size, Expression, Sort, Projection } from 'arlas-api';
 import { getElementFromJsonObject } from '../utils/utils';
-import { Action, IdObject } from '../utils/models';
+import { Action, IdObject } from '../models/models';
 import * as FileSaver from 'file-saver';
 
 export enum SortEnum {
@@ -91,11 +90,8 @@ export class ResultListContributor extends Contributor {
     public downloadAction: Action;
     public consultActionSubjects: Array<Subject<string>> = [];
     private downloadActionBus: Subject<IdObject> = new Subject<IdObject>();
-
-
     constructor(
         identifier: string,
-        private displayName: string,
         public idFieldName: string,
         private actionOnItemEvent: Subject<{
             action: Action,
@@ -207,7 +203,7 @@ export class ResultListContributor extends Contributor {
     }
 
     public getPackageName(): string {
-        return 'arlas.catalog.web.app.components.table';
+        return 'catalog.web.app.components.table';
     }
 
     public addAction(action: Action) {
@@ -243,6 +239,8 @@ export class ResultListContributor extends Contributor {
 
     private feedTable(sort?: Sort) {
         let searchResult: Observable<Hits>;
+        const projection: Projection = {};
+        let includesvalue = '';
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
         if (sort) {
             search.sort = sort;
@@ -250,9 +248,11 @@ export class ResultListContributor extends Contributor {
         this.fieldsList = [];
         Object.keys(this.getConfigValue('columns')).forEach(element => {
             this.fieldsList.push(this.getConfigValue('columns')[element]);
+            includesvalue = includesvalue + ',' + this.getConfigValue('columns')[element].fieldName;
         });
+        search.projection = projection;
+        projection.includes = includesvalue.substring(1);
         this.data = new Array<Map<string, string | number | Date>>();
-
         searchResult = this.collaborativeSearcheService.resolveButNot([projType.search, search]);
         searchResult.subscribe(value => {
             if (value.nbhits > 0) {
