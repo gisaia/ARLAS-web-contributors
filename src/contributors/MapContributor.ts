@@ -10,7 +10,12 @@ import { getElementFromJsonObject } from '../utils/utils';
 import { projType } from 'arlas-web-core/models/projections';
 
 
-
+/**
+ * This contributor works with the Angular MapComponent of the Arlas-web-components project.
+ * This contributor notify a string Bus when a new search is coming.
+ * This class make the brigde between the component which displays the data and the
+ * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
+ */
 export class MapContributor extends Contributor {
     public actions: Array<Action> = [];
     public addLayeActionrDetailBus: Subject<IdObject> = new Subject<IdObject>();
