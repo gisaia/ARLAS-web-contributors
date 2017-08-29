@@ -22,9 +22,12 @@ export class SearchContributor extends Contributor {
         identifier: string,
         private valuesChangedEvent: Subject<string>,
         private collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService) {
+        configService: ConfigService
+    ) {
         super(identifier, configService);
+        // Register the contributor in collaborativeSearcheService registry
         this.collaborativeSearcheService.register(this.identifier, this);
+        // Subscribe to the valuesChangedEvent to sent the string value to addWordBus.
         this.valuesChangedEvent.subscribe(
             value => {
                 if (value !== null) {

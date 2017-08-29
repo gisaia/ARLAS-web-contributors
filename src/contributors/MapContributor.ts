@@ -5,21 +5,45 @@ import { Search, Expression, Hits } from 'arlas-api';
 import { Size } from 'arlas-api';
 import { Filter } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Action, IdObject } from '../models/models';
+import { Action, ProductIdentifier } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
 import { projType } from 'arlas-web-core/models/projections';
-
-
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
- * This contributor notify a string Bus when a new search is coming.
  * This class make the brigde between the component which displays the data and the
  * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
  */
 export class MapContributor extends Contributor {
-    public actions: Array<Action> = [];
-    public addLayeActionrDetailBus: Subject<IdObject> = new Subject<IdObject>();
-    public removeLayerActionDetailBus: Subject<IdObject> = new Subject<IdObject>();
+    /**
+     * Action subject nexted on showonmap action trigger, subscribe by the contributor to send data to addLayerDetailBus.
+    */
+    public addLayerActionrDetailBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
+    /**
+     * Action subject nexted on removefrommap action trigger, subscribe by the contributor to send data to removeLayerDetailBus.
+    */
+    public removeLayerActionDetailBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
+    /**
+     * List of actions that the contributor can trigger.
+    */
+    public actions: Array<Action> = [{
+        id: 'showonmap',
+        label: 'Show on map',
+        actionBus: this.addLayerActionrDetailBus
+    }, {
+        id: 'removefrommap',
+        label: 'Remove from map',
+        actionBus: this.removeLayerActionDetailBus
+    }];
+    /**
+    * Build a new contributor.
+    * @param identifier  Identifier of contributor.
+    * @param selectedBbox  @Output of Angular MapComponent, send the Bbox of a rectangle of selection draw on the map when it changes.
+    * @param removeBbox  @Output of Angular MapComponent, send true when the rectangle of selection is removed.
+    * @param addLayerDetailBus  @Output of Angular MapComponent, send a {geometry: string,id: string} when the showonmap action is called.
+    * @param removeLayerDetailBus  @Output of Angular MapComponent, send a sring id when the removefrommap action is called.
+    * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
+    * @param configService  Instance of ConfigService from Arlas-web-core.
+    */
     constructor(
         public identifier,
         private selectedBbox: Subject<Array<number>>,
@@ -30,21 +54,12 @@ export class MapContributor extends Contributor {
         }>,
         private removeLayerDetailBus: Subject<string>,
         private collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService) {
+        configService: ConfigService
+    ) {
         super(identifier, configService);
-        this.actions.push(
-            {
-                id: 'showonmap',
-                label: 'Show on map',
-                actionBus: this.addLayeActionrDetailBus
-            });
-        this.actions.push(
-            {
-                id: 'removefrommap',
-                label: 'Remove from map',
-                actionBus: this.removeLayerActionDetailBus
-            });
+        // Register the contributor in collaborativeSearcheService registry
         this.collaborativeSearcheService.register(this.identifier, this);
+        // Subscribe to the collaborationBus to sent removeBbox bbox event if the contributor is removed
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
@@ -58,6 +73,7 @@ export class MapContributor extends Contributor {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
+        // Subscribe to the selectedBbox to set a new filter on the collaborativeSearcheService
         this.selectedBbox.subscribe(
             value => {
                 let pwithin = '';
@@ -75,6 +91,7 @@ export class MapContributor extends Contributor {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
+        // Subscribe to the removeBbox to remove filter in collaborativeSearcheService
         this.removeBbox.subscribe(
             value => {
                 if (value) {
@@ -84,8 +101,8 @@ export class MapContributor extends Contributor {
                 }
             }
         );
-
-        this.addLayeActionrDetailBus.subscribe(id => {
+        // Subscribe to the addLayerActionrDetailBus to send data to addLayerDetailBus
+        this.addLayerActionrDetailBus.subscribe(id => {
             let searchResult: Observable<Hits>;
             const search: Search = { size: { size: 1 } };
             const expression: Expression = {
@@ -95,7 +112,6 @@ export class MapContributor extends Contributor {
             };
             const filter: Filter = {
                 f: [expression]
-
             };
             const actionsList = new Array<string>();
             searchResult = this.collaborativeSearcheService.resolve([projType.search, search], null, filter);
@@ -109,19 +125,21 @@ export class MapContributor extends Contributor {
                 );
             });
         });
-
+        // Subscribe to the addLayerActionrDetailBus to send data to addLayerDetailBus
         this.removeLayerActionDetailBus.subscribe(id => {
             this.removeLayerDetailBus.next(id.idValue);
         });
     }
-
+    /**
+    * @returns Package name for the configuration service.
+    */
     public getPackageName(): string {
         return 'catalog.web.app.components.map';
     }
-
+    /**
+    * @returns Pretty name of contribution.
+    */
     public getFilterDisplayName(): string {
         return 'GeoBox';
     }
-
-
 }

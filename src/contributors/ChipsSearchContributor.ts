@@ -2,7 +2,6 @@ import { CollaborativesearchService, ConfigService, Contributor, projType, Colla
 import { Filter, Hits } from 'arlas-api';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
-
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.
@@ -26,7 +25,6 @@ export class ChipsSearchContributor extends Contributor {
     * Global query based on all concatenate chips word
     */
     public query: string;
-
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -39,9 +37,12 @@ export class ChipsSearchContributor extends Contributor {
         identifier: string,
         private addWordEvent: Subject<string>,
         private collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService) {
+        configService: ConfigService
+    ) {
         super(identifier, configService);
+        // Register the contributor in collaborativeSearcheService registry.
         this.collaborativeSearcheService.register(this.identifier, this);
+        // Subscribe to the addWordEvent to add a chip with value and count and set filter in collaborativeSearcheService.
         this.addWordEvent.subscribe(
             value => {
                 if (value !== null) {
@@ -68,7 +69,7 @@ export class ChipsSearchContributor extends Contributor {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
-
+        // Subscribe to the removeWordEvent to remove a chip  and set filter in collaborativeSearcheService
         this.removeWordEvent.subscribe(
             value => {
                 this.wordToCount.delete(value);
@@ -79,7 +80,7 @@ export class ChipsSearchContributor extends Contributor {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
-
+        // Subscribe to the collaborationBus to update count value in chips
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
@@ -109,12 +110,10 @@ export class ChipsSearchContributor extends Contributor {
                             },
                             () => this.wordsSubject.next(this.wordToCount)
                         );
-
                     } else {
                         this.wordToCount.clear();
                         this.wordsSubject.next(this.wordToCount);
                     }
-
                 }
             },
             error => {
