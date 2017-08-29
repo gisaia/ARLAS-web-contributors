@@ -82,7 +82,7 @@ export class DetailedDataRetriever {
 }
 
 export class ResultListContributor extends Contributor {
-    public data: Array<Map<string, string | number | Date>>;
+    public data: Array<Map<string, string | number | Date>> = new Array<Map<string, string | number | Date>>();
     public fieldsList: Array<{ columnName: string, fieldName: string, dataType: string }> = [];
     public detailedDataRetriever = new DetailedDataRetriever();
     public actionList: Array<Action> = [];
@@ -90,6 +90,7 @@ export class ResultListContributor extends Contributor {
     public downloadAction: Action;
     public consultActionSubjects: Array<Subject<string>> = [];
     private downloadActionBus: Subject<IdObject> = new Subject<IdObject>();
+    private sort:Sort= {};
     constructor(
         identifier: string,
         public idFieldName: string,
@@ -100,6 +101,7 @@ export class ResultListContributor extends Contributor {
         private sortColumnsEvent: Subject<{ fieldName: string, sortDirection: SortEnum }>,
         private setFiltersEvent: Subject<Map<string, string | number | Date>>,
         private consultedItemEvent: Subject<string>,
+        private moreDataEvent: Subject<any>,
         public collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -120,6 +122,7 @@ export class ResultListContributor extends Contributor {
             action.action.actionBus.next(action.productIdentifier);
         });
         this.setFiltersEvent.subscribe(filterMap => {
+            console.log(filterMap.size)
             if (filterMap.size === 0) {
                 this.collaborativeSearcheService.removeFilter(this.identifier);
 
@@ -155,6 +158,7 @@ export class ResultListContributor extends Contributor {
                     'sort': prefix + s.fieldName
                 };
             }
+            this.sort=sort;
             this.feedTable(sort);
         });
 
@@ -163,6 +167,11 @@ export class ResultListContributor extends Contributor {
                 o.next(value);
             })
         );
+
+
+        this.moreDataEvent.subscribe(from => {
+            this.feedTable(this.sort,from*this.getConfigValue('search_size'))
+        });
 
         this.downloadAction = {
             id: 'download',
@@ -237,13 +246,23 @@ export class ResultListContributor extends Contributor {
         FileSaver.saveAs(file, name);
     }
 
-    private feedTable(sort?: Sort) {
+    private feedTable(sort?: Sort, from?: number) {
+        console.log(from)
         let searchResult: Observable<Hits>;
         const projection: Projection = {};
         let includesvalue = '';
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
         if (sort) {
             search.sort = sort;
+        }
+        if (from) {
+            if (from === 0) {
+                this.data = new Array<Map<string, string | number | Date>>();
+            }else{
+                search.size.from=from;
+            }
+        } else {
+            this.data = new Array<Map<string, string | number | Date>>();
         }
         this.fieldsList = [];
         Object.keys(this.getConfigValue('columns')).forEach(element => {
@@ -252,7 +271,6 @@ export class ResultListContributor extends Contributor {
         });
         search.projection = projection;
         projection.includes = includesvalue.substring(1);
-        this.data = new Array<Map<string, string | number | Date>>();
         searchResult = this.collaborativeSearcheService.resolveButNot([projType.search, search]);
         searchResult.subscribe(value => {
             if (value.nbhits > 0) {
