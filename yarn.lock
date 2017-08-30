@@ -14,9 +14,9 @@
   dependencies:
     tslib "^1.7.1"
 
-"@gisaia-team/arlas-web-core@0.1.0-dev15":
-  version "0.1.0-dev15"
-  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.1.0-dev15.tgz#403a5c19add6596885c1f3bbd1e826e8cb6c986d"
+"@gisaia-team/arlas-web-core@0.1.0-dev16":
+  version "0.1.0-dev16"
+  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.1.0-dev16.tgz#1703848fa50c0e37f374702e641bad87c56d381f"
   dependencies:
     "@angular/core" "^4.0.0"
     "@angular/http" "^4.0.0"
