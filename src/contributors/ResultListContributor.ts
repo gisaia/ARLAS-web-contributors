@@ -155,7 +155,7 @@ export class ResultListContributor extends Contributor {
                 this.feedTable();
             },
             error => {
-                this.collaborativeSearcheService.collaborationErrorBus.next((error));
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
         // Subscribe to the actionOnItemEvent to notify the actionBus of the sending Action
@@ -293,6 +293,7 @@ export class ResultListContributor extends Contributor {
     * @param from option in  Arlas Search Parameter
     */
     private feedTable(sort?: Sort, from?: number) {
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         let searchResult: Observable<Hits>;
         const projection: Projection = {};
         let includesvalue = '';
@@ -317,28 +318,31 @@ export class ResultListContributor extends Contributor {
         search.projection = projection;
         projection.includes = includesvalue.substring(1);
         searchResult = this.collaborativeSearcheService.resolveButNot([projType.search, search]);
-        searchResult.subscribe(value => {
-            if (value.nbhits > 0) {
-                value.hits.forEach(h => {
-                    const map = new Map<string, string | number | Date>();
-                    this.fieldsList.forEach(element => {
-                        const result: string = getElementFromJsonObject(h.data, element.fieldName);
-                        const process: string = this.getConfigValue('process')[element.fieldName]['process'];
-                        let resultValue = null;
-                        if (process.trim().length > 0) {
-                            resultValue = eval(this.getConfigValue('process')[element.fieldName]['process']);
-                        } else {
-                            resultValue = result;
+        searchResult.subscribe(
+            value => {
+                if (value.nbhits > 0) {
+                    value.hits.forEach(h => {
+                        const map = new Map<string, string | number | Date>();
+                        this.fieldsList.forEach(element => {
+                            const result: string = getElementFromJsonObject(h.data, element.fieldName);
+                            const process: string = this.getConfigValue('process')[element.fieldName]['process'];
+                            let resultValue = null;
+                            if (process.trim().length > 0) {
+                                resultValue = eval(this.getConfigValue('process')[element.fieldName]['process']);
+                            } else {
+                                resultValue = result;
 
-                        }
-                        map.set(element.fieldName, resultValue);
+                            }
+                            map.set(element.fieldName, resultValue);
+                        });
+                        this.data.push(map);
                     });
-                    this.data.push(map);
-                });
+                }
+            },
+            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); },
+            () => {
+                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
             }
-        });
-
+        );
     }
-
-
 }

@@ -70,14 +70,18 @@ export class HistogramContributor extends Contributor {
         // Register the contributor in collaborativeSearcheService registry
         this.collaborativeSearcheService.register(this.identifier, this);
         // Subscribe to the collaborationBus to draw the chart on each changement
-        this.collaborativeSearcheService.collaborationBus.subscribe(contributorId => {
-            if (contributorId !== this.identifier) {
-                if (this.chartData !== null && this.chartData !== undefined) {
-                    this.plotChart();
+        this.collaborativeSearcheService.collaborationBus.subscribe(
+            contributorId => {
+                if (contributorId !== this.identifier) {
+                    if (this.chartData !== null && this.chartData !== undefined) {
+                        this.plotChart();
+                    }
                 }
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
-        },
-            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); });
+        );
     }
     /**
     * Get valueChangedEvent.
@@ -155,6 +159,7 @@ export class HistogramContributor extends Contributor {
     * Plot chart data and next intervalSelection to replot selection  .
     */
     private plotChart() {
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         const data: Observable<AggregationResponse> = this.collaborativeSearcheService.resolveButNot(
             [projType.aggregate, [this.aggregation]],
             this.identifier
@@ -190,6 +195,8 @@ export class HistogramContributor extends Contributor {
                 if (interval.endvalue !== null && interval.startvalue !== null) {
                     this.intervalSelection.next(interval);
                 }
+                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+
             }
         );
     }

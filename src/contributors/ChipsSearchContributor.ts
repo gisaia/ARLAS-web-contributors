@@ -84,6 +84,7 @@ export class ChipsSearchContributor extends Contributor {
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
+                    this.collaborativeSearcheService.ongoingSubscribe.next(1);
                     const tabOfCount: Array<Observable<[Hits, string]>> = [];
                     const f = this.collaborativeSearcheService.getFilter(this.identifier);
                     if (f !== null) {
@@ -108,11 +109,16 @@ export class ChipsSearchContributor extends Contributor {
                             error => {
                                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
                             },
-                            () => this.wordsSubject.next(this.wordToCount)
+                            () => {
+                                this.wordsSubject.next(this.wordToCount);
+                                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                            }
                         );
                     } else {
                         this.wordToCount.clear();
                         this.wordsSubject.next(this.wordToCount);
+                        this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+
                     }
                 }
             },
