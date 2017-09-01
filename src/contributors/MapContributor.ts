@@ -1,9 +1,9 @@
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { Search, Expression, Hits } from 'arlas-api';
+import { Search, Expression, Hits, AggregationResponse, Aggregation } from 'arlas-api';
 import { Size } from 'arlas-api';
-import { Filter } from 'arlas-api';
+import { Filter, FeatureCollection } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Action, ProductIdentifier } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
@@ -35,6 +35,19 @@ export class MapContributor extends Contributor {
         actionBus: this.removeLayerActionDetailBus
     }];
     /**
+    * .
+    */
+    public geohashMapData: Map<string, [number, number]> = new Map<string, [number, number]>();
+    /**
+    * .
+    */
+    public maxValueGeoHash = 0;
+    /**
+    /**
+    * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
+    */
+    private aggregation: Aggregation = this.getConfigValue('aggregationmodel');
+    /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
     * @param selectedBbox  @Output of Angular MapComponent, send the Bbox of a rectangle of selection draw on the map when it changes.
@@ -62,6 +75,34 @@ export class MapContributor extends Contributor {
         // Subscribe to the collaborationBus to sent removeBbox bbox event if the contributor is removed
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
+                this.collaborativeSearcheService.ongoingSubscribe.next(1);
+                const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNot(
+                    [projType.geoaggregate, [this.aggregation]]
+                );
+                geoAggregateData.subscribe(
+                    value => {
+                        value.features.forEach(feature => {
+                            if (this.maxValueGeoHash <= feature.properties.count) {
+                                this.maxValueGeoHash = feature.properties.count;
+                            }
+                            this.geohashMapData.set(feature.properties.geohash, [feature.properties.count, 0])
+                        });
+                        this.geohashMapData.forEach((k, v) => {
+                            if (k[1] === 0) {
+                                this.geohashMapData.set(v, [k[0], this.maxValueGeoHash]);
+                            } else {
+                                this.geohashMapData.delete(v);
+                            }
+                        })
+                        this.maxValueGeoHash = 0;
+                    },
+                    error => {
+                        this.collaborativeSearcheService.collaborationErrorBus.next(error);
+                    },
+                    () => {
+                        this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                    }
+                );
                 if (contributorId !== this.identifier) {
                     if (contributorId === 'remove-all' || contributorId === 'remove-' + this.identifier) {
                         this.removeBbox.next(true);
