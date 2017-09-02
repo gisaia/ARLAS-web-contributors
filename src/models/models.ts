@@ -1,4 +1,7 @@
 import { Subject } from 'rxjs/Subject';
+export enum triggerType {
+    onclick, onconsult
+}
 /**
  * Action trigger by a contributor through the app or another contributor.
  * - id of action.
@@ -9,6 +12,7 @@ export interface Action {
     id: string;
     label: string;
     actionBus: Subject<ProductIdentifier>;
+    triggerType?: triggerType.onclick | triggerType.onconsult;
 }
 /**
  * Couple of field/value id product, use to retrieve the product.

@@ -5,7 +5,7 @@ import { Search, Expression, Hits, AggregationResponse, Aggregation } from 'arla
 import { Size } from 'arlas-api';
 import { Filter, FeatureCollection } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Action, ProductIdentifier } from '../models/models';
+import { Action, ProductIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
 import { projType } from 'arlas-web-core/models/projections';
 /**
@@ -23,21 +23,33 @@ export class MapContributor extends Contributor {
     */
     public removeLayerActionDetailBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
     /**
+     * Action subject nexted on hightlight action trigger, subscribe by the contributor to send data to consultItemLayerActionBus.
+    */
+    public consultItemLayerActionBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
+    /**
      * List of actions that the contributor can trigger.
     */
     public actions: Array<Action> = [{
         id: 'showonmap',
         label: 'Show on map',
-        actionBus: this.addLayerActionrDetailBus
+        actionBus: this.addLayerActionrDetailBus,
+        triggerType: triggerType.onclick
     }, {
         id: 'removefrommap',
         label: 'Remove from map',
-        actionBus: this.removeLayerActionDetailBus
+        actionBus: this.removeLayerActionDetailBus,
+        triggerType: triggerType.onclick
+    }, {
+        id: 'hightlight',
+        label: 'hightlight',
+        actionBus: this.consultItemLayerActionBus,
+        triggerType: triggerType.onconsult
     }];
     /**
     * .
     */
     public geohashMapData: Map<string, [number, number]> = new Map<string, [number, number]>();
+    public detailItemMapData: Map<string, [string, boolean]> = new Map<string, [string, boolean]>();
     /**
     * .
     */
@@ -50,22 +62,13 @@ export class MapContributor extends Contributor {
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param selectedBbox  @Output of Angular MapComponent, send the Bbox of a rectangle of selection draw on the map when it changes.
-    * @param removeBbox  @Output of Angular MapComponent, send true when the rectangle of selection is removed.
-    * @param addLayerDetailBus  @Output of Angular MapComponent, send a {geometry: string,id: string} when the showonmap action is called.
-    * @param removeLayerDetailBus  @Output of Angular MapComponent, send a sring id when the removefrommap action is called.
+    * @param onRemoveBboxBus  @Output of Angular MapComponent, send true when the rectangle of selection is removed.
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
         public identifier,
-        private selectedBbox: Subject<Array<number>>,
-        private removeBbox: Subject<boolean>,
-        private addLayerDetailBus: Subject<{
-            geometry: string,
-            id: string
-        }>,
-        private removeLayerDetailBus: Subject<string>,
+        private onRemoveBboxBus: Subject<boolean>,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -85,7 +88,7 @@ export class MapContributor extends Contributor {
                             if (this.maxValueGeoHash <= feature.properties.count) {
                                 this.maxValueGeoHash = feature.properties.count;
                             }
-                            this.geohashMapData.set(feature.properties.geohash, [feature.properties.count, 0])
+                            this.geohashMapData.set(feature.properties.geohash, [feature.properties.count, 0]);
                         });
                         this.geohashMapData.forEach((k, v) => {
                             if (k[1] === 0) {
@@ -93,7 +96,7 @@ export class MapContributor extends Contributor {
                             } else {
                                 this.geohashMapData.delete(v);
                             }
-                        })
+                        });
                         this.maxValueGeoHash = 0;
                     },
                     error => {
@@ -105,41 +108,13 @@ export class MapContributor extends Contributor {
                 );
                 if (contributorId !== this.identifier) {
                     if (contributorId === 'remove-all' || contributorId === 'remove-' + this.identifier) {
-                        this.removeBbox.next(true);
+                        this.onRemoveBboxBus.next(true);
                     }
                 }
-                this.removeLayerDetailBus.next('all');
+                this.detailItemMapData.clear();
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
-            }
-        );
-        // Subscribe to the selectedBbox to set a new filter on the collaborativeSearcheService
-        this.selectedBbox.subscribe(
-            value => {
-                let pwithin = '';
-                value.forEach(v => pwithin = pwithin + ',' + v);
-                const filters: Filter = {
-                    pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
-                };
-                const data: Collaboration = {
-                    filter: filters,
-                    enabled: true
-                };
-                this.collaborativeSearcheService.setFilter(this.identifier, data);
-            },
-            error => {
-                this.collaborativeSearcheService.collaborationErrorBus.next(error);
-            }
-        );
-        // Subscribe to the removeBbox to remove filter in collaborativeSearcheService
-        this.removeBbox.subscribe(
-            value => {
-                if (value) {
-                    if (this.collaborativeSearcheService.getFilter(this.identifier) !== null) {
-                        this.collaborativeSearcheService.removeFilter(this.identifier);
-                    };
-                }
             }
         );
         // Subscribe to the addLayerActionrDetailBus to send data to addLayerDetailBus
@@ -158,17 +133,24 @@ export class MapContributor extends Contributor {
             searchResult = this.collaborativeSearcheService.resolve([projType.search, search], null, filter);
             searchResult.subscribe(h => {
                 const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
-                this.addLayerDetailBus.next(
-                    {
-                        geometry: geojsonData,
-                        id: id.idValue
-                    }
-                );
+                this.detailItemMapData.set(id.idValue, [geojsonData, false]);
             });
         });
         // Subscribe to the addLayerActionrDetailBus to send data to addLayerDetailBus
         this.removeLayerActionDetailBus.subscribe(id => {
-            this.removeLayerDetailBus.next(id.idValue);
+            this.detailItemMapData.delete(id.idValue);
+        });
+        this.consultItemLayerActionBus.subscribe(p => {
+            let isleaving = false;
+            let id = p.idValue;
+            if (id.split('-')[0] === 'leave') {
+                id = id.split('-')[1];
+                isleaving = true;
+            }
+            if (this.detailItemMapData.get(id) !== undefined) {
+                const geojsonData = this.detailItemMapData.get(id)[0];
+                this.detailItemMapData.set(id, [geojsonData, isleaving]);
+            }
         });
     }
     /**
@@ -182,5 +164,25 @@ export class MapContributor extends Contributor {
     */
     public getFilterDisplayName(): string {
         return 'GeoBox';
+    }
+    public onChangeBbox(newBbox: Array<number>) {
+        let pwithin = '';
+        newBbox.forEach(v => pwithin = pwithin + ',' + v);
+        const filters: Filter = {
+            pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
+        };
+        const data: Collaboration = {
+            filter: filters,
+            enabled: true
+        };
+        this.collaborativeSearcheService.setFilter(this.identifier, data);
+    }
+
+    public onRemoveBbox(isBboxRemoved: boolean) {
+        if (isBboxRemoved) {
+            if (this.collaborativeSearcheService.getFilter(this.identifier) !== null) {
+                this.collaborativeSearcheService.removeFilter(this.identifier);
+            };
+        }
     }
 }

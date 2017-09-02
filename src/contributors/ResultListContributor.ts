@@ -5,7 +5,7 @@ import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { projType } from 'arlas-web-core/models/projections';
 import { Filter, Hits, Search, Size, Expression, Sort, Projection } from 'arlas-api';
 import { getElementFromJsonObject, isArray, feedDetailledMap, download } from '../utils/utils';
-import { Action, ProductIdentifier } from '../models/models';
+import { Action, ProductIdentifier, triggerType } from '../models/models';
 /**
 * Enum of sorting value define in Arlas-web-components
 */
@@ -53,7 +53,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 const confEntrie = details[element];
                 feedDetailledMap(element, detailedDataMap, confEntrie, c.hits[0].data);
             });
-            const objectResult = { details: detailedDataMap, actions: this.contributor.actionToTrigger };
+            const objectResult = { details: detailedDataMap, actions: this.contributor.actionToTriggerOnClick };
             return objectResult;
         });
         return obs;
@@ -92,9 +92,13 @@ export class ResultListContributor extends Contributor {
     */
     public detailedDataRetriever = new ResultListDetailedDataRetriever();
     /**
-    * List of actions, from all the contributors of the app, which we could trigger in the ResultListComponent.
+    * List of actions, from all the contributors of the app, which we could trigger on click in the ResultListComponent.
     */
-    public actionToTrigger: Array<Action> = [];
+    public actionToTriggerOnClick: Array<Action> = [];
+    /**
+    * List of actions, from all the contributors of the app, which we could trigger on consult in the ResultListComponent.
+    */
+    public actionToTriggerOnConsult: Array<Action> = [];
     /**
      * Action subject nexted on download trigger, subscribe by the ResultListContributor to download detail data.
     */
@@ -105,12 +109,9 @@ export class ResultListContributor extends Contributor {
     public actions: Array<Action> = [{
         id: 'download',
         label: 'Download',
-        actionBus: this.downloadActionBus
+        actionBus: this.downloadActionBus,
+        triggerType: triggerType.onclick
     }];
-    /**
-     * Array of action on consult subject, when consultedItemEvent is trigger each bus is notifiy whith the identifier of consulted line.
-    */
-    public consultActionSubjects: Array<Subject<string>> = [];
     /**
      * Sort parameter of the list.
     */
@@ -137,7 +138,7 @@ export class ResultListContributor extends Contributor {
         }>,
         private sortColumnsEvent: Subject<{ fieldName: string, sortDirection: SortEnum }>,
         private setFiltersEvent: Subject<Map<string, string | number | Date>>,
-        private consultedItemEvent: Subject<string>,
+        private consultedItemEvent: Subject<ProductIdentifier>,
         private moreDataEvent: Subject<number>,
         public collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
@@ -200,10 +201,10 @@ export class ResultListContributor extends Contributor {
             this.sort = sort;
             this.feedTable(sort);
         });
-        // Subscribe to the consultedItemEvent to notify all the define consultActionSubjects
+        // Subscribe to the consultedItemEvent to notify all the define actionToTriggerOnConsult
         this.consultedItemEvent.subscribe(value =>
-            this.consultActionSubjects.forEach(o => {
-                o.next(value);
+            this.actionToTriggerOnConsult.forEach(action => {
+                action.actionBus.next(value);
             })
         );
         // Subscribe to the moreDataEvent to add data in the list when the scroll is down
@@ -254,8 +255,11 @@ export class ResultListContributor extends Contributor {
     * @param action action to add
     */
     public addAction(action: Action) {
-        if (this.actionToTrigger.indexOf(action, 0) < 0) {
-            this.actionToTrigger.push(action);
+        if (this.actionToTriggerOnClick.indexOf(action, 0) < 0 && action.triggerType === triggerType.onclick) {
+            this.actionToTriggerOnClick.push(action);
+        }
+        if (this.actionToTriggerOnConsult.indexOf(action, 0) < 0 && action.triggerType === triggerType.onconsult) {
+            this.actionToTriggerOnConsult.push(action);
         }
     }
     /**
@@ -263,28 +267,13 @@ export class ResultListContributor extends Contributor {
     * @param action action to remove
     */
     public removeAction(action: Action) {
-        const index = this.actionToTrigger.indexOf(action, 0);
-        if (index > -1) {
-            this.actionToTrigger.splice(index, 1);
+        const indexOnClick = this.actionToTriggerOnClick.indexOf(action, 0);
+        if (indexOnClick > -1) {
+            this.actionToTriggerOnClick.splice(indexOnClick, 1);
         }
-    }
-    /**
-    * Method to add Subject<string> in consultActionsSubject
-    * @param consultActionsSubject action to add
-    */
-    public addConsultActionSubject(consultActionsSubject: Subject<string>) {
-        if (this.consultActionSubjects.indexOf(consultActionsSubject, 0) < 0) {
-            this.consultActionSubjects.push(consultActionsSubject);
-        }
-    }
-    /**
-    * Method to add Subject<string> in consultActionsSubject
-    * @param consultActionsSubject action to add
-    */
-    public removeConsultActionSubject(consultActionsSubject: Subject<string>) {
-        const index = this.consultActionSubjects.indexOf(consultActionsSubject, 0);
-        if (index > -1) {
-            this.consultActionSubjects.splice(index, 1);
+        const indexOnConsult = this.actionToTriggerOnConsult.indexOf(action, 0);
+        if (indexOnConsult > -1) {
+            this.actionToTriggerOnConsult.splice(indexOnConsult, 1);
         }
     }
     /**
