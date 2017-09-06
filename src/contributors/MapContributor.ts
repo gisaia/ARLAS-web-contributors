@@ -25,7 +25,7 @@ export class MapContributor extends Contributor {
     /**
      * Action subject nexted on hightlight action trigger, subscribe by the contributor to send data to consultItemLayerActionBus.
     */
-    public consultItemLayerActionBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
+    public hightlightLayerActionBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
     /**
      * List of actions that the contributor can trigger.
     */
@@ -42,18 +42,20 @@ export class MapContributor extends Contributor {
     }, {
         id: 'hightlight',
         label: 'hightlight',
-        actionBus: this.consultItemLayerActionBus,
+        actionBus: this.hightlightLayerActionBus,
         triggerType: triggerType.onconsult
     }];
     /**
-    * .
+    * Data to display analytics geohaah, use in MapComponent @Input
     */
     public geohashMapData: Map<string, [number, number]> = new Map<string, [number, number]>();
-    public detailItemMapData: Map<string, [string, boolean]> = new Map<string, [string, boolean]>();
     /**
-    * .
+    * Data to display geosjon data, use in MapComponent @Input
     */
-    public maxValueGeoHash = 0;
+    public detailItemMapData: Map<string, [string, boolean]> = new Map<string, [string, boolean]>();
+
+
+    private maxValueGeoHash = 0;
     /**
     /**
     * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
@@ -75,37 +77,11 @@ export class MapContributor extends Contributor {
         super(identifier, configService);
         // Register the contributor in collaborativeSearcheService registry
         this.collaborativeSearcheService.register(this.identifier, this);
+        this.drawGeoHash();
         // Subscribe to the collaborationBus to sent removeBbox bbox event if the contributor is removed
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
-                this.collaborativeSearcheService.ongoingSubscribe.next(1);
-                const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNot(
-                    [projType.geoaggregate, [this.aggregation]]
-                );
-                geoAggregateData.subscribe(
-                    value => {
-                        value.features.forEach(feature => {
-                            if (this.maxValueGeoHash <= feature.properties.count) {
-                                this.maxValueGeoHash = feature.properties.count;
-                            }
-                            this.geohashMapData.set(feature.properties.geohash, [feature.properties.count, 0]);
-                        });
-                        this.geohashMapData.forEach((k, v) => {
-                            if (k[1] === 0) {
-                                this.geohashMapData.set(v, [k[0], this.maxValueGeoHash]);
-                            } else {
-                                this.geohashMapData.delete(v);
-                            }
-                        });
-                        this.maxValueGeoHash = 0;
-                    },
-                    error => {
-                        this.collaborativeSearcheService.collaborationErrorBus.next(error);
-                    },
-                    () => {
-                        this.collaborativeSearcheService.ongoingSubscribe.next(-1);
-                    }
-                );
+                this.drawGeoHash();
                 if (contributorId !== this.identifier) {
                     if (contributorId === 'remove-all' || contributorId === 'remove-' + this.identifier) {
                         this.onRemoveBboxBus.next(true);
@@ -140,7 +116,7 @@ export class MapContributor extends Contributor {
         this.removeLayerActionDetailBus.subscribe(id => {
             this.detailItemMapData.delete(id.idValue);
         });
-        this.consultItemLayerActionBus.subscribe(p => {
+        this.hightlightLayerActionBus.subscribe(p => {
             let isleaving = false;
             let id = p.idValue;
             if (id.split('-')[0] === 'leave') {
@@ -184,5 +160,36 @@ export class MapContributor extends Contributor {
                 this.collaborativeSearcheService.removeFilter(this.identifier);
             };
         }
+    }
+    private drawGeoHash() {
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
+        const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNot(
+            [projType.geoaggregate, [this.aggregation]]
+        );
+        geoAggregateData.finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1)).subscribe(
+            value => {
+                if (value.features !== undefined) {
+                    value.features.forEach(feature => {
+                        if (this.maxValueGeoHash <= feature.properties.count) {
+                            this.maxValueGeoHash = feature.properties.count;
+                        }
+                        this.geohashMapData.set(feature.properties.geohash, [feature.properties.count, 0]);
+                    });
+                    this.geohashMapData.forEach((k, v) => {
+                        if (k[1] === 0) {
+                            this.geohashMapData.set(v, [k[0], this.maxValueGeoHash]);
+                        } else {
+                            this.geohashMapData.delete(v);
+                        }
+                    });
+                    this.maxValueGeoHash = 0;
+                } else {
+                    this.geohashMapData.clear();
+                }
+            },
+            error => {
+                this.collaborativeSearcheService.collaborationErrorBus.next(error);
+            }
+        );
     }
 }

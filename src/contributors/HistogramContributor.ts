@@ -141,7 +141,7 @@ export class HistogramContributor extends Contributor {
         let displayName = '';
         const name = this.getConfigValue('name');
         if (this.aggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
-            displayName = '[' + this.startValue + '-' + this.endValue + ']';
+            displayName = 'Timeline';
         } else if (this.aggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Histogram.toString().toLocaleLowerCase()) {
             displayName = this.startValue + ' < ' + name + ' < ' + this.endValue;
         } else {
@@ -165,7 +165,8 @@ export class HistogramContributor extends Contributor {
             this.identifier
         );
         const dataTab = new Array<{ key: number, value: number }>();
-        data.subscribe(
+        data.finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1))
+            .subscribe(
             value => {
                 if (value.totalnb > 0) {
                     value.elements.forEach(element => {
@@ -195,10 +196,8 @@ export class HistogramContributor extends Contributor {
                 if (interval.endvalue !== null && interval.startvalue !== null) {
                     this.intervalSelection.next(interval);
                 }
-                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
-
             }
-        );
+            );
     }
     /**
     * Subscribe to valueChangedEvent to set filter on collaborativeSearcheService
@@ -226,12 +225,12 @@ export class HistogramContributor extends Contributor {
                 };
                 const startExpression: Expression = {
                     field: this.field,
-                    op: Expression.OpEnum.Gt,
+                    op: Expression.OpEnum.Gte,
                     value: start.toString()
                 };
                 const endExpression: Expression = {
                     field: this.field,
-                    op: Expression.OpEnum.Lt,
+                    op: Expression.OpEnum.Lte,
                     value: end.toString()
                 };
                 const filterValue: Filter = {
