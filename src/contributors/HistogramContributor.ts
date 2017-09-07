@@ -25,15 +25,15 @@ export interface SelectedOutputValues {
 */
 export class HistogramContributor extends Contributor {
     /**
-    * Observable which emits when new data need to be draw on the histogram (could be set to
+    * New data need to be draw on the histogram (could be set to
     @Input() data of HistogramComponent
     */
-    private chartData: Array<{ key: number, value: number }> = new Array<{ key: number, value: number }>();
+    public chartData: Array<{ key: number, value: number }> = new Array<{ key: number, value: number }>();
     /**
-    * Observable which emits when new selection need to be draw on the histogram (could be set to
+    * New selection need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
     */
-    private intervalSelection: SelectedOutputValues;
+    public intervalSelection: SelectedOutputValues;
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
