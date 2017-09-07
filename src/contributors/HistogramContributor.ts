@@ -89,7 +89,7 @@ export class HistogramContributor extends Contributor {
         if (this.aggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
             displayName = 'Timeline';
         } else if (this.aggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Histogram.toString().toLocaleLowerCase()) {
-            displayName = this.startValue + ' < ' + name + ' < ' + this.endValue;
+            displayName = this.startValue + ' <= ' + name + ' <= ' + this.endValue;
         } else {
             displayName = name;
         }

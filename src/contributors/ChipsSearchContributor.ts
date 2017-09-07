@@ -102,6 +102,8 @@ export class ChipsSearchContributor extends Contributor {
     public addWord(value: any) {
         if (value !== null) {
             if (value.length > 0) {
+                this.chipMapData.set(value, 0);
+                this.setFilterFromMap();
                 const filter: Filter = {
                     q: value
                 };
@@ -113,7 +115,6 @@ export class ChipsSearchContributor extends Contributor {
                 countData.subscribe(
                     count => {
                         this.chipMapData.set(value, count.totalnb);
-                        this.setFilterFromMap();
                     }
                 );
             }
