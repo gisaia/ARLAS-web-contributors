@@ -25,20 +25,15 @@ export interface SelectedOutputValues {
 */
 export class HistogramContributor extends Contributor {
     /**
-    * Observable which emits when the range selection changes on the histogram (could be set to
-    @Output() valuesChangedEvent of HistogramComponent
-    */
-    private valueChangedEvent: Subject<SelectedOutputValues>;
-    /**
     * Observable which emits when new data need to be draw on the histogram (could be set to
     @Input() data of HistogramComponent
     */
-    private chartData: Subject<Array<{ key: number, value: number }>>;
+    private chartData: Array<{ key: number, value: number }> = new Array<{ key: number, value: number }>();
     /**
     * Observable which emits when new selection need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
     */
-    private intervalSelection: Subject<SelectedOutputValues>;
+    private intervalSelection: SelectedOutputValues;
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
@@ -55,6 +50,8 @@ export class HistogramContributor extends Contributor {
     * End value of selection use to the display of filterDisplayName
     */
     private endValue: string;
+
+    private maxCount = 0;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -63,76 +60,25 @@ export class HistogramContributor extends Contributor {
     */
     constructor(
         identifier: string,
+        private dateUnit: DateUnit.millisecond | DateUnit.millisecond,
         private collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService
+        configService: ConfigService, private isOneDimension?: boolean
     ) {
         super(identifier, configService);
         // Register the contributor in collaborativeSearcheService registry
         this.collaborativeSearcheService.register(this.identifier, this);
+        this.plotChart();
         // Subscribe to the collaborationBus to draw the chart on each changement
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
-                    if (this.chartData !== null && this.chartData !== undefined) {
-                        this.plotChart();
-                    }
+                    this.plotChart();
                 }
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
-    }
-    /**
-    * Get valueChangedEvent.
-    * @return observable of SelectedOutputValues
-    */
-    public getValueChangedEvent() {
-        return this.valueChangedEvent;
-    }
-    /**
-    * Set valueChangedEvent and subscribe to, to set filter in collaborativeSearcheService.
-    * @param valueChangedEvent observable of SelectedOutputValues (@Output() valuesChangedEvent of HistogramComponent)
-    * @param dateType DateType enum value
-    */
-    public setValueChangedEvent(valueChangedEvent: Subject<SelectedOutputValues>, dateType: DateUnit.millisecond | DateUnit.second) {
-        if (valueChangedEvent !== null) {
-            this.valueChangedEvent = valueChangedEvent;
-            this.setFilterFromValueChanged(dateType);
-        }
-    }
-    /**
-    * Get chartData.
-    * @return observable of Array { key: number, value: number }  to draw the chart
-    */
-    public getCharData() {
-        return this.chartData;
-    }
-    /**
-    * Set chartData and next on to draw the chart
-    * @param chartData observable of SelectedOutputValues (@Input() data of HistogramComponent)
-    */
-    public setCharData(chartData: Subject<Array<{ key: number, value: number }>>) {
-        if (chartData !== null) {
-            this.chartData = chartData;
-            this.plotChart();
-        }
-    }
-    /**
-    * Get valueChangedEvent.
-    * @return observable of intervalSelection
-    */
-    public getIntervalSelection() {
-        return this.intervalSelection;
-    }
-    /**
-    * Set chartData and next on to draw the chart
-    * @param intervalSelection observable of SelectedOutputValues (@Input() intervalSelection of HistogramComponent)
-    */
-    public setIntervalSelection(intervalSelection: Subject<SelectedOutputValues>) {
-        if (intervalSelection !== null) {
-            this.intervalSelection = intervalSelection;
-        }
     }
     /**
     * @returns Pretty name of contribution based on startValue/endValue properties
@@ -156,8 +102,50 @@ export class HistogramContributor extends Contributor {
         return 'catalog.web.app.components.histogram';
     }
     /**
-    * Plot chart data and next intervalSelection to replot selection  .
+    * Subscribe to valueChangedEvent to set filter on collaborativeSearcheService
+    * @param dateType DateType.millisecond | DateType.second
     */
+    public valueChanged(value: SelectedOutputValues) {
+        let end = value.endvalue;
+        let start = value.startvalue;
+        if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
+            const endDate = new Date(value.endvalue.toString());
+            const startDate = new Date(value.startvalue.toString());
+            this.startValue = startDate.toLocaleString();
+            this.endValue = endDate.toLocaleString();
+            let multiplier = 1;
+            if (this.dateUnit.toString() === DateUnit.second.toString()) {
+                multiplier = 1000;
+            }
+            end = endDate.valueOf() / 1 * multiplier;
+            start = startDate.valueOf() / 1 * multiplier;
+        } else {
+            this.startValue = Math.round(<number>start).toString();
+            this.endValue = Math.round(<number>end).toString();
+        };
+        const startExpression: Expression = {
+            field: this.field,
+            op: Expression.OpEnum.Gte,
+            value: start.toString()
+        };
+        const endExpression: Expression = {
+            field: this.field,
+            op: Expression.OpEnum.Lte,
+            value: end.toString()
+        };
+        const filterValue: Filter = {
+            f: [startExpression, endExpression]
+        };
+        const data: Collaboration = {
+            filter: filterValue,
+            enabled: true
+        };
+        this.intervalSelection = value;
+        this.collaborativeSearcheService.setFilter(this.identifier, data);
+    }
+    /**
+* Plot chart data and next intervalSelection to replot selection  .
+*/
     private plotChart() {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         const data: Observable<AggregationResponse> = this.collaborativeSearcheService.resolveButNot(
@@ -170,10 +158,15 @@ export class HistogramContributor extends Contributor {
             value => {
                 if (value.totalnb > 0) {
                     value.elements.forEach(element => {
+                        if (this.maxCount <= element.count) {
+                            this.maxCount = element.count;
+                        }
                         dataTab.push({ key: element.key, value: element.count });
                     });
                 }
-                this.chartData.next(dataTab);
+                if (!this.isOneDimension || this.isOneDimension === undefined) {
+                    this.chartData = dataTab;
+                }
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
@@ -194,54 +187,15 @@ export class HistogramContributor extends Contributor {
                     interval.endvalue = <number>parseFloat(f.f[1].value);
                 }
                 if (interval.endvalue !== null && interval.startvalue !== null) {
-                    this.intervalSelection.next(interval);
+                    this.intervalSelection = interval;
+                }
+                if (this.isOneDimension) {
+                    dataTab.forEach(obj => {
+                        obj.value = obj.value / this.maxCount;
+                    });
+                    this.chartData = dataTab;
                 }
             }
             );
-    }
-    /**
-    * Subscribe to valueChangedEvent to set filter on collaborativeSearcheService
-    * @param dateType DateType.millisecond | DateType.second
-    */
-    private setFilterFromValueChanged(dateType: DateUnit.millisecond | DateUnit.second) {
-        this.valueChangedEvent.subscribe(
-            value => {
-                let end = value.endvalue;
-                let start = value.startvalue;
-                if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
-                    const endDate = new Date(value.endvalue.toString());
-                    const startDate = new Date(value.startvalue.toString());
-                    this.startValue = startDate.toLocaleString();
-                    this.endValue = endDate.toLocaleString();
-                    let multiplier = 1;
-                    if (dateType === DateUnit.second) {
-                        multiplier = 1000;
-                    }
-                    end = endDate.valueOf() / 1 * multiplier;
-                    start = startDate.valueOf() / 1 * multiplier;
-                } else {
-                    this.startValue = Math.round(<number>start).toString();
-                    this.endValue = Math.round(<number>end).toString();
-                };
-                const startExpression: Expression = {
-                    field: this.field,
-                    op: Expression.OpEnum.Gte,
-                    value: start.toString()
-                };
-                const endExpression: Expression = {
-                    field: this.field,
-                    op: Expression.OpEnum.Lte,
-                    value: end.toString()
-                };
-                const filterValue: Filter = {
-                    f: [startExpression, endExpression]
-                };
-                const data: Collaboration = {
-                    filter: filterValue,
-                    enabled: true
-                };
-                this.collaborativeSearcheService.setFilter(this.identifier, data);
-            },
-            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); });
     }
 }
