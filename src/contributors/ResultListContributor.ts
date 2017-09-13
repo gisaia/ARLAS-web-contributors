@@ -43,13 +43,15 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         const filter: Filter = {
             f: [expression]
         };
-        searchResult = this.contributor.collaborativeSearcheService.resolve([projType.search, search], this.contributor.identifier, filter);
+        searchResult = this.contributor.collaborativeSearcheService.resolveHits([
+            projType.search, search],
+            this.contributor.identifier, filter);
         const obs: Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> = searchResult.map(c => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details = this.contributor.getConfigValue('details');
-             Object.keys(details).forEach(group => {
+            Object.keys(details).forEach(group => {
                 const detailedDataMap = new Map<string, string>();
-                Object.keys( details[group]).forEach(element => {
+                Object.keys(details[group]).forEach(element => {
                     const confEntrie = details[group][element];
                     feedDetailledMap(element, detailedDataMap, confEntrie, c.hits[0].data);
                     detailsMap.set(group, detailedDataMap);
@@ -166,7 +168,7 @@ export class ResultListContributor extends Contributor {
                 f: [expression]
             };
             const actionsList = new Array<string>();
-            searchResult = this.collaborativeSearcheService.resolve([projType.search, search], null, filter);
+            searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], null, filter);
             searchResult.map(data => JSON.stringify(data)).subscribe(
                 data => {
                     download(data.toString(), id.idValue + '.json', 'text/json');
@@ -271,14 +273,14 @@ export class ResultListContributor extends Contributor {
     */
     public consultItem(item: ProductIdentifier) {
         this.actionToTriggerOnConsult.forEach(action => action.actionBus.next(item));
-    };
+    }
     /**
     * Method call when emit the output moreDataEvent
     * @param from· number of time that's scroll bar down
     */
     public getMoreData(from: number) {
         this.feedTable(this.sort, from * this.getConfigValue('search_size'));
-    };
+    }
     /**
     * Method to retrieve data from Arlas Server and update ResultList Component
     * @param sort sort option in  Arlas Search Parameter
@@ -309,7 +311,7 @@ export class ResultListContributor extends Contributor {
         });
         search.projection = projection;
         projection.includes = includesvalue.substring(1);
-        searchResult = this.collaborativeSearcheService.resolveButNot([projType.search, search]);
+        searchResult = this.collaborativeSearcheService.resolveButNotHits([projType.search, search]);
         searchResult
             .finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1))
             .subscribe(

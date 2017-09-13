@@ -38,7 +38,7 @@ export class ChipsSearchContributor extends Contributor {
             contributorId => {
                 if (contributorId !== this.identifier) {
                     this.collaborativeSearcheService.ongoingSubscribe.next(1);
-                    const tabOfCount: Array<Observable<[Hits, string]>> = [];
+                    const tabOfCount: Array<Observable<{ label: string, hits: Hits }>> = [];
                     let f = new Array<string>();
                     const fil = this.collaborativeSearcheService.getFilter(this.identifier);
                     if (fil != null) {
@@ -50,13 +50,15 @@ export class ChipsSearchContributor extends Contributor {
                                 const filter: Filter = {
                                     q: k
                                 };
-                                const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNot(
+                                const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
                                     [projType.count,
                                     {}],
                                     this.identifier,
                                     filter
                                 );
-                                tabOfCount.push(countData.map(c => [c, k]));
+                                tabOfCount.push(countData.map(c => {
+                                    return { label: k, hits: c };
+                                }));
                             }
                         });
                         Observable.from(tabOfCount)
@@ -64,7 +66,7 @@ export class ChipsSearchContributor extends Contributor {
                             .finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1))
                             .subscribe(
                             result => {
-                                this.chipMapData.set(result[1], result[0].totalnb);
+                                this.chipMapData.set(result.label, result.hits.totalnb);
                             },
                             error => {
                                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
@@ -78,7 +80,6 @@ export class ChipsSearchContributor extends Contributor {
                     } else {
                         this.chipMapData.clear();
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
-
                     }
                 }
             },
@@ -107,7 +108,7 @@ export class ChipsSearchContributor extends Contributor {
                 const filter: Filter = {
                     q: value
                 };
-                const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNot(
+                const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
                     [projType.count, {}],
                     this.identifier,
                     filter

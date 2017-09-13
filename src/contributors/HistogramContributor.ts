@@ -122,7 +122,7 @@ export class HistogramContributor extends Contributor {
         } else {
             this.startValue = Math.round(<number>start).toString();
             this.endValue = Math.round(<number>end).toString();
-        };
+        }
         const startExpression: Expression = {
             field: this.field,
             op: Expression.OpEnum.Gte,
@@ -148,11 +148,12 @@ export class HistogramContributor extends Contributor {
 */
     private plotChart() {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        const data: Observable<AggregationResponse> = this.collaborativeSearcheService.resolveButNot(
+        const data = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, [this.aggregation]],
             this.identifier
         );
         const dataTab = new Array<{ key: number, value: number }>();
+
         data.finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1))
             .subscribe(
             value => {
