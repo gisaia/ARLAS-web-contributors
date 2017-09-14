@@ -1,4 +1,3 @@
-image: node:6.0
 cache:
   paths:
   - node_modules/
@@ -7,7 +6,12 @@ before_script:
 lint:
   script:
   - npm run tslint
-build:
+arlas-web-contributors-doc:
   script:
-  - npm run build-release
+  - npm run build-release;mv dist/docs .
+  artifacts:
+    paths:
+    - docs
+    name: "arlas-web-contributors-doc"
+
 
