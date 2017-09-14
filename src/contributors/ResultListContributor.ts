@@ -7,7 +7,7 @@ import { Size } from 'arlas-api/model/Size';
 import { Sort } from 'arlas-api/model/Sort';
 import { Projection } from 'arlas-api/model/Projection';
 import { FeatureCollection } from 'arlas-api/model/FeatureCollection';
-import { Collaboration } from 'arlas-web-core/models/Collaboration';
+import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Hits } from 'arlas-api/model/Hits';
 import { Filter } from 'arlas-api/model/Filter';
 import { Aggregation } from 'arlas-api/model/Aggregation';

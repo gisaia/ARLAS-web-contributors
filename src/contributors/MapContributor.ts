@@ -4,7 +4,6 @@ import { Observable } from 'rxjs/Observable';
 import { Search } from 'arlas-api/model/Search';
 import { Size } from 'arlas-api/model/Size';
 import { FeatureCollection } from 'arlas-api/model/FeatureCollection';
-import { Collaboration } from 'arlas-web-core/models/Collaboration';
 import { Hits } from 'arlas-api/model/Hits';
 import { Filter } from 'arlas-api/model/Filter';
 import { Aggregation } from 'arlas-api/model/Aggregation';
@@ -13,6 +12,7 @@ import { AggregationResponse } from 'arlas-api/model/AggregationResponse';
 import { Action, ProductIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
 import { projType } from 'arlas-web-core/models/projections';
+import { Collaboration } from 'arlas-web-core/models/collaboration';
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
