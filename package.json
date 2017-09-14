@@ -1,6 +1,6 @@
 {
-  "name": "arlas-web-contributors",
-  "version": "0.1.0",
+  "name": "@gisaia-team/arlas-web-contributors",
+  "version": "0.2.0-dev0",
   "description": "Contributors Library for ARLAS Components",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -22,7 +22,7 @@
     "eslint": "^3.14.0",
     "rimraf": "^2.5.4",
     "tslint": "^4.3.1",
-    "typescript": "~2.3.3"
+    "typescript": "2.3.2"
   },
   "dependencies": {
     "arlas-web-core": "0.1.2",
@@ -31,7 +31,7 @@
     "gulp": "^3.9.1",
     "gulp-clean": "^0.3.2",
     "gulp-sourcemaps": "^2.6.0",
-    "gulp-typedoc": "^2.0.3",
+    "gulp-typedoc": "2.0.3",
     "run-sequence": "^2.0.0",
     "rxjs": "^5.4.2",
     "typedoc": "0.7.2"

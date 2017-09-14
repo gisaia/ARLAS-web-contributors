@@ -1,9 +1,17 @@
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { projType } from 'arlas-web-core/models/projections';
-import { Filter, Hits, Search, Size, Expression, Sort, Projection } from 'arlas-api';
+import { Search } from 'arlas-api/model/Search';
+import { Size } from 'arlas-api/model/Size';
+import { Sort } from 'arlas-api/model/Sort';
+import { Projection } from 'arlas-api/model/Projection';
+import { FeatureCollection } from 'arlas-api/model/FeatureCollection';
+import { Collaboration } from 'arlas-web-core/models/collaboration';
+import { Hits } from 'arlas-api/model/Hits';
+import { Filter } from 'arlas-api/model/Filter';
+import { Aggregation } from 'arlas-api/model/Aggregation';
+import { Expression } from 'arlas-api/model/Expression';
 import { getElementFromJsonObject, isArray, feedDetailledMap, download } from '../utils/utils';
 import { Action, ProductIdentifier, triggerType } from '../models/models';
 /**

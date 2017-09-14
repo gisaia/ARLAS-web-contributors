@@ -1,5 +1,6 @@
 import { CollaborativesearchService, ConfigService, Contributor, projType, Collaboration } from 'arlas-web-core';
-import { Filter, Hits } from 'arlas-api';
+import { Hits } from 'arlas-api/model/Hits';
+import { Filter } from 'arlas-api/model/Filter';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 
