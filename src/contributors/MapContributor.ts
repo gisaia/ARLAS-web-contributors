@@ -5,21 +5,13 @@ import { Search, Expression, Hits, AggregationResponse, Aggregation, Projection 
 import { Size } from 'arlas-api';
 import { Filter, FeatureCollection } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Action, ProductIdentifier, triggerType } from '../models/models';
+import { Action, ProductIdentifier, triggerType, OnMoveResult } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
 import { projType } from 'arlas-web-core/models/projections';
 import * as tinycolor from 'tinycolor2';
 import * as turf from 'turf';
 import { decode_bbox } from 'ngeohash';
 import { Feature } from 'geojson';
-
-export interface OnMoveResult {
-    zoom: number;
-    extend: Array<number>;
-    extendForLoad: Array<number>;
-    extendForTest: Array<number>;
-}
-
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -58,16 +50,21 @@ export class MapContributor extends Contributor {
         triggerType: triggerType.onconsult
     }];
     /**
-    * Data to display analytics geohaah, use in MapComponent @Input
+    * Data to display geoaggregate data, use in MapComponent @Input
     */
-    public geojsondata: { type: string, features: Array<any> };
-    public clusterdata: { type: string, features: Array<any> } = {
+    public geoaggregateData: { type: string, features: Array<any> } = {
         'type': 'FeatureCollection',
         'features': []
     };
-
     /**
-    * Data to display geosjon data, use in MapComponent @Input
+    * Data to display search data, use in MapComponent @Input
+    */
+    public searchData: { type: string, features: Array<any> } = {
+        'type': 'FeatureCollection',
+        'features': []
+    };
+    /**
+    * Data to display detail item data, use in MapComponent @Input
     */
     public detailItemMapData: Map<string, [string, boolean]> = new Map<string, [string, boolean]>();
     private maxValueGeoHash = 0;
@@ -115,9 +112,9 @@ export class MapContributor extends Contributor {
                 } else if (this.zoom >= this.zoomLevelForTestCount) {
                     if (this.count <= this.nbMaxFeatureForCluster) {
                         if (this.isBbox) {
-                            this.drawCluster();
+                            this.drawSearch();
                         } else {
-                            this.drawCluster(this.mapExtend);
+                            this.drawSearch(this.mapExtend);
                         }
                     } else {
                         if (this.isBbox) {
@@ -161,6 +158,7 @@ export class MapContributor extends Contributor {
         this.removeLayerActionDetailBus.subscribe(id => {
             this.detailItemMapData.delete(id.idValue);
         });
+        // Subscribe to the hightlightLayerActionBus to send data to hightlightLayerDetailBus
         this.hightlightLayerActionBus.subscribe(p => {
             let isleaving = false;
             let id = p.idValue;
@@ -200,19 +198,23 @@ export class MapContributor extends Contributor {
         this.collaborativeSearcheService.setFilter(this.identifier, data);
     }
 
+    /**
+    * Function call on onMove event output component
+    */
     public onMove(newMove: OnMoveResult) {
         const precision = this.getPrecisionFromZoom(newMove.zoom);
         const allcornerInside = this.isLatLngInBbox(newMove.extendForTest[0], newMove.extendForTest[1], this.mapExtend) &&
             this.isLatLngInBbox(newMove.extendForTest[0], newMove.extendForTest[3], this.mapExtend) &&
             this.isLatLngInBbox(newMove.extendForTest[2], newMove.extendForTest[3], this.mapExtend) &&
             this.isLatLngInBbox(newMove.extendForTest[2], newMove.extendForTest[1], this.mapExtend);
-        console.log(allcornerInside);
         if (newMove.zoom < this.zoomLevelFullData) {
             // geoaggregate full data
             if (precision !== this.precision) {
                 this.precision = precision;
                 this.drawGeoaggregate();
             }
+            this.zoom = newMove.zoom;
+
         } else if (newMove.zoom >= this.zoomLevelFullData && newMove.zoom < this.zoomLevelForTestCount) {
             // geoaggregate intersect data
             // test if newMove.extendForTest is totaly in the precedent extendForload
@@ -229,8 +231,9 @@ export class MapContributor extends Contributor {
                 this.drawGeoaggregate(newMove.extendForLoad);
                 this.mapExtend = newMove.extendForLoad;
             }
+            this.zoom = newMove.zoom;
+
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
-            this.collaborativeSearcheService.ongoingSubscribe.next(1);
             let pwithin = '';
             newMove.extendForLoad.forEach(v => pwithin = pwithin + ',' + v);
             const filter = {
@@ -238,16 +241,15 @@ export class MapContributor extends Contributor {
             };
             const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], null, filter);
             if (count) {
-                count.finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1)).subscribe(value => {
-                    this.count = value;
-                    if (value <= this.nbMaxFeatureForCluster) {
+                count.finally(() => this.zoom = newMove.zoom).subscribe(value => {
+                    if (value.totalnb <= this.nbMaxFeatureForCluster) {
                         if (!allcornerInside) {
                             // the new extent is in the old, we draw if the precision change
-                            this.drawCluster(newMove.extendForLoad);
+                            this.drawSearch(newMove.extendForLoad);
                             this.mapExtend = newMove.extendForLoad;
                         } else {
                             if (this.zoom !== newMove.zoom) {
-                                this.drawCluster(newMove.extendForLoad);
+                                this.drawSearch(newMove.extendForLoad);
                                 this.mapExtend = newMove.extendForLoad;
                             }
                         }
@@ -270,8 +272,6 @@ export class MapContributor extends Contributor {
 
             }
         }
-        this.zoom = newMove.zoom;
-
     }
 
 
@@ -287,7 +287,6 @@ export class MapContributor extends Contributor {
 
     private drawGeoaggregate(extend?) {
         let filter: Filter = {};
-        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         const aggregation = this.aggregation;
         aggregation.interval.value = this.precision;
         if (extend) {
@@ -300,7 +299,7 @@ export class MapContributor extends Contributor {
         const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
             [projType.geoaggregate, [aggregation]], null, filter
         );
-        geoAggregateData.finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1)).subscribe(
+        geoAggregateData.subscribe(
             value => {
                 if (value.features !== undefined) {
                     value.features.forEach(feature => {
@@ -339,17 +338,17 @@ export class MapContributor extends Contributor {
                         allfeatures.push(feature);
                         allfeatures.push(polygonGeojson);
                     });
-                    this.geojsondata = {
-                        type: 'FeatureCollection',
-                        features: allfeatures
-                    };
-                    this.clusterdata = {
+                    this.searchData = {
                         type: 'FeatureCollection',
                         features: []
                     };
+                    this.geoaggregateData = {
+                        type: 'FeatureCollection',
+                        features: allfeatures
+                    };
                     this.maxValueGeoHash = 0;
                 } else {
-                    this.geojsondata = {
+                    this.geoaggregateData = {
                         type: 'FeatureCollection',
                         features: []
                     };
@@ -362,9 +361,8 @@ export class MapContributor extends Contributor {
     }
 
 
-    private drawCluster(extend?) {
+    private drawSearch(extend?) {
         let filter: Filter = {};
-        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         let pwithin = '';
         if (extend) {
             extend.forEach(v => pwithin = pwithin + ',' + v);
@@ -378,7 +376,7 @@ export class MapContributor extends Contributor {
         search.projection = projection;
         const searchResult: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.search, search],
             null, filter);
-        searchResult.finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1)).subscribe(
+        searchResult.subscribe(
             value => {
                 const pointsFeatures = [];
                 value.hits.forEach(hit => {
@@ -393,13 +391,13 @@ export class MapContributor extends Contributor {
                     };
                     pointsFeatures.push(pointGeosjon);
                 });
-                this.clusterdata = {
-                    type: 'FeatureCollection',
-                    features: pointsFeatures
-                };
-                this.geojsondata = {
+                this.geoaggregateData = {
                     type: 'FeatureCollection',
                     features: []
+                };
+                this.searchData = {
+                    type: 'FeatureCollection',
+                    features: pointsFeatures
                 };
             },
             error => {

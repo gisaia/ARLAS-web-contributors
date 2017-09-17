@@ -2,11 +2,6 @@ import { CollaborativesearchService, ConfigService, Contributor, projType, Colla
 import { Filter, Hits } from 'arlas-api';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
-
-export interface SearchLabel {
-    label: string;
-    count: number;
-}
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.
@@ -15,9 +10,12 @@ export interface SearchLabel {
  */
 export class ChipsSearchContributor extends Contributor {
     /**
-  * Global query based on all concatenate chips word
-  */
+    * Global query based on all concatenate chips word
+    */
     public query: string;
+    /**
+    * Map of string/number, label/count of all chips, use in input of component
+    */
     public chipMapData: Map<string, number> = new Map<string, number>();
     /**
     * Build a new contributor.
@@ -37,7 +35,6 @@ export class ChipsSearchContributor extends Contributor {
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
-                    this.collaborativeSearcheService.ongoingSubscribe.next(1);
                     const tabOfCount: Array<Observable<{ label: string, hits: Hits }>> = [];
                     let f = new Array<string>();
                     const fil = this.collaborativeSearcheService.getFilter(this.identifier);
@@ -63,7 +60,6 @@ export class ChipsSearchContributor extends Contributor {
                         });
                         Observable.from(tabOfCount)
                             .mergeAll()
-                            .finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1))
                             .subscribe(
                             result => {
                                 this.chipMapData.set(result.label, result.hits.totalnb);
@@ -79,7 +75,6 @@ export class ChipsSearchContributor extends Contributor {
                             );
                     } else {
                         this.chipMapData.clear();
-                        this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     }
                 }
             },
@@ -100,6 +95,10 @@ export class ChipsSearchContributor extends Contributor {
     public getPackageName(): string {
         return 'catalog.web.app.components.chipssearch';
     }
+    /**
+    * Add a new chip with value and count, set filter.
+    * @param value  Label of the chip.
+    */
     public addWord(value: any) {
         if (value !== null) {
             if (value.length > 0) {
@@ -121,16 +120,17 @@ export class ChipsSearchContributor extends Contributor {
             }
         }
     }
-
+    /**
+    * Remove a chip , set filter.
+    * @param value  Label of the chip.
+    */
     public removeWord(word: any) {
         this.chipMapData.delete(word);
         if (this.chipMapData.size === 0) {
             this.collaborativeSearcheService.removeFilter(this.identifier);
         }
         this.setFilterFromMap();
-
     }
-
     /**
     * Set Filter for collaborative search service from wordToCount map.
     */

@@ -5,20 +5,14 @@ import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { projType } from 'arlas-web-core/models/projections';
 import { Filter, Hits, Search, Size, Expression, Sort, Projection } from 'arlas-api';
 import { getElementFromJsonObject, isArray, feedDetailledMap, download } from '../utils/utils';
-import { Action, ProductIdentifier, triggerType } from '../models/models';
-/**
-* Enum of sorting value define in Arlas-web-components
-*/
-export enum SortEnum {
-    asc, desc, none
-}
+import { Action, ProductIdentifier, triggerType, SortEnum } from '../models/models';
+
 /**
 * Interface define in Arlas-web-components
 */
 export interface DetailedDataRetriever {
     getData(identifier: string): Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }>;
 }
-
 /**
 * Class instanciate to retrieve the detail of an item of a resultlistcomponent.
 */
@@ -287,7 +281,6 @@ export class ResultListContributor extends Contributor {
     * @param from option in  Arlas Search Parameter
     */
     private feedTable(sort?: Sort, from?: number) {
-        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         let searchResult: Observable<Hits>;
         const projection: Projection = {};
         let includesvalue = '';
@@ -312,9 +305,7 @@ export class ResultListContributor extends Contributor {
         search.projection = projection;
         projection.includes = includesvalue.substring(1);
         searchResult = this.collaborativeSearcheService.resolveButNotHits([projType.search, search]);
-        searchResult
-            .finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1))
-            .subscribe(
+        searchResult.subscribe(
             value => {
                 if (value.nbhits > 0) {
                     value.hits.forEach(h => {
@@ -336,6 +327,6 @@ export class ResultListContributor extends Contributor {
                 }
             },
             error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); }
-            );
+        );
     }
 }
