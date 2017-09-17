@@ -1,8 +1,11 @@
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Filter, Aggregation } from 'arlas-api';
-import { Expression, AggregationResponse } from 'arlas-api';
+import { Hits } from 'arlas-api/model/Hits';
+import { Filter } from 'arlas-api/model/Filter';
+import { Aggregation } from 'arlas-api/model/Aggregation';
+import { Expression } from 'arlas-api/model/Expression';
+import { AggregationResponse } from 'arlas-api/model/AggregationResponse';
 import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
 import { projType } from 'arlas-web-core/models/projections';
 import { SelectedOutputValues, DateUnit } from '../models/models';
