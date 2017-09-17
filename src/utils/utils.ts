@@ -56,7 +56,7 @@ export function feedDetailledMap(element, detailedDataMap = new Map<string, stri
         if (detailedDataMap.get(confEntrie.label) === null || detailedDataMap.get(confEntrie.label) === undefined) {
             detailedDataMap.set(confEntrie.label, resultset);
         } else {
-            const newvalue = detailedDataMap.get(confEntrie.label) + ',' + resultset;
+            const newvalue = detailedDataMap.get(confEntrie.label) + ', ' + resultset;
             detailedDataMap.set(confEntrie.label, newvalue);
         }
     }

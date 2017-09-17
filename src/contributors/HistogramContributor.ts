@@ -8,19 +8,8 @@ import { Expression } from 'arlas-api/model/Expression';
 import { AggregationResponse } from 'arlas-api/model/AggregationResponse';
 import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
 import { projType } from 'arlas-web-core/models/projections';
-/**
-* Enum of time unit that the timeline mode could draw.
-*/
-export enum DateUnit {
-    second, millisecond
-}
-/**
-* Object of start and end value of the chart selector.
-*/
-export interface SelectedOutputValues {
-    startvalue: Date | number;
-    endvalue: Date | number;
-}
+import { SelectedOutputValues, DateUnit } from '../models/models';
+
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
 * This class make the brigde between the component which displays the data and the
@@ -53,11 +42,14 @@ export class HistogramContributor extends Contributor {
     * End value of selection use to the display of filterDisplayName
     */
     private endValue: string;
-
+    /**
+    * Max value of all bucketn use for oneDimension histogram palette
+    */
     private maxCount = 0;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
+    * @param dateUnit  unit of histrogram (for time data).
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
@@ -105,8 +97,8 @@ export class HistogramContributor extends Contributor {
         return 'catalog.web.app.components.histogram';
     }
     /**
-    * Subscribe to valueChangedEvent to set filter on collaborativeSearcheService
-    * @param dateType DateType.millisecond | DateType.second
+    * Set filter on value change, use in output of component
+    * @param value DateType.millisecond | DateType.second
     */
     public valueChanged(value: SelectedOutputValues) {
         let end = value.endvalue;
@@ -125,7 +117,7 @@ export class HistogramContributor extends Contributor {
         } else {
             this.startValue = Math.round(<number>start).toString();
             this.endValue = Math.round(<number>end).toString();
-        };
+        }
         const startExpression: Expression = {
             field: this.field,
             op: Expression.OpEnum.Gte,
@@ -147,17 +139,16 @@ export class HistogramContributor extends Contributor {
         this.collaborativeSearcheService.setFilter(this.identifier, data);
     }
     /**
-* Plot chart data and next intervalSelection to replot selection  .
-*/
+    * Plot chart data and next intervalSelection to replot selection .
+    */
     private plotChart() {
-        this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        const data: Observable<AggregationResponse> = this.collaborativeSearcheService.resolveButNot(
+        const data = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, [this.aggregation]],
             this.identifier
         );
         const dataTab = new Array<{ key: number, value: number }>();
-        data.finally(() => this.collaborativeSearcheService.ongoingSubscribe.next(-1))
-            .subscribe(
+
+        data.subscribe(
             value => {
                 if (value.totalnb > 0) {
                     value.elements.forEach(element => {
@@ -199,6 +190,6 @@ export class HistogramContributor extends Contributor {
                     this.chartData = dataTab;
                 }
             }
-            );
+        );
     }
 }
