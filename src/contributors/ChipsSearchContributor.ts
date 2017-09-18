@@ -21,11 +21,13 @@ export class ChipsSearchContributor extends Contributor {
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
+    * @param  sizeOnSearchBackspaceBus bus from searchcomponent properties, send the size of input on backspace keyup
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
         identifier: string,
+        private sizeOnSearchBackspaceBus: Subject<number>,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -83,6 +85,12 @@ export class ChipsSearchContributor extends Contributor {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
+        // Subscribe to the sizeOnSearchBackspaceBus to remove last chip on backspace keyup
+        this.sizeOnSearchBackspaceBus.pairwise().subscribe(value => {
+            if (value[0] === 0 && value[1] === 0) {
+                this.removeLastWord();
+            }
+        });
     }
     /**
     * @returns Pretty name of contributor based on query propoerty.
@@ -131,6 +139,15 @@ export class ChipsSearchContributor extends Contributor {
             this.collaborativeSearcheService.removeFilter(this.identifier);
         }
         this.setFilterFromMap();
+    }
+    /**
+    * Remove last chip , set filter.
+    * @param value  Label of the chip.
+    */
+    private removeLastWord() {
+        const chipAsArray = Array.from(this.chipMapData.keys());
+        const lastLabel = chipAsArray[chipAsArray.length - 1];
+        this.removeWord(lastLabel);
     }
     /**
     * Set Filter for collaborative search service from wordToCount map.
