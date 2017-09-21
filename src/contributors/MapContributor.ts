@@ -8,10 +8,14 @@ import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Action, ProductIdentifier, triggerType, OnMoveResult } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
 import { projType } from 'arlas-web-core/models/projections';
-import * as tinycolor from 'tinycolor2';
 import * as turf from 'turf';
 import { decode_bbox } from 'ngeohash';
 import { Feature } from 'geojson';
+
+export enum drawType {
+    RECTANGLE,
+    CIRCLE
+}
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -21,56 +25,46 @@ export class MapContributor extends Contributor {
     /**
      * Action subject nexted on showonmap action trigger, subscribe by the contributor to send data to addLayerDetailBus.
     */
-    public addLayerActionrDetailBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
-    /**
-     * Action subject nexted on removefrommap action trigger, subscribe by the contributor to send data to removeLayerDetailBus.
-    */
-    public removeLayerActionDetailBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
+    public flytoDetailBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
     /**
      * Action subject nexted on hightlight action trigger, subscribe by the contributor to send data to consultItemLayerActionBus.
     */
     public hightlightLayerActionBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
+
+
+    public redrawClientCluster: Subject<boolean> = new Subject<boolean>();
+    public flytoFeature: Subject<Array<Array<number>>> = new Subject<Array<Array<number>>>();
+
+
     /**
      * List of actions that the contributor can trigger.
     */
     public actions: Array<Action> = [{
-        id: 'showonmap',
+        id: 'flyto',
         label: 'Show on map',
-        actionBus: this.addLayerActionrDetailBus,
+        actionBus: this.flytoDetailBus,
         triggerType: triggerType.onclick
-    }, {
-        id: 'removefrommap',
-        label: 'Remove from map',
-        actionBus: this.removeLayerActionDetailBus,
-        triggerType: triggerType.onclick
-    }, {
+    },
+    {
         id: 'hightlight',
         label: 'hightlight',
         actionBus: this.hightlightLayerActionBus,
         triggerType: triggerType.onconsult
     }];
     /**
-    * Data to display geoaggregate data, use in MapComponent @Input
+    * Data to display geoaggregate data or search Data, use in MapComponent @Input
     */
-    public geoaggregateData: { type: string, features: Array<any> } = {
+    public geojsondata: { type: string, features: Array<any> } = {
         'type': 'FeatureCollection',
         'features': []
     };
-    /**
-    * Data to display search data, use in MapComponent @Input
-    */
-    public searchData: { type: string, features: Array<any> } = {
-        'type': 'FeatureCollection',
-        'features': []
-    };
-    /**
-    * Data to display detail item data, use in MapComponent @Input
-    */
-    public detailItemMapData: Map<string, [string, boolean]> = new Map<string, [string, boolean]>();
+
+
+    public isGeoaggregateCluster = true;
+
     private maxValueGeoHash = 0;
-    private precision = 2;
-    private zoom = 4;
-    private count;
+    private precision = 1;
+    private zoom = 2;
     private isBbox = false;
     private mapExtend = [90, -180, -90, 180];
     private zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
@@ -91,6 +85,7 @@ export class MapContributor extends Contributor {
     constructor(
         public identifier,
         private onRemoveBboxBus: Subject<boolean>,
+        private drawtype: drawType,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -101,6 +96,7 @@ export class MapContributor extends Contributor {
         // Subscribe to the collaborationBus to sent removeBbox bbox event if the contributor is removed
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
+                this.maxValueGeoHash = 0;
                 if (this.zoom < this.zoomLevelFullData) {
                     this.drawGeoaggregate();
                 } else if (this.zoom >= this.zoomLevelFullData && this.zoom < this.zoomLevelForTestCount) {
@@ -110,18 +106,28 @@ export class MapContributor extends Contributor {
                         this.drawGeoaggregate(this.mapExtend);
                     }
                 } else if (this.zoom >= this.zoomLevelForTestCount) {
-                    if (this.count <= this.nbMaxFeatureForCluster) {
-                        if (this.isBbox) {
-                            this.drawSearch();
-                        } else {
-                            this.drawSearch(this.mapExtend);
-                        }
-                    } else {
-                        if (this.isBbox) {
-                            this.drawGeoaggregate();
-                        } else {
-                            this.drawGeoaggregate(this.mapExtend);
-                        }
+                    let pwithin = '';
+                    this.mapExtend.forEach(v => pwithin = pwithin + ',' + v);
+                    const filter = {
+                        pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
+                    };
+                    const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], null, filter);
+                    if (count) {
+                        count.subscribe(value => {
+                            if (value.totalnb <= this.nbMaxFeatureForCluster) {
+                                if (this.isBbox) {
+                                    this.drawSearch();
+                                } else {
+                                    this.drawSearch(this.mapExtend);
+                                }
+                            } else {
+                                if (this.isBbox) {
+                                    this.drawGeoaggregate();
+                                } else {
+                                    this.drawGeoaggregate(this.mapExtend);
+                                }
+                            }
+                        });
                     }
                 }
                 if (contributorId !== this.identifier) {
@@ -129,14 +135,13 @@ export class MapContributor extends Contributor {
                         this.onRemoveBboxBus.next(true);
                     }
                 }
-                this.detailItemMapData.clear();
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
         // Subscribe to the addLayerActionrDetailBus to send data to addLayerDetailBus
-        this.addLayerActionrDetailBus.subscribe(id => {
+        this.flytoDetailBus.subscribe(id => {
             let searchResult: Observable<Hits>;
             const search: Search = { size: { size: 1 } };
             const expression: Expression = {
@@ -151,12 +156,14 @@ export class MapContributor extends Contributor {
             searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], null, filter);
             searchResult.subscribe(h => {
                 const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
-                this.detailItemMapData.set(id.idValue, [geojsonData, false]);
+                const rect = turf.polygon(geojsonData.coordinates);
+                const bbox = turf.bbox(rect);
+                const minX = bbox[0];
+                const minY = bbox[1];
+                const maxX = bbox[2];
+                const maxY = bbox[3];
+                this.flytoFeature.next([[minX, minY], [maxX, maxY]]);
             });
-        });
-        // Subscribe to the addLayerActionrDetailBus to send data to addLayerDetailBus
-        this.removeLayerActionDetailBus.subscribe(id => {
-            this.detailItemMapData.delete(id.idValue);
         });
         // Subscribe to the hightlightLayerActionBus to send data to hightlightLayerDetailBus
         this.hightlightLayerActionBus.subscribe(p => {
@@ -165,10 +172,6 @@ export class MapContributor extends Contributor {
             if (id.split('-')[0] === 'leave') {
                 id = id.split('-')[1];
                 isleaving = true;
-            }
-            if (this.detailItemMapData.get(id) !== undefined) {
-                const geojsonData = this.detailItemMapData.get(id)[0];
-                this.detailItemMapData.set(id, [geojsonData, isleaving]);
             }
         });
     }
@@ -203,6 +206,9 @@ export class MapContributor extends Contributor {
     */
     public onMove(newMove: OnMoveResult) {
         const precision = this.getPrecisionFromZoom(newMove.zoom);
+        if (precision !== this.precision) {
+            this.maxValueGeoHash = 0;
+        }
         const allcornerInside = this.isLatLngInBbox(newMove.extendForTest[0], newMove.extendForTest[1], this.mapExtend) &&
             this.isLatLngInBbox(newMove.extendForTest[0], newMove.extendForTest[3], this.mapExtend) &&
             this.isLatLngInBbox(newMove.extendForTest[2], newMove.extendForTest[3], this.mapExtend) &&
@@ -214,7 +220,6 @@ export class MapContributor extends Contributor {
                 this.drawGeoaggregate();
             }
             this.zoom = newMove.zoom;
-
         } else if (newMove.zoom >= this.zoomLevelFullData && newMove.zoom < this.zoomLevelForTestCount) {
             // geoaggregate intersect data
             // test if newMove.extendForTest is totaly in the precedent extendForload
@@ -223,53 +228,88 @@ export class MapContributor extends Contributor {
                 // the new extent is in the old, we draw if the precision change
                 if (precision !== this.precision) {
                     this.precision = precision;
-                    this.drawGeoaggregate(newMove.extendForLoad);
+                    if (this.isBbox) {
+                        this.drawGeoaggregate();
+                    } else {
+                        this.drawGeoaggregate(newMove.extendForLoad);
+                    }
                     this.mapExtend = newMove.extendForLoad;
                 }
             } else {
                 this.precision = precision;
-                this.drawGeoaggregate(newMove.extendForLoad);
+                if (this.isBbox) {
+                    this.drawGeoaggregate();
+                } else {
+                    this.drawGeoaggregate(newMove.extendForLoad);
+                }
                 this.mapExtend = newMove.extendForLoad;
             }
             this.zoom = newMove.zoom;
-
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
-            let pwithin = '';
-            newMove.extendForLoad.forEach(v => pwithin = pwithin + ',' + v);
-            const filter = {
-                pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
-            };
-            const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], null, filter);
-            if (count) {
-                count.finally(() => this.zoom = newMove.zoom).subscribe(value => {
-                    if (value.totalnb <= this.nbMaxFeatureForCluster) {
-                        if (!allcornerInside) {
-                            // the new extent is in the old, we draw if the precision change
-                            this.drawSearch(newMove.extendForLoad);
-                            this.mapExtend = newMove.extendForLoad;
-                        } else {
-                            if (this.zoom !== newMove.zoom) {
+            if (!allcornerInside) {
+                let pwithin = '';
+                newMove.extendForLoad.forEach(v => pwithin = pwithin + ',' + v);
+                const filter = {
+                    pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
+                };
+                const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], null, filter);
+                if (count) {
+                    count.finally(() => this.zoom = newMove.zoom).subscribe(value => {
+                        if (value.totalnb <= this.nbMaxFeatureForCluster) {
+                            if (this.isBbox) {
+                                this.drawSearch();
+                            } else {
                                 this.drawSearch(newMove.extendForLoad);
-                                this.mapExtend = newMove.extendForLoad;
                             }
-                        }
-                    } else {
-                        if (allcornerInside) {
-                            // the new extent is in the old, we draw if the precision change
-                            if (precision !== this.precision) {
-                                this.precision = precision;
-                                this.drawGeoaggregate(newMove.extendForLoad);
-                                this.mapExtend = newMove.extendForLoad;
-                            }
+                            this.mapExtend = newMove.extendForLoad;
+
                         } else {
                             this.precision = precision;
-                            this.drawGeoaggregate(newMove.extendForLoad);
+                            if (this.isBbox) {
+                                this.drawGeoaggregate();
+                            } else {
+                                this.drawGeoaggregate(newMove.extendForLoad);
+                            }
                             this.mapExtend = newMove.extendForLoad;
                         }
+                    });
+                }
+            } else {
+                if (!this.isGeoaggregateCluster) {
+                    // redraw client cluster without get new data
+                    this.redrawClientCluster.next(true);
 
+                } else {
+                    let pwithin = '';
+                    newMove.extendForLoad.forEach(v => pwithin = pwithin + ',' + v);
+                    const filter = {
+                        pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
+                    };
+                    const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], null, filter);
+                    if (count) {
+                        count.finally(() => this.zoom = newMove.zoom).subscribe(value => {
+                            if (value.totalnb <= this.nbMaxFeatureForCluster) {
+                                if (this.isBbox) {
+                                    this.drawSearch();
+                                } else {
+                                    this.drawSearch(newMove.extendForLoad);
+                                }
+                                this.mapExtend = newMove.extendForLoad;
+                            } else {
+                                if (precision !== this.precision) {
+                                    this.precision = precision;
+                                    if (this.isBbox) {
+                                        this.drawGeoaggregate();
+                                    } else {
+                                        this.drawGeoaggregate(newMove.extendForLoad);
+                                    }
+                                    this.mapExtend = newMove.extendForLoad;
+                                }
+                            }
+                        });
                     }
-                });
-
+                }
+                this.zoom = newMove.zoom;
             }
         }
     }
@@ -299,7 +339,7 @@ export class MapContributor extends Contributor {
         const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
             [projType.geoaggregate, [aggregation]], null, filter
         );
-        geoAggregateData.subscribe(
+        geoAggregateData.finally(() => this.isGeoaggregateCluster = true).subscribe(
             value => {
                 if (value.features !== undefined) {
                     value.features.forEach(feature => {
@@ -320,35 +360,29 @@ export class MapContributor extends Contributor {
                         const polygonGeojson = {
                             type: 'Feature',
                             properties: {
-                                color: this.getColor(feature.properties.count, this.maxValueGeoHash)
+                                point_count_normalize: feature.properties.count / this.maxValueGeoHash * 100,
+                                point_count: feature.properties.count
                             },
                             geometry: {
                                 type: 'Polygon',
                                 coordinates: coordinates
                             }
                         };
-                        const polygon = turf.polygon(coordinates);
-                        const centroid = turf.centroid(polygon);
-                        const zeroToOne: number = 0.7 * feature.properties.count / this.maxValueGeoHash;
-                        const to = turf.point([bbox[3], bbox[2]]);
-                        const radius = 40 * zeroToOne;
-                        feature.properties['color'] = this.getColor(feature.properties.count, this.maxValueGeoHash);
-                        feature.properties['radius'] = radius;
-                        feature.geometry['coordinates'] = centroid.geometry.coordinates;
-                        allfeatures.push(feature);
-                        allfeatures.push(polygonGeojson);
+                        feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
+                        feature.properties['point_count'] = feature.properties.count;
+
+                        if (this.drawtype === drawType.CIRCLE) {
+                            allfeatures.push(feature);
+                        } else if (this.drawtype === drawType.RECTANGLE) {
+                            allfeatures.push(polygonGeojson);
+                        }
                     });
-                    this.searchData = {
-                        type: 'FeatureCollection',
-                        features: []
-                    };
-                    this.geoaggregateData = {
+                    this.geojsondata = {
                         type: 'FeatureCollection',
                         features: allfeatures
                     };
-                    this.maxValueGeoHash = 0;
                 } else {
-                    this.geoaggregateData = {
+                    this.geojsondata = {
                         type: 'FeatureCollection',
                         features: []
                     };
@@ -372,62 +406,57 @@ export class MapContributor extends Contributor {
         }
         const search: Search = { size: { size: this.nbMaxFeatureForCluster } };
         const projection: Projection = {};
-        projection.excludes = 'geographicBoundingPolygon,data,product,attachments,semantics';
+        projection.includes = 'id';
         search.projection = projection;
-        const searchResult: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.search, search],
+        const searchResult: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
+            [projType.geosearch, search],
             null, filter);
-        searchResult.subscribe(
+        searchResult.finally(() => this.isGeoaggregateCluster = false).subscribe(
             value => {
-                const pointsFeatures = [];
-                value.hits.forEach(hit => {
-                    const pointGeosjon = {
-                        type: 'Feature',
-                        properties: {
-                        },
-                        geometry: {
-                            type: 'Point',
-                            coordinates: hit.md.centroid.coordinates
-                        }
+                if (value.features !== undefined) {
+
+                    const pointsFeatures = [];
+                    value.features.forEach(f => {
+                        const pointGeosjon = {
+                            type: 'Feature',
+                            properties: {
+                                featuregeometry: f.geometry,
+                                featureid: f.properties.metadataID.externalID
+                            },
+                            geometry: {
+                                type: 'Point',
+                                coordinates: getElementFromJsonObject(f, 'properties.' + this.aggregation.field)
+                            }
+                        };
+                        pointsFeatures.push(pointGeosjon);
+                    });
+
+                    this.geojsondata = {
+                        type: 'FeatureCollection',
+                        features: pointsFeatures
                     };
-                    pointsFeatures.push(pointGeosjon);
-                });
-                this.geoaggregateData = {
-                    type: 'FeatureCollection',
-                    features: []
-                };
-                this.searchData = {
-                    type: 'FeatureCollection',
-                    features: pointsFeatures
-                };
+                } else {
+                    this.geojsondata = {
+                        type: 'FeatureCollection',
+                        features: []
+                    };
+                }
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
     }
-    private getTinyColor(zeroToOne: number): tinycolorInstance {
-        // Scrunch the green/cyan range in the middle
-        const sign = (zeroToOne < .5) ? -1 : 1;
-        zeroToOne = sign * Math.pow(2 * Math.abs(zeroToOne - .5), .35) / 2 + .5;
-        // Linear interpolation between the cold and hot
-        const h0 = 259;
-        const h1 = 12;
-        const h = (h0) * (1 - zeroToOne) + (h1) * (zeroToOne);
-        return tinycolor({ h: h, s: 75, v: 90 });
-    }
-    private getColor(value: number, maxValue: number) {
-        const halfToOne = .5 * value / maxValue * 1.2 + 0.5;
-        const color: tinycolorInstance = this.getTinyColor(halfToOne);
-        return color.toHexString();
-    }
     private getPrecisionFromZoom(zoom: number): number {
-        if (zoom < 4) {
+        if (zoom >= 0 && zoom < 3) {
+            return 1;
+        } else if (zoom >= 3 && zoom < 5) {
             return 2;
-        } else if (zoom >= 4 && zoom < 6) {
+        } else if (zoom >= 5 && zoom < 7) {
             return 3;
-        } else if (zoom >= 6 && zoom < 9) {
+        } else if (zoom >= 7 && zoom < 10) {
             return 4;
-        } else if (zoom >= 9 && zoom < 10) {
+        } else if (zoom >= 10 && zoom < 11) {
             return 5;
         } else {
             return 6;
