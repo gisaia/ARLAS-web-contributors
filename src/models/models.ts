@@ -16,13 +16,10 @@ export enum triggerType {
  * Action trigger by a contributor through the app or another contributor.
  * - id of action.
  * - label of action.
- * - actionBus suscribe by the contributor to do something when this bus is nexted by the app or another contributor.
  */
 export interface Action {
     id: string;
     label: string;
-    actionBus: Subject<ProductIdentifier>;
-    triggerType?: triggerType.onclick | triggerType.onconsult;
 }
 /**
  * Couple of field/value id product, use to retrieve the product.
@@ -62,5 +59,15 @@ export interface OnMoveResult {
     extend: Array<number>;
     extendForLoad: Array<number>;
     extendForTest: Array<number>;
+    tiles: Array<{ x: number, y: number, z: number }>;
+
+}
+
+export interface FieldsConfiguration {
+    idFieldName: string;
+    urlImageTemplate?: string;
+    urlThumbnailTemplate?: string;
+    titleFieldName?: string;
+
 }
 
