@@ -13,7 +13,7 @@ import { Filter } from 'arlas-api/model/Filter';
 import { Aggregation } from 'arlas-api/model/Aggregation';
 import { Expression } from 'arlas-api/model/Expression';
 import { getElementFromJsonObject, isArray, feedDetailledMap, download } from '../utils/utils';
-import { Action, ProductIdentifier, triggerType, SortEnum } from '../models/models';
+import { Action, ProductIdentifier, triggerType, SortEnum, FieldsConfiguration } from '../models/models';
 
 /**
 * Interface define in Arlas-web-components
@@ -38,7 +38,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         let searchResult: Observable<Hits>;
         const search: Search = { size: { size: 1 } };
         const expression: Expression = {
-            field: this.contributor.idFieldName,
+            field: this.contributor.fieldsConfiguration.idFieldName,
             op: Expression.OpEnum.Eq,
             value: identifier
         };
@@ -101,37 +101,24 @@ export class ResultListContributor extends Contributor {
     * List of actions, from all the contributors of the app, which we could trigger on click in the ResultListComponent.
     */
     public actionToTriggerOnClick: Array<Action> = [];
-    /**
-    * List of actions, from all the contributors of the app, which we could trigger on consult in the ResultListComponent.
-    */
-    public actionToTriggerOnConsult: Array<Action> = [];
-    /**
-     * Action subject nexted on download trigger, subscribe by the ResultListContributor to download detail data.
-    */
-    public downloadActionBus: Subject<ProductIdentifier> = new Subject<ProductIdentifier>();
-    /**
-    * List of actions, trigger by the ResultListContributor.
-    */
-    public actions: Array<Action> = [{
-        id: 'download',
-        label: 'Download',
-        actionBus: this.downloadActionBus,
-        triggerType: triggerType.onclick
-    }];
+
+
     /**
      * Sort parameter of the list.
     */
     private sort: Sort = {};
+    private geosort: Sort = {};
+
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param idFieldName  @Input of Angular ResultListComponent, field name of the id column.
+    * @param fieldsConfiguration  @Input of Angular ResultListComponent, FieldsConfiguration.
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
         identifier: string,
-        public idFieldName: string,
+        public fieldsConfiguration: FieldsConfiguration,
         public collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -141,43 +128,45 @@ export class ResultListContributor extends Contributor {
         // Link the ResultListContributor and the detailedDataRetriever
         this.detailedDataRetriever.setContributor(this);
         // Load data in resultList on init
-        this.feedTable();
+        this.feedTable(this.geoSort);
         // Subscribe to the collaborationBus to retrieve new data
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
-                this.feedTable();
+                this.feedTable(this.geoSort);
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
             }
         );
-        // Subscribe to the downloadActionBus to download data on trigger
-        this.downloadActionBus.subscribe(id => {
-            let searchResult: Observable<Hits>;
-            const search: Search = {
-                size: { size: 1 },
-                form: {
-                    pretty: true,
-                    human: true
-                }
-            };
-            const expression: Expression = {
-                field: id.idFieldName,
-                op: Expression.OpEnum.Eq,
-                value: id.idValue
-            };
-            const filter: Filter = {
-                f: [expression]
-            };
-            const actionsList = new Array<string>();
-            searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], null, filter);
-            searchResult.map(data => JSON.stringify(data)).subscribe(
-                data => {
-                    download(data.toString(), id.idValue + '.json', 'text/json');
-                }
-            );
-        });
     }
+
+
+    public downloadItem(productIdentifier: ProductIdentifier) {
+        let searchResult: Observable<Hits>;
+        const search: Search = {
+            size: { size: 1 },
+            form: {
+                pretty: true,
+                human: true
+            }
+        };
+        const expression: Expression = {
+            field: productIdentifier.idFieldName,
+            op: Expression.OpEnum.Eq,
+            value: productIdentifier.idValue
+        };
+        const filter: Filter = {
+            f: [expression]
+        };
+        const actionsList = new Array<string>();
+        searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], null, filter);
+        searchResult.map(data => JSON.stringify(data)).subscribe(
+            data => {
+                download(data.toString(), productIdentifier.idValue + '.json', 'text/json');
+            }
+        );
+    }
+
     /**
     * @returns Pretty name of contribution.
     */
@@ -195,11 +184,8 @@ export class ResultListContributor extends Contributor {
     * @param action action to add
     */
     public addAction(action: Action) {
-        if (this.actionToTriggerOnClick.indexOf(action, 0) < 0 && action.triggerType === triggerType.onclick) {
+        if (this.actionToTriggerOnClick.indexOf(action, 0) < 0) {
             this.actionToTriggerOnClick.push(action);
-        }
-        if (this.actionToTriggerOnConsult.indexOf(action, 0) < 0 && action.triggerType === triggerType.onconsult) {
-            this.actionToTriggerOnConsult.push(action);
         }
     }
     /**
@@ -211,20 +197,7 @@ export class ResultListContributor extends Contributor {
         if (indexOnClick > -1) {
             this.actionToTriggerOnClick.splice(indexOnClick, 1);
         }
-        const indexOnConsult = this.actionToTriggerOnConsult.indexOf(action, 0);
-        if (indexOnConsult > -1) {
-            this.actionToTriggerOnConsult.splice(indexOnConsult, 1);
-        }
     }
-
-    /**
-    * Method to notify the bus of action of a new trigger
-    * @param onAction action and productIdentifier to trigger
-    */
-    public actionOnItem(onAction: { action: Action, productIdentifier: ProductIdentifier }) {
-        onAction.action.actionBus.next(onAction.productIdentifier);
-    }
-
     /**
     * Method call when emit the output sortColumnEvent
     * @param sort sort params
@@ -243,7 +216,20 @@ export class ResultListContributor extends Contributor {
             };
         }
         this.sort = sort;
+        this.geosort = {};
         this.feedTable(sort);
+    }
+    /**
+    * Method call when emit the output sortColumnEvent
+    * @param sort sort params
+    */
+    public geoSort(lat: number, lng: number) {
+        let sort: Sort = {};
+        sort = {
+            'sort': 'geodistance:' + lat.toString() + ' ' + lng.toString()
+        };
+        this.geosort = sort;
+        this.feedTable(this.geosort);
     }
     /**
     * Method call when emit the output setFiltersEvent
@@ -270,18 +256,16 @@ export class ResultListContributor extends Contributor {
         }
     }
     /**
-    * Method call when emit the output consultedItemEvent
-    * @param item ProductIdentifier params
-    */
-    public consultItem(item: ProductIdentifier) {
-        this.actionToTriggerOnConsult.forEach(action => action.actionBus.next(item));
-    }
-    /**
     * Method call when emit the output moreDataEvent
     * @param from· number of time that's scroll bar down
     */
     public getMoreData(from: number) {
-        this.feedTable(this.sort, from * this.getConfigValue('search_size'));
+        if (this.geoSort !== {}) {
+            this.feedTable(this.geoSort, from * this.getConfigValue('search_size'));
+
+        } else {
+            this.feedTable(this.sort, from * this.getConfigValue('search_size'));
+        }
     }
     /**
     * Method to retrieve data from Arlas Server and update ResultList Component
@@ -297,23 +281,57 @@ export class ResultListContributor extends Contributor {
             search.sort = sort;
         }
         if (from) {
-            if (from === 0) {
-                this.data = new Array<Map<string, string | number | Date>>();
-            } else {
-                search.size.from = from;
-            }
-        } else {
-            this.data = new Array<Map<string, string | number | Date>>();
+            search.size.from = from;
         }
+
         this.fieldsList = [];
         Object.keys(this.getConfigValue('columns')).forEach(element => {
             this.fieldsList.push(this.getConfigValue('columns')[element]);
             includesvalue = includesvalue + ',' + this.getConfigValue('columns')[element].fieldName;
         });
+        if (this.fieldsConfiguration.titleFieldName) {
+            includesvalue = includesvalue + ',' + this.fieldsConfiguration.titleFieldName;
+        }
+        includesvalue = includesvalue + ',' + this.fieldsConfiguration.idFieldName;
+        if (this.fieldsConfiguration.urlImageTemplate) {
+            includesvalue = includesvalue + ',' + this.fieldsConfiguration.urlImageTemplate
+                .split('/')
+                .filter(f => f.indexOf('{') >= 0)
+                .map(f => f.slice(1, -1))
+                .map(m => {
+                    let t;
+                    if (m.indexOf('$') >= 0) {
+                        t = m.split('$')[0];
+                    } else {
+                        t = m;
+                    }
+                    return t;
+                }).join(',');
+        }
+        if (this.fieldsConfiguration.urlThumbnailTemplate) {
+            includesvalue = includesvalue + ',' + this.fieldsConfiguration.urlThumbnailTemplate
+                .split('/')
+                .filter(f => f.indexOf('{') >= 0)
+                .map(f => f.slice(1, -1))
+                .map(m => {
+                    let t;
+                    if (m.indexOf('$') >= 0) {
+                        t = m.split('$')[0];
+                    } else {
+                        t = m;
+                    }
+                    return t;
+                }).join(',');
+        }
         search.projection = projection;
-        projection.includes = includesvalue.substring(1);
+        projection.includes = includesvalue.trim().substring(1);
+        const newData = [];
         searchResult = this.collaborativeSearcheService.resolveButNotHits([projType.search, search]);
-        searchResult.subscribe(
+        searchResult.finally(() => {
+            if (newData.length > 0) {
+                this.data = newData;
+            }
+        }).subscribe(
             value => {
                 if (value.nbhits > 0) {
                     value.hits.forEach(h => {
@@ -326,15 +344,68 @@ export class ResultListContributor extends Contributor {
                                 resultValue = eval(this.getConfigValue('process')[element.fieldName]['process']);
                             } else {
                                 resultValue = result;
-
                             }
                             map.set(element.fieldName, resultValue);
                         });
-                        this.data.push(map);
+                        if (this.fieldsConfiguration.urlImageTemplate) {
+                            this.fieldsConfiguration.urlImageTemplate
+                                .split('/')
+                                .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
+                                    if (f.indexOf('$') >= 0) {
+                                        const tree = f.split('$');
+                                        let v = h.data;
+                                        for (const t of tree) {
+                                            if (v !== undefined) {
+                                                v = v[t];
+                                            } else {
+                                                v = null;
+                                                break;
+                                            }
+                                        }
+                                        map.set(f, v.replace('QUICKLOOK', 'THUMBNAIL').replace('//', '/'));
+                                    } else {
+                                        map.set(f,
+                                            getElementFromJsonObject(h.data, f));
+                                    }
+                                });
+                        }
+                        if (this.fieldsConfiguration.urlThumbnailTemplate) {
+                            this.fieldsConfiguration.urlThumbnailTemplate
+                                .split('/')
+                                .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
+                                    if (f.indexOf('$') >= 0) {
+                                        const tree = f.split('$');
+                                        let v = h.data;
+                                        for (const t of tree) {
+                                            if (v !== undefined) {
+                                                v = v[t];
+                                            } else {
+                                                v = null;
+                                                break;
+                                            }
+                                        }
+                                        map.set(f, v.replace('QUICKLOOK', 'THUMBNAIL').replace('//', '/'));
+                                    } else {
+                                        map.set(f,
+                                            getElementFromJsonObject(h.data, f));
+                                    }
+                                });
+                        }
+                        if (from) {
+                            if (from === 0) {
+                                newData.push(map);
+                            } else {
+                                this.data.push(map);
+                            }
+                        } else {
+                            newData.push(map);
+                        }
                     });
+                } else {
+                    this.data = [];
                 }
             },
             error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); }
-        );
+            );
     }
 }
