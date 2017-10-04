@@ -45,7 +45,6 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         const filter: Filter = {
             f: [expression]
         };
-        console.log(expression)
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search],
             this.contributor.identifier, filter);
@@ -302,9 +301,9 @@ export class ResultListContributor extends Contributor {
                 .map(m => {
                     let t;
                     if (m.indexOf('$') >= 0) {
-                        t = m.split('$')[0]
+                        t = m.split('$')[0];
                     } else {
-                        t = m
+                        t = m;
                     }
                     return t;
                 }).join(',');
@@ -317,9 +316,9 @@ export class ResultListContributor extends Contributor {
                 .map(m => {
                     let t;
                     if (m.indexOf('$') >= 0) {
-                        t = m.split('$')[0]
+                        t = m.split('$')[0];
                     } else {
-                        t = m
+                        t = m;
                     }
                     return t;
                 }).join(',');
@@ -354,21 +353,21 @@ export class ResultListContributor extends Contributor {
                                 .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
                                     if (f.indexOf('$') >= 0) {
                                         const tree = f.split('$');
-                                        let value = h.data;
-                                        for (let t of tree) {
-                                            if (value !== undefined) {
-                                                value = value[t]
+                                        let v = h.data;
+                                        for (const t of tree) {
+                                            if (v !== undefined) {
+                                                v = v[t];
                                             } else {
-                                                value = null;
+                                                v = null;
                                                 break;
                                             }
                                         }
-                                        map.set(f, value.replace('QUICKLOOK', 'THUMBNAIL').replace('//', '/'))
+                                        map.set(f, v.replace('QUICKLOOK', 'THUMBNAIL').replace('//', '/'));
                                     } else {
                                         map.set(f,
-                                            getElementFromJsonObject(h.data, f))
+                                            getElementFromJsonObject(h.data, f));
                                     }
-                                })
+                                });
                         }
                         if (this.fieldsConfiguration.urlThumbnailTemplate) {
                             this.fieldsConfiguration.urlThumbnailTemplate
@@ -376,30 +375,30 @@ export class ResultListContributor extends Contributor {
                                 .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
                                     if (f.indexOf('$') >= 0) {
                                         const tree = f.split('$');
-                                        let value = h.data;
-                                        for (let t of tree) {
-                                            if (value !== undefined) {
-                                                value = value[t]
+                                        let v = h.data;
+                                        for (const t of tree) {
+                                            if (v !== undefined) {
+                                                v = v[t];
                                             } else {
-                                                value = null;
+                                                v = null;
                                                 break;
                                             }
                                         }
-                                        map.set(f, value.replace('QUICKLOOK', 'THUMBNAIL').replace('//', '/'))
+                                        map.set(f, v.replace('QUICKLOOK', 'THUMBNAIL').replace('//', '/'));
                                     } else {
                                         map.set(f,
-                                            getElementFromJsonObject(h.data, f))
+                                            getElementFromJsonObject(h.data, f));
                                     }
-                                })
+                                });
                         }
                         if (from) {
                             if (from === 0) {
-                                newData.push(map)
+                                newData.push(map);
                             } else {
                                 this.data.push(map);
                             }
                         } else {
-                            newData.push(map)
+                            newData.push(map);
                         }
                     });
                 } else {

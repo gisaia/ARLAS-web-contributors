@@ -94,14 +94,14 @@ export class MapContributor extends Contributor {
                     if (count) {
                         count.subscribe(value => {
                             if (value.totalnb <= this.nbMaxFeatureForCluster) {
-                                this.geojsondata.features = []; 
+                                this.geojsondata.features = [];
                                 if (this.isBbox) {
                                     // this.drawSearch();
-                                    this.drawTileSearch(this.tiles)
+                                    this.drawTileSearch(this.tiles);
 
                                 } else {
-                                    //this.drawSearch(this.mapExtend);
-                                    this.drawTileSearch(this.tiles)
+                                    // this.drawSearch(this.mapExtend);
+                                    this.drawTileSearch(this.tiles);
 
                                 }
                             } else {
@@ -128,7 +128,6 @@ export class MapContributor extends Contributor {
     }
 
     public getBoundsToFit(productidentifier: ProductIdentifier): Observable<Array<Array<number>>> {
-        console.log(productidentifier)
         let searchResult: Observable<Hits>;
         const search: Search = { size: { size: 1 } };
         const expression: Expression = {
@@ -165,7 +164,7 @@ export class MapContributor extends Contributor {
                 idFieldName: this.idFieldName,
                 idValue: id
             }
-        }
+        };
     }
 
     /**
@@ -255,11 +254,10 @@ export class MapContributor extends Contributor {
                         if (value.totalnb <= this.nbMaxFeatureForCluster) {
                             if (this.isBbox) {
                                 // this.drawSearch();
-                                this.drawTileSearch(newMove.tiles)
+                                this.drawTileSearch(newMove.tiles);
                             } else {
                                 // this.drawSearch(newMove.extendForLoad);
-                                this.drawTileSearch(newMove.tiles)
-
+                                this.drawTileSearch(newMove.tiles);
                             }
                             this.mapExtend = newMove.extendForLoad;
 
@@ -293,11 +291,11 @@ export class MapContributor extends Contributor {
                                     features: []
                                 };
                                 if (this.isBbox) {
-                                    this.drawSearch();
-                                    // this.drawTileSearch(newMove.tiles)
+                                    // this.drawSearch();
+                                    this.drawTileSearch(newMove.tiles);
                                 } else {
                                     // this.drawSearch(newMove.extendForLoad);
-                                    this.drawTileSearch(newMove.tiles)
+                                    this.drawTileSearch(newMove.tiles);
 
                                 }
                                 this.mapExtend = newMove.extendForLoad;
@@ -314,7 +312,7 @@ export class MapContributor extends Contributor {
                             }
                         });
                     }
-                };
+                }
 
                 this.zoom = newMove.zoom;
             }
@@ -402,30 +400,28 @@ export class MapContributor extends Contributor {
     }
 
     private drawTileSearch(tiles: Array<{ x: number, y: number, z: number }>) {
-
-        let filter: Filter = {};
+        const filter: Filter = {};
         const search: Search = { size: { size: this.nbMaxFeatureForCluster } };
         const projection: Projection = {};
         projection.includes = 'citationIdentifier';
         search.projection = projection;
         tiles.forEach(tile => {
-            const dataSet = new Set(this.geojsondata.features.map(f => f.properties[this.idFieldName]))
-
+            const dataSet = new Set(this.geojsondata.features.map(f => f.properties[this.idFieldName]));
             const tiledSearch: TiledSearch = {
                 search: search,
                 x: tile.x,
                 y: tile.y,
                 z: tile.z
-            }
+            };
             const searchResult: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
                 [projType.tiledgeosearch, tiledSearch],
                 null, filter);
-            searchResult.finally(() => { this.isGeoaggregateCluster = false; this.redrawTile.next(true) }).subscribe(
+            searchResult.finally(() => { this.isGeoaggregateCluster = false; this.redrawTile.next(true); }).subscribe(
                 value => {
                     if (value.features !== undefined) {
                         value.features.map(f => [f.properties[this.idFieldName], f])
                             .filter(f => dataSet.has(f[0]) === false)
-                            .forEach(f => this.geojsondata.features.push(f[1]))
+                            .forEach(f => this.geojsondata.features.push(f[1]));
                     }
                 },
                 error => {
@@ -433,7 +429,7 @@ export class MapContributor extends Contributor {
                 }
             );
 
-        })
+        });
     }
 
 
