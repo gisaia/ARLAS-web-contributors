@@ -20,18 +20,6 @@
   dependencies:
     tslib "^1.7.1"
 
-"@gisaia-team/arlas-web-core@0.2.0-dev2":
-  version "0.2.0-dev2"
-  resolved "https://registry.yarnpkg.com/@gisaia-team/arlas-web-core/-/arlas-web-core-0.2.0-dev2.tgz#10f75d3e52b616bdb3196a155801b80af7cee4a0"
-  dependencies:
-    "@angular/core" "^4.0.0"
-    "@angular/http" "^4.0.0"
-    "@angular/platform-browser" "^4.0.0"
-    arlas-api "1.0.15"
-    arlas-kv-api "~1.0.14"
-    rxjs "^5.4.2"
-    zone.js "^0.8.14"
-
 "@gulp-sourcemaps/identity-map@1.X":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@gulp-sourcemaps/identity-map/-/identity-map-1.0.1.tgz#cfa23bc5840f9104ce32a65e74db7e7a974bbee1"
@@ -168,6 +156,18 @@ arlas-api@1.0.15:
 arlas-kv-api@~1.0.14:
   version "1.0.15"
   resolved "https://registry.yarnpkg.com/arlas-kv-api/-/arlas-kv-api-1.0.15.tgz#5222c694bc8c5e875f2815e5a20652d9d1b2a5d3"
+
+arlas-web-core@0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-0.2.0.tgz#34a482328dc1702e8f86facb09b9efffd675ccd1"
+  dependencies:
+    "@angular/core" "^4.0.0"
+    "@angular/http" "^4.0.0"
+    "@angular/platform-browser" "^4.0.0"
+    arlas-api "1.0.15"
+    arlas-kv-api "~1.0.14"
+    rxjs "^5.4.2"
+    zone.js "^0.8.14"
 
 arr-diff@^2.0.0:
   version "2.0.0"
