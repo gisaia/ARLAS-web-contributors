@@ -67,6 +67,7 @@ export class HistogramContributor extends Contributor {
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
                 if (contributorId !== this.identifier) {
+                    this.maxCount = 0;
                     this.plotChart();
                 }
             },

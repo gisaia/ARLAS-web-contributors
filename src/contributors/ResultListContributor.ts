@@ -107,7 +107,7 @@ export class ResultListContributor extends Contributor {
      * Sort parameter of the list.
     */
     private sort: Sort = {};
-    private geosort: Sort = {};
+    private geoOrderSort: Sort = {};
 
     /**
     * Build a new contributor.
@@ -128,11 +128,11 @@ export class ResultListContributor extends Contributor {
         // Link the ResultListContributor and the detailedDataRetriever
         this.detailedDataRetriever.setContributor(this);
         // Load data in resultList on init
-        this.feedTable(this.geoSort);
+        this.feedTable(this.geoOrderSort);
         // Subscribe to the collaborationBus to retrieve new data
         this.collaborativeSearcheService.collaborationBus.subscribe(
             contributorId => {
-                this.feedTable(this.geoSort);
+                this.feedTable(this.geoOrderSort);
             },
             error => {
                 this.collaborativeSearcheService.collaborationErrorBus.next(error);
@@ -216,7 +216,7 @@ export class ResultListContributor extends Contributor {
             };
         }
         this.sort = sort;
-        this.geosort = {};
+        this.geoOrderSort = {};
         this.feedTable(sort);
     }
     /**
@@ -228,8 +228,8 @@ export class ResultListContributor extends Contributor {
         sort = {
             'sort': 'geodistance:' + lat.toString() + ' ' + lng.toString()
         };
-        this.geosort = sort;
-        this.feedTable(this.geosort);
+        this.geoOrderSort = sort;
+        this.feedTable(this.geoOrderSort);
     }
     /**
     * Method call when emit the output setFiltersEvent
@@ -260,8 +260,8 @@ export class ResultListContributor extends Contributor {
     * @param from· number of time that's scroll bar down
     */
     public getMoreData(from: number) {
-        if (this.geoSort !== {}) {
-            this.feedTable(this.geoSort, from * this.getConfigValue('search_size'));
+        if (this.geoOrderSort !== {}) {
+            this.feedTable(this.geoOrderSort, from * this.getConfigValue('search_size'));
 
         } else {
             this.feedTable(this.sort, from * this.getConfigValue('search_size'));

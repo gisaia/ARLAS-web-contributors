@@ -60,6 +60,8 @@ export interface OnMoveResult {
     extendForLoad: Array<number>;
     extendForTest: Array<number>;
     tiles: Array<{ x: number, y: number, z: number }>;
+    geohash: Array<string>;
+
 
 }
 
