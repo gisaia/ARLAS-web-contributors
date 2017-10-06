@@ -1,4 +1,3 @@
-import { TiledSearch } from '@gisaia-team/arlas-web-core/models/projections';
 import { Subject } from 'rxjs/Subject';
 import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
@@ -8,7 +7,7 @@ import { Filter, FeatureCollection } from 'arlas-api';
 import { Collaboration } from 'arlas-web-core/models/collaboration';
 import { Action, OnMoveResult, ProductIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
-import { projType, GeohashAggregation } from 'arlas-web-core/models/projections';
+import { projType, GeohashAggregation, TiledSearch } from 'arlas-web-core/models/projections';
 import * as turf from 'turf';
 import { decode_bbox, bboxes } from 'ngeohash';
 import { Feature } from 'geojson';
