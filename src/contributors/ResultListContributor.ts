@@ -358,11 +358,27 @@ export class ResultListContributor extends Contributor {
                                             if (v !== undefined) {
                                                 v = v[t];
                                             } else {
-                                                v = null;
+                                                v = undefined;
                                                 break;
                                             }
                                         }
-                                        map.set(f, v.replace('QUICKLOOK', 'THUMBNAIL').replace('//', '/'));
+                                        let urlImageTemplate = '';
+                                        if (v !== undefined) {
+                                            if (this.getConfigValue('process')['urlImageTemplate'] !== undefined) {
+                                                const processUrlImageTemplate: string =
+                                                    this.getConfigValue('process')['urlImageTemplate']['process'];
+                                                if (processUrlImageTemplate.trim().length > 0) {
+                                                    urlImageTemplate = eval(processUrlImageTemplate);
+                                                } else {
+                                                    urlImageTemplate = v;
+                                                }
+                                            } else {
+                                                urlImageTemplate = v;
+                                            }
+                                            map.set(f, urlImageTemplate);
+                                        } else {
+                                            map.set(f, urlImageTemplate);
+                                        }
                                     } else {
                                         map.set(f,
                                             getElementFromJsonObject(h.data, f));
@@ -380,11 +396,27 @@ export class ResultListContributor extends Contributor {
                                             if (v !== undefined) {
                                                 v = v[t];
                                             } else {
-                                                v = null;
+                                                v = undefined;
                                                 break;
                                             }
                                         }
-                                        map.set(f, v.replace('QUICKLOOK', 'THUMBNAIL').replace('//', '/'));
+                                        let urlThumbnailTemplate = '';
+                                        if (v !== undefined) {
+                                            if (this.getConfigValue('process')['urlImageTemplate'] !== undefined) {
+                                                const processurlThumbnailTemplate: string =
+                                                    this.getConfigValue('process')['urlThumbnailTemplate']['process'];
+                                                if (processurlThumbnailTemplate.trim().length > 0) {
+                                                    urlThumbnailTemplate = eval(processurlThumbnailTemplate);
+                                                } else {
+                                                    urlThumbnailTemplate = v;
+                                                }
+                                            } else {
+                                                urlThumbnailTemplate = v;
+                                            }
+                                            map.set(f, urlThumbnailTemplate);
+                                        } else {
+                                            map.set(f, urlThumbnailTemplate);
+                                        }
                                     } else {
                                         map.set(f,
                                             getElementFromJsonObject(h.data, f));
