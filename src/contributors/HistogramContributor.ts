@@ -59,7 +59,7 @@ export class HistogramContributor extends Contributor {
     */
     constructor(
         identifier: string,
-        private dateUnit: DateUnit.millisecond | DateUnit.millisecond,
+        private dateUnit: DateUnit.millisecond | DateUnit.second,
         private collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, private isOneDimension?: boolean
     ) {
