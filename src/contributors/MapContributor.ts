@@ -1,13 +1,18 @@
 import { Subject } from 'rxjs/Subject';
-import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { Search, Expression, Hits, AggregationResponse, Aggregation, Projection } from 'arlas-api';
-import { Size } from 'arlas-api';
-import { Filter, FeatureCollection } from 'arlas-api';
-import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Action, OnMoveResult, ProductIdentifier, triggerType } from '../models/models';
+
+import {
+    CollaborativesearchService, Contributor,
+    ConfigService, Collaboration, OperationEnum,
+    projType, GeohashAggregation, TiledSearch
+} from 'arlas-web-core';
+import {
+    Search, Expression, Hits,
+    AggregationResponse, Aggregation, Projection,
+    Filter, FeatureCollection, Size
+} from 'arlas-api';
+import { Action, OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
-import { projType, GeohashAggregation, TiledSearch } from 'arlas-web-core/models/projections';
 import * as turf from 'turf';
 import { decode_bbox, bboxes } from 'ngeohash';
 import { Feature } from 'geojson';
@@ -70,7 +75,7 @@ export class MapContributor extends Contributor {
         this.drawGeohashGeoaggregate(this.geohashList);
         // Subscribe to the collaborationBus to sent removeBbox bbox event if the contributor is removed
         this.collaborativeSearcheService.collaborationBus.subscribe(
-            contributorId => {
+            collaborationEvent => {
                 this.maxValueGeoHash = 0;
                 if (this.zoom < this.zoomLevelForTestCount) {
                     this.drawGeohashGeoaggregate(this.geohashList);
@@ -83,7 +88,7 @@ export class MapContributor extends Contributor {
                             pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
                         };
                     }
-                    const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], null, filter);
+                    const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
                     if (count) {
                         count.subscribe(value => {
                             if (value.totalnb <= this.nbMaxFeatureForCluster) {
@@ -95,8 +100,8 @@ export class MapContributor extends Contributor {
                         });
                     }
                 }
-                if (contributorId !== this.identifier) {
-                    if (contributorId === 'remove-all' || contributorId === 'remove-' + this.identifier) {
+                if (collaborationEvent.operation === OperationEnum.remove) {
+                    if (collaborationEvent.all || collaborationEvent.id === this.identifier) {
                         this.onRemoveBboxBus.next(true);
                     }
                 }
@@ -108,18 +113,18 @@ export class MapContributor extends Contributor {
 
     }
 
-    public getBoundsToFit(productidentifier: ProductIdentifier): Observable<Array<Array<number>>> {
+    public getBoundsToFit(elementidentifier: ElementIdentifier): Observable<Array<Array<number>>> {
         let searchResult: Observable<Hits>;
         const search: Search = { size: { size: 1 } };
         const expression: Expression = {
-            field: productidentifier.idFieldName,
+            field: elementidentifier.idFieldName,
             op: Expression.OpEnum.Eq,
-            value: productidentifier.idValue
+            value: elementidentifier.idValue
         };
         const filter: Filter = {
             f: [expression]
         };
-        searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], null, filter);
+        searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], '', filter);
         return searchResult.map(h => {
             const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
             const rect = turf.polygon(geojsonData.coordinates);
@@ -132,16 +137,16 @@ export class MapContributor extends Contributor {
         });
     }
 
-    public getFeatureToHightLight(productidentifier: ProductIdentifier) {
+    public getFeatureToHightLight(elementidentifier: ElementIdentifier) {
         let isleaving = false;
-        let id = productidentifier.idValue;
+        let id = elementidentifier.idValue;
         if (id.split('-')[0] === 'leave') {
             id = id.split('-')[1];
             isleaving = true;
         }
         return {
             isleaving: isleaving,
-            productIdentifier: {
+            elementidentifier: {
                 idFieldName: this.idFieldName,
                 idValue: id
             }
@@ -219,7 +224,7 @@ export class MapContributor extends Contributor {
                         pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
                     };
                 }
-                const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], null, filter);
+                const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
                 if (count) {
                     count.finally(() => this.zoom = newMove.zoom).subscribe(value => {
                         if (value.totalnb <= this.nbMaxFeatureForCluster) {
@@ -246,7 +251,7 @@ export class MapContributor extends Contributor {
                     };
                 }
                 if (this.isGeoaggregateCluster) {
-                    const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], null, filter);
+                    const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
                     if (count) {
                         count.finally(() => this.zoom = newMove.zoom).subscribe(value => {
                             if (value.totalnb <= this.nbMaxFeatureForCluster) {

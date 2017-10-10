@@ -1,13 +1,17 @@
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
-import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Hits } from 'arlas-api/model/Hits';
-import { Filter } from 'arlas-api/model/Filter';
-import { Aggregation } from 'arlas-api/model/Aggregation';
-import { Expression } from 'arlas-api/model/Expression';
-import { AggregationResponse } from 'arlas-api/model/AggregationResponse';
-import { Contributor, CollaborativesearchService, ConfigService } from 'arlas-web-core';
-import { projType } from 'arlas-web-core/models/projections';
+import {
+    Collaboration,
+    CollaborativesearchService,
+    ConfigService,
+    Contributor,
+    OperationEnum,
+    projType
+} from 'arlas-web-core';
+import {
+    Hits, Filter, Aggregation,
+    Expression, AggregationResponse
+} from 'arlas-api';
 import { SelectedOutputValues, DateUnit } from '../models/models';
 
 /**
@@ -65,8 +69,8 @@ export class HistogramContributor extends Contributor {
         this.plotChart();
         // Subscribe to the collaborationBus to draw the chart on each changement
         this.collaborativeSearcheService.collaborationBus.subscribe(
-            contributorId => {
-                if (contributorId !== this.identifier) {
+            collaborationEvent => {
+                if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
                     this.maxCount = 0;
                     this.plotChart();
                 }

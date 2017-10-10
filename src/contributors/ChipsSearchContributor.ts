@@ -1,8 +1,14 @@
-import { CollaborativesearchService, ConfigService, Contributor, projType, Collaboration } from 'arlas-web-core';
-import { Hits } from 'arlas-api/model/Hits';
-import { Filter } from 'arlas-api/model/Filter';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
+import {
+    Collaboration,
+    CollaborativesearchService,
+    ConfigService,
+    Contributor,
+    OperationEnum,
+    projType
+} from 'arlas-web-core';
+import { Hits, Filter } from 'arlas-api';
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.
@@ -36,8 +42,8 @@ export class ChipsSearchContributor extends Contributor {
         this.collaborativeSearcheService.register(this.identifier, this);
         // Subscribe to the collaborationBus to update count value in chips
         this.collaborativeSearcheService.collaborationBus.subscribe(
-            contributorId => {
-                if (contributorId !== this.identifier) {
+            collaborationEvent => {
+                if (collaborationEvent.id !== this.identifier) {
                     const tabOfCount: Array<Observable<{ label: string, hits: Hits }>> = [];
                     let f = new Array<string>();
                     const fil = this.collaborativeSearcheService.getFilter(this.identifier);
@@ -79,6 +85,10 @@ export class ChipsSearchContributor extends Contributor {
                     } else {
                         this.chipMapData.clear();
                     }
+                } else {
+                    if (collaborationEvent.operation === OperationEnum.remove) {
+                        this.chipMapData.clear();
+                    }
                 }
             },
             error => {
@@ -108,7 +118,7 @@ export class ChipsSearchContributor extends Contributor {
     * Add a new chip with value and count, set filter.
     * @param value  Label of the chip.
     */
-    public addWord(value: any) {
+    public addWord(value: string) {
         if (value !== null) {
             if (value.length > 0) {
                 this.chipMapData.set(value, 0);
@@ -133,7 +143,7 @@ export class ChipsSearchContributor extends Contributor {
     * Remove a chip , set filter.
     * @param value  Label of the chip.
     */
-    public removeWord(word: any) {
+    public removeWord(word: string) {
         this.chipMapData.delete(word);
         if (this.chipMapData.size === 0) {
             this.collaborativeSearcheService.removeFilter(this.identifier);
@@ -142,7 +152,6 @@ export class ChipsSearchContributor extends Contributor {
     }
     /**
     * Remove last chip , set filter.
-    * @param value  Label of the chip.
     */
     private removeLastWord() {
         const chipAsArray = Array.from(this.chipMapData.keys());

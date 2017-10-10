@@ -1,19 +1,17 @@
+import { tryCatch } from 'rxjs/util/tryCatch';
 import { Subject } from 'rxjs/Subject';
-import { CollaborativesearchService, Contributor, ConfigService } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { projType } from 'arlas-web-core/models/projections';
-import { Search } from 'arlas-api/model/Search';
-import { Size } from 'arlas-api/model/Size';
-import { Sort } from 'arlas-api/model/Sort';
-import { Projection } from 'arlas-api/model/Projection';
-import { FeatureCollection } from 'arlas-api/model/FeatureCollection';
-import { Collaboration } from 'arlas-web-core/models/collaboration';
-import { Hits } from 'arlas-api/model/Hits';
-import { Filter } from 'arlas-api/model/Filter';
-import { Aggregation } from 'arlas-api/model/Aggregation';
-import { Expression } from 'arlas-api/model/Expression';
+import {
+    CollaborativesearchService, Contributor,
+    ConfigService, projType, Collaboration
+} from 'arlas-web-core';
+import {
+    Search, Size, Sort,
+    Projection, FeatureCollection, Hits,
+    Filter, Aggregation, Expression, Hit
+} from 'arlas-api';
 import { getElementFromJsonObject, isArray, feedDetailledMap, download } from '../utils/utils';
-import { Action, ProductIdentifier, triggerType, SortEnum, FieldsConfiguration } from '../models/models';
+import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration } from '../models/models';
 
 /**
 * Interface define in Arlas-web-components
@@ -86,29 +84,29 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
  */
 export class ResultListContributor extends Contributor {
     /**
-    * Data to feed result list,@Input() data of ResultListComponent.
+    * Data to feed result list, @Input() data of ResultListComponent.
     */
     public data: Array<Map<string, string | number | Date>> = new Array<Map<string, string | number | Date>>();
     /**
-    * List of column of the table,@Input() fieldsList of ResultListComponent.
+    * List of column of the table, @Input() fieldsList of ResultListComponent.
     */
     public fieldsList: Array<{ columnName: string, fieldName: string, dataType: string }> = [];
     /**
-    * Instance of DetailedDataRetriever class,@Input() detailedDataRetriever of ResultListComponent.
+    * Instance of DetailedDataRetriever class, @Input() detailedDataRetriever of ResultListComponent.
     */
     public detailedDataRetriever = new ResultListDetailedDataRetriever();
     /**
     * List of actions, from all the contributors of the app, which we could trigger on click in the ResultListComponent.
     */
     public actionToTriggerOnClick: Array<Action> = [];
-
-
     /**
      * Sort parameter of the list.
     */
     private sort: Sort = {};
+    /**
+     * geoSort parameter of the list.
+    */
     private geoOrderSort: Sort = {};
-
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -131,7 +129,7 @@ export class ResultListContributor extends Contributor {
         this.feedTable(this.geoOrderSort);
         // Subscribe to the collaborationBus to retrieve new data
         this.collaborativeSearcheService.collaborationBus.subscribe(
-            contributorId => {
+            collaborationEvent => {
                 this.feedTable(this.geoOrderSort);
             },
             error => {
@@ -140,8 +138,11 @@ export class ResultListContributor extends Contributor {
         );
     }
 
-
-    public downloadItem(productIdentifier: ProductIdentifier) {
+    /**
+    * Download item information as json
+    * @param productIdentifier productIdentifier of item to dowload
+    */
+    public downloadItem(elementidentifier: ElementIdentifier) {
         let searchResult: Observable<Hits>;
         const search: Search = {
             size: { size: 1 },
@@ -151,9 +152,9 @@ export class ResultListContributor extends Contributor {
             }
         };
         const expression: Expression = {
-            field: productIdentifier.idFieldName,
+            field: elementidentifier.idFieldName,
             op: Expression.OpEnum.Eq,
-            value: productIdentifier.idValue
+            value: elementidentifier.idValue
         };
         const filter: Filter = {
             f: [expression]
@@ -162,11 +163,10 @@ export class ResultListContributor extends Contributor {
         searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], null, filter);
         searchResult.map(data => JSON.stringify(data)).subscribe(
             data => {
-                download(data.toString(), productIdentifier.idValue + '.json', 'text/json');
+                download(data.toString(), elementidentifier.idValue + '.json', 'text/json');
             }
         );
     }
-
     /**
     * @returns Pretty name of contribution.
     */
@@ -294,34 +294,10 @@ export class ResultListContributor extends Contributor {
         }
         includesvalue = includesvalue + ',' + this.fieldsConfiguration.idFieldName;
         if (this.fieldsConfiguration.urlImageTemplate) {
-            includesvalue = includesvalue + ',' + this.fieldsConfiguration.urlImageTemplate
-                .split('/')
-                .filter(f => f.indexOf('{') >= 0)
-                .map(f => f.slice(1, -1))
-                .map(m => {
-                    let t;
-                    if (m.indexOf('$') >= 0) {
-                        t = m.split('$')[0];
-                    } else {
-                        t = m;
-                    }
-                    return t;
-                }).join(',');
+            includesvalue = includesvalue + ',' + this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlImageTemplate);
         }
         if (this.fieldsConfiguration.urlThumbnailTemplate) {
-            includesvalue = includesvalue + ',' + this.fieldsConfiguration.urlThumbnailTemplate
-                .split('/')
-                .filter(f => f.indexOf('{') >= 0)
-                .map(f => f.slice(1, -1))
-                .map(m => {
-                    let t;
-                    if (m.indexOf('$') >= 0) {
-                        t = m.split('$')[0];
-                    } else {
-                        t = m;
-                    }
-                    return t;
-                }).join(',');
+            includesvalue = includesvalue + ',' + this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate);
         }
         search.projection = projection;
         projection.includes = includesvalue.trim().substring(1);
@@ -348,80 +324,10 @@ export class ResultListContributor extends Contributor {
                             map.set(element.fieldName, resultValue);
                         });
                         if (this.fieldsConfiguration.urlImageTemplate) {
-                            this.fieldsConfiguration.urlImageTemplate
-                                .split('/')
-                                .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
-                                    if (f.indexOf('$') >= 0) {
-                                        const tree = f.split('$');
-                                        let v = h.data;
-                                        for (const t of tree) {
-                                            if (v !== undefined) {
-                                                v = v[t];
-                                            } else {
-                                                v = undefined;
-                                                break;
-                                            }
-                                        }
-                                        let urlImageTemplate = '';
-                                        if (v !== undefined) {
-                                            if (this.getConfigValue('process')['urlImageTemplate'] !== undefined) {
-                                                const processUrlImageTemplate: string =
-                                                    this.getConfigValue('process')['urlImageTemplate']['process'];
-                                                if (processUrlImageTemplate.trim().length > 0) {
-                                                    urlImageTemplate = eval(processUrlImageTemplate);
-                                                } else {
-                                                    urlImageTemplate = v;
-                                                }
-                                            } else {
-                                                urlImageTemplate = v;
-                                            }
-                                            map.set(f, urlImageTemplate);
-                                        } else {
-                                            map.set(f, urlImageTemplate);
-                                        }
-                                    } else {
-                                        map.set(f,
-                                            getElementFromJsonObject(h.data, f));
-                                    }
-                                });
+                            this.setUrlField('urlImageTemplate', h, map);
                         }
                         if (this.fieldsConfiguration.urlThumbnailTemplate) {
-                            this.fieldsConfiguration.urlThumbnailTemplate
-                                .split('/')
-                                .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
-                                    if (f.indexOf('$') >= 0) {
-                                        const tree = f.split('$');
-                                        let v = h.data;
-                                        for (const t of tree) {
-                                            if (v !== undefined) {
-                                                v = v[t];
-                                            } else {
-                                                v = undefined;
-                                                break;
-                                            }
-                                        }
-                                        let urlThumbnailTemplate = '';
-                                        if (v !== undefined) {
-                                            if (this.getConfigValue('process')['urlImageTemplate'] !== undefined) {
-                                                const processurlThumbnailTemplate: string =
-                                                    this.getConfigValue('process')['urlThumbnailTemplate']['process'];
-                                                if (processurlThumbnailTemplate.trim().length > 0) {
-                                                    urlThumbnailTemplate = eval(processurlThumbnailTemplate);
-                                                } else {
-                                                    urlThumbnailTemplate = v;
-                                                }
-                                            } else {
-                                                urlThumbnailTemplate = v;
-                                            }
-                                            map.set(f, urlThumbnailTemplate);
-                                        } else {
-                                            map.set(f, urlThumbnailTemplate);
-                                        }
-                                    } else {
-                                        map.set(f,
-                                            getElementFromJsonObject(h.data, f));
-                                    }
-                                });
+                            this.setUrlField('urlThumbnailTemplate', h, map);
                         }
                         if (from) {
                             if (from === 0) {
@@ -440,4 +346,61 @@ export class ResultListContributor extends Contributor {
             error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); }
             );
     }
+
+    private fieldsFromUrlTemplate(urlTemplate: string): string {
+        return urlTemplate
+            .split('/')
+            .filter(f => f.indexOf('{') >= 0)
+            .map(f => f.slice(1, -1))
+            .map(m => {
+                let t;
+                if (m.indexOf('$') >= 0) {
+                    t = m.split('$')[0];
+                } else {
+                    t = m;
+                }
+                return t;
+            }).join(',');
+    }
+
+
+    private setUrlField(urlField: string, h: Hit, map: Map<string, string | number | Date>) {
+        this.fieldsConfiguration[urlField]
+            .split('/')
+            .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
+                if (f.indexOf('$') >= 0) {
+                    const tree = f.split('$');
+                    let v = h.data;
+                    for (const t of tree) {
+                        if (v !== undefined) {
+                            v = v[t];
+                        } else {
+                            v = undefined;
+                            break;
+                        }
+                    }
+                    let urlTemplate = '';
+                    if (v !== undefined) {
+                        if (this.getConfigValue('process')[urlField] !== undefined) {
+                            const processUrlTemplate: string =
+                                this.getConfigValue('process')[urlField]['process'];
+                            if (processUrlTemplate.trim().length > 0) {
+                                urlTemplate = eval(processUrlTemplate);
+                            } else {
+                                urlTemplate = v;
+                            }
+                        } else {
+                            urlTemplate = v;
+                        }
+                        map.set(f, urlTemplate);
+                    } else {
+                        map.set(f, urlTemplate);
+                    }
+                } else {
+                    map.set(f,
+                        getElementFromJsonObject(h.data, f));
+                }
+            });
+    }
+
 }
