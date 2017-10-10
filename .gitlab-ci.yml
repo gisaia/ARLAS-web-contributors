@@ -3,9 +3,7 @@ cache:
   - node_modules/
 before_script:
   - npm install
-  - if [[ -d ./node_modules/@gisaia-team/ ]] ; then
-    mv node_modules/@gisaia-team/arlas-web-core node_modules 2>/dev/null
-    fi
+  - if [[ -d ./node_modules/@gisaia-team/ ]] ; then mv node_modules/@gisaia-team/arlas-web-core node_modules 2>/dev/null fi
 lint:
   script:
   - npm run tslint
@@ -16,5 +14,3 @@ arlas-web-contributors-doc:
     paths:
     - docs
     name: "arlas-web-contributors-doc"
-
-
