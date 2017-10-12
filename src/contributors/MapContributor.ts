@@ -521,9 +521,9 @@ export class MapContributor extends Contributor {
 
     private getNbMaxFeatureFromZoom(zoom: number) {
         const zoomToNbMaxFeatureForCluster = this.getConfigValue('zoomToNbMaxFeatureForCluster');
-        this.nbMaxFeatureForCluster=zoomToNbMaxFeatureForCluster[Math.ceil(zoom)-1]
-        if(this.nbMaxFeatureForCluster===undefined){
-            this.nbMaxFeatureForCluster=this.getConfigValue('nbMaxDefautFeatureForCluster');
+        this.nbMaxFeatureForCluster = zoomToNbMaxFeatureForCluster[Math.ceil(zoom) - 1];
+        if (this.nbMaxFeatureForCluster === undefined) {
+            this.nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
         }
     }
 }
