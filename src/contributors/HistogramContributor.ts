@@ -64,14 +64,11 @@ export class HistogramContributor extends Contributor {
         configService: ConfigService, private isOneDimension?: boolean
     ) {
         super(identifier, configService);
-        // Register the contributor in collaborativeSearcheService registry
-        this.collaborativeSearcheService.register(this.identifier, this);
         this.plotChart();
         // Subscribe to the collaborationBus to draw the chart on each changement
         this.collaborativeSearcheService.collaborationBus.subscribe(
             collaborationEvent => {
                 if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-                    this.maxCount = 0;
                     this.plotChart();
                 }
             },
@@ -147,6 +144,7 @@ export class HistogramContributor extends Contributor {
     * Plot chart data and next intervalSelection to replot selection .
     */
     private plotChart() {
+        this.maxCount = 0;
         const data = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, [this.aggregation]],
             this.identifier

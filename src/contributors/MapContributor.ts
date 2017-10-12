@@ -47,7 +47,7 @@ export class MapContributor extends Contributor {
     private mapExtend = [90, -180, -90, 180];
     private zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
     private zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
-    private nbMaxFeatureForCluster = this.getConfigValue('nbMaxFeatureForCluster');
+    private nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
     /**
     /**
     * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
@@ -187,6 +187,7 @@ export class MapContributor extends Contributor {
         if (precision !== this.precision) {
             this.maxValueGeoHash = 0;
         }
+        this.getNbMaxFeatureFromZoom(newMove.zoom);
         this.tiles = newMove.tiles;
         this.geohashList = newMove.geohash;
         const allcornerInside = this.isLatLngInBbox(newMove.extendForTest[0], newMove.extendForTest[1], this.mapExtend) &&
@@ -518,4 +519,11 @@ export class MapContributor extends Contributor {
         return inside;
     }
 
+    private getNbMaxFeatureFromZoom(zoom: number) {
+        const zoomToNbMaxFeatureForCluster = this.getConfigValue('zoomToNbMaxFeatureForCluster');
+        this.nbMaxFeatureForCluster=zoomToNbMaxFeatureForCluster[Math.ceil(zoom)-1]
+        if(this.nbMaxFeatureForCluster===undefined){
+            this.nbMaxFeatureForCluster=this.getConfigValue('nbMaxDefautFeatureForCluster');
+        }
+    }
 }
