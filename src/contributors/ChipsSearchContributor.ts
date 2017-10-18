@@ -6,9 +6,10 @@ import {
     ConfigService,
     Contributor,
     OperationEnum,
-    projType
+    projType,
 } from 'arlas-web-core';
 import { Hits, Filter } from 'arlas-api';
+import { CollaborationEvent } from 'arlas-web-core/models/collaboration';
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.
@@ -16,6 +17,7 @@ import { Hits, Filter } from 'arlas-api';
  * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
  */
 export class ChipsSearchContributor extends Contributor {
+
     /**
     * Global query based on all concatenate chips word
     */
@@ -34,67 +36,10 @@ export class ChipsSearchContributor extends Contributor {
     constructor(
         identifier: string,
         private lastBackspaceBus: Subject<boolean>,
-        private collaborativeSearcheService: CollaborativesearchService,
+        collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
-        super(identifier, configService);
-        // Register the contributor in collaborativeSearcheService registry.
-        this.collaborativeSearcheService.register(this.identifier, this);
-        // Subscribe to the collaborationBus to update count value in chips
-        this.collaborativeSearcheService.collaborationBus.subscribe(
-            collaborationEvent => {
-                if (collaborationEvent.id !== this.identifier) {
-                    const tabOfCount: Array<Observable<{ label: string, hits: Hits }>> = [];
-                    let f = new Array<string>();
-                    const fil = this.collaborativeSearcheService.getFilter(this.identifier);
-                    if (fil != null) {
-                        f = Array.from(this.chipMapData.keys());
-                    }
-                    if (f.length > 0) {
-                        f.forEach((k) => {
-                            if (k.length > 0) {
-                                const filter: Filter = {
-                                    q: k
-                                };
-                                const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
-                                    [projType.count,
-                                    {}],
-                                    this.identifier,
-                                    filter
-                                );
-                                tabOfCount.push(countData.map(c => {
-                                    return { label: k, hits: c };
-                                }));
-                            }
-                        });
-                        Observable.from(tabOfCount)
-                            .mergeAll()
-                            .subscribe(
-                            result => {
-                                this.chipMapData.set(result.label, result.hits.totalnb);
-                            },
-                            error => {
-                                this.collaborativeSearcheService.collaborationErrorBus.next(error);
-                            },
-                            () => {
-                                const newMap = new Map<string, number>();
-                                this.chipMapData.forEach((k, v) => newMap.set(v, k));
-                                this.chipMapData = newMap;
-                            }
-                            );
-                    } else {
-                        this.chipMapData.clear();
-                    }
-                } else {
-                    if (collaborationEvent.operation === OperationEnum.remove) {
-                        this.chipMapData.clear();
-                    }
-                }
-            },
-            error => {
-                this.collaborativeSearcheService.collaborationErrorBus.next(error);
-            }
-        );
+        super(identifier, configService, collaborativeSearcheService);
         // Subscribe to the sizeOnSearchBackspaceBus to remove last chip on backspace keyup
         this.lastBackspaceBus.subscribe(value => {
             if (value) {
@@ -102,6 +47,62 @@ export class ChipsSearchContributor extends Contributor {
             }
         });
     }
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<{ label: string, hits: Hits }> {
+        const tabOfCount: Array<Observable<{ label: string, hits: Hits }>> = [];
+        if (collaborationEvent.id !== this.identifier) {
+            let f = new Array<string>();
+            const fil = this.collaborativeSearcheService.getCollaboration(this.identifier);
+            if (fil != null) {
+                f = Array.from(this.chipMapData.keys());
+                if (f.length === 0) {
+                    f = fil.filter.q.split(' ');
+                }
+            }
+            if (f.length > 0) {
+                f.forEach((k) => {
+                    if (k.length > 0) {
+                        const filter: Filter = {
+                            q: k
+                        };
+                        const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
+                            [projType.count,
+                            {}],
+                            this.identifier,
+                            filter
+                        );
+                        tabOfCount.push(countData.map(c => {
+                            return { label: k, hits: c };
+                        }));
+                    }
+                });
+            } else {
+                this.chipMapData.clear();
+            }
+        } else {
+            if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
+                this.chipMapData.clear();
+            }
+        }
+        return Observable.from(tabOfCount).mergeAll();
+    }
+
+    public computeData(data: { label: string, hits: Hits }): { label: string, hits: Hits } {
+        return data;
+    }
+    public setData(data: { label: string, hits: Hits }): any {
+        this.chipMapData.set(data.label, data.hits.totalnb);
+        let query = '';
+        this.chipMapData.forEach((k, q) => {
+            query = query + q + ' ';
+        });
+        this.query = query;
+        return Observable.from([]);
+
+    }
+    public setSelection(collaboration: Collaboration): any {
+        return Observable.from([]);
+    }
+
     /**
     * @returns Pretty name of contributor based on query propoerty.
     */

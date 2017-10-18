@@ -12,6 +12,7 @@ import {
 } from 'arlas-api';
 import { getElementFromJsonObject, isArray, feedDetailledMap, download } from '../utils/utils';
 import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration } from '../models/models';
+import { CollaborationEvent } from 'arlas-web-core/models/collaboration';
 
 /**
 * Interface define in Arlas-web-components
@@ -99,6 +100,9 @@ export class ResultListContributor extends Contributor {
     * List of actions, from all the contributors of the app, which we could trigger on click in the ResultListComponent.
     */
     public actionToTriggerOnClick: Array<Action> = [];
+
+
+    public filtersMap: Map<string, string | number | Date> = new Map<string, string | number | Date>();
     /**
      * Sort parameter of the list.
     */
@@ -117,25 +121,12 @@ export class ResultListContributor extends Contributor {
     constructor(
         identifier: string,
         public fieldsConfiguration: FieldsConfiguration,
-        public collaborativeSearcheService: CollaborativesearchService,
+        collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
-        super(identifier, configService);
-        // Register the contributor in collaborativeSearcheService registry
-        this.collaborativeSearcheService.register(this.identifier, this);
+        super(identifier, configService, collaborativeSearcheService);
         // Link the ResultListContributor and the detailedDataRetriever
         this.detailedDataRetriever.setContributor(this);
-        // Load data in resultList on init
-        this.feedTable(this.geoOrderSort);
-        // Subscribe to the collaborationBus to retrieve new data
-        this.collaborativeSearcheService.collaborationBus.subscribe(
-            collaborationEvent => {
-                this.feedTable(this.geoOrderSort);
-            },
-            error => {
-                this.collaborativeSearcheService.collaborationErrorBus.next(error);
-            }
-        );
     }
 
     /**
@@ -217,7 +208,11 @@ export class ResultListContributor extends Contributor {
         }
         this.sort = sort;
         this.geoOrderSort = {};
-        this.feedTable(sort);
+        this.getHitsObservable(this.sort)
+            .map(f => this.computeData(f))
+            .map(f => this.setData(f))
+            .map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+            .subscribe(data => data);
     }
     /**
     * Method call when emit the output sortColumnEvent
@@ -229,7 +224,11 @@ export class ResultListContributor extends Contributor {
             'sort': 'geodistance:' + lat.toString() + ' ' + lng.toString()
         };
         this.geoOrderSort = sort;
-        this.feedTable(this.geoOrderSort);
+        this.getHitsObservable(this.geoOrderSort)
+            .map(f => this.computeData(f))
+            .map(f => this.setData(f))
+            .map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+            .subscribe(data => data);
     }
     /**
     * Method call when emit the output setFiltersEvent
@@ -261,19 +260,68 @@ export class ResultListContributor extends Contributor {
     */
     public getMoreData(from: number) {
         if (this.geoOrderSort !== {}) {
-            this.feedTable(this.geoOrderSort, from * this.getConfigValue('search_size'));
-
+            this.getHitsObservable(this.geoOrderSort, from * this.getConfigValue('search_size'))
+                .map(f => this.computeData(f))
+                .map(f => f.forEach(d => { this.data.push(d); }))
+                .subscribe(data => data);
         } else {
-            this.feedTable(this.sort, from * this.getConfigValue('search_size'));
+            this.getHitsObservable(this.sort, from * this.getConfigValue('search_size'))
+                .map(f => this.computeData(f))
+                .map(f => f.forEach(d => { this.data.push(d); }))
+                .subscribe(data => data);
         }
     }
-    /**
-    * Method to retrieve data from Arlas Server and update ResultList Component
-    * @param sort sort option in  Arlas Search Parameter
-    * @param from option in  Arlas Search Parameter
-    */
-    private feedTable(sort?: Sort, from?: number) {
-        let searchResult: Observable<Hits>;
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
+        return this.getHitsObservable(this.geoOrderSort);
+    }
+
+    public computeData(hits: Hits): Array<Map<string, string | number | Date>> {
+        const listResult = new Array<Map<string, string | number | Date>>();
+        if (hits.nbhits > 0) {
+            hits.hits.forEach(h => {
+                const map = new Map<string, string | number | Date>();
+                this.fieldsList.forEach(element => {
+                    const result: string = getElementFromJsonObject(h.data, element.fieldName);
+                    const process: string = this.getConfigValue('process')[element.fieldName]['process'];
+                    let resultValue = null;
+                    if (process.trim().length > 0) {
+                        resultValue = eval(this.getConfigValue('process')[element.fieldName]['process']);
+                    } else {
+                        resultValue = result;
+                    }
+                    map.set(element.fieldName, resultValue);
+                });
+                if (this.fieldsConfiguration.urlImageTemplate) {
+                    this.setUrlField('urlImageTemplate', h, map);
+                }
+                if (this.fieldsConfiguration.urlThumbnailTemplate) {
+                    this.setUrlField('urlThumbnailTemplate', h, map);
+                }
+                listResult.push(map);
+            });
+        }
+        return listResult;
+
+    }
+    public setData(listResult: Array<Map<string, string | number | Date>>) {
+        this.data = listResult;
+        return this.data;
+
+    }
+    public setSelection(listResult: Array<Map<string, string | number | Date>>, collaboration: Collaboration): any {
+        if (collaboration !== null) {
+            const map = new Map<string, string | number | Date>();
+            collaboration.filter.f.forEach(e => {
+                map.set(e.field, e.value);
+            });
+            this.filtersMap = map;
+        } else {
+            this.filtersMap = new Map<string, string | number | Date>();
+        }
+        return Observable.from([]);
+    }
+
+    private getHitsObservable(sort?: Sort, from?: number): Observable<Hits> {
         const projection: Projection = {};
         let includesvalue = '';
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
@@ -283,7 +331,6 @@ export class ResultListContributor extends Contributor {
         if (from) {
             search.size.from = from;
         }
-
         this.fieldsList = [];
         Object.keys(this.getConfigValue('columns')).forEach(element => {
             this.fieldsList.push(this.getConfigValue('columns')[element]);
@@ -302,51 +349,9 @@ export class ResultListContributor extends Contributor {
         search.projection = projection;
         projection.includes = includesvalue.trim().substring(1);
         const newData = [];
-        searchResult = this.collaborativeSearcheService.resolveButNotHits([projType.search, search]);
-        searchResult.finally(() => {
-            if (newData.length > 0) {
-                this.data = newData;
-            }
-        }).subscribe(
-            value => {
-                if (value.nbhits > 0) {
-                    value.hits.forEach(h => {
-                        const map = new Map<string, string | number | Date>();
-                        this.fieldsList.forEach(element => {
-                            const result: string = getElementFromJsonObject(h.data, element.fieldName);
-                            const process: string = this.getConfigValue('process')[element.fieldName]['process'];
-                            let resultValue = null;
-                            if (process.trim().length > 0) {
-                                resultValue = eval(this.getConfigValue('process')[element.fieldName]['process']);
-                            } else {
-                                resultValue = result;
-                            }
-                            map.set(element.fieldName, resultValue);
-                        });
-                        if (this.fieldsConfiguration.urlImageTemplate) {
-                            this.setUrlField('urlImageTemplate', h, map);
-                        }
-                        if (this.fieldsConfiguration.urlThumbnailTemplate) {
-                            this.setUrlField('urlThumbnailTemplate', h, map);
-                        }
-                        if (from) {
-                            if (from === 0) {
-                                newData.push(map);
-                            } else {
-                                this.data.push(map);
-                            }
-                        } else {
-                            newData.push(map);
-                        }
-                    });
-                } else {
-                    this.data = [];
-                }
-            },
-            error => { this.collaborativeSearcheService.collaborationErrorBus.next(error); }
-            );
+        const searchResult = this.collaborativeSearcheService.resolveButNotHits([projType.search, search]);
+        return searchResult;
     }
-
     private fieldsFromUrlTemplate(urlTemplate: string): string {
         return urlTemplate
             .split('/')
@@ -362,8 +367,6 @@ export class ResultListContributor extends Contributor {
                 return t;
             }).join(',');
     }
-
-
     private setUrlField(urlField: string, h: Hit, map: Map<string, string | number | Date>) {
         this.fieldsConfiguration[urlField]
             .split('/')
@@ -402,5 +405,4 @@ export class ResultListContributor extends Contributor {
                 }
             });
     }
-
 }

@@ -6,7 +6,7 @@ import {
     ConfigService,
     Contributor,
     OperationEnum,
-    projType
+    projType, CollaborationEvent
 } from 'arlas-web-core';
 import {
     Hits, Filter, Aggregation,
@@ -60,22 +60,10 @@ export class HistogramContributor extends Contributor {
     constructor(
         identifier: string,
         private dateUnit: DateUnit.millisecond | DateUnit.second,
-        private collaborativeSearcheService: CollaborativesearchService,
+        collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, private isOneDimension?: boolean
     ) {
-        super(identifier, configService);
-        this.plotChart();
-        // Subscribe to the collaborationBus to draw the chart on each changement
-        this.collaborativeSearcheService.collaborationBus.subscribe(
-            collaborationEvent => {
-                if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-                    this.plotChart();
-                }
-            },
-            error => {
-                this.collaborativeSearcheService.collaborationErrorBus.next(error);
-            }
-        );
+        super(identifier, configService, collaborativeSearcheService);
     }
     /**
     * @returns Pretty name of contribution based on startValue/endValue properties
@@ -140,59 +128,70 @@ export class HistogramContributor extends Contributor {
         this.intervalSelection = value;
         this.collaborativeSearcheService.setFilter(this.identifier, data);
     }
-    /**
-    * Plot chart data and next intervalSelection to replot selection .
-    */
-    private plotChart() {
+
+    public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
         this.maxCount = 0;
-        const data = this.collaborativeSearcheService.resolveButNotAggregation(
+        const aggObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, [this.aggregation]],
             this.identifier
         );
+        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
+            return aggObservable;
+        } else {
+            return Observable.from([]);
+        }
+    }
+    public computeData(aggResonse: AggregationResponse): Array<{ key: number, value: number }> {
         const dataTab = new Array<{ key: number, value: number }>();
+        if (aggResonse.totalnb > 0) {
+            aggResonse.elements.forEach(element => {
+                if (this.maxCount <= element.count) {
+                    this.maxCount = element.count;
+                }
+                dataTab.push({ key: element.key, value: element.count });
+            });
+        }
+        return dataTab;
+    }
 
-        data.subscribe(
-            value => {
-                if (value.totalnb > 0) {
-                    value.elements.forEach(element => {
-                        if (this.maxCount <= element.count) {
-                            this.maxCount = element.count;
-                        }
-                        dataTab.push({ key: element.key, value: element.count });
-                    });
+    public setData(data: Array<{ key: number, value: number }>): Array<{ key: number, value: number }> {
+        if (!this.isOneDimension || this.isOneDimension === undefined) {
+            this.chartData = data;
+        } else {
+            data.forEach(obj => {
+                obj.value = obj.value / this.maxCount;
+            });
+            this.chartData = data;
+        }
+        return this.chartData;
+    }
+    public setSelection(data: Array<{ key: number, value: number }>, collaboration: Collaboration): any {
+        const interval = {
+            startvalue: null,
+            endvalue: null
+        };
+        if (collaboration) {
+            const f = collaboration.filter;
+            if (f === null) {
+                if (data.length > 0) {
+                    interval.startvalue = <number>data[0].key;
+                    interval.endvalue = <number>data[data.length - 1].key;
                 }
-                if (!this.isOneDimension || this.isOneDimension === undefined) {
-                    this.chartData = dataTab;
-                }
-            },
-            error => {
-                this.collaborativeSearcheService.collaborationErrorBus.next(error);
-            },
-            () => {
-                const f = this.collaborativeSearcheService.getFilter(this.identifier);
-                const interval = {
-                    startvalue: null,
-                    endvalue: null
-                };
-                if (f === null) {
-                    if (dataTab.length > 0) {
-                        interval.startvalue = <number>dataTab[0].key;
-                        interval.endvalue = <number>dataTab[dataTab.length - 1].key;
-                    }
-                } else {
-                    interval.startvalue = <number>parseFloat(f.f[0].value);
-                    interval.endvalue = <number>parseFloat(f.f[1].value);
-                }
-                if (interval.endvalue !== null && interval.startvalue !== null) {
-                    this.intervalSelection = interval;
-                }
-                if (this.isOneDimension) {
-                    dataTab.forEach(obj => {
-                        obj.value = obj.value / this.maxCount;
-                    });
-                    this.chartData = dataTab;
-                }
+            } else {
+                interval.startvalue = <number>parseFloat(f.f[0].value);
+                interval.endvalue = <number>parseFloat(f.f[1].value);
             }
-        );
+        } else {
+            if (data.length > 0) {
+                interval.startvalue = <number>data[0].key;
+                interval.endvalue = <number>data[data.length - 1].key;
+            }
+        }
+        if (interval.endvalue !== null && interval.startvalue !== null) {
+            this.intervalSelection = interval;
+            this.startValue = Math.round(<number>interval.startvalue).toString();
+            this.endValue = Math.round(<number>interval.endvalue).toString();
+        }
+        return Observable.from([]);
     }
 }

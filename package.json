@@ -1,6 +1,6 @@
 {
   "name": "@gisaia-team/arlas-web-contributors",
-  "version": "0.3.0-dev0",
+  "version": "0.3.0-dev1",
   "description": "Contributors Library for ARLAS Components",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -17,7 +17,7 @@
   "author": "gisaia",
   "license": "Apache-2.0",
   "dependencies": {
-    "@gisaia-team/arlas-web-core": "0.3.0-dev0",
+    "@gisaia-team/arlas-web-core": "0.3.0-dev1",
     "@types/file-saver": "^0.0.1",
     "@types/tinycolor2": "^1.4.0",
     "@types/turf": "^3.5.32",
