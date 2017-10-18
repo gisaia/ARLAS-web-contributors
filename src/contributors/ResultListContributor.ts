@@ -3,7 +3,7 @@ import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import {
     CollaborativesearchService, Contributor,
-    ConfigService, projType, Collaboration,CollaborationEvent
+    ConfigService, projType, Collaboration, CollaborationEvent
 } from 'arlas-web-core';
 import {
     Search, Size, Sort,

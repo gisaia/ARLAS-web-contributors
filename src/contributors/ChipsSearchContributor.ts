@@ -6,10 +6,9 @@ import {
     ConfigService,
     Contributor,
     OperationEnum,
-    projType,
+    projType, CollaborationEvent
 } from 'arlas-web-core';
 import { Hits, Filter } from 'arlas-api';
-import { CollaborationEvent } from 'arlas-web-core/models/collaboration';
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.

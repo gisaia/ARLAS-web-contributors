@@ -4,7 +4,7 @@ import { Observable } from 'rxjs/Observable';
 import {
     CollaborativesearchService, Contributor,
     ConfigService, Collaboration, OperationEnum,
-    projType, GeohashAggregation, TiledSearch
+    projType, GeohashAggregation, TiledSearch, CollaborationEvent
 } from 'arlas-web-core';
 import {
     Search, Expression, Hits,
@@ -16,7 +16,6 @@ import { getElementFromJsonObject } from '../utils/utils';
 import * as turf from 'turf';
 import { decode_bbox, bboxes } from 'ngeohash';
 import { Feature } from 'geojson';
-import { CollaborationEvent } from 'arlas-web-core/models/collaboration';
 
 export enum drawType {
     RECTANGLE,
