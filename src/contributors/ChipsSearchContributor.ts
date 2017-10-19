@@ -41,7 +41,7 @@ export class ChipsSearchContributor extends Contributor {
         super(identifier, configService, collaborativeSearcheService);
         // Subscribe to the sizeOnSearchBackspaceBus to remove last chip on backspace keyup
         this.lastBackspaceBus.subscribe(value => {
-            if (value) {
+            if (value && this.chipMapData.size > 0) {
                 this.removeLastWord();
             }
         });
@@ -156,7 +156,9 @@ export class ChipsSearchContributor extends Contributor {
     private removeLastWord() {
         const chipAsArray = Array.from(this.chipMapData.keys());
         const lastLabel = chipAsArray[chipAsArray.length - 1];
-        this.removeWord(lastLabel);
+        if (lastLabel !== undefined) {
+            this.removeWord(lastLabel);
+        }
     }
     /**
     * Set Filter for collaborative search service from wordToCount map.
