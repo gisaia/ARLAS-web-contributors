@@ -41,11 +41,10 @@ export class MapContributor extends Contributor {
     public geojsonbbox: { type: string, features: Array<any> };
 
     public isGeoaggregateCluster = true;
-    public redrawTile: Subject<boolean> = new Subject<boolean>();
     public fetchType: fetchType = fetchType.geohash;
     private maxValueGeoHash = 0;
-    private precision = 1;
-    private zoom = 2;
+    private precision = this.getConfigValue('aggregationmodel').interval.value;
+    private zoom = this.getConfigValue('initZoom');
     private tiles: Array<{ x: number, y: number, z: number }>;
     private geohashList: Array<string> = bboxes(-90, -180, 90, 180, 1);
     private isBbox = false;
@@ -70,6 +69,7 @@ export class MapContributor extends Contributor {
         public identifier,
         public idFieldName: string,
         private onRemoveBboxBus: Subject<boolean>,
+        private redrawTile: Subject<boolean>,
         private drawtype: drawType,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
@@ -474,20 +474,12 @@ export class MapContributor extends Contributor {
         this.redrawTile.next(true);
         return features;
     }
-
     private getPrecisionFromZoom(zoom: number): number {
-        if (zoom >= 0 && zoom < 3) {
-            return 1;
-        } else if (zoom >= 3 && zoom < 5) {
-            return 2;
-        } else if (zoom >= 5 && zoom < 7) {
-            return 3;
-        } else if (zoom >= 7 && zoom < 10) {
-            return 4;
-        } else if (zoom >= 10 && zoom < 11) {
-            return 5;
+        const zoomToPrecisionCluster = this.getConfigValue('zoomToPrecisionCluster');
+        if (zoomToPrecisionCluster[Math.ceil(zoom) - 1] !== undefined) {
+            return zoomToPrecisionCluster[Math.ceil(zoom) - 1];
         } else {
-            return 6;
+            this.getConfigValue('maxPrecision');
         }
     }
     private isLatLngInBbox(lat, lng, bbox) {
