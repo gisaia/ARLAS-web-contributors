@@ -136,6 +136,12 @@ export class MapContributor extends Contributor {
     }
 
     public setSelection(data: any, collaboration: Collaboration): any {
+        if (this.fetchType === fetchType.geohash) {
+            this.geojsondata.features.forEach(feature => {
+                feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
+            });
+        }
+        this.redrawTile.next(true);
         if (collaboration !== null) {
             const bbox = collaboration.filter.pwithin.split(',');
             const coordinates = [[
@@ -346,6 +352,7 @@ export class MapContributor extends Contributor {
         this.fetchDataTileSearch(tiles)
             .map(f => this.computeDataTileSearch(f))
             .map(f => this.setDataTileSearch(f))
+            .finally(() => this.setSelection(null, null))
             .subscribe(data => data);
     }
 
@@ -353,6 +360,7 @@ export class MapContributor extends Contributor {
         this.fetchDataGeohashGeoaggregate(geohashList)
             .map(f => this.computeDataGeohashGeoaggregate(f))
             .map(f => this.setDataGeohashGeoaggregate(f))
+            .finally(() => this.setSelection(null, null))
             .subscribe(data => data);
     }
 
@@ -360,7 +368,14 @@ export class MapContributor extends Contributor {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
         const aggregation = this.aggregation;
         aggregation.interval.value = this.precision;
-        geohashList.forEach(geohash => {
+        const geohashSet = new Set(geohashList.map(g => {
+            if (g.length <= 2) {
+                return g;
+            } else {
+                return g.substring(0, this.precision - 2);
+            }
+        }));
+        geohashSet.forEach(geohash => {
             const geohahsAggregation: GeohashAggregation = {
                 geohash: geohash,
                 aggregations: [aggregation]
@@ -378,17 +393,11 @@ export class MapContributor extends Contributor {
     private computeDataGeohashGeoaggregate(featureCollection: FeatureCollection): Array<any> {
         const featuresResults = [];
         if (featureCollection.features !== undefined) {
-            let isMaxChanged = false;
             featureCollection.features.forEach(feature => {
                 if (this.maxValueGeoHash <= feature.properties.count) {
                     this.maxValueGeoHash = feature.properties.count;
-                    isMaxChanged = true;
                 }
             });
-            if (isMaxChanged) {
-                this.geojsondata.features.forEach(feature =>
-                    feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100);
-            }
             const allfeatures: Array<any> = [];
             featureCollection.features.forEach(feature => {
                 const bbox: Array<number> = decode_bbox(feature.properties.geohash);
@@ -425,7 +434,6 @@ export class MapContributor extends Contributor {
     private setDataGeohashGeoaggregate(features: Array<any>): any {
         features.forEach(f => this.geojsondata.features.push(f));
         this.isGeoaggregateCluster = true;
-        this.redrawTile.next(true);
         return features;
 
     }
@@ -471,7 +479,6 @@ export class MapContributor extends Contributor {
     private setDataTileSearch(features: Array<any>): any {
         features.forEach(f => this.geojsondata.features.push(f));
         this.isGeoaggregateCluster = false;
-        this.redrawTile.next(true);
         return features;
     }
     private getPrecisionFromZoom(zoom: number): number {
