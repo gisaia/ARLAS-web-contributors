@@ -12,7 +12,7 @@ import {
     Hits, Filter, Aggregation,
     Expression, AggregationResponse
 } from 'arlas-api';
-import { SelectedOutputValues, DateUnit } from '../models/models';
+import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -60,6 +60,7 @@ export class HistogramContributor extends Contributor {
     constructor(
         identifier: string,
         private dateUnit: DateUnit.millisecond | DateUnit.second,
+        private dataTpye: DataType.numeric | DataType.time,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, private isOneDimension?: boolean
     ) {
@@ -102,8 +103,8 @@ export class HistogramContributor extends Contributor {
             if (this.dateUnit.toString() === DateUnit.second.toString()) {
                 multiplier = 1000;
             }
-            end = endDate.valueOf() / 1 * multiplier;
-            start = startDate.valueOf() / 1 * multiplier;
+            end = endDate.valueOf() / multiplier;
+            start = startDate.valueOf() / multiplier;
         } else {
             this.startValue = Math.round(<number>start).toString();
             this.endValue = Math.round(<number>end).toString();
@@ -178,8 +179,18 @@ export class HistogramContributor extends Contributor {
                     interval.endvalue = <number>data[data.length - 1].key;
                 }
             } else {
-                interval.startvalue = <number>parseFloat(f.f[0].value);
-                interval.endvalue = <number>parseFloat(f.f[1].value);
+                if (this.dataTpye === DataType.time) {
+                    if (this.dateUnit === DateUnit.second) {
+                        interval.startvalue = <number>parseFloat(f.f[0].value) * 1000;
+                        interval.endvalue = <number>parseFloat(f.f[1].value) * 1000;
+                    } else {
+                        interval.startvalue = <number>parseFloat(f.f[0].value);
+                        interval.endvalue = <number>parseFloat(f.f[1].value);
+                    }
+                } else {
+                    interval.startvalue = <number>parseFloat(f.f[0].value);
+                    interval.endvalue = <number>parseFloat(f.f[1].value);
+                }
             }
         } else {
             if (data.length > 0) {
