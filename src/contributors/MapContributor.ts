@@ -383,11 +383,9 @@ export class MapContributor extends Contributor {
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
                 [projType.geohashgeoaggregate, geohahsAggregation]);
             tabOfGeohash.push(geoAggregateData);
-
         });
         this.geojsondata.features = [];
         return Observable.from(tabOfGeohash).mergeAll();
-
     }
 
     private computeDataGeohashGeoaggregate(featureCollection: FeatureCollection): Array<any> {
