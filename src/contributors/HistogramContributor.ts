@@ -179,8 +179,19 @@ export class HistogramContributor extends Contributor {
                     interval.endvalue = <number>data[data.length - 1].key;
                 }
             } else {
-                interval.startvalue = <number>parseFloat(f.f[0].value);
-                interval.endvalue = <number>parseFloat(f.f[1].value);
+                if (this.dataTpye === DataType.time) {
+                    if (this.dateUnit === DateUnit.second) {
+                        interval.startvalue = <number>parseFloat(f.f[0].value) * 1000;
+                        interval.endvalue = <number>parseFloat(f.f[1].value) * 1000;
+                    } else {
+                        interval.startvalue = <number>parseFloat(f.f[0].value);
+                        interval.endvalue = <number>parseFloat(f.f[1].value);
+                    }
+                } else {
+                    interval.startvalue = <number>parseFloat(f.f[0].value);
+                    interval.endvalue = <number>parseFloat(f.f[1].value);
+                }
+
             }
         } else {
             if (data.length > 0) {

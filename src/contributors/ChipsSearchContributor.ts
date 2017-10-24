@@ -53,9 +53,12 @@ export class ChipsSearchContributor extends Contributor {
             const fil = this.collaborativeSearcheService.getCollaboration(this.identifier);
             if (fil != null) {
                 f = Array.from(this.chipMapData.keys());
-                if (f.length === 0) {
-                    f = fil.filter.q.split(' ');
-                }
+                f.forEach(k => {
+                    if (fil.filter.q.split(' ').indexOf(k) < 0) {
+                        this.chipMapData.delete((k))
+                    }
+                })
+                f = fil.filter.q.split(' ');
             }
             if (f.length > 0) {
                 f.forEach((k) => {
