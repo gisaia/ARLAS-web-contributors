@@ -55,9 +55,9 @@ export class ChipsSearchContributor extends Contributor {
                 f = Array.from(this.chipMapData.keys());
                 f.forEach(k => {
                     if (fil.filter.q.split(' ').indexOf(k) < 0) {
-                        this.chipMapData.delete((k))
+                        this.chipMapData.delete((k));
                     }
-                })
+                });
                 f = fil.filter.q.split(' ');
             }
             if (f.length > 0) {
