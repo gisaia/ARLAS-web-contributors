@@ -144,7 +144,7 @@ export class HistogramContributor extends Contributor {
     }
     public computeData(aggResonse: AggregationResponse): Array<{ key: number, value: number }> {
         const dataTab = new Array<{ key: number, value: number }>();
-        if (aggResonse.totalnb > 0) {
+        if (aggResonse.elements !== undefined) {
             aggResonse.elements.forEach(element => {
                 if (this.maxCount <= element.count) {
                     this.maxCount = element.count;
