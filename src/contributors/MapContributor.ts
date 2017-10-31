@@ -138,7 +138,7 @@ export class MapContributor extends Contributor {
     public setSelection(data: any, collaboration: Collaboration): any {
         if (this.fetchType === fetchType.geohash) {
             this.geojsondata.features.forEach(feature => {
-                feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
+                feature.properties['point_count_normalize'] = feature.properties.point_count / this.maxValueGeoHash * 100;
             });
         }
         this.redrawTile.next(true);
