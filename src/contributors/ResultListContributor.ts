@@ -239,9 +239,15 @@ export class ResultListContributor extends Contributor {
         } else {
             const expressions: Array<Expression> = [];
             filterMap.forEach((k, v) => {
+                let op;
+                if (v === this.fieldsConfiguration.idFieldName) {
+                    op = Expression.OpEnum.Eq;
+                } else {
+                    op = Expression.OpEnum.Like;
+                }
                 const expression: Expression = {
                     field: v,
-                    op: Expression.OpEnum.Like,
+                    op: op,
                     value: <string>k
                 };
                 expressions.push(expression);
