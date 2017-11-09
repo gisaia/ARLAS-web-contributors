@@ -201,8 +201,8 @@ export class HistogramContributor extends Contributor {
 
             }
             this.intervalListSelection = [{
-                startvalue: new Date('Wed Aug 28 2013 21:30:04 GMT+0200 (CEST)'),
-                endvalue: new Date('Tue Dec 10 2013 18:54:24 GMT+0100 (CET)')
+                startvalue: new Date('Wed Aug 28 2013 21:30:04 GMT+0200 (CEST)').getTime(),
+                endvalue: new Date('Tue Dec 10 2013 18:54:24 GMT+0100 (CET)').getTime()
             }];
         } else {
             if (data.length > 0) {
