@@ -26,10 +26,16 @@ export class HistogramContributor extends Contributor {
     */
     public chartData: Array<{ key: number, value: number }> = new Array<{ key: number, value: number }>();
     /**
-    * New selection need to be draw on the histogram (could be set to
+    * New selection current need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
     */
     public intervalSelection: SelectedOutputValues;
+    /**
+    * New selections need to be draw on the histogram (could be set to
+    @Input() intervalSelection of HistogramComponent
+    */
+    public intervalListSelection: SelectedOutputValues[];
+
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
@@ -91,7 +97,8 @@ export class HistogramContributor extends Contributor {
     * Set filter on value change, use in output of component
     * @param value DateType.millisecond | DateType.second
     */
-    public valueChanged(value: SelectedOutputValues) {
+    public valueChanged(values: SelectedOutputValues[]) {
+        const value = values[values.length - 1];
         let end = value.endvalue;
         let start = value.startvalue;
         if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
@@ -193,10 +200,15 @@ export class HistogramContributor extends Contributor {
                 }
 
             }
+            this.intervalListSelection = [{
+                startvalue: new Date('Wed Aug 28 2013 21:30:04 GMT+0200 (CEST)'),
+                endvalue: new Date('Tue Dec 10 2013 18:54:24 GMT+0100 (CET)')
+            }];
         } else {
             if (data.length > 0) {
                 interval.startvalue = <number>data[0].key;
                 interval.endvalue = <number>data[data.length - 1].key;
+                this.intervalListSelection = [];
             }
         }
         if (interval.endvalue !== null && interval.startvalue !== null) {
@@ -204,6 +216,8 @@ export class HistogramContributor extends Contributor {
             this.startValue = Math.round(<number>interval.startvalue).toString();
             this.endValue = Math.round(<number>interval.endvalue).toString();
         }
+
+
         return Observable.from([]);
     }
 }
