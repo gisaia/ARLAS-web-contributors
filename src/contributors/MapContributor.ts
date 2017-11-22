@@ -42,6 +42,8 @@ export class MapContributor extends Contributor {
 
     public isGeoaggregateCluster = true;
     public fetchType: fetchType = fetchType.geohash;
+    public zoomToPrecisionCluster = this.getConfigValue('zoomToPrecisionCluster');
+    public maxPrecision = this.getConfigValue('maxPrecision');
     private maxValueGeoHash = 0;
     private precision = this.getConfigValue('aggregationmodel').interval.value;
     private zoom = this.getConfigValue('initZoom');
@@ -52,6 +54,9 @@ export class MapContributor extends Contributor {
     private zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
     private zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
     private nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
+    private idFieldName = this.getConfigValue('idFieldName');
+    private drawtype = drawType[this.getConfigValue('drawtype')];
+
     /**
     /**
     * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
@@ -60,17 +65,14 @@ export class MapContributor extends Contributor {
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param idFieldName  @Input of Angular MapResultlistComponent, field name of the id column of the collection.
     * @param onRemoveBboxBus  @Output of Angular MapComponent, send true when the rectangle of selection is removed.
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
         public identifier,
-        public idFieldName: string,
         private onRemoveBboxBus: Subject<boolean>,
         private redrawTile: Subject<boolean>,
-        private drawtype: drawType,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -218,7 +220,7 @@ export class MapContributor extends Contributor {
     * @returns Package name for the configuration service.
     */
     public getPackageName(): string {
-        return 'catalog.web.app.components.map';
+        return 'arlas.web.contributors.map';
     }
     /**
     * @returns Pretty name of contribution.
@@ -368,13 +370,7 @@ export class MapContributor extends Contributor {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
         const aggregation = this.aggregation;
         aggregation.interval.value = this.precision;
-        const geohashSet = new Set(geohashList.map(g => {
-            if (g.length <= 2) {
-                return g;
-            } else {
-                return g.substring(0, this.precision - 2);
-            }
-        }));
+        const geohashSet = new Set(geohashList);
         geohashSet.forEach(geohash => {
             const geohahsAggregation: GeohashAggregation = {
                 geohash: geohash,
@@ -420,9 +416,9 @@ export class MapContributor extends Contributor {
                 };
                 feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
                 feature.properties['point_count'] = feature.properties.count;
-                if (this.drawtype === drawType.CIRCLE) {
+                if (this.drawtype.toString() === drawType.CIRCLE.toString()) {
                     featuresResults.push(feature);
-                } else if (this.drawtype === drawType.RECTANGLE) {
+                } else if (this.drawtype.toString() === drawType.RECTANGLE.toString()) {
                     featuresResults.push(polygonGeojson);
                 }
             });
@@ -480,11 +476,11 @@ export class MapContributor extends Contributor {
         return features;
     }
     private getPrecisionFromZoom(zoom: number): number {
-        const zoomToPrecisionCluster = this.getConfigValue('zoomToPrecisionCluster');
-        if (zoomToPrecisionCluster[Math.ceil(zoom) - 1] !== undefined) {
-            return zoomToPrecisionCluster[Math.ceil(zoom) - 1];
+        const zoomToPrecisionCluster = this.zoomToPrecisionCluster;
+        if (zoomToPrecisionCluster[Math.ceil(zoom) - 1].split(',')[0] !== undefined) {
+            return zoomToPrecisionCluster[Math.ceil(zoom) - 1].split(',')[0];
         } else {
-            this.getConfigValue('maxPrecision');
+            return this.getConfigValue('maxPrecision').split(',')[0];
         }
     }
     private isLatLngInBbox(lat, lng, bbox) {

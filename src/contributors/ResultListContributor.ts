@@ -110,6 +110,9 @@ export class ResultListContributor extends Contributor {
      * geoSort parameter of the list.
     */
     private geoOrderSort: Sort = {};
+
+
+    public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -119,7 +122,6 @@ export class ResultListContributor extends Contributor {
     */
     constructor(
         identifier: string,
-        public fieldsConfiguration: FieldsConfiguration,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
@@ -167,7 +169,7 @@ export class ResultListContributor extends Contributor {
     * @returns Package name for the configuration service.
     */
     public getPackageName(): string {
-        return 'catalog.web.app.components.table';
+        return 'arlas.web.contributors.table';
     }
     /**
     * Method to add Action in actionToTrigger

@@ -115,7 +115,7 @@ export class ChipsSearchContributor extends Contributor {
     * @returns Package name for the configuration service.
     */
     public getPackageName(): string {
-        return 'catalog.web.app.components.chipssearch';
+        return 'arlas.web.contributors.chipssearch';
     }
     /**
     * Add a new chip with value and count, set filter.
