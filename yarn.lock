@@ -149,22 +149,22 @@ archy@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/archy/-/archy-1.0.0.tgz#f9c8c13757cc1dd7bc379ac77b2c62a5c2868c40"
 
-arlas-api@1.0.17:
-  version "1.0.17"
-  resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-1.0.17.tgz#ab000f39b981eceb56a1263edc2e91aaf982b797"
+arlas-api@1.0.20:
+  version "1.0.20"
+  resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-1.0.20.tgz#e8d75a9c307fe34e98b8a963aa42e9ec35f38ec6"
 
 arlas-kv-api@~1.0.14:
   version "1.0.15"
   resolved "https://registry.yarnpkg.com/arlas-kv-api/-/arlas-kv-api-1.0.15.tgz#5222c694bc8c5e875f2815e5a20652d9d1b2a5d3"
 
-arlas-web-core@0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-0.3.0.tgz#62ea7f398262c3822bceb2168285da85a5750d46"
+arlas-web-core@0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-0.4.0.tgz#646a7bc9001106a188cdb2594b6b83a5f654ec17"
   dependencies:
     "@angular/core" "^4.0.0"
     "@angular/http" "^4.0.0"
     "@angular/platform-browser" "^4.0.0"
-    arlas-api "1.0.17"
+    arlas-api "1.0.20"
     arlas-kv-api "~1.0.14"
     rxjs "^5.4.2"
     zone.js "^0.8.14"
