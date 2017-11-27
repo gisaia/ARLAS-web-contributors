@@ -13,6 +13,7 @@ import {
     Expression, AggregationResponse
 } from 'arlas-api';
 import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
+import { setSelection, valueChanged } from '../utils/histoswimUtils';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -66,7 +67,7 @@ export class HistogramContributor extends Contributor {
     constructor(
         identifier: string,
         private dateUnit: DateUnit.millisecond | DateUnit.second,
-        private dataTpye: DataType.numeric | DataType.time,
+        private dataType: DataType.numeric | DataType.time,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, private isOneDimension?: boolean
     ) {
@@ -98,43 +99,8 @@ export class HistogramContributor extends Contributor {
     * @param value DateType.millisecond | DateType.second
     */
     public valueChanged(values: SelectedOutputValues[]) {
-        const filterValue = {
-            f: []
-        };
-        const rangeExpression: Expression = {
-            field: this.field,
-            op: Expression.OpEnum.Range,
-            value: ''
-        };
-        values.forEach(value => {
-            let end = value.endvalue;
-            let start = value.startvalue;
-            if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
-                const endDate = new Date(value.endvalue.toString());
-                const startDate = new Date(value.startvalue.toString());
-                this.startValue = startDate.toLocaleString();
-                this.endValue = endDate.toLocaleString();
-                let multiplier = 1;
-                if (this.dateUnit.toString() === DateUnit.second.toString()) {
-                    multiplier = 1000;
-                }
-                end = endDate.valueOf() / multiplier;
-                start = startDate.valueOf() / multiplier;
-            } else {
-                this.startValue = Math.round(<number>start).toString();
-                this.endValue = Math.round(<number>end).toString();
-            }
-            rangeExpression.value = rangeExpression.value + '[' + start.toString() + ';' + end.toString() + '],';
-
-        });
-        rangeExpression.value = rangeExpression.value.substring(0, rangeExpression.value.length - 1);
-        filterValue.f.push(rangeExpression);
-        const data: Collaboration = {
-            filter: filterValue,
-            enabled: true
-        };
-        this.intervalSelection = values[values.length - 1];
-        this.collaborativeSearcheService.setFilter(this.identifier, data);
+        valueChanged(values, this.field, this.startValue, this.endValue,
+            this.dateUnit, this.identifier, this.intervalSelection, this.collaborativeSearcheService);
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
@@ -174,66 +140,7 @@ export class HistogramContributor extends Contributor {
         return this.chartData;
     }
     public setSelection(data: Array<{ key: number, value: number }>, collaboration: Collaboration): any {
-        let currentIntervalSelected = {
-            startvalue: null,
-            endvalue: null
-        };
-        if (collaboration) {
-            const f = collaboration.filter;
-            if (f === null) {
-                if (data.length > 0) {
-                    currentIntervalSelected.startvalue = <number>data[0].key;
-                    currentIntervalSelected.endvalue = <number>data[data.length - 1].key;
-                }
-                this.intervalListSelection = [];
-            } else {
-                const intervals = [];
-                const invtervalFilterList = f.f[0].value.split(',');
-                let c = 0;
-                invtervalFilterList.forEach(i => {
-                    c++;
-                    const start = i.split(';')[0].substring(1);
-                    const end = i.split(';')[1].substring(0, i.split(';')[1].length - 1);
-                    const interval = {
-                        startvalue: null,
-                        endvalue: null
-                    };
-                    if (this.dataTpye === DataType.time) {
-                        if (this.dateUnit === DateUnit.second) {
-                            interval.startvalue = <number>parseFloat(start) * 1000;
-                            interval.endvalue = <number>parseFloat(end) * 1000;
-                        } else {
-                            interval.startvalue = <number>parseFloat(start);
-                            interval.endvalue = <number>parseFloat(end);
-                        }
-                    } else {
-                        interval.startvalue = <number>parseFloat(start);
-                        interval.endvalue = <number>parseFloat(end);
-                    }
-                    if (invtervalFilterList.length > c) {
-                        intervals.push(interval);
-                    } else {
-                        currentIntervalSelected = interval;
-                    }
-                });
-                if (intervals.length > 0) {
-                    this.intervalListSelection = intervals;
-                } else {
-                    this.intervalListSelection = [];
-                }
-            }
-        } else {
-            if (data.length > 0) {
-                currentIntervalSelected.startvalue = <number>data[0].key;
-                currentIntervalSelected.endvalue = <number>data[data.length - 1].key;
-            }
-            this.intervalListSelection = [];
-        }
-        if (currentIntervalSelected.endvalue !== null && currentIntervalSelected.startvalue !== null) {
-            this.intervalSelection = currentIntervalSelected;
-            this.startValue = Math.round(<number>currentIntervalSelected.startvalue).toString();
-            this.endValue = Math.round(<number>currentIntervalSelected.endvalue).toString();
-        }
-        return Observable.from([]);
+        setSelection(data, collaboration, this.intervalListSelection,
+            this.intervalSelection, this.dataType, this.dateUnit, this.startValue, this.endValue);
     }
 }
