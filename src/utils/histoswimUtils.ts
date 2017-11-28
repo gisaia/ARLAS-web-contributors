@@ -1,7 +1,6 @@
 import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
-import { SelectedOutputValues } from '../models/models';
+import { SelectedOutputValues,DateUnit, DataType } from '../models/models';
 import { Expression } from 'arlas-api';
-import { DateUnit, DataType } from 'models/models';
 import { Observable } from 'rxjs/Observable';
 export function valueChanged(values: SelectedOutputValues[],
     field: string,
