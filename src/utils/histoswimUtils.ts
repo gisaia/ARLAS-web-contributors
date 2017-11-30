@@ -10,6 +10,7 @@ export function getvaluesChanged(values: SelectedOutputValues[],
     collaborativeSearcheService: CollaborativesearchService
 ): any[] {
     let intervalSelection;
+
     const filterValue = {
         f: []
     };
@@ -23,6 +24,7 @@ export function getvaluesChanged(values: SelectedOutputValues[],
     values.forEach(value => {
         let end = value.endvalue;
         let start = value.startvalue;
+
 
         if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
             const endDate = new Date(value.endvalue.toString());
@@ -61,6 +63,7 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
     let startValue;
     let endValue;
     let isArray: boolean;
+
     if (data instanceof Array) {
         isArray = true;
     } else {

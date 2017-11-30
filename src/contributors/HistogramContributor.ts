@@ -103,6 +103,7 @@ export class HistogramContributor extends Contributor {
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
+
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
@@ -149,5 +150,6 @@ export class HistogramContributor extends Contributor {
         this.startValue = resultList[2];
         this.endValue = resultList[3];
         return Observable.from([]);
+
     }
 }

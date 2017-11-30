@@ -12,6 +12,7 @@ import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
 import { Aggregation, AggregationResponse } from 'arlas-api';
 import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
 
+
 export class SwimLaneContributor extends Contributor {
     /**
     * New data need to be draw in the swimlane (could be set to
@@ -70,6 +71,7 @@ export class SwimLaneContributor extends Contributor {
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
+
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
@@ -92,6 +94,7 @@ export class SwimLaneContributor extends Contributor {
                 const dataTab = new Array<{ key: number, value: number }>();
                 element.elements.forEach(e => {
                     e.elements.forEach(el => dataTab.push({ key: el.key, value: el.count }));
+
                 });
                 mapResponse.set(key, dataTab);
             });
@@ -111,6 +114,7 @@ export class SwimLaneContributor extends Contributor {
         this.startValue = resultList[2];
         this.endValue = resultList[3];
         return Observable.from([]);
+
     }
 
     public getPackageName(): string {
