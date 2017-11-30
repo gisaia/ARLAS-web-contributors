@@ -13,7 +13,7 @@ import {
     Expression, AggregationResponse
 } from 'arlas-api';
 import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
-import { setSelection, valueChanged } from '../utils/histoswimUtils';
+import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -99,8 +99,10 @@ export class HistogramContributor extends Contributor {
     * @param value DateType.millisecond | DateType.second
     */
     public valueChanged(values: SelectedOutputValues[]) {
-        valueChanged(values, this.field, this.startValue, this.endValue,
-            this.dateUnit, this.identifier, this.intervalSelection, this.collaborativeSearcheService);
+        const resultList = getvaluesChanged(values, this.field, this.dateUnit, this.identifier, this.collaborativeSearcheService);
+        this.intervalSelection = resultList[0];
+        this.startValue = resultList[1];
+        this.endValue = resultList[2];
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
@@ -139,8 +141,13 @@ export class HistogramContributor extends Contributor {
         }
         return this.chartData;
     }
+
     public setSelection(data: Array<{ key: number, value: number }>, collaboration: Collaboration): any {
-        setSelection(data, collaboration, this.intervalListSelection,
-            this.intervalSelection, this.dataType, this.dateUnit, this.startValue, this.endValue);
+        const resultList = getSelectionToSet(data, collaboration, this.dataType, this.dateUnit);
+        this.intervalListSelection = resultList[0];
+        this.intervalSelection = resultList[1];
+        this.startValue = resultList[2];
+        this.endValue = resultList[3];
+        return Observable.from([]);
     }
 }

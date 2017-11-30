@@ -10,7 +10,7 @@ import {
 import { Observable } from 'rxjs/Observable';
 import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
 import { Aggregation, AggregationResponse } from 'arlas-api';
-import { setSelection, valueChanged } from '../utils/histoswimUtils';
+import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
 
 export class SwimLaneContributor extends Contributor {
     /**
@@ -66,8 +66,10 @@ export class SwimLaneContributor extends Contributor {
 * @param value DateType.millisecond | DateType.second
 */
     public valueChanged(values: SelectedOutputValues[]) {
-        valueChanged(values, this.field, this.startValue, this.endValue,
-            this.dateUnit, this.identifier, this.intervalSelection, this.collaborativeSearcheService);
+        const resultList = getvaluesChanged(values, this.field, this.dateUnit, this.identifier, this.collaborativeSearcheService);
+        this.intervalSelection = resultList[0];
+        this.startValue = resultList[1];
+        this.endValue = resultList[2];
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
@@ -86,11 +88,10 @@ export class SwimLaneContributor extends Contributor {
         const mapResponse = new Map<string, Array<{ key: number, value: number }>>();
         if (aggResonse.elements !== undefined) {
             aggResonse.elements.forEach(element => {
-                const key = element.keyAsString;
+                const key = element.key;
                 const dataTab = new Array<{ key: number, value: number }>();
                 element.elements.forEach(e => {
-                    dataTab.push({ key: element.key, value: element.count });
-
+                    e.elements.forEach(el => dataTab.push({ key: el.key, value: el.count }));
                 });
                 mapResponse.set(key, dataTab);
             });
@@ -104,8 +105,12 @@ export class SwimLaneContributor extends Contributor {
     }
 
     public setSelection(data: Map<string, Array<{ key: number, value: number }>>, c: Collaboration): any {
-        setSelection(data, c, this.intervalListSelection, this.intervalSelection,
-            this.dataType, this.dateUnit, this.startValue, this.endValue);
+        const resultList = getSelectionToSet(data, c, this.dataType, this.dateUnit);
+        this.intervalListSelection = resultList[0];
+        this.intervalSelection = resultList[1];
+        this.startValue = resultList[2];
+        this.endValue = resultList[3];
+        return Observable.from([]);
     }
 
     public getPackageName(): string {

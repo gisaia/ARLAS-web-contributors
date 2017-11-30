@@ -1,17 +1,15 @@
 import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
-import { SelectedOutputValues,DateUnit, DataType } from '../models/models';
+import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
 import { Expression } from 'arlas-api';
 import { Observable } from 'rxjs/Observable';
-export function valueChanged(values: SelectedOutputValues[],
+export function getvaluesChanged(values: SelectedOutputValues[],
     field: string,
-    startValue: string,
-    endValue: string,
+
     dateUnit: DateUnit,
     identifier: string,
-    intervalSelection: SelectedOutputValues,
     collaborativeSearcheService: CollaborativesearchService
-) {
-
+): any[] {
+    let intervalSelection;
     const filterValue = {
         f: []
     };
@@ -20,9 +18,12 @@ export function valueChanged(values: SelectedOutputValues[],
         op: Expression.OpEnum.Range,
         value: ''
     };
+    let startValue;
+    let endValue;
     values.forEach(value => {
         let end = value.endvalue;
         let start = value.startvalue;
+
         if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
             const endDate = new Date(value.endvalue.toString());
             const startDate = new Date(value.startvalue.toString());
@@ -48,14 +49,18 @@ export function valueChanged(values: SelectedOutputValues[],
     };
     intervalSelection = values[values.length - 1];
     collaborativeSearcheService.setFilter(identifier, data);
+    return [intervalSelection, startValue, endValue];
 }
 
-export function setSelection(data: Array<{ key: number, value: number }> | Map<string, Array<{ key: number, value: number }>>,
-    collaboration: Collaboration, intervalListSelection: SelectedOutputValues[], intervalSelection: SelectedOutputValues,
-    dataType: DataType, dateUnit: DateUnit, startValue: string,
-    endValue: string, ): any {
+export function getSelectionToSet(data: Array<{ key: number, value: number }> | Map<string, Array<{ key: number, value: number }>>,
+    collaboration: Collaboration,
+    dataType: DataType, dateUnit: DateUnit,
+): any[] {
+    let intervalListSelection;
+    let intervalSelection;
+    let startValue;
+    let endValue;
     let isArray: boolean;
-
     if (data instanceof Array) {
         isArray = true;
     } else {
@@ -74,7 +79,7 @@ export function setSelection(data: Array<{ key: number, value: number }> | Map<s
                     currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
                 }
             } else {
-                const minMax = getMinMax(data);
+                const minMax = getMinMax(<Map<string, Array<{ key: number, value: number }>>>data);
                 currentIntervalSelected.startvalue = minMax[0];
                 currentIntervalSelected.endvalue = minMax[1];
             }
@@ -122,11 +127,10 @@ export function setSelection(data: Array<{ key: number, value: number }> | Map<s
                 currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
             }
         } else {
-            (<Map<string, Array<{ key: number, value: number }>>>data).forEach((k, v) => {
-                const minMax = getMinMax(data);
-                currentIntervalSelected.startvalue = minMax[0];
-                currentIntervalSelected.endvalue = minMax[1];
-            });
+            const minMax = getMinMax(<Map<string, Array<{ key: number, value: number }>>>data);
+            currentIntervalSelected.startvalue = minMax[0];
+            currentIntervalSelected.endvalue = minMax[1];
+
         }
         intervalListSelection = [];
     }
@@ -135,18 +139,19 @@ export function setSelection(data: Array<{ key: number, value: number }> | Map<s
         startValue = Math.round(<number>currentIntervalSelected.startvalue).toString();
         endValue = Math.round(<number>currentIntervalSelected.endvalue).toString();
     }
-    return Observable.from([]);
+
+    return [intervalListSelection, intervalSelection, startValue, endValue];
 }
 
-function getMinMax(data): Array<number> {
+function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Array<number> {
     let min;
     let max;
-    (<Map<string, Array<{ key: number, value: number }>>>data).forEach((k, v) => {
+    data.forEach((k, v) => {
         if (min === undefined) {
-            min = k.map(kv => k).sort()[0];
+            min = k.map(kv => kv.key).sort()[0];
         } else {
             if (k.map(kv => k).sort()[0] < min) {
-                min = k.map(kv => k).sort()[0];
+                min = k.map(kv => kv.key).sort()[0];
             }
         }
         if (max === undefined) {
