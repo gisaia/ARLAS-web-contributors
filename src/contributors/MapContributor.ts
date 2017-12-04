@@ -145,7 +145,7 @@ export class MapContributor extends Contributor {
         }
         this.redrawTile.next(true);
         if (collaboration !== null) {
-            const bbox = collaboration.filter.pwithin.split(',');
+            const bbox = collaboration.filter.pwithin[0][0].split(',');
             const coordinates = [[
                 [bbox[3], bbox[2]],
                 [bbox[3], bbox[0]],
@@ -185,7 +185,7 @@ export class MapContributor extends Contributor {
             value: elementidentifier.idValue
         };
         const filter: Filter = {
-            f: [expression]
+            f: [[expression]]
         };
         searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], '', filter);
         return searchResult.map(h => {
@@ -232,7 +232,7 @@ export class MapContributor extends Contributor {
         let pwithin = '';
         newBbox.forEach(v => pwithin = pwithin + ',' + v);
         const filters: Filter = {
-            pwithin: pwithin.substring(1).trim().toLocaleLowerCase(),
+            pwithin: [[pwithin.substring(1).trim().toLocaleLowerCase()]],
         };
         const data: Collaboration = {
             filter: filters,

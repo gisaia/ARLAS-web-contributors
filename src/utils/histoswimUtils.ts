@@ -1,18 +1,16 @@
 import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
 import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
-import { Expression } from 'arlas-api';
+import { Expression, Filter } from 'arlas-api';
 import { Observable } from 'rxjs/Observable';
 export function getvaluesChanged(values: SelectedOutputValues[],
     field: string,
-
     dateUnit: DateUnit,
     identifier: string,
     collaborativeSearcheService: CollaborativesearchService
 ): any[] {
     let intervalSelection;
-
-    const filterValue = {
-        f: []
+    const filterValue: Filter = {
+        f: new Array<Array<Expression>>()
     };
     const rangeExpression: Expression = {
         field: field,
@@ -24,8 +22,6 @@ export function getvaluesChanged(values: SelectedOutputValues[],
     values.forEach(value => {
         let end = value.endvalue;
         let start = value.startvalue;
-
-
         if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
             const endDate = new Date(value.endvalue.toString());
             const startDate = new Date(value.startvalue.toString());
@@ -41,16 +37,16 @@ export function getvaluesChanged(values: SelectedOutputValues[],
             startValue = Math.round(<number>start).toString();
             endValue = Math.round(<number>end).toString();
         }
-        rangeExpression.value = rangeExpression.value + '[' + start.toString() + ';' + end.toString() + '],';
+        rangeExpression.value = rangeExpression.value + '[' + start.toString() + '<' + end.toString() + '],';
     });
     rangeExpression.value = rangeExpression.value.substring(0, rangeExpression.value.length - 1);
-    filterValue.f.push(rangeExpression);
-    const data: Collaboration = {
+    filterValue.f.push([rangeExpression]);
+    const collaboration: Collaboration = {
         filter: filterValue,
         enabled: true
     };
     intervalSelection = values[values.length - 1];
-    collaborativeSearcheService.setFilter(identifier, data);
+    collaborativeSearcheService.setFilter(identifier, collaboration);
     return [intervalSelection, startValue, endValue];
 }
 
@@ -89,12 +85,12 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
             intervalListSelection = [];
         } else {
             const intervals = [];
-            const invtervalFilterList = f.f[0].value.split(',');
+            const invtervalFilterList = f.f[0][0].value.split(',');
             let c = 0;
             invtervalFilterList.forEach(i => {
                 c++;
-                const start = i.split(';')[0].substring(1);
-                const end = i.split(';')[1].substring(0, i.split(';')[1].length - 1);
+                const start = i.split('<')[0].substring(1);
+                const end = i.split('<')[1].substring(0, i.split('<')[1].length - 1);
                 const interval = {
                     startvalue: null,
                     endvalue: null

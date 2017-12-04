@@ -54,17 +54,17 @@ export class ChipsSearchContributor extends Contributor {
             if (fil != null) {
                 f = Array.from(this.chipMapData.keys());
                 f.forEach(k => {
-                    if (fil.filter.q.split(' ').indexOf(k) < 0) {
+                    if (fil.filter.q[0][0].split(' ').indexOf(k) < 0) {
                         this.chipMapData.delete((k));
                     }
                 });
-                f = fil.filter.q.split(' ');
+                f = fil.filter.q[0][0].split(' ');
             }
             if (f.length > 0) {
                 f.forEach((k) => {
                     if (k.length > 0) {
                         const filter: Filter = {
-                            q: k
+                            q: [[k]]
                         };
                         const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
                             [projType.count,
@@ -127,7 +127,7 @@ export class ChipsSearchContributor extends Contributor {
                 this.chipMapData.set(value, 0);
                 this.setFilterFromMap();
                 const filter: Filter = {
-                    q: value
+                    q: [[value]]
                 };
                 const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
                     [projType.count, {}],
@@ -172,7 +172,7 @@ export class ChipsSearchContributor extends Contributor {
             query = query + q + ' ';
         });
         const filters: Filter = {
-            q: query
+            q: [[query]]
         };
         this.query = query;
         if (this.query.trim().length > 0) {

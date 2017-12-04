@@ -109,9 +109,9 @@ export class PowerbarsContributor extends Contributor {
             if (f === null) {
                 this.selectedBars = new Set();
             } else {
-                const selectedBarsAsArray = f.f[0].value.split(',');
+                const selectedBarsAsArray = f.f[0][0].value.split(',');
                 this.selectedBars = new Set();
-                selectedBarsAsArray.forEach (term => this.selectedBars.add(term));
+                selectedBarsAsArray.forEach(term => this.selectedBars.add(term));
             }
         } else {
             this.selectedBars = new Set();
@@ -120,7 +120,7 @@ export class PowerbarsContributor extends Contributor {
     }
 
     public selectedBarsChanged(selectedBars: Set<string>) {
-        const filterValue = { f: [] };
+        const filterValue: Filter = { f: [] };
         const equalExpression: Expression = {
             field: this.field,
             op: Expression.OpEnum.Eq,
@@ -131,7 +131,7 @@ export class PowerbarsContributor extends Contributor {
                 equalExpression.value += selectedBar + ',';
             });
             equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
-            filterValue.f.push(equalExpression);
+            filterValue.f.push([equalExpression]);
             const collaboration: Collaboration = {
                 filter: filterValue,
                 enabled: true

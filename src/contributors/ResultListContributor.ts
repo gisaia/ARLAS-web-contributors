@@ -41,7 +41,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             value: identifier
         };
         const filter: Filter = {
-            f: [expression]
+            f: [[expression]]
         };
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search],
@@ -149,7 +149,7 @@ export class ResultListContributor extends Contributor {
             value: elementidentifier.idValue
         };
         const filter: Filter = {
-            f: [expression]
+            f: [[expression]]
         };
         const actionsList = new Array<string>();
         searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], null, filter);
@@ -255,7 +255,7 @@ export class ResultListContributor extends Contributor {
                 expressions.push(expression);
             });
             const filterValue: Filter = {
-                f: expressions
+                f: [expressions]
             };
             const collaboration: Collaboration = { filter: filterValue, enabled: true };
             this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
@@ -319,7 +319,9 @@ export class ResultListContributor extends Contributor {
         if (collaboration !== null) {
             const map = new Map<string, string | number | Date>();
             collaboration.filter.f.forEach(e => {
-                map.set(e.field, e.value);
+                e.forEach(f => {
+                    map.set(f.field, f.value);
+                });
             });
             this.filtersMap = map;
         } else {
