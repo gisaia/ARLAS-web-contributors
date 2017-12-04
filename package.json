@@ -17,7 +17,7 @@
   "author": "gisaia",
   "license": "Apache-2.0",
   "dependencies": {
-    "arlas-web-core": "2.3.0",
+    "arlas-web-core": "2.3.1",
     "@types/file-saver": "^0.0.1",
     "@types/tinycolor2": "^1.4.0",
     "@types/turf": "^3.5.32",
