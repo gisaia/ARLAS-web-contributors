@@ -54,11 +54,11 @@ export class ChipsSearchContributor extends Contributor {
             if (fil != null) {
                 f = Array.from(this.chipMapData.keys());
                 f.forEach(k => {
-                    if (fil.filter.q[0][0].split(' ').indexOf(k) < 0) {
+                    if (fil.filter.q[0].indexOf(k) < 0) {
                         this.chipMapData.delete((k));
                     }
                 });
-                f = fil.filter.q[0][0].split(' ');
+                f = fil.filter.q[0];
             }
             if (f.length > 0) {
                 f.forEach((k) => {
@@ -95,9 +95,9 @@ export class ChipsSearchContributor extends Contributor {
         this.chipMapData.set(data.label, data.hits.totalnb);
         let query = '';
         this.chipMapData.forEach((k, q) => {
-            query = query + q + ' ';
+            query = query + q + '||';
         });
-        this.query = query;
+        this.query = query.substring(0, query.length - 2);
         return Observable.from([]);
 
     }
@@ -167,14 +167,19 @@ export class ChipsSearchContributor extends Contributor {
     * Set Filter for collaborative search service from wordToCount map.
     */
     private setFilterFromMap() {
-        let query = '';
+        let strquery = '';
+        const tabquery = [];
+
         this.chipMapData.forEach((k, q) => {
-            query = query + q + ' ';
+            tabquery.push(q);
+            strquery = strquery + q + '||';
         });
+        strquery = strquery.substring(0, strquery.length - 2);
+
+        this.query = strquery;
         const filters: Filter = {
-            q: [[query]]
+            q: [tabquery]
         };
-        this.query = query;
         if (this.query.trim().length > 0) {
             const data: Collaboration = {
                 filter: filters,

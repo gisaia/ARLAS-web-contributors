@@ -85,33 +85,41 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
             intervalListSelection = [];
         } else {
             const intervals = [];
-            const invtervalFilterList = f.f[0][0].value.split(',');
-            let c = 0;
-            invtervalFilterList.forEach(i => {
-                c++;
-                const start = i.split('<')[0].substring(1);
-                const end = i.split('<')[1].substring(0, i.split('<')[1].length - 1);
-                const interval = {
-                    startvalue: null,
-                    endvalue: null
-                };
-                if (dataType === DataType.time) {
-                    if (dateUnit === DateUnit.second) {
-                        interval.startvalue = <number>parseFloat(start) * 1000;
-                        interval.endvalue = <number>parseFloat(end) * 1000;
+            const invtervalFilterList = f.f[0];
+            let d = 0;
+            invtervalFilterList.forEach(k => {
+                let c = 0;
+                d++;
+                k.value.split(',').forEach(i => {
+                    c++;
+                    const start = i.split('<')[0].substring(1);
+                    const end = i.split('<')[1].substring(0, i.split('<')[1].length - 1);
+                    const interval = {
+                        startvalue: null,
+                        endvalue: null
+                    };
+                    if (dataType === DataType.time) {
+                        if (dateUnit === DateUnit.second) {
+                            interval.startvalue = <number>parseFloat(start) * 1000;
+                            interval.endvalue = <number>parseFloat(end) * 1000;
+                        } else {
+                            interval.startvalue = <number>parseFloat(start);
+                            interval.endvalue = <number>parseFloat(end);
+                        }
                     } else {
                         interval.startvalue = <number>parseFloat(start);
                         interval.endvalue = <number>parseFloat(end);
                     }
-                } else {
-                    interval.startvalue = <number>parseFloat(start);
-                    interval.endvalue = <number>parseFloat(end);
-                }
-                if (invtervalFilterList.length > c) {
-                    intervals.push(interval);
-                } else {
-                    currentIntervalSelected = interval;
-                }
+                    if (k.value.split(',').length > c) {
+                        intervals.push(interval);
+                    } else {
+                        if (d < invtervalFilterList.length) {
+                            intervals.push(interval);
+                        } else {
+                            currentIntervalSelected = interval;
+                        }
+                    }
+                });
             });
             if (intervals.length > 0) {
                 intervalListSelection = intervals;

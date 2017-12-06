@@ -109,9 +109,9 @@ export class PowerbarsContributor extends Contributor {
             if (f === null) {
                 this.selectedBars = new Set();
             } else {
-                const selectedBarsAsArray = f.f[0][0].value.split(',');
+                const selectedBarsAsArray = f.f[0];
                 this.selectedBars = new Set();
-                selectedBarsAsArray.forEach(term => this.selectedBars.add(term));
+                selectedBarsAsArray.forEach(term => this.selectedBars.add(term.value));
             }
         } else {
             this.selectedBars = new Set();
