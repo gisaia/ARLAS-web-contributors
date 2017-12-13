@@ -94,7 +94,6 @@ export class SwimLaneContributor extends Contributor {
                 const dataTab = new Array<{ key: number, value: number }>();
                 element.elements.forEach(e => {
                     e.elements.forEach(el => dataTab.push({ key: el.key, value: el.count }));
-
                 });
                 mapResponse.set(key, dataTab);
             });

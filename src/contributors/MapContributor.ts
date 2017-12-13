@@ -145,28 +145,34 @@ export class MapContributor extends Contributor {
         }
         this.redrawTile.next(true);
         if (collaboration !== null) {
-            const bbox = collaboration.filter.pwithin[0][0].split(',');
-            const coordinates = [[
-                [bbox[3], bbox[2]],
-                [bbox[3], bbox[0]],
-                [bbox[1], bbox[0]],
-                [bbox[1], bbox[2]],
-                [bbox[3], bbox[2]],
-            ]];
-            const polygonGeojson = {
-                type: 'Feature',
-                properties: {
+            const polygonGeojsons = [];
+            const bboxs = collaboration.filter.pwithin[0];
+            bboxs.forEach(b => {
+                const bbox = b.split(',');
+                const coordinates = [[
+                    [bbox[3], bbox[2]],
+                    [bbox[3], bbox[0]],
+                    [bbox[1], bbox[0]],
+                    [bbox[1], bbox[2]],
+                    [bbox[3], bbox[2]],
+                ]];
+                const polygonGeojson = {
+                    type: 'Feature',
+                    properties: {
 
-                },
-                geometry: {
-                    type: 'Polygon',
-                    coordinates: coordinates
-                }
-            };
+                    },
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: coordinates
+                    }
+                };
+                polygonGeojsons.push(polygonGeojson);
+            });
             this.geojsonbbox = {
                 'type': 'FeatureCollection',
-                'features': [polygonGeojson]
+                'features': polygonGeojsons
             };
+            this.isBbox = true;
         } else {
             this.geojsonbbox = {
                 'type': 'FeatureCollection',
@@ -228,11 +234,19 @@ export class MapContributor extends Contributor {
     public getFilterDisplayName(): string {
         return 'GeoBox';
     }
-    public onChangeBbox(newBbox: Array<number>) {
-        let pwithin = '';
-        newBbox.forEach(v => pwithin = pwithin + ',' + v);
+    public onChangeBbox(newBbox: Array<Object>) {
+        const pwithinArray: Array<string> = [];
+        newBbox.forEach(v => {
+            const coord = v['geometry']['coordinates'][0];
+            const north = coord[1][1];
+            const west = coord[2][0];
+            const south = coord[0][1];
+            const east = coord[0][0];
+            const pwithin = north + ',' + west + ',' + south + ',' + east;
+            pwithinArray.push(pwithin.trim().toLocaleLowerCase());
+        });
         const filters: Filter = {
-            pwithin: [[pwithin.substring(1).trim().toLocaleLowerCase()]],
+            pwithin: [pwithinArray],
         };
         const data: Collaboration = {
             filter: filters,
@@ -354,15 +368,16 @@ export class MapContributor extends Contributor {
         this.fetchDataTileSearch(tiles)
             .map(f => this.computeDataTileSearch(f))
             .map(f => this.setDataTileSearch(f))
-            .finally(() => this.setSelection(null, null))
+            .finally(() => this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+
             .subscribe(data => data);
     }
-
     private drawGeoaggregateGeohash(geohashList: Array<string>) {
         this.fetchDataGeohashGeoaggregate(geohashList)
             .map(f => this.computeDataGeohashGeoaggregate(f))
             .map(f => this.setDataGeohashGeoaggregate(f))
-            .finally(() => this.setSelection(null, null))
+            .finally(() => this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+
             .subscribe(data => data);
     }
 

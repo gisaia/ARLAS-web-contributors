@@ -247,12 +247,23 @@ export class ResultListContributor extends Contributor {
                 } else {
                     op = Expression.OpEnum.Like;
                 }
-                const expression: Expression = {
-                    field: v,
-                    op: op,
-                    value: <string>k
-                };
-                expressions.push(expression);
+                if (k.toString().indexOf(',') > 0) {
+                    k.toString().split(',').forEach(va => {
+                        const expression: Expression = {
+                            field: v,
+                            op: op,
+                            value: <string>va
+                        };
+                        expressions.push(expression);
+                    });
+                } else {
+                    const expression: Expression = {
+                        field: v,
+                        op: op,
+                        value: <string>k
+                    };
+                    expressions.push(expression);
+                }
             });
             const filterValue: Filter = {
                 f: [expressions]
@@ -320,7 +331,11 @@ export class ResultListContributor extends Contributor {
             const map = new Map<string, string | number | Date>();
             collaboration.filter.f.forEach(e => {
                 e.forEach(f => {
-                    map.set(f.field, f.value);
+                    if (map.get(f.field) === undefined) {
+                        map.set(f.field, f.value);
+                    } else {
+                        map.set(f.field, map.get(f.field) + ',' + f.value);
+                    }
                 });
             });
             this.filtersMap = map;
