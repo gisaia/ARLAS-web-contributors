@@ -38,15 +38,15 @@ export function feedDetailledMap(element, detailedDataMap = new Map<string, stri
     if (isArray(confEntrie)) {
         confEntrie.forEach(i => {
             Object.keys(i).forEach(subelement => {
-                if (data[element] !== undefined) {
-                    data[element].forEach(e => {
+                if (getElementFromJsonObject(data, element) !== undefined) {
+                    getElementFromJsonObject(data, element).forEach(e => {
                         feedDetailledMap(subelement, detailedDataMap, i[subelement], e);
                     });
                 }
             });
         });
     } else {
-        const result = data[element];
+        const result = getElementFromJsonObject(data, element);
         let resultset = null;
         if (confEntrie.process.trim().length > 0) {
             resultset = eval(confEntrie.process.trim());
