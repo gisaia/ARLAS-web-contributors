@@ -14,6 +14,7 @@ import {
 } from 'arlas-api';
 import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
 import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
+import { Aggregation } from 'arlas-api';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -40,11 +41,11 @@ export class HistogramContributor extends Contributor {
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
-    private aggregation: Aggregation = this.getConfigValue('aggregationmodel');
+    private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
     /**
     * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
     */
-    private field: string = this.aggregation.field;
+    private field: string = (this.aggregations !== undefined) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
     /**
     * Start value of selection use to the display of filterDisplayName
     */
@@ -79,9 +80,10 @@ export class HistogramContributor extends Contributor {
     public getFilterDisplayName(): string {
         let displayName = '';
         const name = this.getConfigValue('name');
-        if (this.aggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
+        const lastAggregation: Aggregation = this.aggregations[this.aggregations.length - 1];
+        if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
             displayName = 'Timeline';
-        } else if (this.aggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Histogram.toString().toLocaleLowerCase()) {
+        } else if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Histogram.toString().toLocaleLowerCase()) {
             displayName = this.startValue + ' <= ' + name + ' <= ' + this.endValue;
         } else {
             displayName = name;
@@ -108,7 +110,7 @@ export class HistogramContributor extends Contributor {
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
         this.maxCount = 0;
         const aggObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, [this.aggregation]],
+            [projType.aggregate, this.aggregations],
             this.identifier
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
