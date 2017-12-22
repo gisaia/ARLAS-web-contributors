@@ -14,7 +14,6 @@ import {
 } from 'arlas-api';
 import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
 import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
-import { Aggregation } from 'arlas-api';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
