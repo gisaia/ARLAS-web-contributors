@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "title": "Powerbars Contributor Configuration",
+    "description": "The Configuration of Powerbars Contributor",
+    "type": "object",
+    "$id": "powerbarsContributorConf.schema.json",
+    "properties": {
+        "identifier":{
+            "description": "The unique identifier for a Contributor",
+            "type": "string"
+        }
+    },
+    "required": [
+        "identifier"
+    ]
+}

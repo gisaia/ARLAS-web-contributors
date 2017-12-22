@@ -1,0 +1,133 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "title": "ResultList Contributor Configuration",
+    "description": "The Configuration of ResultList Contributor",
+    "type": "object",
+    "$id": "resultlistContributorConf.schema.json",
+    "properties": {
+        "identifier": {
+            "$ref": "rootContributorConf.schema.json#/definitions/identifier"
+        },
+        "name": {
+            "$ref": "rootContributorConf.schema.json#/definitions/name"
+        },
+        "search_size": {
+            "description": "",
+            "type": "integer"
+        },
+        "fieldsConfiguration": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "idFieldName": {
+                    "description": "",
+                    "type": "string"
+                },
+                "urlImageTemplate": {
+                    "description": "",
+                    "type": "string"
+                },
+                "urlThumbnailTemplate": {
+                    "description": "",
+                    "type": "string"
+                },
+                "titleFieldName": {
+                    "description": "",
+                    "type": "string"
+                }
+            }
+        },
+        "columns": {
+            "description": "",
+            "type": "array",
+            "items": {
+                "description": "",
+                "type": "object",
+                "properties": {
+                    "columnName": {
+                        "description": "",
+                        "type": "string"
+                    },
+                    "fieldName": {
+                        "description": "",
+                        "type": "string"
+                    },
+                    "dataType": {
+                        "description": "",
+                        "type": "string"
+                    },
+                    "process": {
+                        "description": "",
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "process": {
+            "urlImageTemplate": {
+                "description": "",
+                "type": "string"
+            },
+            "urlThumbnailTemplate": {
+                "description": "",
+                "type": "string"
+            }
+        },
+        "details": {
+            "description": "List of theme in detail row",
+            "type": "array",
+            "items": {
+                "description": "",
+                "properties": {
+                    "name": {
+                        "description": "",
+                        "type": "string"
+                    },
+                    "order": {
+                        "description": "",
+                        "type": "number"
+                    },
+                    "fields": {
+                        "description": "",
+                        "type": "array",
+                        "items": {
+                            "description": "",
+                            "type": "object",
+                            "properties": {
+                                "label": {
+                                    "description": "",
+                                    "type": "string"
+                                },
+                                "path": {
+                                    "description": "",
+                                    "type": "string"
+                                },
+                                "process": {
+                                    "description": "",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "label",
+                                "path",
+                                "process"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "order",
+                    "fields"
+                ]
+            }
+        }
+    },
+    "required": [
+        "identifier",
+        "name",
+        "fieldsConfiguration",
+        "columns",
+        "details"
+    ]
+}
