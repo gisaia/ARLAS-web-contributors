@@ -59,7 +59,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                     } else {
                         let query = '$.';
                         let composePath = '';
-                        let lastElementNumber: number;
+                        let lastElementLength: number;
                         let isDataArray = false;
                         let dataElement: any;
                         field.path.split('.').forEach(pathElment => {
@@ -72,13 +72,13 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                             isDataArray = isArray(dataElement);
                             if (isArray(dataElement)) {
                                 query = query + pathElment + '[*].';
-                                lastElementNumber = 4;
+                                lastElementLength = 4;
                             } else {
                                 query = query + pathElment + '.';
-                                lastElementNumber = 1;
+                                lastElementLength = 1;
                             }
                         });
-                        query = query.substring(0, query.length - lastElementNumber);
+                        query = query.substring(0, query.length - lastElementLength);
                         results = jsonpath.query(searchData.hits[0].data, query).join(', ');
                     }
                     if (results.length > 0) {

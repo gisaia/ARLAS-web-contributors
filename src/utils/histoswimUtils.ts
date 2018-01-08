@@ -157,14 +157,14 @@ function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Ar
         if (min === undefined) {
             min = k.map(kv => kv.key).sort()[0];
         } else {
-            if (k.map(kv => k).sort()[0] < min) {
+            if (k.map(kv => kv.key).sort()[0] < min) {
                 min = k.map(kv => kv.key).sort()[0];
             }
         }
         if (max === undefined) {
             max = k.map(kv => kv.key).sort()[k.length - 1];
         } else {
-            if (k.map(kv => k).sort()[k.length - 1] > max) {
+            if (k.map(kv => kv.key).sort()[k.length - 1] > max) {
                 max = k.map(kv => kv.key).sort()[k.length - 1];
             }
         }
