@@ -12,52 +12,52 @@
             "$ref": "rootContributorConf.schema.json#/definitions/name"
         },
         "search_size": {
-            "description": "",
+            "description": "The size of search result on server side",
             "type": "integer"
         },
         "fieldsConfiguration": {
-            "description": "",
+            "description": "Global configuration of resultlist",
             "type": "object",
             "properties": {
                 "idFieldName": {
-                    "description": "",
+                    "description": "Field name of unique identifier",
                     "type": "string"
                 },
                 "urlImageTemplate": {
-                    "description": "",
+                    "description": "Url template of image",
                     "type": "string"
                 },
                 "urlThumbnailTemplate": {
-                    "description": "",
+                    "description": "Url template of thumbnail",
                     "type": "string"
                 },
                 "titleFieldName": {
-                    "description": "",
+                    "description": "Field name of title for item",
                     "type": "string"
                 }
             }
         },
         "columns": {
-            "description": "",
+            "description": "Configuration of columns",
             "type": "array",
             "items": {
-                "description": "",
+                "description": "Columns",
                 "type": "object",
                 "properties": {
                     "columnName": {
-                        "description": "",
+                        "description": "Name of column view in app",
                         "type": "string"
                     },
                     "fieldName": {
-                        "description": "",
+                        "description": "Field of column",
                         "type": "string"
                     },
                     "dataType": {
-                        "description": "",
+                        "description": "Unit of column (ex: °C, km ..)",
                         "type": "string"
                     },
                     "process": {
-                        "description": "",
+                        "description": "Process transformation to display (ex : result.trim())",
                         "type": "string"
                     }
                 }
@@ -65,45 +65,45 @@
         },
         "process": {
             "urlImageTemplate": {
-                "description": "",
+                "description": "Process transformation for urlImageTemplate",
                 "type": "string"
             },
             "urlThumbnailTemplate": {
-                "description": "",
+                "description": "Process transformation for urlThumbnailTemplate",
                 "type": "string"
             }
         },
         "details": {
-            "description": "List of theme in detail row",
+            "description": "Details for one item, list of theme",
             "type": "array",
             "items": {
-                "description": "",
+                "description": "Theme configuration",
                 "properties": {
                     "name": {
-                        "description": "",
+                        "description": "Name of theme",
                         "type": "string"
                     },
                     "order": {
-                        "description": "",
+                        "description": "Position of theme section",
                         "type": "number"
                     },
                     "fields": {
-                        "description": "",
+                        "description": "List field to return in this theme",
                         "type": "array",
                         "items": {
-                            "description": "",
+                            "description": "Field configuration",
                             "type": "object",
                             "properties": {
                                 "label": {
-                                    "description": "",
+                                    "description": "Label of field",
                                     "type": "string"
                                 },
                                 "path": {
-                                    "description": "",
+                                    "description": "Path of field",
                                     "type": "string"
                                 },
                                 "process": {
-                                    "description": "",
+                                    "description": "Process transformation for the field",
                                     "type": "string"
                                 }
                             },

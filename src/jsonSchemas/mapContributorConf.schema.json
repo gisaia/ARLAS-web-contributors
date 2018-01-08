@@ -76,7 +76,7 @@
             ]
         },
         "zoomToPrecisionCluster": {
-            "description": "List of triplet zoom-level-precision to associate a couple level-precision for each zoom",
+            "description": "List of triplet zoom-precison-level to associate a couple precision-level for each zoom",
             "type": "array",
             "items": {
                 "type": "array",

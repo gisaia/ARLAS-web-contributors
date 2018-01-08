@@ -1,9 +1,9 @@
 {
     "$schema": "http://json-schema.org/draft-06/schema#",
-    "title": "Powerbars Contributor Configuration",
-    "description": "The Configuration of Powerbars Contributor",
+    "title": "Swimlane Contributor Configuration",
+    "description": "The Configuration of Swimlane Contributor",
     "type": "object",
-    "$id": "powerbarsContributorConf.schema.json",
+    "$id": "swimlaneContributorConf.schema.json",
     "properties": {
         "identifier": {
             "description": "The unique identifier for a Contributor",
@@ -14,7 +14,7 @@
             "type": "string"
         },
         "field": {
-            "description": "The name of the Contributor",
+            "description": "The field of the principal aggregation",
             "type": "string"
         },
         "swimlanes": {
