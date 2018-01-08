@@ -39,11 +39,11 @@ export class PowerbarsContributor extends Contributor {
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
-    private aggregation: Aggregation = this.getConfigValue('aggregationmodel');
+    private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
     /**
     * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
     */
-    private field: string = this.aggregation.field;
+    private field: string = (this.aggregations !== undefined) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
 
     /**
     * Build a new contributor.
@@ -77,7 +77,7 @@ export class PowerbarsContributor extends Contributor {
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, [this.aggregation]],
+            [projType.aggregate, this.aggregations],
             this.identifier
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {

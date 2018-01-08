@@ -41,7 +41,7 @@ export enum DateUnit {
 * Enum of time unit that the timeline mode could draw.
 */
 export enum DataType {
-  numeric, time
+    numeric, time
 }
 /**
 * Object of start and end value of the chart selector.
@@ -78,5 +78,23 @@ export interface FieldsConfiguration {
     urlThumbnailTemplate?: string;
     titleFieldName?: string;
 
+}
+
+export interface Column {
+    columnName: string;
+    fieldName: string;
+    dataType: string;
+    process: string;
+}
+
+export interface Detail {
+    name: string;
+    order: number;
+    fields: Array<FieldDetail>;
+}
+export interface FieldDetail {
+    path: string;
+    label: string;
+    process: string;
 }
 

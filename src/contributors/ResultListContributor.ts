@@ -10,8 +10,9 @@ import {
     Projection, FeatureCollection, Hits,
     Filter, Aggregation, Expression, Hit
 } from 'arlas-api';
-import { getElementFromJsonObject, isArray, feedDetailledMap, download } from '../utils/utils';
-import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration } from '../models/models';
+import { getElementFromJsonObject, isArray, download } from '../utils/utils';
+import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration, Column, Detail } from '../models/models';
+import * as jsonpath from 'jsonpath';
 
 /**
 * Interface define in Arlas-web-components
@@ -46,22 +47,54 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search],
             this.contributor.identifier, filter);
-        const obs: Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> = searchResult.map(c => {
+        const obs: Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> = searchResult.map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
-            const details = this.contributor.getConfigValue('details');
-            Object.keys(details).forEach(group => {
+            const details: Array<Detail> = this.contributor.getConfigValue('details');
+            details.forEach(group => {
                 const detailedDataMap = new Map<string, string>();
-                Object.keys(details[group]).forEach(element => {
-                    const confEntrie = details[group][element];
-                    feedDetailledMap(element, detailedDataMap, confEntrie, c.hits[0].data);
-                    detailsMap.set(group, detailedDataMap);
+                group.fields.forEach(field => {
+                    let results = '';
+                    if (field.path.indexOf('.') < 0) {
+                        results = jsonpath.query(searchData.hits[0].data, '$.' + field.path).join(',');
+                    } else {
+                        let query = '$.';
+                        let composePath = '';
+                        let lastElementLength: number;
+                        let isDataArray = false;
+                        let dataElement: any;
+                        field.path.split('.').forEach(pathElment => {
+                            if (isDataArray) {
+                                dataElement = getElementFromJsonObject(dataElement[0], pathElment);
+                            } else {
+                                composePath = composePath + '.' + pathElment;
+                                dataElement = getElementFromJsonObject(searchData.hits[0].data, composePath.substring(1));
+                            }
+                            isDataArray = isArray(dataElement);
+                            if (isArray(dataElement)) {
+                                query = query + pathElment + '[*].';
+                                lastElementLength = 4;
+                            } else {
+                                query = query + pathElment + '.';
+                                lastElementLength = 1;
+                            }
+                        });
+                        query = query.substring(0, query.length - lastElementLength);
+                        results = jsonpath.query(searchData.hits[0].data, query).join(', ');
+                    }
+                    if (results.length > 0) {
+                        detailedDataMap.set(field.label, results);
+                    }
                 });
+                detailsMap.set(group.name, detailedDataMap);
             });
             const objectResult = { details: detailsMap, actions: this.contributor.actionToTriggerOnClick };
             return objectResult;
         });
         return obs;
     }
+
+
+
     /**
     * Get the ResultListContributor
     * @return ResultListContributor
@@ -113,6 +146,8 @@ export class ResultListContributor extends Contributor {
 
 
     public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
+    private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
+    private columnsProcess = {};
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -128,6 +163,9 @@ export class ResultListContributor extends Contributor {
         super(identifier, configService, collaborativeSearcheService);
         // Link the ResultListContributor and the detailedDataRetriever
         this.detailedDataRetriever.setContributor(this);
+        this.columns.forEach(column => {
+            this.columnsProcess[column.columnName] = column.process;
+        });
     }
 
     /**
@@ -169,7 +207,7 @@ export class ResultListContributor extends Contributor {
     * @returns Package name for the configuration service.
     */
     public getPackageName(): string {
-        return 'arlas.web.contributors.table';
+        return 'arlas.web.contributors.resultlist';
     }
     /**
     * Method to add Action in actionToTrigger
@@ -300,10 +338,10 @@ export class ResultListContributor extends Contributor {
                 const map = new Map<string, string | number | Date>();
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
-                    const process: string = this.getConfigValue('process')[element.fieldName]['process'];
+                    const process: string = this.columnsProcess[element.columnName];
                     let resultValue = null;
                     if (process.trim().length > 0) {
-                        resultValue = eval(this.getConfigValue('process')[element.fieldName]['process']);
+                        resultValue = eval(this.columnsProcess[element.columnName]);
                     } else {
                         resultValue = result;
                     }
@@ -356,9 +394,9 @@ export class ResultListContributor extends Contributor {
             search.size.from = from;
         }
         this.fieldsList = [];
-        Object.keys(this.getConfigValue('columns')).forEach(element => {
-            this.fieldsList.push(this.getConfigValue('columns')[element]);
-            includesvalue = includesvalue + ',' + this.getConfigValue('columns')[element].fieldName;
+        this.columns.forEach(element => {
+            this.fieldsList.push(element);
+            includesvalue = includesvalue + ',' + element.fieldName;
         });
         if (this.fieldsConfiguration.titleFieldName) {
             includesvalue = includesvalue + ',' + this.fieldsConfiguration.titleFieldName;

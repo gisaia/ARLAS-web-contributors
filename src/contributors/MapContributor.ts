@@ -42,10 +42,9 @@ export class MapContributor extends Contributor {
 
     public isGeoaggregateCluster = true;
     public fetchType: fetchType = fetchType.geohash;
-    public zoomToPrecisionCluster = this.getConfigValue('zoomToPrecisionCluster');
-    public maxPrecision = this.getConfigValue('maxPrecision');
+    public zoomToPrecisionCluster: Array<Array<number>> = this.getConfigValue('zoomToPrecisionCluster');
+    public maxPrecision: Array<number> = this.getConfigValue('maxPrecision');
     private maxValueGeoHash = 0;
-    private precision = this.getConfigValue('aggregationmodel').interval.value;
     private zoom = this.getConfigValue('initZoom');
     private tiles: Array<{ x: number, y: number, z: number }>;
     private geohashList: Array<string> = bboxes(-90, -180, 90, 180, 1);
@@ -61,7 +60,9 @@ export class MapContributor extends Contributor {
     /**
     * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
     */
-    private aggregation: Aggregation = this.getConfigValue('aggregationmodel');
+    private aggregation: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+    private precision;
+
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -77,6 +78,9 @@ export class MapContributor extends Contributor {
         configService: ConfigService
     ) {
         super(identifier, configService, collaborativeSearcheService);
+        if (this.aggregation !== undefined) {
+            this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.precision = a.interval.value);
+        }
     }
     public fetchData(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
@@ -383,13 +387,13 @@ export class MapContributor extends Contributor {
 
     private fetchDataGeohashGeoaggregate(geohashList: Array<string>): Observable<FeatureCollection> {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
-        const aggregation = this.aggregation;
-        aggregation.interval.value = this.precision;
+        const aggregations = this.aggregation;
+        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
         const geohashSet = new Set(geohashList);
         geohashSet.forEach(geohash => {
             const geohahsAggregation: GeohashAggregation = {
                 geohash: geohash,
-                aggregations: [aggregation]
+                aggregations: aggregations
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
                 [projType.geohashgeoaggregate, geohahsAggregation]);
@@ -491,11 +495,15 @@ export class MapContributor extends Contributor {
         return features;
     }
     private getPrecisionFromZoom(zoom: number): number {
+        const zoomToPrecisionClusterObject = {};
         const zoomToPrecisionCluster = this.zoomToPrecisionCluster;
-        if (zoomToPrecisionCluster[Math.ceil(zoom) - 1].split(',')[0] !== undefined) {
-            return zoomToPrecisionCluster[Math.ceil(zoom) - 1].split(',')[0];
+        zoomToPrecisionCluster.forEach(triplet => {
+            zoomToPrecisionClusterObject[triplet[0]] = [triplet[1], triplet[2]];
+        });
+        if (zoomToPrecisionClusterObject[Math.ceil(zoom) - 1][0] !== undefined) {
+            return zoomToPrecisionClusterObject[Math.ceil(zoom) - 1][0];
         } else {
-            return this.getConfigValue('maxPrecision').split(',')[0];
+            return this.getConfigValue('maxPrecision')[0];
         }
     }
     private isLatLngInBbox(lat, lng, bbox) {
@@ -516,8 +524,12 @@ export class MapContributor extends Contributor {
     }
 
     private getNbMaxFeatureFromZoom(zoom: number) {
-        const zoomToNbMaxFeatureForCluster = this.getConfigValue('zoomToNbMaxFeatureForCluster');
-        this.nbMaxFeatureForCluster = zoomToNbMaxFeatureForCluster[Math.ceil(zoom) - 1];
+        const zoomToNbMaxFeatureForClusterObject = {};
+        const zoomToNbMaxFeatureForCluster: Array<Array<number>> = this.getConfigValue('zoomToNbMaxFeatureForCluster');
+        zoomToNbMaxFeatureForCluster.forEach(couple => {
+            zoomToNbMaxFeatureForClusterObject[couple[0]] = couple[1];
+        });
+        this.nbMaxFeatureForCluster = zoomToNbMaxFeatureForClusterObject[Math.ceil(zoom) - 1];
         if (this.nbMaxFeatureForCluster === undefined) {
             this.nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
         }
