@@ -9,6 +9,7 @@ import {
     projType, CollaborationEvent
 } from 'arlas-web-core';
 import { Hits, Filter } from 'arlas-api';
+import * as jsonSchema from '../jsonSchemas/chipssearchContributorConf.schema.json';
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.
@@ -46,6 +47,11 @@ export class ChipsSearchContributor extends Contributor {
             }
         });
     }
+
+    public static getJsonSchema(): Object {
+        return jsonSchema;
+    }
+
     public fetchData(collaborationEvent: CollaborationEvent): Observable<{ label: string, hits: Hits }> {
         const tabOfCount: Array<Observable<{ label: string, hits: Hits }>> = [];
         if (collaborationEvent.id !== this.identifier) {

@@ -4,5 +4,34 @@
     "description": "The Configuration of Histogram Contributor",
     "type": "object",
     "$id": "histogramContributorConf.schema.json",
-    "allOf": [{ "$ref": "rootContributorConf.schema.json#" }]
+    "allOf": [
+        {
+            "$ref": "rootContributorConf.schema.json#"
+        }
+    ],
+    "properties": {
+        "dateunit": {
+            "description": "Unit of histogram second or millisecond",
+            "enum": [
+                "millisecond",
+                "second"
+            ]
+        },
+        "datatype": {
+            "description": "Type of data for histogram",
+            "enum": [
+                "numeric",
+                "time"
+            ]
+        },
+        "isOneDimension": {
+            "description": "True if it's one dimension histogram",
+            "type":"boolean"
+        }
+    },
+    "required": [
+        "dateunit",
+        "datatype",
+        "isOneDimension"
+    ]
 }

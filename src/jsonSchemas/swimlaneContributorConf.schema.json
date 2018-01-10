@@ -13,6 +13,20 @@
             "description": "The name of the Contributor",
             "type": "string"
         },
+        "dateunit": {
+            "description": "Unit of Swimlane second or millisecond",
+            "enum": [
+                "millisecond",
+                "second"
+            ]
+        },
+        "datatype": {
+            "description": "Type of data for Swimlane",
+            "enum": [
+                "numeric",
+                "time"
+            ]
+        },
         "field": {
             "description": "The field of the principal aggregation",
             "type": "string"
