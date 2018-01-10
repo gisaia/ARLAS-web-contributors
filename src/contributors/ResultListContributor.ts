@@ -13,6 +13,7 @@ import {
 import { getElementFromJsonObject, isArray, download } from '../utils/utils';
 import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration, Column, Detail } from '../models/models';
 import * as jsonpath from 'jsonpath';
+import * as jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 
 /**
 * Interface define in Arlas-web-components
@@ -168,6 +169,9 @@ export class ResultListContributor extends Contributor {
         });
     }
 
+    public static getJsonSchema(): Object {
+        return jsonSchema;
+    }
     /**
     * Download item information as json
     * @param productIdentifier productIdentifier of item to dowload

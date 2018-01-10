@@ -12,6 +12,7 @@ import {
     Hits, Filter, Aggregation,
     Expression, AggregationResponse
 } from 'arlas-api';
+import * as jsonSchema from '../jsonSchemas/powerbarsContributorConf.schema.json';
 
 /**
 * This contributor works with the Angular PowerbarsComponent of the Arlas-web-components project.
@@ -60,6 +61,10 @@ export class PowerbarsContributor extends Contributor {
     ) {
         super(identifier, configService, collaborativeSearcheService);
         this.powerbarsTitle = title;
+    }
+
+    public static getJsonSchema(): Object {
+        return jsonSchema;
     }
 
     /**

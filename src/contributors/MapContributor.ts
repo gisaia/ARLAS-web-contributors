@@ -16,6 +16,7 @@ import { getElementFromJsonObject } from '../utils/utils';
 import * as turf from 'turf';
 import { decode_bbox, bboxes } from 'ngeohash';
 import { Feature } from 'geojson';
+import * as jsonSchema from '../jsonSchemas/mapContributorConf.schema.json' ;
 
 export enum drawType {
     RECTANGLE,
@@ -81,6 +82,9 @@ export class MapContributor extends Contributor {
         if (this.aggregation !== undefined) {
             this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.precision = a.interval.value);
         }
+    }
+    public static getJsonSchema(): Object {
+        return jsonSchema;
     }
     public fetchData(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {

@@ -14,6 +14,7 @@ import {
 } from 'arlas-api';
 import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
 import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
+import * as jsonSchema from './jsonSchemas/histogramContributorConf.schema.json';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -73,6 +74,11 @@ export class HistogramContributor extends Contributor {
     ) {
         super(identifier, configService, collaborativeSearcheService);
     }
+
+    public static getJsonSchema(): Object {
+        return jsonSchema;
+    }
+
     /**
     * @returns Pretty name of contribution based on startValue/endValue properties
     */

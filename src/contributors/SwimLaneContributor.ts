@@ -11,6 +11,7 @@ import { Observable } from 'rxjs/Observable';
 import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
 import { Aggregation, AggregationResponse } from 'arlas-api';
 import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
+import * as jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
 
 
 export class SwimLaneContributor extends Contributor {
@@ -30,9 +31,9 @@ export class SwimLaneContributor extends Contributor {
     */
     public intervalListSelection: SelectedOutputValues[] = [];
 
-    public aggregations: Aggregation[];
+    public aggregations: Aggregation[] = this.getConfigValue('swimlanes')[0]['aggregationmodels'];
 
-    public field: string;
+    public field: string = this.getConfigValue('swimlanes')[0]['field'];
     /**
 
     /**
@@ -60,6 +61,9 @@ export class SwimLaneContributor extends Contributor {
         configService: ConfigService, private isOneDimension?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
+    }
+    public static getJsonSchema(): Object {
+        return jsonSchema;
     }
 
     /**
