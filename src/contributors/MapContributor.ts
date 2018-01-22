@@ -16,7 +16,7 @@ import { getElementFromJsonObject } from '../utils/utils';
 import * as turf from 'turf';
 import { decode_bbox, bboxes } from 'ngeohash';
 import { Feature } from 'geojson';
-import * as jsonSchema from '../jsonSchemas/mapContributorConf.schema.json' ;
+import * as jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 export enum drawType {
     RECTANGLE,
@@ -504,8 +504,13 @@ export class MapContributor extends Contributor {
         zoomToPrecisionCluster.forEach(triplet => {
             zoomToPrecisionClusterObject[triplet[0]] = [triplet[1], triplet[2]];
         });
-        if (zoomToPrecisionClusterObject[Math.ceil(zoom) - 1][0] !== undefined) {
-            return zoomToPrecisionClusterObject[Math.ceil(zoom) - 1][0];
+        if (zoomToPrecisionClusterObject[Math.ceil(zoom) - 1] !== undefined) {
+            const precision = zoomToPrecisionClusterObject[Math.ceil(zoom) - 1][0];
+            if (precision !== undefined) {
+                return precision;
+            } else {
+                return this.getConfigValue('maxPrecision')[0];
+            }
         } else {
             return this.getConfigValue('maxPrecision')[0];
         }
