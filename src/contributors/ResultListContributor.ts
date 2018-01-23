@@ -351,6 +351,10 @@ export class ResultListContributor extends Contributor {
                     }
                     map.set(element.fieldName, resultValue);
                 });
+                if (this.fieldsConfiguration.titleFieldName) {
+                    const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.titleFieldName);
+                    map.set(this.fieldsConfiguration.titleFieldName, resultValue);
+                }
                 if (this.fieldsConfiguration.urlImageTemplate) {
                     this.setUrlField('urlImageTemplate', h, map);
                 }
