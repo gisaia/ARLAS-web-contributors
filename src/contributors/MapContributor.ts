@@ -47,8 +47,10 @@ export class MapContributor extends Contributor {
     public maxPrecision: Array<number> = this.getConfigValue('maxPrecision');
     private maxValueGeoHash = 0;
     private zoom = this.getConfigValue('initZoom');
-    private tiles: Array<{ x: number, y: number, z: number }>;
+    private tiles: Array<{ x: number, y: number, z: number }> = new Array<{ x: number, y: number, z: number }>();
     private geohashList: Array<string> = bboxes(-90, -180, 90, 180, 1);
+    private currentGeohashList: Array<string> = new Array<string>();
+    private currentStringedTilesList: Array<string> = new Array<string>();
     private isBbox = false;
     private mapExtend = [90, -180, -90, 180];
     private zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
@@ -87,6 +89,7 @@ export class MapContributor extends Contributor {
         return jsonSchema;
     }
     public fetchData(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
+        this.currentStringedTilesList = [];
         if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
             if (collaborationEvent.all || collaborationEvent.id === this.identifier) {
                 this.onRemoveBboxBus.next(true);
@@ -264,102 +267,97 @@ export class MapContributor extends Contributor {
         this.collaborativeSearcheService.setFilter(this.identifier, data);
     }
 
+
+
+
+
     /**
     * Function call on onMove event output component
     */
     public onMove(newMove: OnMoveResult) {
-        const precision = this.getPrecisionFromZoom(newMove.zoom);
-        if (precision !== this.precision) {
-            this.maxValueGeoHash = 0;
-        }
-        this.getNbMaxFeatureFromZoom(newMove.zoom);
+
         this.tiles = newMove.tiles;
         this.geohashList = newMove.geohash;
-        const allcornerInside = this.isLatLngInBbox(newMove.extendForTest[0], newMove.extendForTest[1], this.mapExtend) &&
-            this.isLatLngInBbox(newMove.extendForTest[0], newMove.extendForTest[3], this.mapExtend) &&
-            this.isLatLngInBbox(newMove.extendForTest[2], newMove.extendForTest[3], this.mapExtend) &&
-            this.isLatLngInBbox(newMove.extendForTest[2], newMove.extendForTest[1], this.mapExtend);
-        if (newMove.zoom < this.zoomLevelFullData) {
-            // geoaggregate full data
-            if (precision !== this.precision) {
-                this.precision = precision;
-                this.fetchType = fetchType.geohash;
-                this.drawGeoaggregateGeohash(this.geohashList);
-            }
-            this.zoom = newMove.zoom;
-        } else if (newMove.zoom >= this.zoomLevelFullData && newMove.zoom < this.zoomLevelForTestCount) {
-            if (allcornerInside) {
-                // the new extent is in the old, we draw if the precision change
-                if (precision !== this.precision) {
-                    this.precision = precision;
-                    this.fetchType = fetchType.geohash;
-                    this.drawGeoaggregateGeohash(this.geohashList);
-                    this.mapExtend = newMove.extendForLoad;
-                }
-            } else {
-                this.precision = precision;
-                this.fetchType = fetchType.geohash;
-                this.drawGeoaggregateGeohash(this.geohashList);
-                this.mapExtend = newMove.extendForLoad;
-            }
-            this.zoom = newMove.zoom;
-        } else if (newMove.zoom >= this.zoomLevelForTestCount) {
-            if (!allcornerInside) {
-                let pwithin = '';
-                newMove.extendForLoad.forEach(v => pwithin = pwithin + ',' + v);
-                let filter = {};
-                if (!this.isBbox) {
-                    filter = {
-                        pwithin: [[pwithin.substring(1).trim().toLocaleLowerCase()]],
-                    };
-                }
-                const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
-                if (count) {
-                    count.finally(() => this.zoom = newMove.zoom).subscribe(value => {
-                        if (value.totalnb <= this.nbMaxFeatureForCluster) {
-                            if (this.isGeoaggregateCluster) {
-                                this.geojsondata.features = [];
-                            }
-                            this.fetchType = fetchType.tile;
-                            this.drawSearchTiles(newMove.tiles);
-                            this.mapExtend = newMove.extendForLoad;
+        this.zoom = newMove.zoom;
+        this.getNbMaxFeatureFromZoom(newMove.zoom);
 
-                        } else {
-                            this.precision = precision;
-                            this.fetchType = fetchType.geohash;
-                            this.drawGeoaggregateGeohash(this.geohashList);
-                            this.mapExtend = newMove.extendForLoad;
-                        }
-                    });
-                }
+        const precision = this.getPrecisionFromZoom(newMove.zoom);
+        let precisionChanged = false;
+        this.mapExtend = newMove.extendForLoad;
+        if (precision !== this.precision) {
+            precisionChanged = true;
+            this.precision = precision;
+            this.maxValueGeoHash = 0;
+            this.geojsondata.features = [];
+            this.currentGeohashList = [];
+        }
+
+        if (newMove.zoom < this.zoomLevelForTestCount) {
+            this.fetchType = fetchType.geohash;
+            if (!this.isGeoaggregateCluster) {
+                this.geojsondata.features = [];
+                this.currentGeohashList = [];
+            }
+            if (precisionChanged) {
+                this.drawGeoaggregateGeohash(this.geohashList);
             } else {
-                let pwithin = '';
-                newMove.extendForLoad.forEach(v => pwithin = pwithin + ',' + v);
-                let filter = {};
-                if (!this.isBbox) {
-                    filter = {
-                        pwithin: [[pwithin.substring(1).trim().toLocaleLowerCase()]],
-                    };
-                }
-                if (this.isGeoaggregateCluster) {
-                    const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
-                    if (count) {
-                        count.finally(() => this.zoom = newMove.zoom).subscribe(value => {
-                            if (value.totalnb <= this.nbMaxFeatureForCluster) {
-                                this.geojsondata.features = [];
-                                this.drawSearchTiles(newMove.tiles);
-                                this.mapExtend = newMove.extendForLoad;
-                            } else {
-                                if (precision !== this.precision) {
-                                    this.precision = precision;
-                                    this.drawGeoaggregateGeohash(this.geohashList);
-                                    this.mapExtend = newMove.extendForLoad;
-                                }
+                const newGeohashList = new Array<string>();
+                this.geohashList.forEach(geohash => {
+                    if (this.currentGeohashList.indexOf(geohash) < 0) {
+                        newGeohashList.push(geohash);
+                        this.currentGeohashList.push(geohash);
+                    }
+                });
+                this.drawGeoaggregateGeohash(newGeohashList);
+            }
+        } else if (newMove.zoom >= this.zoomLevelForTestCount) {
+            let pwithin = '';
+            newMove.extendForLoad.forEach(v => pwithin = pwithin + ',' + v);
+            let filter = {};
+            if (!this.isBbox) {
+                filter = {
+                    pwithin: [[pwithin.substring(1).trim().toLocaleLowerCase()]],
+                };
+            }
+            const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
+            if (count) {
+                count.subscribe(value => {
+                    if (value.totalnb <= this.nbMaxFeatureForCluster) {
+                        this.fetchType = fetchType.tile;
+                        this.currentGeohashList = [];
+                        if (this.isGeoaggregateCluster) {
+                            this.geojsondata.features = [];
+                            this.currentStringedTilesList = [];
+                        }
+                        const newTilesList = new Array<any>();
+                        newMove.tiles.forEach(tile => {
+                            if (this.currentStringedTilesList.indexOf(this.tileToString(tile)) < 0) {
+                                newTilesList.push(tile);
+                                this.currentStringedTilesList.push(this.tileToString(tile));
                             }
                         });
+                        this.drawSearchTiles(newTilesList);
+                    } else {
+                        this.fetchType = fetchType.geohash;
+                        this.currentStringedTilesList = [];
+                        if (!this.isGeoaggregateCluster) {
+                            this.geojsondata.features = [];
+                            this.currentGeohashList = [];
+                        }
+                        if (precisionChanged) {
+                            this.drawGeoaggregateGeohash(this.geohashList);
+                        } else {
+                            const newGeohashList = new Array<string>();
+                            this.geohashList.forEach(geohash => {
+                                if (this.currentGeohashList.indexOf(geohash) < 0) {
+                                    newGeohashList.push(geohash);
+                                    this.currentGeohashList.push(geohash);
+                                }
+                            });
+                            this.drawGeoaggregateGeohash(newGeohashList);
+                        }
                     }
-                }
-                this.zoom = newMove.zoom;
+                });
             }
         }
     }
@@ -373,20 +371,25 @@ export class MapContributor extends Contributor {
     }
 
     private drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataTileSearch(tiles)
             .map(f => this.computeDataTileSearch(f))
             .map(f => this.setDataTileSearch(f))
-            .finally(() => this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier)))
-
+            .finally(() => {
+                this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+            })
             .subscribe(data => data);
     }
     private drawGeoaggregateGeohash(geohashList: Array<string>) {
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataGeohashGeoaggregate(geohashList)
             .map(f => this.computeDataGeohashGeoaggregate(f))
             .map(f => this.setDataGeohashGeoaggregate(f))
-            .finally(() => this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier)))
-
-            .subscribe(data => data);
+            .finally(() => {
+                this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+            }).subscribe(data => data);
     }
 
     private fetchDataGeohashGeoaggregate(geohashList: Array<string>): Observable<FeatureCollection> {
@@ -394,6 +397,11 @@ export class MapContributor extends Contributor {
         const aggregations = this.aggregation;
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
         const geohashSet = new Set(geohashList);
+        geohashSet.forEach(geohash => {
+            this.currentGeohashList.push(geohash);
+
+        });
+
         geohashSet.forEach(geohash => {
             const geohahsAggregation: GeohashAggregation = {
                 geohash: geohash,
@@ -403,7 +411,6 @@ export class MapContributor extends Contributor {
                 [projType.geohashgeoaggregate, geohahsAggregation]);
             tabOfGeohash.push(geoAggregateData);
         });
-        this.geojsondata.features = [];
         return Observable.from(tabOfGeohash).mergeAll();
     }
 
@@ -542,5 +549,9 @@ export class MapContributor extends Contributor {
         if (this.nbMaxFeatureForCluster === undefined) {
             this.nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
         }
+    }
+
+    private tileToString(tile: { x: number, y: number, z: number }): string {
+        return tile.x.toString() + tile.y.toString() + tile.z.toString();
     }
 }
