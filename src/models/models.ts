@@ -107,3 +107,9 @@ export interface DonutArc {
     children?: Array<DonutArc>;
 }
 
+export interface SelectionTree {
+    field: string;
+    value: string;
+    children?: Array<SelectionTree>;
+    parent?: SelectionTree;
+}

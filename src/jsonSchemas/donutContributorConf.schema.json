@@ -6,12 +6,16 @@
     "$id": "donutContributorConf.schema.json",
     "allOf": [{ "$ref": "rootContributorConf.schema.json#" }],
     "properties": {
-        "title":{
+        "donutTitle":{
             "description": "Title of Donut",
             "type":"string"
+        },
+        "arcMinPourcentage":{
+            "description": "The minimum ratio of the arc in its ring needed to be plot. Otherwise the arc is considered as OTHER",
+            "type":"number"
         }
     },
     "required": [
-        "title"
+        "donutTitle"
     ]
 }
