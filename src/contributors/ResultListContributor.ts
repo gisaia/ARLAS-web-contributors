@@ -181,8 +181,7 @@ export class ResultListContributor extends Contributor {
         const search: Search = {
             size: { size: 1 },
             form: {
-                pretty: true,
-                human: true
+                pretty: true
             }
         };
         const expression: Expression = {

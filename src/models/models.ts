@@ -98,3 +98,18 @@ export interface FieldDetail {
     process: string;
 }
 
+export interface DonutArc {
+    name: string;
+    id: string;
+    ringName: string;
+    isOther: boolean;
+    size?: number;
+    children?: Array<DonutArc>;
+}
+
+export interface SelectionTree {
+    field: string;
+    value: string;
+    children?: Array<SelectionTree>;
+    parent?: SelectionTree;
+}
