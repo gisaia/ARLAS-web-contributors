@@ -1,0 +1,16 @@
+language: javascript
+node_js:
+  - "8"
+
+cache:
+  directories:
+  - node_modules/
+
+before_script:
+  - ./script/prebuild.sh
+
+jobs:
+  include:
+    - script: npm run tslint
+    - script: npm run build-release; mv dist/docs .
+    - script: ./mkDocs.sh
