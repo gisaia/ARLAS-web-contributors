@@ -1,5 +1,7 @@
 # ARLAS WEB CONTRIBUTORS
 
+![Build Status](https://img.shields.io/travis/gisaia/ARLAS-web-contributors/develop.svg?label=develop)
+
 This library of contributors writting in typescript should be use to create an app using ARLAS-Server with ARLAS-web-components and ARLAS-web-core.
 
 ## Getting Started
