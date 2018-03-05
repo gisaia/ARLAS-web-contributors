@@ -33,13 +33,6 @@ export interface ElementIdentifier {
 /**
 * Enum of time unit that the timeline mode could draw.
 */
-export enum DateUnit {
-    second, millisecond
-}
-
-/**
-* Enum of time unit that the timeline mode could draw.
-*/
 export enum DataType {
     numeric, time
 }

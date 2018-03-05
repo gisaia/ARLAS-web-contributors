@@ -12,7 +12,7 @@ import {
     Hits, Filter, Aggregation,
     Expression, AggregationResponse
 } from 'arlas-api';
-import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
+import { SelectedOutputValues, DataType } from '../models/models';
 import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 
@@ -61,13 +61,11 @@ export class HistogramContributor extends Contributor {
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param dateUnit  unit of histrogram (for time data).
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
         identifier: string,
-        private dateUnit: DateUnit.millisecond | DateUnit.second,
         private dataType: DataType.numeric | DataType.time,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, private isOneDimension?: boolean
@@ -106,7 +104,7 @@ export class HistogramContributor extends Contributor {
     * @param value DateType.millisecond | DateType.second
     */
     public valueChanged(values: SelectedOutputValues[]) {
-        const resultList = getvaluesChanged(values, this.field, this.dateUnit, this.identifier, this.collaborativeSearcheService);
+        const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
@@ -150,7 +148,7 @@ export class HistogramContributor extends Contributor {
     }
 
     public setSelection(data: Array<{ key: number, value: number }>, collaboration: Collaboration): any {
-        const resultList = getSelectionToSet(data, collaboration, this.dataType, this.dateUnit);
+        const resultList = getSelectionToSet(data, collaboration, this.dataType);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];
