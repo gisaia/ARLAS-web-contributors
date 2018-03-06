@@ -13,7 +13,7 @@ export class DonutContributor extends Contributor {
     /**
      * Title given to the aggregation result
      */
-    public donutTitle: string;
+    public title: string;
     /**
      * Data retrieved from ARLAS-server response and to be returned for the donut component as an input
      */
@@ -45,7 +45,7 @@ export class DonutContributor extends Contributor {
 
     ) {
         super(identifier, configService, collaborativeSearcheService);
-        this.donutTitle = title;
+        this.title = title;
     }
 
     /**
@@ -63,7 +63,7 @@ export class DonutContributor extends Contributor {
     }
 
     public getFilterDisplayName(): string {
-        return this.donutTitle;
+        return this.title;
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
