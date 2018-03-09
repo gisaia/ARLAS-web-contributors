@@ -6,7 +6,7 @@
     "$id": "donutContributorConf.schema.json",
     "allOf": [{ "$ref": "rootContributorConf.schema.json#" }],
     "properties": {
-        "donutTitle":{
+        "title":{
             "description": "Title of Donut",
             "type":"string"
         },
@@ -16,6 +16,6 @@
         }
     },
     "required": [
-        "donutTitle"
+        "title"
     ]
 }

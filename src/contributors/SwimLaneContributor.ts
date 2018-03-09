@@ -8,7 +8,7 @@ import {
     projType
 } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
+import { SelectedOutputValues, DataType } from '../models/models';
 import { Aggregation, AggregationResponse } from 'arlas-api';
 import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
@@ -48,14 +48,12 @@ export class SwimLaneContributor extends Contributor {
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param dateUnit  unit of histrogram (for time data).
     * @param dataType  type of data histrogram (time or numeric).
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
         identifier: string,
-        private dateUnit: DateUnit.millisecond | DateUnit.second,
         private dataType: DataType.numeric | DataType.time,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, private isOneDimension?: boolean
@@ -71,7 +69,7 @@ export class SwimLaneContributor extends Contributor {
 * @param value DateType.millisecond | DateType.second
 */
     public valueChanged(values: SelectedOutputValues[]) {
-        const resultList = getvaluesChanged(values, this.field, this.dateUnit, this.identifier, this.collaborativeSearcheService);
+        const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
@@ -111,7 +109,7 @@ export class SwimLaneContributor extends Contributor {
     }
 
     public setSelection(data: Map<string, Array<{ key: number, value: number }>>, c: Collaboration): any {
-        const resultList = getSelectionToSet(data, c, this.dataType, this.dateUnit);
+        const resultList = getSelectionToSet(data, c, this.dataType);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];

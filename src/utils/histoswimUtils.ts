@@ -1,10 +1,9 @@
 import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
-import { SelectedOutputValues, DateUnit, DataType } from '../models/models';
+import { SelectedOutputValues, DataType } from '../models/models';
 import { Expression, Filter } from 'arlas-api';
 import { Observable } from 'rxjs/Observable';
 export function getvaluesChanged(values: SelectedOutputValues[],
     field: string,
-    dateUnit: DateUnit,
     identifier: string,
     collaborativeSearcheService: CollaborativesearchService
 ): any[] {
@@ -27,12 +26,8 @@ export function getvaluesChanged(values: SelectedOutputValues[],
             const startDate = new Date(value.startvalue.toString());
             startValue = startDate.toLocaleString();
             endValue = endDate.toLocaleString();
-            let multiplier = 1;
-            if (dateUnit.toString() === DateUnit.second.toString()) {
-                multiplier = 1000;
-            }
-            end = endDate.valueOf() / multiplier;
-            start = startDate.valueOf() / multiplier;
+            end = endDate.valueOf();
+            start = startDate.valueOf();
         } else {
             startValue = Math.round(<number>start).toString();
             endValue = Math.round(<number>end).toString();
@@ -52,7 +47,7 @@ export function getvaluesChanged(values: SelectedOutputValues[],
 
 export function getSelectionToSet(data: Array<{ key: number, value: number }> | Map<string, Array<{ key: number, value: number }>>,
     collaboration: Collaboration,
-    dataType: DataType, dateUnit: DateUnit,
+    dataType: DataType,
 ): any[] {
     let intervalListSelection;
     let intervalSelection;
@@ -98,18 +93,8 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
                         startvalue: null,
                         endvalue: null
                     };
-                    if (dataType === DataType.time) {
-                        if (dateUnit === DateUnit.second) {
-                            interval.startvalue = <number>parseFloat(start) * 1000;
-                            interval.endvalue = <number>parseFloat(end) * 1000;
-                        } else {
-                            interval.startvalue = <number>parseFloat(start);
-                            interval.endvalue = <number>parseFloat(end);
-                        }
-                    } else {
-                        interval.startvalue = <number>parseFloat(start);
-                        interval.endvalue = <number>parseFloat(end);
-                    }
+                    interval.startvalue = <number>parseFloat(start);
+                    interval.endvalue = <number>parseFloat(end);
                     if (k.value.split(',').length > c) {
                         intervals.push(interval);
                     } else {
