@@ -58,6 +58,8 @@ export class HistogramContributor extends Contributor {
     * Max value of all bucketn use for oneDimension histogram palette
     */
     private maxCount = 0;
+
+    private histogramHasCurrentSelection = false;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -104,6 +106,11 @@ export class HistogramContributor extends Contributor {
     * @param value DateType.millisecond | DateType.second
     */
     public valueChanged(values: SelectedOutputValues[]) {
+        if (values.length === 0 || (values.length > 0 && values[values.length - 1] === null)) {
+            this.histogramHasCurrentSelection = false;
+        } else {
+            this.histogramHasCurrentSelection = true;
+        }
         const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
@@ -148,7 +155,7 @@ export class HistogramContributor extends Contributor {
     }
 
     public setSelection(data: Array<{ key: number, value: number }>, collaboration: Collaboration): any {
-        const resultList = getSelectionToSet(data, collaboration, this.dataType);
+        const resultList = getSelectionToSet(data, collaboration, this.dataType, this.histogramHasCurrentSelection);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];

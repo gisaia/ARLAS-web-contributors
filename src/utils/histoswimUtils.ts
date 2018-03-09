@@ -18,119 +18,107 @@ export function getvaluesChanged(values: SelectedOutputValues[],
     };
     let startValue;
     let endValue;
-    values.forEach(value => {
-        let end = value.endvalue;
-        let start = value.startvalue;
-        if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
-            const endDate = new Date(value.endvalue.toString());
-            const startDate = new Date(value.startvalue.toString());
-            startValue = startDate.toLocaleString();
-            endValue = endDate.toLocaleString();
-            end = endDate.valueOf();
-            start = startDate.valueOf();
-        } else {
-            startValue = Math.round(<number>start).toString();
-            endValue = Math.round(<number>end).toString();
-        }
-        rangeExpression.value = rangeExpression.value + '[' + start.toString() + '<' + end.toString() + '],';
-    });
-    rangeExpression.value = rangeExpression.value.substring(0, rangeExpression.value.length - 1);
-    filterValue.f.push([rangeExpression]);
-    const collaboration: Collaboration = {
-        filter: filterValue,
-        enabled: true
-    };
-    intervalSelection = values[values.length - 1];
-    collaborativeSearcheService.setFilter(identifier, collaboration);
-    return [intervalSelection, startValue, endValue];
+    if (values.length === 0 ) {
+        collaborativeSearcheService.removeFilter(identifier);
+        return [null, null, null];
+    } else {
+        values.forEach(value => {
+            if (value !== null) {
+                let end = value.endvalue;
+                let start = value.startvalue;
+                if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
+                    const endDate = new Date(value.endvalue.toString());
+                    const startDate = new Date(value.startvalue.toString());
+                    startValue = startDate.toLocaleString();
+                    endValue = endDate.toLocaleString();
+                    end = endDate.valueOf();
+                    start = startDate.valueOf();
+                } else {
+                    startValue = Math.round(<number>start).toString();
+                    endValue = Math.round(<number>end).toString();
+                }
+                rangeExpression.value = rangeExpression.value + '[' + start.toString() + '<' + end.toString() + '],';
+            }
+        });
+        rangeExpression.value = rangeExpression.value.substring(0, rangeExpression.value.length - 1);
+        filterValue.f.push([rangeExpression]);
+        const collaboration: Collaboration = {
+            filter: filterValue,
+            enabled: true
+        };
+        intervalSelection = values[values.length - 1];
+        collaborativeSearcheService.setFilter(identifier, collaboration);
+        return [intervalSelection, startValue, endValue];
+    }
 }
 
 export function getSelectionToSet(data: Array<{ key: number, value: number }> | Map<string, Array<{ key: number, value: number }>>,
     collaboration: Collaboration,
     dataType: DataType,
+    hasCurrentSelection: boolean
 ): any[] {
     let intervalListSelection;
     let intervalSelection;
-    let startValue;
-    let endValue;
-    let isArray: boolean;
-
-    if (data instanceof Array) {
-        isArray = true;
-    } else {
-        isArray = false;
-    }
+    let startValue = Number.MIN_VALUE;
+    let endValue = Number.MAX_VALUE;
     let currentIntervalSelected = {
         startvalue: null,
         endvalue: null
     };
     if (collaboration) {
         const f = collaboration.filter;
-        if (f === null) {
-            if (isArray) {
-                if ((<Array<{ key: number, value: number }>>data).length > 0) {
-                    currentIntervalSelected.startvalue = <number>data[0].key;
-                    currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
-                }
-            } else {
-                const minMax = getMinMax(<Map<string, Array<{ key: number, value: number }>>>data);
-                currentIntervalSelected.startvalue = minMax[0];
-                currentIntervalSelected.endvalue = minMax[1];
-            }
-            intervalListSelection = [];
-        } else {
-            const intervals = [];
-            const invtervalFilterList = f.f[0];
-            let d = 0;
-            invtervalFilterList.forEach(k => {
-                let c = 0;
+        const intervals = [];
+        const filtersList = f.f[0];
+        let d = 0;
+        filtersList.forEach(filter => {
+            let c = 0;
+            if (hasCurrentSelection) {
                 d++;
-                k.value.split(',').forEach(i => {
-                    c++;
-                    const start = i.split('<')[0].substring(1);
-                    const end = i.split('<')[1].substring(0, i.split('<')[1].length - 1);
-                    const interval = {
-                        startvalue: null,
-                        endvalue: null
-                    };
-                    interval.startvalue = <number>parseFloat(start);
-                    interval.endvalue = <number>parseFloat(end);
-                    if (k.value.split(',').length > c) {
+            }
+            filter.value.split(',').forEach(range => {
+                c++;
+                const start = range.split('<')[0].substring(1);
+                const end = range.split('<')[1].substring(0, range.split('<')[1].length - 1);
+                const interval = {startvalue: null, endvalue: null };
+                interval.startvalue = <number>parseFloat(start);
+                interval.endvalue = <number>parseFloat(end);
+                if (filter.value.split(',').length > c) {
+                    intervals.push(interval);
+                } else {
+                    if (d < filtersList.length) {
                         intervals.push(interval);
                     } else {
-                        if (d < invtervalFilterList.length) {
-                            intervals.push(interval);
-                        } else {
-                            currentIntervalSelected = interval;
-                        }
+                        currentIntervalSelected = interval;
                     }
-                });
+                }
             });
-            if (intervals.length > 0) {
-                intervalListSelection = intervals;
-            } else {
-                intervalListSelection = [];
-            }
+        });
+        if (intervals.length > 0) {
+            intervalListSelection = intervals;
+        } else {
+            intervalListSelection = [];
+        }
+        if (hasCurrentSelection) {
+            intervalSelection = currentIntervalSelected;
+        } else {
+            intervalSelection = null;
         }
     } else {
-        if (isArray) {
-            if ((<Array<{ key: number, value: number }>>data).length > 0) {
-                currentIntervalSelected.startvalue = <number>data[0].key;
-                currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
-            }
-        } else {
-            const minMax = getMinMax(<Map<string, Array<{ key: number, value: number }>>>data);
-            currentIntervalSelected.startvalue = minMax[0];
-            currentIntervalSelected.endvalue = minMax[1];
-
-        }
         intervalListSelection = [];
+        intervalSelection = null;
     }
-    if (currentIntervalSelected.endvalue !== null && currentIntervalSelected.startvalue !== null) {
-        intervalSelection = currentIntervalSelected;
-        startValue = Math.round(<number>currentIntervalSelected.startvalue).toString();
-        endValue = Math.round(<number>currentIntervalSelected.endvalue).toString();
+    if (intervalSelection !== null) {
+        startValue = intervalSelection.startvalue;
+        endValue = intervalSelection.endvalue;
     }
+    intervalListSelection.forEach(interval => {
+        if (startValue > interval.startvalue) {
+            startValue = interval.startvalue;
+        }
+        if (endValue > interval.endvalue) {
+            endValue = interval.endvalue;
+        }
+    });
 
     return [intervalListSelection, intervalSelection, startValue, endValue];
 }

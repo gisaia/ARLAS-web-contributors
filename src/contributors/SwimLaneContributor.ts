@@ -45,6 +45,8 @@ export class SwimLaneContributor extends Contributor {
     */
     private endValue: string;
 
+    private histogramHasCurrentSelection = false;
+
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -69,6 +71,11 @@ export class SwimLaneContributor extends Contributor {
 * @param value DateType.millisecond | DateType.second
 */
     public valueChanged(values: SelectedOutputValues[]) {
+        if (values.length === 0 || (values.length > 0 && values[values.length - 1] === null)) {
+            this.histogramHasCurrentSelection = false;
+        } else {
+            this.histogramHasCurrentSelection = true;
+        }
         const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
@@ -109,7 +116,7 @@ export class SwimLaneContributor extends Contributor {
     }
 
     public setSelection(data: Map<string, Array<{ key: number, value: number }>>, c: Collaboration): any {
-        const resultList = getSelectionToSet(data, c, this.dataType);
+        const resultList = getSelectionToSet(data, c, this.dataType, this.histogramHasCurrentSelection);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];
