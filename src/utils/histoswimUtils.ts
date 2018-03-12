@@ -59,8 +59,8 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
 ): any[] {
     let intervalListSelection;
     let intervalSelection;
-    let startValue = Number.MIN_VALUE;
-    let endValue = Number.MAX_VALUE;
+    let startValue = Number.MAX_VALUE;
+    let endValue = Number.MIN_VALUE;
     let currentIntervalSelected = {
         startvalue: null,
         endvalue: null
@@ -110,15 +110,18 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
     if (intervalSelection !== null) {
         startValue = intervalSelection.startvalue;
         endValue = intervalSelection.endvalue;
+    } else {
+        intervalListSelection.forEach(interval => {
+            if (startValue > interval.startvalue) {
+                startValue = interval.startvalue;
+            }
+            if (endValue < interval.endvalue) {
+                endValue = interval.endvalue;
+            }
+        });
     }
-    intervalListSelection.forEach(interval => {
-        if (startValue > interval.startvalue) {
-            startValue = interval.startvalue;
-        }
-        if (endValue > interval.endvalue) {
-            endValue = interval.endvalue;
-        }
-    });
+    startValue = Math.round(<number>startValue);
+    endValue = Math.round(<number>endValue);
 
     return [intervalListSelection, intervalSelection, startValue, endValue];
 }
