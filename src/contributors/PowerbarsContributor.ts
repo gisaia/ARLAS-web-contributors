@@ -116,7 +116,11 @@ export class PowerbarsContributor extends Contributor {
             } else {
                 const selectedBarsAsArray = f.f[0];
                 this.selectedBars = new Set();
-                selectedBarsAsArray.forEach(term => this.selectedBars.add(term.value));
+                selectedBarsAsArray.forEach(termsList => {
+                    termsList.value.split(',').forEach(term => {
+                        this.selectedBars.add(term);
+                    });
+                });
             }
         } else {
             this.selectedBars = new Set();
