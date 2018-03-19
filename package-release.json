@@ -11,7 +11,7 @@
   "author": "gisaia-team",
   "license": " Apache-2.0",
   "dependencies": {
-    "arlas-web-core": "2.7.0",
+    "arlas-web-core": "2.8.0",
     "@types/file-saver": "^0.0.1",
     "@types/jsonpath": "^0.2.0",
     "@types/tinycolor2": "^1.4.0",
