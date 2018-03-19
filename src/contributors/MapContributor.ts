@@ -1,3 +1,22 @@
+/*
+ * Licensed to Gisaïa under one or more contributor
+ * license agreements. See the NOTICE.txt file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Gisaïa licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 
@@ -58,7 +77,7 @@ export class MapContributor extends Contributor {
     private nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
     private idFieldName = this.getConfigValue('idFieldName');
     private drawtype = drawType[this.getConfigValue('drawtype')];
-
+    private isGIntersect = false;
     /**
     /**
     * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
@@ -78,12 +97,14 @@ export class MapContributor extends Contributor {
         private onRemoveBboxBus: Subject<boolean>,
         private redrawTile: Subject<boolean>,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService
+        configService: ConfigService,
+        gIntersect?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
         if (this.aggregation !== undefined) {
             this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.precision = a.interval.value);
         }
+        this.isGIntersect = gIntersect;
     }
     public static getJsonSchema(): Object {
         return jsonSchema;
@@ -157,16 +178,32 @@ export class MapContributor extends Contributor {
         this.redrawTile.next(true);
         if (collaboration !== null) {
             const polygonGeojsons = [];
-            const bboxs = collaboration.filter.pwithin[0];
+            let bboxs: any;
+            if (this.isGIntersect) {
+                bboxs = collaboration.filter.gintersect[0];
+            } else {
+                bboxs = collaboration.filter.pwithin[0];
+            }
             bboxs.forEach(b => {
-                const bbox = b.split(',');
-                const coordinates = [[
-                    [bbox[3], bbox[2]],
-                    [bbox[3], bbox[0]],
-                    [bbox[1], bbox[0]],
-                    [bbox[1], bbox[2]],
-                    [bbox[3], bbox[2]],
-                ]];
+                const bbox = b.replace('POLYGON((', '').replace('))', '').split(',');
+                let coordinates = [];
+                if (this.isGIntersect) {
+                    coordinates = [[
+                        [bbox[0].split(' ')[0], bbox[0].split(' ')[1]],
+                        [bbox[1].split(' ')[0], bbox[1].split(' ')[1]],
+                        [bbox[2].split(' ')[0], bbox[2].split(' ')[1]],
+                        [bbox[3].split(' ')[0], bbox[3].split(' ')[1]],
+                        [bbox[0].split(' ')[0], bbox[0].split(' ')[1]]
+                    ]];
+                } else {
+                    coordinates = [[
+                        [bbox[3], bbox[2]],
+                        [bbox[3], bbox[0]],
+                        [bbox[1], bbox[0]],
+                        [bbox[1], bbox[2]],
+                        [bbox[3], bbox[2]],
+                    ]];
+                }
                 const polygonGeojson = {
                     type: 'Feature',
                     properties: {
@@ -246,19 +283,39 @@ export class MapContributor extends Contributor {
         return 'GeoBox';
     }
     public onChangeBbox(newBbox: Array<Object>) {
-        const pwithinArray: Array<string> = [];
-        newBbox.forEach(v => {
-            const coord = v['geometry']['coordinates'][0];
-            const north = coord[1][1];
-            const west = coord[2][0];
-            const south = coord[0][1];
-            const east = coord[0][0];
-            const pwithin = north + ',' + west + ',' + south + ',' + east;
-            pwithinArray.push(pwithin.trim().toLocaleLowerCase());
-        });
-        const filters: Filter = {
-            pwithin: [pwithinArray],
-        };
+
+        let filters: Filter;
+        if (this.isGIntersect) {
+            const gintersectArray: Array<string> = [];
+            newBbox.forEach(v => {
+                const coord = v['geometry']['coordinates'][0];
+                let gintersect = 'POLYGON((';
+
+                coord.forEach((point, index) => {
+                    gintersect += (index === 0 ? '' : ',') + point[0] + ' ' + point[1];
+                });
+                gintersect += '))';
+                gintersectArray.push(gintersect);
+            });
+            filters = {
+                gintersect: [gintersectArray],
+            };
+        } else {
+            const pwithinArray: Array<string> = [];
+            newBbox.forEach(v => {
+                const coord = v['geometry']['coordinates'][0];
+                const north = coord[1][1];
+                const west = coord[2][0];
+                const south = coord[0][1];
+                const east = coord[0][0];
+                const pwithin = north + ',' + west + ',' + south + ',' + east;
+                pwithinArray.push(pwithin.trim().toLocaleLowerCase());
+            });
+            filters = {
+                pwithin: [pwithinArray],
+            };
+        }
+
         const data: Collaboration = {
             filter: filters,
             enabled: true
