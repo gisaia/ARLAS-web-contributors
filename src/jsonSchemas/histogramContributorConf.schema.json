@@ -10,13 +10,6 @@
         }
     ],
     "properties": {
-        "dateunit": {
-            "description": "Unit of histogram second or millisecond",
-            "enum": [
-                "millisecond",
-                "second"
-            ]
-        },
         "datatype": {
             "description": "Type of data for histogram",
             "enum": [
@@ -26,11 +19,10 @@
         },
         "isOneDimension": {
             "description": "True if it's one dimension histogram",
-            "type":"boolean"
+            "type": "boolean"
         }
     },
     "required": [
-        "dateunit",
         "datatype",
         "isOneDimension"
     ]
