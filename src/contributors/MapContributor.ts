@@ -60,6 +60,7 @@ export class MapContributor extends Contributor {
     };
     public geojsonbbox: { type: string, features: Array<any> };
 
+    public includeFeaturesFields: Array<string> = this.getConfigValue('includeFeaturesFields');
     public isGeoaggregateCluster = true;
     public fetchType: fetchType = fetchType.geohash;
     public zoomToPrecisionCluster: Array<Array<number>> = this.getConfigValue('zoomToPrecisionCluster');
@@ -524,7 +525,17 @@ export class MapContributor extends Contributor {
         const filter: Filter = {};
         const search: Search = { size: { size: this.nbMaxFeatureForCluster } };
         const projection: Projection = {};
-        projection.includes = this.idFieldName;
+        let includes = '';
+        let separator = '';
+        if (this.includeFeaturesFields !== undefined) {
+            this.includeFeaturesFields.forEach(field => {
+                if (field !== this.idFieldName) {
+                    includes += separator + field;
+                    separator = ',';
+                }
+            });
+        }
+        projection.includes = this.idFieldName + ',' + includes;
         search.projection = projection;
         tiles.forEach(tile => {
             const tiledSearch: TiledSearch = {
