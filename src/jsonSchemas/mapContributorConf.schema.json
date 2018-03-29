@@ -14,6 +14,14 @@
             "description": "Id of entity to show on Map",
             "type": "string"
         },
+        "includeFeaturesFields": {
+            "description": "List of fields pattern or names that will be included in features mode as geojson properties.",
+            "type": "array",
+            "items": {
+                "description": "Field pattern or name",
+                "type": "string"
+            }
+        },
         "initZoom": {
             "description": "Initial zoom of  Map",
             "type": "number"
