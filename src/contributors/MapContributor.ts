@@ -123,8 +123,7 @@ export class MapContributor extends Contributor {
             this.geojsondata.features = [];
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
-            let pwithin = '';
-            this.mapExtend.forEach(v => pwithin = pwithin + ',' + v);
+            const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2]  + ',' +  this.mapExtend[3] + ',' + this.mapExtend[0];
             let filter = {};
             if (!this.isBbox) {
                 filter = {
@@ -197,14 +196,16 @@ export class MapContributor extends Contributor {
                         [bbox[0].split(' ')[0], bbox[0].split(' ')[1]]
                     ]];
                 } else {
+                    // west, south, east, north
                     coordinates = [[
-                        [bbox[3], bbox[2]],
-                        [bbox[3], bbox[0]],
-                        [bbox[1], bbox[0]],
-                        [bbox[1], bbox[2]],
-                        [bbox[3], bbox[2]],
+                        [bbox[2], bbox[1]],
+                        [bbox[2], bbox[3]],
+                        [bbox[0], bbox[3]],
+                        [bbox[0], bbox[1]],
+                        [bbox[2], bbox[1]],
                     ]];
                 }
+
                 const polygonGeojson = {
                     type: 'Feature',
                     properties: {
@@ -309,7 +310,7 @@ export class MapContributor extends Contributor {
                 const west = coord[2][0];
                 const south = coord[0][1];
                 const east = coord[0][0];
-                const pwithin = north + ',' + west + ',' + south + ',' + east;
+                const pwithin = west + ',' + south + ',' + east + ',' + north;
                 pwithinArray.push(pwithin.trim().toLocaleLowerCase());
             });
             filters = {
@@ -369,8 +370,8 @@ export class MapContributor extends Contributor {
                 this.drawGeoaggregateGeohash(newGeohashList);
             }
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
-            let pwithin = '';
-            newMove.extendForLoad.forEach(v => pwithin = pwithin + ',' + v);
+            const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
+            + ',' +  newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
             let filter = {};
             if (!this.isBbox) {
                 filter = {
