@@ -135,19 +135,19 @@ archy@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/archy/-/archy-1.0.0.tgz#f9c8c13757cc1dd7bc379ac77b2c62a5c2868c40"
 
-arlas-api@3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-3.0.0.tgz#10f158fbef00241b36a5b9e4f04a1fbb01fba62e"
+arlas-api@4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-4.0.0.tgz#0f0fff90a29906f3f2cb47867b524e7980c98259"
   dependencies:
     es6-promise "4.2.4"
     portable-fetch "3.0.0"
     url "0.11.0"
 
-arlas-web-core@3.1.*:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-3.1.0.tgz#dc23848a07ab3ae23804e713b3447004d7c482aa"
+arlas-web-core@4.0.*:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-4.0.0.tgz#74d4b7c960fcb7f70e05b0e43ebf8af0052bb979"
   dependencies:
-    arlas-api "3.0.0"
+    arlas-api "4.0.0"
     rxjs "^5.4.2"
     zone.js "^0.8.14"
 
