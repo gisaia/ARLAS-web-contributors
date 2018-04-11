@@ -343,7 +343,7 @@ export class MapContributor extends Contributor {
         const precision = this.getPrecisionFromZoom(newMove.zoom);
         let precisionChanged = false;
         this.mapExtend = newMove.extendForLoad;
-        if (precision !== this.precision) {
+        if (precision !== this.precision && this.isGeoaggregateCluster) {
             precisionChanged = true;
             this.precision = precision;
             this.maxValueGeoHash = 0;
