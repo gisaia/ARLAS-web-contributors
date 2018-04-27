@@ -1,6 +1,6 @@
 {
-  "name": "@gisaia-team/arlas-web-contributors",
-  "version": "5.1.0-dev0",
+  "name": "arlas-web-contributors",
+  "version": "5.1.0",
   "description": "Contributors Library for ARLAS Components",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -30,7 +30,7 @@
     "turf": "^3.0.14"
   },
   "devDependencies": {
-    "@types/node" : "^8.0.0",
+    "@types/node": "^8.0.0",
     "gulp": "^3.9.1",
     "gulp-clean": "^0.3.2",
     "gulp-sourcemaps": "^2.6.0",
