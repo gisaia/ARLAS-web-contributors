@@ -45,6 +45,10 @@
                     }
                 }
             }
+        },
+        "numberOfBuckets": {
+            "description": "Number of buckets in the swimlane. If not specified, the interval in aggregation model is used instead.",
+            "type": "number"
         }
     },
     "required": [

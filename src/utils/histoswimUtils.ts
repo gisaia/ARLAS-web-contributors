@@ -17,10 +17,13 @@
  * under the License.
  */
 
-import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
+import { Collaboration, CollaborativesearchService, projType } from 'arlas-web-core';
 import { SelectedOutputValues, DataType } from '../models/models';
-import { Expression, Filter } from 'arlas-api';
+import { Expression, Filter, Aggregation, Search, Sort, Interval } from 'arlas-api';
 import { Observable } from 'rxjs/Observable';
+import { interval } from 'rxjs/observable/interval';
+
+
 export function getvaluesChanged(values: SelectedOutputValues[],
     field: string,
     identifier: string,
@@ -108,19 +111,19 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
                     c++;
                     const start = i.split('<')[0].substring(1);
                     const end = i.split('<')[1].substring(0, i.split('<')[1].length - 1);
-                    const interval = {
+                    const intervalOfSelection = {
                         startvalue: null,
                         endvalue: null
                     };
-                    interval.startvalue = <number>parseFloat(start);
-                    interval.endvalue = <number>parseFloat(end);
+                    intervalOfSelection.startvalue = <number>parseFloat(start);
+                    intervalOfSelection.endvalue = <number>parseFloat(end);
                     if (k.value.split(',').length > c) {
-                        intervals.push(interval);
+                        intervals.push(intervalOfSelection);
                     } else {
                         if (d < invtervalFilterList.length) {
-                            intervals.push(interval);
+                            intervals.push(intervalOfSelection);
                         } else {
-                            currentIntervalSelected = interval;
+                            currentIntervalSelected = intervalOfSelection;
                         }
                     }
                 });
@@ -174,4 +177,68 @@ function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Ar
         }
     });
     return [min, max];
+}
+
+export function getAggregationPrecision(nbBuckets: number, range: number, aggregationType: Aggregation.TypeEnum): Interval {
+    const bucketInterval = range / nbBuckets;
+    const DAY_IN_MILLISECOND = 86400000;
+    const HOUR_IN_MILLISECOND = 3600000;
+    const MINUTE_IN_MILLISECOND = 60000;
+    const SECOND_IN_MILLISECOND = 1000;
+    if (aggregationType === Aggregation.TypeEnum.Datehistogram) {
+        let intervalValue = bucketInterval / DAY_IN_MILLISECOND;
+        if (intervalValue > 1) {
+            if (intervalValue >= 1 && intervalValue <= 3) {
+                /**Nb days between 1 and 3 => aggregation in hours (multiple of 24) */
+                intervalValue = Math.round(bucketInterval / HOUR_IN_MILLISECOND);
+                intervalValue = roundToNearestMultiple(intervalValue, 24);
+                return { value: intervalValue, unit: Interval.UnitEnum.Hour };
+            } else if (intervalValue > 3 && intervalValue <= 15) {
+                /**Nb days between 4 and 15 => aggregation in days */
+                intervalValue = Math.round(intervalValue);
+                return { value: intervalValue, unit: Interval.UnitEnum.Day };
+            } else {
+                /**Nb days greater than 15 => aggregation in days (multiple of 15) */
+                intervalValue = Math.round(intervalValue);
+                intervalValue = roundToNearestMultiple(intervalValue, 15);
+                return { value: intervalValue, unit: Interval.UnitEnum.Day };
+            }
+        } else {
+            intervalValue = bucketInterval / HOUR_IN_MILLISECOND;
+            if (intervalValue > 6 && intervalValue < 24) {
+                /**Nb hours between 6 than 24 => aggregation in hours */
+                intervalValue = Math.round(intervalValue);
+                return { value: intervalValue, unit: Interval.UnitEnum.Hour };
+            } else if (intervalValue > 1 && intervalValue <= 6) {
+                /**Nb hours between 1 than 6 => aggregation in minutes (multiple of 60) */
+                intervalValue = bucketInterval / MINUTE_IN_MILLISECOND;
+                intervalValue = Math.round(intervalValue);
+                intervalValue = roundToNearestMultiple(intervalValue, 60);
+                return { value: intervalValue, unit: Interval.UnitEnum.Minute };
+            } else {
+                intervalValue = bucketInterval / MINUTE_IN_MILLISECOND;
+                /**Nb minutes between 5 than 60 => aggregation in minutes (multiple of 5) */
+                if (intervalValue > 5) {
+                    intervalValue = Math.round(intervalValue);
+                    intervalValue = roundToNearestMultiple(intervalValue, 5);
+                    return { value: intervalValue, unit: Interval.UnitEnum.Minute };
+                } else if (intervalValue > 1 && intervalValue < 5) {
+                    /**Nb minutes less than 5 => aggregation in minutes */
+                    intervalValue = Math.round(intervalValue);
+                    return { value: intervalValue, unit: Interval.UnitEnum.Minute };
+                } else {
+                    /**Nb seconds less than or equal 60 => aggregation in seconds */
+                    intervalValue = bucketInterval / SECOND_IN_MILLISECOND;
+                    intervalValue = Math.max(1, Math.round(intervalValue));
+                    return { value: intervalValue, unit: Interval.UnitEnum.Second };
+                }
+            }
+        }
+    } else {
+        return { value: Math.max(Math.round(bucketInterval), 1)};
+    }
+}
+
+function roundToNearestMultiple(i, multiple) {
+    return ((i % multiple) > multiple / 2) ? i + multiple - i % multiple : i - i % multiple;
 }

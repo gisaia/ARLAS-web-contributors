@@ -28,8 +28,8 @@ import {
 } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
 import { SelectedOutputValues, DataType } from '../models/models';
-import { Aggregation, AggregationResponse } from 'arlas-api';
-import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
+import { Aggregation, AggregationResponse, RangeResponse, RangeRequest } from 'arlas-api';
+import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
 
 
@@ -49,12 +49,19 @@ export class SwimLaneContributor extends Contributor {
     @Input() intervalSelection of Swimlane Component
     */
     public intervalListSelection: SelectedOutputValues[] = [];
+    /**
+     * Swimlanes's range
+    */
+    public range: number;
 
     public aggregations: Aggregation[] = this.getConfigValue('swimlanes')[0]['aggregationmodels'];
 
     public field: string = this.getConfigValue('swimlanes')[0]['field'];
-    /**
 
+    /**
+    * Number of buckets in the swimlane. If not specified, the interval in the aggregagtion model is used instead.
+    */
+    private nbBuckets: number = this.getConfigValue('numberOfBuckets');
     /**
     * Start value of selection use to the display of filterDisplayName
     */
@@ -96,21 +103,32 @@ export class SwimLaneContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
-        const aggObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, this.aggregations],
-            this.identifier
-        );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            return aggObservable;
+            if (this.nbBuckets) {
+              return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
+                     <RangeRequest>{filter: null, field: this.field}], this.identifier)
+                    .map((range: RangeResponse) => {
+                        this.range = (range.min && range.max) ? (range.max - range.min) : 0;
+                        this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, this.range, this.aggregations[0].type);
+                    }).flatMap( () =>
+                        this.collaborativeSearcheService.resolveButNotAggregation(
+                         [projType.aggregate, this.aggregations],
+                         this.identifier)
+                    ));
+            } else {
+                return this.collaborativeSearcheService.resolveButNotAggregation(
+                    [projType.aggregate, this.aggregations],
+                    this.identifier);
+            }
         } else {
             return Observable.from([]);
         }
     }
 
-    public computeData(aggResonse: AggregationResponse): Map<string, Array<{ key: number, value: number }>> {
+    public computeData(aggResponse: AggregationResponse): Map<string, Array<{ key: number, value: number }>> {
         const mapResponse = new Map<string, Array<{ key: number, value: number }>>();
-        if (aggResonse.elements !== undefined) {
-            aggResonse.elements.forEach(element => {
+        if (aggResponse.elements !== undefined) {
+            aggResponse.elements.forEach(element => {
                 const key = element.key;
                 const dataTab = new Array<{ key: number, value: number }>();
                 element.elements.forEach(e => {
