@@ -22,7 +22,7 @@ jobs:
       script: npm run tslint
     - env:
         - job=build_release
-      script: npm run build-release; mv dist/docs .
+      script: npm run build-release
     - env:
         - job=generate_documentation
       script: ./mkDocs.sh

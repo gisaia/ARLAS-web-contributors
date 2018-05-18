@@ -54,7 +54,6 @@ gulp.task('build:release', function (done) {
         'build:clean-dist-node_modules',
         'build:clean-dist-src',
         'build:copy-and-inline-dts',
-        'build:generatedoc',
         'build:copy-resources',
         done
     );
