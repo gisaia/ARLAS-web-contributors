@@ -32,10 +32,10 @@ import {
 } from 'arlas-api';
 import { Action, OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
-import * as turf from 'turf';
 import { decode_bbox, bboxes } from 'ngeohash';
-import { Feature } from 'geojson';
 import * as jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
+import { polygon } from '@turf/helpers';
+import bbox from '@turf/bbox';
 
 export enum drawType {
     RECTANGLE,
@@ -185,23 +185,23 @@ export class MapContributor extends Contributor {
                 bboxs = collaboration.filter.pwithin[0];
             }
             bboxs.forEach(b => {
-                const bbox = b.replace('POLYGON((', '').replace('))', '').split(',');
+                const box = b.split(',');
                 let coordinates = [];
-                if (parseFloat(bbox[0]) < parseFloat(bbox[2])) {
+                if (parseFloat(box[0]) < parseFloat(box[2])) {
                     coordinates = [[
-                        [bbox[2], bbox[1]],
-                        [bbox[2], bbox[3]],
-                        [bbox[0], bbox[3]],
-                        [bbox[0], bbox[1]],
-                        [bbox[2], bbox[1]],
+                        [box[2], box[1]],
+                        [box[2], box[3]],
+                        [box[0], box[3]],
+                        [box[0], box[1]],
+                        [box[2], box[1]],
                     ]];
                 } else {
                     coordinates = [[
-                        [(parseFloat(bbox[2]) + 360).toString(), bbox[1]],
-                        [(parseFloat(bbox[2]) + 360).toString(), bbox[3]],
-                        [(parseFloat(bbox[0])).toString(), bbox[3]],
-                        [(parseFloat(bbox[0])).toString(), bbox[1]],
-                        [(parseFloat(bbox[2]) + 360).toString(), bbox[1]]
+                        [(parseFloat(box[2]) + 360).toString(), box[1]],
+                        [(parseFloat(box[2]) + 360).toString(), box[3]],
+                        [(parseFloat(box[0])).toString(), box[3]],
+                        [(parseFloat(box[0])).toString(), box[1]],
+                        [(parseFloat(box[2]) + 360).toString(), box[1]]
 
                     ]];
                 }
@@ -245,12 +245,12 @@ export class MapContributor extends Contributor {
         searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], '', filter);
         return searchResult.map(h => {
             const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
-            const rect = turf.polygon(geojsonData.coordinates);
-            const bbox = turf.bbox(rect);
-            const minX = bbox[0];
-            const minY = bbox[1];
-            const maxX = bbox[2];
-            const maxY = bbox[3];
+            const rect = polygon(geojsonData.coordinates);
+            const box = bbox(rect);
+            const minX = box[0];
+            const minY = box[1];
+            const maxX = box[2];
+            const maxY = box[3];
             return [[minX, minY], [maxX, maxY]];
         });
     }
@@ -485,13 +485,13 @@ export class MapContributor extends Contributor {
             });
             const allfeatures: Array<any> = [];
             featureCollection.features.forEach(feature => {
-                const bbox: Array<number> = decode_bbox(feature.properties.geohash);
+                const box: Array<number> = decode_bbox(feature.properties.geohash);
                 const coordinates = [[
-                    [bbox[3], bbox[2]],
-                    [bbox[3], bbox[0]],
-                    [bbox[1], bbox[0]],
-                    [bbox[1], bbox[2]],
-                    [bbox[3], bbox[2]],
+                    [box[3], box[2]],
+                    [box[3], box[0]],
+                    [box[1], box[0]],
+                    [box[1], box[2]],
+                    [box[3], box[2]],
                 ]];
                 const polygonGeojson = {
                     type: 'Feature',
@@ -593,10 +593,10 @@ export class MapContributor extends Contributor {
             return this.getConfigValue('maxPrecision')[0];
         }
     }
-    private isLatLngInBbox(lat, lng, bbox) {
-        const polyPoints = [[bbox[2], bbox[3]], [bbox[0], bbox[3]],
-        [bbox[0], bbox[1]], [bbox[2], bbox[1]],
-        [bbox[2], bbox[3]]];
+    private isLatLngInBbox(lat, lng, box) {
+        const polyPoints = [[box[2], box[3]], [box[0], box[3]],
+        [box[0], box[1]], [box[2], box[1]],
+        [box[2], box[3]]];
         const x = lat;
         const y = lng;
         let inside = false;

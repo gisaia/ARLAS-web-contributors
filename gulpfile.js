@@ -2,7 +2,6 @@ const gulp = require('gulp');
 const gulpClean = require('gulp-clean');
 const gulpRunSequence = require('run-sequence');
 const inlineResources = require('./tools/inline-resources');
-var typedoc = require('gulp-typedoc');
 
 
 const PROJECT_ROOT = process.cwd();
@@ -31,22 +30,9 @@ function cleanDistSrc(){
         .pipe(gulpClean(null));
 }
 
-function generateDoc(){
-    gulp
-        .src(['src/**/*.ts','!src/index.ts'])
-        .pipe(typedoc({
-            module: 'commonjs',
-            target: 'es6',
-            out: 'dist/docs/',
-            name: 'Arlas Web Contributors',
-            tsconfig: 'tsconfig-build.json'
-        }));
-}
-
 gulp.task('build:clean-dist-node_modules', cleanDistNodeModules);
 gulp.task('build:clean-dist-src', cleanDistSrc);
 gulp.task('build:copy-and-inline-dts', copyDts);
-gulp.task('build:generatedoc', generateDoc);
 gulp.task('build:copy-resources', ['copy-data']);
 gulp.task('build:release', function (done) {
     // Synchronously run those tasks.
