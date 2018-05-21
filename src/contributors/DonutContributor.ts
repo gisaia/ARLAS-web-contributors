@@ -23,7 +23,6 @@ import { Observable } from 'rxjs/Observable';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
 import { DonutArc, SelectionTree } from '../models/models';
 import * as jsonSchema from '../jsonSchemas/donutContributorConf.schema.json';
-import { error } from 'shelljs';
 
 
 

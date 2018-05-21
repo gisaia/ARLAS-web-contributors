@@ -32,10 +32,10 @@ import {
 } from 'arlas-api';
 import { Action, OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
-import * as turf from 'turf';
 import { decode_bbox, bboxes } from 'ngeohash';
-import { Feature } from 'geojson';
 import * as jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
+import { polygon } from '@turf/helpers';
+import bbox from '@turf/bbox';
 
 export enum drawType {
     RECTANGLE,
@@ -123,7 +123,7 @@ export class MapContributor extends Contributor {
             this.geojsondata.features = [];
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
-            const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2]  + ',' +  this.mapExtend[3] + ',' + this.mapExtend[0];
+            const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
             let filter = {};
             if (!this.isBbox) {
                 filter = {
@@ -185,27 +185,26 @@ export class MapContributor extends Contributor {
                 bboxs = collaboration.filter.pwithin[0];
             }
             bboxs.forEach(b => {
-                const bbox = b.replace('POLYGON((', '').replace('))', '').split(',');
+                const box = b.split(',');
                 let coordinates = [];
-                if (this.isGIntersect) {
+                if (parseFloat(box[0]) < parseFloat(box[2])) {
                     coordinates = [[
-                        [bbox[0].split(' ')[0], bbox[0].split(' ')[1]],
-                        [bbox[1].split(' ')[0], bbox[1].split(' ')[1]],
-                        [bbox[2].split(' ')[0], bbox[2].split(' ')[1]],
-                        [bbox[3].split(' ')[0], bbox[3].split(' ')[1]],
-                        [bbox[0].split(' ')[0], bbox[0].split(' ')[1]]
+                        [box[2], box[1]],
+                        [box[2], box[3]],
+                        [box[0], box[3]],
+                        [box[0], box[1]],
+                        [box[2], box[1]],
                     ]];
                 } else {
-                    // west, south, east, north
                     coordinates = [[
-                        [bbox[2], bbox[1]],
-                        [bbox[2], bbox[3]],
-                        [bbox[0], bbox[3]],
-                        [bbox[0], bbox[1]],
-                        [bbox[2], bbox[1]],
+                        [(parseFloat(box[2]) + 360).toString(), box[1]],
+                        [(parseFloat(box[2]) + 360).toString(), box[3]],
+                        [(parseFloat(box[0])).toString(), box[3]],
+                        [(parseFloat(box[0])).toString(), box[1]],
+                        [(parseFloat(box[2]) + 360).toString(), box[1]]
+
                     ]];
                 }
-
                 const polygonGeojson = {
                     type: 'Feature',
                     properties: {
@@ -246,12 +245,12 @@ export class MapContributor extends Contributor {
         searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], '', filter);
         return searchResult.map(h => {
             const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
-            const rect = turf.polygon(geojsonData.coordinates);
-            const bbox = turf.bbox(rect);
-            const minX = bbox[0];
-            const minY = bbox[1];
-            const maxX = bbox[2];
-            const maxY = bbox[3];
+            const rect = polygon(geojsonData.coordinates);
+            const box = bbox(rect);
+            const minX = box[0];
+            const minY = box[1];
+            const maxX = box[2];
+            const maxY = box[3];
             return [[minX, minY], [maxX, maxY]];
         });
     }
@@ -284,40 +283,35 @@ export class MapContributor extends Contributor {
     public getFilterDisplayName(): string {
         return 'GeoBox';
     }
+
+    public wrap(n: number, min: number, max: number): number {
+        const d = max - min;
+        const w = ((n - min) % d + d) % d + min;
+        return (w === min) ? max : w;
+    }
+
     public onChangeBbox(newBbox: Array<Object>) {
 
         let filters: Filter;
+        const pwithinArray: Array<string> = [];
+        newBbox.forEach(v => {
+            const coord = v['geometry']['coordinates'][0];
+            const north = coord[1][1];
+            const west = this.wrap(coord[2][0], -180, 180);
+            const south = coord[0][1];
+            const east = this.wrap(coord[0][0], -180, 180);
+            const pwithin = west + ',' + south + ',' + east + ',' + north;
+            pwithinArray.push(pwithin.trim().toLocaleLowerCase());
+        });
         if (this.isGIntersect) {
-            const gintersectArray: Array<string> = [];
-            newBbox.forEach(v => {
-                const coord = v['geometry']['coordinates'][0];
-                let gintersect = 'POLYGON((';
-
-                coord.forEach((point, index) => {
-                    gintersect += (index === 0 ? '' : ',') + point[0] + ' ' + point[1];
-                });
-                gintersect += '))';
-                gintersectArray.push(gintersect);
-            });
             filters = {
-                gintersect: [gintersectArray],
+                gintersect: [pwithinArray],
             };
         } else {
-            const pwithinArray: Array<string> = [];
-            newBbox.forEach(v => {
-                const coord = v['geometry']['coordinates'][0];
-                const north = coord[1][1];
-                const west = coord[2][0];
-                const south = coord[0][1];
-                const east = coord[0][0];
-                const pwithin = west + ',' + south + ',' + east + ',' + north;
-                pwithinArray.push(pwithin.trim().toLocaleLowerCase());
-            });
             filters = {
                 pwithin: [pwithinArray],
             };
         }
-
         const data: Collaboration = {
             filter: filters,
             enabled: true
@@ -342,7 +336,6 @@ export class MapContributor extends Contributor {
 
         const precision = this.getPrecisionFromZoom(newMove.zoom);
         let precisionChanged = false;
-        this.mapExtend = newMove.extendForLoad;
         if (precision !== this.precision && this.isGeoaggregateCluster) {
             precisionChanged = true;
             this.precision = precision;
@@ -371,7 +364,7 @@ export class MapContributor extends Contributor {
             }
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
-            + ',' +  newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
+                + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
             let filter = {};
             if (!this.isBbox) {
                 filter = {
@@ -395,7 +388,15 @@ export class MapContributor extends Contributor {
                                 this.currentStringedTilesList.push(this.tileToString(tile));
                             }
                         });
-                        this.drawSearchTiles(newTilesList);
+                        // if new extend is not totaly include in old extend
+                        if (newMove.extendForLoad[0] > this.mapExtend[0]
+                            || newMove.extendForLoad[2] < this.mapExtend[2]
+                            || newMove.extendForLoad[1] < this.mapExtend[1]
+                            || newMove.extendForLoad[3] > this.mapExtend[3]
+                            || this.isGeoaggregateCluster
+                        ) {
+                            this.drawSearchTiles(newTilesList);
+                        }
                     } else {
                         this.fetchType = fetchType.geohash;
                         this.currentStringedTilesList = [];
@@ -419,6 +420,7 @@ export class MapContributor extends Contributor {
                 });
             }
         }
+        this.mapExtend = newMove.extendForLoad;
     }
     public onRemoveBbox(isBboxRemoved: boolean) {
         if (isBboxRemoved) {
@@ -483,13 +485,13 @@ export class MapContributor extends Contributor {
             });
             const allfeatures: Array<any> = [];
             featureCollection.features.forEach(feature => {
-                const bbox: Array<number> = decode_bbox(feature.properties.geohash);
+                const box: Array<number> = decode_bbox(feature.properties.geohash);
                 const coordinates = [[
-                    [bbox[3], bbox[2]],
-                    [bbox[3], bbox[0]],
-                    [bbox[1], bbox[0]],
-                    [bbox[1], bbox[2]],
-                    [bbox[3], bbox[2]],
+                    [box[3], box[2]],
+                    [box[3], box[0]],
+                    [box[1], box[0]],
+                    [box[1], box[2]],
+                    [box[3], box[2]],
                 ]];
                 const polygonGeojson = {
                     type: 'Feature',
@@ -591,10 +593,10 @@ export class MapContributor extends Contributor {
             return this.getConfigValue('maxPrecision')[0];
         }
     }
-    private isLatLngInBbox(lat, lng, bbox) {
-        const polyPoints = [[bbox[2], bbox[3]], [bbox[0], bbox[3]],
-        [bbox[0], bbox[1]], [bbox[2], bbox[1]],
-        [bbox[2], bbox[3]]];
+    private isLatLngInBbox(lat, lng, box) {
+        const polyPoints = [[box[2], box[3]], [box[0], box[3]],
+        [box[0], box[1]], [box[2], box[1]],
+        [box[2], box[3]]];
         const x = lat;
         const y = lng;
         let inside = false;

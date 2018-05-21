@@ -4,14 +4,10 @@ cache:
 lint:
   script:
   - npm run tslint
-arlas-web-contributors-doc:
+build:
   script:
   - ./script/prebuild.sh
-  - npm run build-release;mv dist/docs .
-  artifacts:
-    paths:
-    - docs
-    name: "arlas-web-contributors-doc"
+  - npm run build-release
 mkdocs:
   script:
   - ./mkDocs.sh 
