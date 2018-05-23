@@ -437,7 +437,9 @@ export class ResultListContributor extends Contributor {
         search.projection = projection;
         projection.includes = includesvalue.trim().substring(1);
         const newData = [];
-        const searchResult = this.collaborativeSearcheService.resolveButNotHits([projType.search, search]);
+        const searchResult = this.collaborativeSearcheService
+            .resolveButNotHits([projType.search, search])
+            .finally(() => this.collaborativeSearcheService.contribFilterBus.next(this));
         return searchResult;
     }
     private fieldsFromUrlTemplate(urlTemplate: string): string {
