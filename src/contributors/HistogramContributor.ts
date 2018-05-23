@@ -29,10 +29,10 @@ import {
 } from 'arlas-web-core';
 import {
     Hits, Filter, Aggregation,
-    Expression, AggregationResponse
+    Expression, AggregationResponse, RangeResponse, RangeRequest, AggregationsRequest,
 } from 'arlas-api';
 import { SelectedOutputValues, DataType } from '../models/models';
-import { getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
+import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 
 /**
@@ -56,11 +56,18 @@ export class HistogramContributor extends Contributor {
     @Input() intervalSelection of HistogramComponent
     */
     public intervalListSelection: SelectedOutputValues[] = [];
-
+    /**
+     * Histogram's range
+    */
+    public range: number;
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
     private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+    /**
+    * Number of buckets in the histogram. If not specified, the interval in the aggregagtion model is used instead.
+    */
+    private nbBuckets: number = this.getConfigValue('numberOfBuckets');
     /**
     * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
     */
@@ -131,20 +138,31 @@ export class HistogramContributor extends Contributor {
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
         this.maxCount = 0;
-        const aggObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, this.aggregations],
-            this.identifier
-        );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            return aggObservable;
+            if (this.nbBuckets) {
+              return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
+                     <RangeRequest>{filter: null, field: this.field}], this.identifier)
+                    .map((range: RangeResponse) => {
+                        this.range = (range.min && range.max) ? (range.max - range.min) : 0;
+                        this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, this.range, this.aggregations[0].type);
+                    }).flatMap( () =>
+                        this.collaborativeSearcheService.resolveButNotAggregation(
+                         [projType.aggregate, this.aggregations],
+                         this.identifier)
+                    ));
+            } else {
+                return this.collaborativeSearcheService.resolveButNotAggregation(
+                    [projType.aggregate, this.aggregations],
+                    this.identifier);
+            }
         } else {
             return Observable.from([]);
         }
     }
-    public computeData(aggResonse: AggregationResponse): Array<{ key: number, value: number }> {
+    public computeData(aggResponse: AggregationResponse): Array<{ key: number, value: number }> {
         const dataTab = new Array<{ key: number, value: number }>();
-        if (aggResonse.elements !== undefined) {
-            aggResonse.elements.forEach(element => {
+        if (aggResponse.elements !== undefined) {
+            aggResponse.elements.forEach(element => {
                 if (this.maxCount <= element.count) {
                     this.maxCount = element.count;
                 }

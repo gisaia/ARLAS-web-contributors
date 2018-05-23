@@ -20,6 +20,10 @@
         "isOneDimension": {
             "description": "True if it's one dimension histogram",
             "type": "boolean"
+        },
+        "numberOfBuckets": {
+            "description": "Number of buckets in the histogram. If not specified, the interval in aggregation model is used instead.",
+            "type": "number"
         }
     },
     "required": [

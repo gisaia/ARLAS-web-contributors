@@ -349,6 +349,7 @@ export class ResultListContributor extends Contributor {
                 .subscribe(data => data);
         }
     }
+
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
         return this.getHitsObservable(this.geoOrderSort);
     }
