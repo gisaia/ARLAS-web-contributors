@@ -39,6 +39,7 @@ export enum triggerType {
 export interface Action {
     id: string;
     label: string;
+    cssClass?: string;
 }
 /**
  * Couple of field/value id product, use to retrieve the product.

@@ -107,14 +107,25 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 });
                 detailsMap.set(group.name, detailedDataMap);
             });
-            const objectResult = { details: detailsMap, actions: this.contributor.actionToTriggerOnClick };
+            const actions = new Array<Action>();
+            this.contributor.actionToTriggerOnClick.forEach(action => {
+                const ac: Action = {
+                    id: action.id,
+                    label: action.label,
+                    cssClass: ''
+                };
+                const stylePath = action.cssClass;
+                if (stylePath) {
+                    ac.cssClass = getElementFromJsonObject(searchData.hits[0].data, stylePath);
+                }
+                actions.push(ac);
+
+            });
+            const objectResult = { details: detailsMap, actions: actions };
             return objectResult;
         });
         return obs;
     }
-
-
-
     /**
     * Get the ResultListContributor
     * @return ResultListContributor
@@ -349,7 +360,6 @@ export class ResultListContributor extends Contributor {
                 .subscribe(data => data);
         }
     }
-
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
         return this.getHitsObservable(this.geoOrderSort);
     }
