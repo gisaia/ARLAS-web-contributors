@@ -390,6 +390,22 @@ export class ResultListContributor extends Contributor {
                 if (this.fieldsConfiguration.urlThumbnailTemplate) {
                     this.setUrlField('urlThumbnailTemplate', h, map);
                 }
+                if (this.fieldsConfiguration.imageEnabled) {
+                    const imageEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.imageEnabled);
+                    if (imageEnabled != null) {
+                        map.set('imageEnabled', imageEnabled.toString());
+                    } else {
+                        map.set('imageEnabled', '');
+                    }
+                }
+                if (this.fieldsConfiguration.thumbnailEnabled) {
+                    const thumbnailEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.thumbnailEnabled);
+                    if (thumbnailEnabled != null) {
+                        map.set('thumbnailEnabled', thumbnailEnabled.toString());
+                    } else {
+                        map.set('thumbnailEnabled', '');
+                    }
+                }
                 listResult.push(map);
             });
         }
@@ -444,6 +460,12 @@ export class ResultListContributor extends Contributor {
         }
         if (this.fieldsConfiguration.urlThumbnailTemplate) {
             includesvalue = includesvalue + ',' + this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate);
+        }
+        if (this.fieldsConfiguration.imageEnabled) {
+            includesvalue = includesvalue + ',' + this.fieldsConfiguration.imageEnabled;
+        }
+        if (this.fieldsConfiguration.thumbnailEnabled) {
+            includesvalue = includesvalue + ',' + this.fieldsConfiguration.thumbnailEnabled;
         }
         search.projection = projection;
         projection.includes = includesvalue.trim().substring(1);
