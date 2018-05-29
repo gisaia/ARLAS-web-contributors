@@ -1,5 +1,9 @@
 # Change Log
 
+## [v6.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.1) (2018-05-29)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.0...v6.0.1)
+
 ## [v6.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.0) (2018-05-23)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v5.1.1...v6.0.0)
