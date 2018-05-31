@@ -1,8 +1,16 @@
 # Change Log
 
+## [v6.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.3) (2018-05-31)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.2...v6.0.3)
+
 ## [v6.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.2) (2018-05-31)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.1...v6.0.2)
+
+**Fixed bugs:**
+
+- Fix set current map extend [\#48](https://github.com/gisaia/ARLAS-web-contributors/pull/48) ([mbarbet](https://github.com/mbarbet))
 
 ## [v6.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.1) (2018-05-29)
 
