@@ -362,6 +362,7 @@ export class MapContributor extends Contributor {
                 });
                 this.drawGeoaggregateGeohash(newGeohashList);
             }
+            this.mapExtend = newMove.extendForLoad;
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
@@ -416,11 +417,11 @@ export class MapContributor extends Contributor {
                             });
                             this.drawGeoaggregateGeohash(newGeohashList);
                         }
+                        this.mapExtend = newMove.extendForLoad;
                     }
                 });
             }
         }
-        this.mapExtend = newMove.extendForLoad;
     }
     public onRemoveBbox(isBboxRemoved: boolean) {
         if (isBboxRemoved) {
