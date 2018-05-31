@@ -1,8 +1,17 @@
 # Change Log
 
+## [v6.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.2) (2018-05-31)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.1...v6.0.2)
+
 ## [v6.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.1) (2018-05-29)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.0...v6.0.1)
+
+**New stuff:**
+
+- Add image enabled option [\#47](https://github.com/gisaia/ARLAS-web-contributors/pull/47) ([mbarbet](https://github.com/mbarbet))
+- Add css class for action [\#45](https://github.com/gisaia/ARLAS-web-contributors/pull/45) ([mbarbet](https://github.com/mbarbet))
 
 ## [v6.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.0) (2018-05-23)
 
