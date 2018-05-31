@@ -127,7 +127,7 @@ export class MapContributor extends Contributor {
             let filter = {};
             if (!this.isBbox) {
                 filter = {
-                    pwithin: [[pwithin.substring(1).trim().toLocaleLowerCase()]],
+                    pwithin: [[pwithin.trim()]],
                 };
             }
             const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
@@ -155,6 +155,10 @@ export class MapContributor extends Contributor {
                 return this.computeDataGeohashGeoaggregate(data);
             }
         }
+    }
+
+    public setGIntersect(active: boolean) {
+        this.isGIntersect = active;
     }
 
     public setData(data: any) {
@@ -369,7 +373,7 @@ export class MapContributor extends Contributor {
             let filter = {};
             if (!this.isBbox) {
                 filter = {
-                    pwithin: [[pwithin.substring(1).trim().toLocaleLowerCase()]],
+                    pwithin: [[pwithin.trim()]],
                 };
             }
             const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
