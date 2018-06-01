@@ -18,7 +18,7 @@
  */
 
 import { Collaboration, CollaborativesearchService, projType } from 'arlas-web-core';
-import { SelectedOutputValues, DataType } from '../models/models';
+import { SelectedOutputValues, DataType, DateExpression } from '../models/models';
 import { Expression, Filter, Aggregation, Search, Sort, Interval } from 'arlas-api';
 import { Observable } from 'rxjs/Observable';
 import { interval } from 'rxjs/observable/interval';
@@ -50,9 +50,12 @@ export function getvaluesChanged(values: SelectedOutputValues[],
             endValue = endDate.toLocaleString();
             end = endDate.valueOf();
             start = startDate.valueOf();
-        } else {
+        } else if (Number(start).toString() !== 'NaN' && Number(end).toString() !== 'NaN') {
             startValue = Math.round(<number>start).toString();
             endValue = Math.round(<number>end).toString();
+        } else {
+            startValue = start;
+            endValue = end;
         }
         rangeExpression.value = rangeExpression.value + '[' + start.toString() + '<' + end.toString() + '],';
     });
@@ -63,6 +66,10 @@ export function getvaluesChanged(values: SelectedOutputValues[],
         enabled: true
     };
     intervalSelection = values[values.length - 1];
+    if (Number(intervalSelection.startvalue).toString() === 'NaN') {
+        intervalSelection.startvalue = DateExpression.toDateExpression(<string>intervalSelection.startvalue).toMillisecond(false);
+        intervalSelection.endvalue = DateExpression.toDateExpression(<string>intervalSelection.endvalue).toMillisecond(true);
+    }
     collaborativeSearcheService.setFilter(identifier, collaboration);
     return [intervalSelection, startValue, endValue];
 }
@@ -115,8 +122,15 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
                         startvalue: null,
                         endvalue: null
                     };
-                    intervalOfSelection.startvalue = <number>parseFloat(start);
-                    intervalOfSelection.endvalue = <number>parseFloat(end);
+                    if (Number(start).toString() !== 'NaN' && Number(end).toString() !== 'NaN') {
+                        intervalOfSelection.startvalue = <number>parseFloat(start);
+                        intervalOfSelection.endvalue = <number>parseFloat(end);
+                    } else {
+                        intervalOfSelection.startvalue = DateExpression.toDateExpression(start).toMillisecond(false);
+                        intervalOfSelection.endvalue = DateExpression.toDateExpression(end).toMillisecond(true);
+                        startValue = start;
+                        endValue = end;
+                    }
                     if (k.value.split(',').length > c) {
                         intervals.push(intervalOfSelection);
                     } else {
@@ -150,8 +164,10 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
     }
     if (currentIntervalSelected.endvalue !== null && currentIntervalSelected.startvalue !== null) {
         intervalSelection = currentIntervalSelected;
-        startValue = Math.round(<number>currentIntervalSelected.startvalue).toString();
-        endValue = Math.round(<number>currentIntervalSelected.endvalue).toString();
+        if (!startValue && ! endValue) {
+            startValue = Math.round(<number>currentIntervalSelected.startvalue).toString();
+            endValue = Math.round(<number>currentIntervalSelected.endvalue).toString();
+        }
     }
 
     return [intervalListSelection, intervalSelection, startValue, endValue];

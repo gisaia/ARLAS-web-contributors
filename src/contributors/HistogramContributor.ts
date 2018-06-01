@@ -31,9 +31,10 @@ import {
     Hits, Filter, Aggregation,
     Expression, AggregationResponse, RangeResponse, RangeRequest, AggregationsRequest,
 } from 'arlas-api';
-import { SelectedOutputValues, DataType } from '../models/models';
+import { SelectedOutputValues, DataType, StringifiedTimeShortcut, TimeShortcut } from '../models/models';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
+import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -56,6 +57,12 @@ export class HistogramContributor extends Contributor {
     @Input() intervalSelection of HistogramComponent
     */
     public intervalListSelection: SelectedOutputValues[] = [];
+
+    /**
+    * List of the time shortcuts
+    */
+    public predefinedTimeShortcuts: Array<StringifiedTimeShortcut>;
+
     /**
      * Histogram's range
     */
@@ -97,6 +104,11 @@ export class HistogramContributor extends Contributor {
         configService: ConfigService, private isOneDimension?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
+        const lastAggregation: Aggregation = this.aggregations[this.aggregations.length - 1];
+        if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
+            this.predefinedTimeShortcuts = getPredefinedTimeShortcuts();
+        }
+
     }
 
     public static getJsonSchema(): Object {
@@ -134,6 +146,17 @@ export class HistogramContributor extends Contributor {
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
+    }
+
+    public getShortcutLabel(): string {
+        if (this.predefinedTimeShortcuts) {
+            for (let i = 0; i < this.predefinedTimeShortcuts.length; i++) {
+                if (this.predefinedTimeShortcuts[i].from === this.startValue && this.predefinedTimeShortcuts[i].to === this.endValue) {
+                    return this.predefinedTimeShortcuts[i].label;
+                }
+            }
+        }
+        return null;
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
