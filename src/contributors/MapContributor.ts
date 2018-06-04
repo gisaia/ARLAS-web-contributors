@@ -500,16 +500,16 @@ export class MapContributor extends Contributor {
                 ]];
                 const polygonGeojson = {
                     type: 'Feature',
-                    properties: {
-                        point_count_normalize: feature.properties.count / this.maxValueGeoHash * 100,
-                        point_count: feature.properties.count,
-                        geohash: feature.properties.geohash
-                    },
+                    properties:feature.properties,
                     geometry: {
                         type: 'Polygon',
                         coordinates: coordinates
                     }
                 };
+                polygonGeojson.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
+                polygonGeojson.properties['point_count'] = feature.properties.count;
+                polygonGeojson.properties['geohash'] = feature.properties.geohash;
+                
                 feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
                 feature.properties['point_count'] = feature.properties.count;
                 if (this.drawtype.toString() === drawType.CIRCLE.toString()) {
