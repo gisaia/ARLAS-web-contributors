@@ -160,6 +160,9 @@ export class MapContributor extends Contributor {
     public setGIntersect(active: boolean) {
         this.isGIntersect = active;
     }
+    public setDrawType(type: string) {
+        this.drawtype = drawType[type];
+    }
 
     public setData(data: any) {
         switch (this.fetchType) {
