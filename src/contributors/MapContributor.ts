@@ -421,8 +421,8 @@ export class MapContributor extends Contributor {
                             });
                             this.drawGeoaggregateGeohash(newGeohashList);
                         }
-                        this.mapExtend = newMove.extendForLoad;
                     }
+                    this.mapExtend = newMove.extendForLoad;
                 });
             }
         }
