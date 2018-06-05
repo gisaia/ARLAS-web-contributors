@@ -45,6 +45,13 @@ export enum fetchType {
     tile,
     geohash
 }
+export interface Style {
+    id: string;
+    name: string;
+    layerIds: Set<string>;
+    drawType: drawType;
+    isDefault?: boolean;
+}
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -260,6 +267,14 @@ export class MapContributor extends Contributor {
             const maxY = box[3];
             return [[minX, minY], [maxX, maxY]];
         });
+    }
+    public switchLayerCluster(style: Style) {
+        if (drawType[style.drawType].toString() !== this.drawtype.toString()) {
+            this.drawtype = drawType[style.drawType];
+            if (this.isGeoaggregateCluster) {
+                this.drawGeoaggregateGeohash(this.currentGeohashList);
+            }
+        }
     }
 
     public getFeatureToHightLight(elementidentifier: ElementIdentifier) {
@@ -503,7 +518,7 @@ export class MapContributor extends Contributor {
                 ]];
                 const polygonGeojson = {
                     type: 'Feature',
-                    properties:feature.properties,
+                    properties: feature.properties,
                     geometry: {
                         type: 'Polygon',
                         coordinates: coordinates
@@ -512,7 +527,6 @@ export class MapContributor extends Contributor {
                 polygonGeojson.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
                 polygonGeojson.properties['point_count'] = feature.properties.count;
                 polygonGeojson.properties['geohash'] = feature.properties.geohash;
-                
                 feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
                 feature.properties['point_count'] = feature.properties.count;
                 if (this.drawtype.toString() === drawType.CIRCLE.toString()) {
