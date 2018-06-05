@@ -1,8 +1,16 @@
 # Change Log
 
+## [v6.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.4) (2018-06-05)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.3...v6.0.4)
+
 ## [v6.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.3) (2018-05-31)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.2...v6.0.3)
+
+**Fixed bugs:**
+
+- Fix extent value after deleting a bbox [\#49](https://github.com/gisaia/ARLAS-web-contributors/pull/49) ([sebbousquet](https://github.com/sebbousquet))
 
 ## [v6.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.2) (2018-05-31)
 
