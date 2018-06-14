@@ -104,10 +104,12 @@ export class ChipsSearchContributor extends Contributor {
                 });
             } else {
                 this.chipMapData.clear();
+                this.query = '';
             }
         } else {
             if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
                 this.chipMapData.clear();
+                this.query = '';
             }
         }
         return Observable.from(tabOfCount).mergeAll();
