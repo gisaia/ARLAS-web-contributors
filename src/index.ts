@@ -24,7 +24,6 @@ import { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 import { MapContributor } from './contributors/MapContributor';
 import { ResultListContributor } from './contributors/ResultListContributor';
 import { DonutContributor } from './contributors/DonutContributor';
-import { TimeShortcutsContributor } from './contributors/TimeShortcutsContributor';
 
 import { Contributor } from 'arlas-web-core';
 export { PowerbarsContributor } from './contributors/PowerbarsContributor';
@@ -34,7 +33,6 @@ export { MapContributor } from './contributors/MapContributor';
 export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 export { SwimLaneContributor } from './contributors/SwimLaneContributor';
 export { DonutContributor } from './contributors/DonutContributor';
-export { TimeShortcutsContributor } from './contributors/TimeShortcutsContributor';
 
 
 export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum } from './models/models';

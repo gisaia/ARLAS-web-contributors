@@ -59,9 +59,14 @@ export class HistogramContributor extends Contributor {
     public intervalListSelection: SelectedOutputValues[] = [];
 
     /**
-    * List of the time shortcuts
+    * List of all the predefined time shortcuts
     */
-    public predefinedTimeShortcuts: Array<StringifiedTimeShortcut>;
+    public timeShortcuts: Array<StringifiedTimeShortcut>;
+
+    /**
+     * List of shortcuts labels to fetch from the predefined time shortcuts list
+     */
+    public timeShortcutsLabels: Array<string> = this.getConfigValue('timeShortcuts');
 
     /**
      * Histogram's range
@@ -106,7 +111,10 @@ export class HistogramContributor extends Contributor {
         super(identifier, configService, collaborativeSearcheService);
         const lastAggregation: Aggregation = this.aggregations[this.aggregations.length - 1];
         if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
-            this.predefinedTimeShortcuts = getPredefinedTimeShortcuts();
+            this.timeShortcuts = getPredefinedTimeShortcuts();
+            if (this.timeShortcutsLabels) {
+                this.timeShortcuts = this.timeShortcuts.filter(s => this.timeShortcutsLabels.indexOf(s.label) >= 0);
+            }
         }
 
     }
@@ -149,11 +157,10 @@ export class HistogramContributor extends Contributor {
     }
 
     public getShortcutLabel(): string {
-        if (this.predefinedTimeShortcuts) {
-            for (let i = 0; i < this.predefinedTimeShortcuts.length; i++) {
-                if (this.predefinedTimeShortcuts[i].from === this.startValue && this.predefinedTimeShortcuts[i].to === this.endValue) {
-                    return this.predefinedTimeShortcuts[i].label;
-                }
+        if (this.timeShortcuts) {
+            const labels = this.timeShortcuts.filter(t => (t.from === this.startValue) && (t.to === this.endValue)).map(t => t.label);
+            if (labels.length === 1) {
+                return labels[0];
             }
         }
         return null;
