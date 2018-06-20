@@ -31,9 +31,10 @@ import {
     Hits, Filter, Aggregation,
     Expression, AggregationResponse, RangeResponse, RangeRequest, AggregationsRequest,
 } from 'arlas-api';
-import { SelectedOutputValues, DataType } from '../models/models';
+import { SelectedOutputValues, DataType, StringifiedTimeShortcut, TimeShortcut } from '../models/models';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
+import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -56,10 +57,21 @@ export class HistogramContributor extends Contributor {
     @Input() intervalSelection of HistogramComponent
     */
     public intervalListSelection: SelectedOutputValues[] = [];
+
+    /**
+    * List of all the predefined time shortcuts
+    */
+    public timeShortcuts: Array<StringifiedTimeShortcut>;
+
+    /**
+     * List of shortcuts labels to fetch from the predefined time shortcuts list
+     */
+    public timeShortcutsLabels: Array<string> = this.getConfigValue('timeShortcuts');
+
     /**
      * Histogram's range
     */
-    public range: number;
+    public range: RangeResponse;
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
@@ -97,6 +109,14 @@ export class HistogramContributor extends Contributor {
         configService: ConfigService, private isOneDimension?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
+        const lastAggregation: Aggregation = this.aggregations[this.aggregations.length - 1];
+        if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
+            this.timeShortcuts = getPredefinedTimeShortcuts();
+            if (this.timeShortcutsLabels) {
+                this.timeShortcuts = this.timeShortcuts.filter(s => this.timeShortcutsLabels.indexOf(s.label) >= 0);
+            }
+        }
+
     }
 
     public static getJsonSchema(): Object {
@@ -136,15 +156,26 @@ export class HistogramContributor extends Contributor {
         this.endValue = resultList[2];
     }
 
+    public getShortcutLabel(): string {
+        if (this.timeShortcuts) {
+            const labels = this.timeShortcuts.filter(t => (t.from === this.startValue) && (t.to === this.endValue)).map(t => t.label);
+            if (labels.length === 1) {
+                return labels[0];
+            }
+        }
+        return null;
+    }
+
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
         this.maxCount = 0;
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
               return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
                      <RangeRequest>{filter: null, field: this.field}], this.identifier)
-                    .map((range: RangeResponse) => {
-                        this.range = (range.min && range.max) ? (range.max - range.min) : 0;
-                        this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, this.range, this.aggregations[0].type);
+                    .map((rangeResponse: RangeResponse) => {
+                        const dataRange = (rangeResponse.min && rangeResponse.max) ? (rangeResponse.max - rangeResponse.min) : 0;
+                        this.range = (rangeResponse.min && rangeResponse.max) ? rangeResponse : null;
+                        this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
                     }).flatMap( () =>
                         this.collaborativeSearcheService.resolveButNotAggregation(
                          [projType.aggregate, this.aggregations],

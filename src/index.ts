@@ -34,7 +34,8 @@ export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 export { SwimLaneContributor } from './contributors/SwimLaneContributor';
 export { DonutContributor } from './contributors/DonutContributor';
 
-export { Action, ElementIdentifier, triggerType } from './models/models';
+
+export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum } from './models/models';
 
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);

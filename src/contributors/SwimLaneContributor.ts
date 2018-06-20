@@ -52,7 +52,7 @@ export class SwimLaneContributor extends Contributor {
     /**
      * Swimlanes's range
     */
-    public range: number;
+    public range: RangeResponse;
 
     public aggregations: Aggregation[] = this.getConfigValue('swimlanes')[0]['aggregationmodels'];
 
@@ -107,9 +107,10 @@ export class SwimLaneContributor extends Contributor {
             if (this.nbBuckets) {
               return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
                      <RangeRequest>{filter: null, field: this.field}], this.identifier)
-                    .map((range: RangeResponse) => {
-                        this.range = (range.min && range.max) ? (range.max - range.min) : 0;
-                        this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, this.range, this.aggregations[0].type);
+                    .map((rangeResponse: RangeResponse) => {
+                        const dataRange = (rangeResponse.min && rangeResponse.max) ? (rangeResponse.max - rangeResponse.min) : 0;
+                        this.range = (rangeResponse.min && rangeResponse.max) ? rangeResponse : null;
+                        this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
                     }).flatMap( () =>
                         this.collaborativeSearcheService.resolveButNotAggregation(
                          [projType.aggregate, this.aggregations],
