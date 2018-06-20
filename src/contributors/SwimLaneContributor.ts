@@ -160,6 +160,7 @@ export class SwimLaneContributor extends Contributor {
     }
 
     public getFilterDisplayName(): string {
-        return 'SwimLane';
+        const displayName = this.getConfigValue('name');
+        return displayName ? displayName : 'Swimlane';
     }
 }
