@@ -85,6 +85,7 @@ export class MapContributor extends Contributor {
     private nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
     private idFieldName = this.getConfigValue('idFieldName');
     private drawtype = drawType[this.getConfigValue('drawtype')];
+    private isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
     private isGIntersect = false;
     /**
     /**
@@ -492,7 +493,7 @@ export class MapContributor extends Contributor {
                 aggregations: aggregations
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.geohashgeoaggregate, geohahsAggregation]);
+                [projType.geohashgeoaggregate, geohahsAggregation], this.isFlat);
             tabOfGeohash.push(geoAggregateData);
         });
         return Observable.from(tabOfGeohash).mergeAll();
@@ -570,7 +571,7 @@ export class MapContributor extends Contributor {
                 z: tile.z
             };
             const searchResult: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.tiledgeosearch, tiledSearch],
+                [projType.tiledgeosearch, tiledSearch], this.isFlat,
                 null, filter);
             tabOfTile.push(searchResult);
         });

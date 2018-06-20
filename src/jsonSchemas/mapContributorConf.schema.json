@@ -37,6 +37,10 @@
                 "RECTANGLE"
             ]
         },
+        "isFlat": {
+            "description": "If true, geosjon properties will be flat, true by default",
+            "type": "boolean"
+        },
         "zoomLevelFullData": {
             "description": "Max zoom to retrieve all world data",
             "type": "number"
