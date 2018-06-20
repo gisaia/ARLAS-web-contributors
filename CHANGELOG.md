@@ -1,8 +1,28 @@
 # Change Log
 
+## [v7.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.1) (2018-06-20)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.4...v7.0.1)
+
+**Breaking changes:**
+
+- HISTOGRAM : Add time shortcuts [\#57](https://github.com/gisaia/ARLAS-web-contributors/issues/57)
+
+**New stuff:**
+
+- MapContributor: Add isFlat option. [\#61](https://github.com/gisaia/ARLAS-web-contributors/issues/61)
+- Swimlane Contributor : enhance display name [\#58](https://github.com/gisaia/ARLAS-web-contributors/issues/58)
+- Add a set/get for the DRAWTYPE of the MapContributor \(CIRCLE/RECTANGLE\) [\#50](https://github.com/gisaia/ARLAS-web-contributors/issues/50)
+- Handle time shortcuts in Histogram Contributor [\#46](https://github.com/gisaia/ARLAS-web-contributors/issues/46)
+- Feature/improve map cont [\#52](https://github.com/gisaia/ARLAS-web-contributors/pull/52) ([mbarbet](https://github.com/mbarbet))
+
 ## [v6.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.4) (2018-06-05)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.3...v6.0.4)
+
+**Fixed bugs:**
+
+- Fix set new map extend [\#51](https://github.com/gisaia/ARLAS-web-contributors/pull/51) ([mbarbet](https://github.com/mbarbet))
 
 ## [v6.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.3) (2018-05-31)
 
