@@ -110,7 +110,7 @@ export class SwimLaneContributor extends Contributor {
                     .map((rangeResponse: RangeResponse) => {
                         const dataRange = (rangeResponse.min && rangeResponse.max) ? (rangeResponse.max - rangeResponse.min) : 0;
                         this.range = (rangeResponse.min && rangeResponse.max) ? rangeResponse : null;
-                        this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
+                        this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
                     }).flatMap( () =>
                         this.collaborativeSearcheService.resolveButNotAggregation(
                          [projType.aggregate, this.aggregations],
