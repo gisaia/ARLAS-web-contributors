@@ -273,6 +273,7 @@ export class MapContributor extends Contributor {
         if (drawType[style.drawType].toString() !== this.drawtype.toString()) {
             this.drawtype = drawType[style.drawType];
             if (this.isGeoaggregateCluster) {
+                this.geojsondata.features = [];
                 this.drawGeoaggregateGeohash(this.currentGeohashList);
             }
         }
@@ -383,7 +384,9 @@ export class MapContributor extends Contributor {
                         this.currentGeohashList.push(geohash);
                     }
                 });
-                this.drawGeoaggregateGeohash(newGeohashList);
+                if (newGeohashList.length > 0) {
+                    this.drawGeoaggregateGeohash(newGeohashList);
+                }
             }
             this.mapExtend = newMove.extendForLoad;
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
@@ -438,7 +441,9 @@ export class MapContributor extends Contributor {
                                     this.currentGeohashList.push(geohash);
                                 }
                             });
-                            this.drawGeoaggregateGeohash(newGeohashList);
+                            if (newGeohashList.length > 0) {
+                                this.drawGeoaggregateGeohash(newGeohashList);
+                            }
                         }
                     }
                     this.mapExtend = newMove.extendForLoad;
@@ -483,11 +488,9 @@ export class MapContributor extends Contributor {
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
         const geohashSet = new Set(geohashList);
         geohashSet.forEach(geohash => {
-            this.currentGeohashList.push(geohash);
-
-        });
-
-        geohashSet.forEach(geohash => {
+            if (this.currentGeohashList.indexOf(geohash) < 0) {
+                this.currentGeohashList.push(geohash);
+            }
             const geohahsAggregation: GeohashAggregation = {
                 geohash: geohash,
                 aggregations: aggregations
