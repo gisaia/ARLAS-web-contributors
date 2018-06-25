@@ -1,8 +1,17 @@
 # Change Log
 
+## [v7.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.4) (2018-06-25)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.3...v7.0.4)
+
 ## [v7.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.3) (2018-06-22)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.2...v7.0.3)
+
+**Fixed bugs:**
+
+- Swimlane : numberOfBuckets calculus doesn't set the right aggregation [\#63](https://github.com/gisaia/ARLAS-web-contributors/issues/63)
+- Fix : numberOfBuckets calculus doesn't set the right aggregation [\#64](https://github.com/gisaia/ARLAS-web-contributors/pull/64) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [v7.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.2) (2018-06-20)
 
