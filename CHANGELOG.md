@@ -1,8 +1,16 @@
 # Change Log
 
+## [v7.0.5](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.5) (2018-06-26)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.4...v7.0.5)
+
 ## [v7.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.4) (2018-06-25)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.3...v7.0.4)
+
+**Fixed bugs:**
+
+- Improrve mapcontributor layer switcher [\#65](https://github.com/gisaia/ARLAS-web-contributors/pull/65) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.3) (2018-06-22)
 
@@ -16,6 +24,10 @@
 ## [v7.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.2) (2018-06-20)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.1...v7.0.2)
+
+**Fixed bugs:**
+
+- Add moment library to package-release.json [\#62](https://github.com/gisaia/ARLAS-web-contributors/pull/62) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [v7.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.1) (2018-06-20)
 
