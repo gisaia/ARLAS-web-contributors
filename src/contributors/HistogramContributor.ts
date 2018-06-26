@@ -173,8 +173,9 @@ export class HistogramContributor extends Contributor {
               return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
                      <RangeRequest>{filter: null, field: this.field}], this.identifier)
                     .map((rangeResponse: RangeResponse) => {
-                        const dataRange = (rangeResponse.min && rangeResponse.max) ? (rangeResponse.max - rangeResponse.min) : 0;
-                        this.range = (rangeResponse.min && rangeResponse.max) ? rangeResponse : null;
+                        const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
+                            (rangeResponse.max - rangeResponse.min) : 0;
+                        this.range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
                         this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
                     }).flatMap( () =>
                         this.collaborativeSearcheService.resolveButNotAggregation(
