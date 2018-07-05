@@ -49,7 +49,7 @@ export interface Style {
     id: string;
     name: string;
     layerIds: Set<string>;
-    drawType: drawType;
+    drawType?: drawType;
     isDefault?: boolean;
 }
 /**
