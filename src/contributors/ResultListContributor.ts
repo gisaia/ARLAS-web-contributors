@@ -112,6 +112,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 const ac: Action = {
                     id: action.id,
                     label: action.label,
+                    tooltip: action.tooltip,
                     cssClass: ''
                 };
                 const stylePath = action.cssClass;

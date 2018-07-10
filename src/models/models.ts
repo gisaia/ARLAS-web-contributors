@@ -40,6 +40,7 @@ export enum triggerType {
 export interface Action {
     id: string;
     label: string;
+    tooltip?: string;
     cssClass?: string;
 }
 /**
@@ -158,7 +159,7 @@ export class DateExpression {
     public translationUnit: DateUnitEnum;
     public roundingUnit: DateUnitEnum;
 
-    constructor(anchorDate? , translationDuration?, translationUnit?, roundingUnit?: DateUnitEnum) {
+    constructor(anchorDate?, translationDuration?, translationUnit?, roundingUnit?: DateUnitEnum) {
         this.anchorDate = anchorDate;
         this.translationDuration = translationDuration;
         this.translationUnit = translationUnit;
@@ -249,7 +250,7 @@ export class DateExpression {
         // Check if it starts with an operator
         // "/" operator is for rounding the date up or down
         const op = postAnchor.substring(0, 1);
-        if (op === '/' || op === '-' || op === '+')  {
+        if (op === '/' || op === '-' || op === '+') {
             if (op === '/') {
                 // If the operator is "/", it should be followed by one character : a date math unit,
                 if (postAnchor.length === 2) {
@@ -263,7 +264,7 @@ export class DateExpression {
                         // translationDuration == 2
                         dateExpression.translationDuration = parseFloat(operands[0].substring(0, operands[0].length - 1));
                         if (op === '-') {
-                            dateExpression.translationDuration = -1  * dateExpression.translationDuration;
+                            dateExpression.translationDuration = -1 * dateExpression.translationDuration;
                         }
                         // translationUnit == h
                         dateExpression.translationUnit = <DateUnitEnum>operands[0].substring(operands[0].length - 1);
@@ -326,7 +327,7 @@ export class DateExpression {
                 dateValue.millisecond(0);
                 break;
             }
-          }
+        }
 
     }
 
@@ -379,6 +380,6 @@ export class DateExpression {
                 dateValue.millisecond(999);
                 break;
             }
-          }
+        }
     }
 }
