@@ -30,7 +30,7 @@ import {
     Filter, Aggregation, Expression, Hit
 } from 'arlas-api';
 import { getElementFromJsonObject, isArray, download } from '../utils/utils';
-import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration, Column, Detail } from '../models/models';
+import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration, Column, Detail, Field } from '../models/models';
 import * as jsonpath from 'jsonpath';
 import * as jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 
@@ -176,6 +176,8 @@ export class ResultListContributor extends Contributor {
     */
     private geoOrderSort: Sort = {};
 
+    private includesvalues = new Array<string>();
+
 
     public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
@@ -195,9 +197,30 @@ export class ResultListContributor extends Contributor {
         super(identifier, configService, collaborativeSearcheService);
         // Link the ResultListContributor and the detailedDataRetriever
         this.detailedDataRetriever.setContributor(this);
+        this.fieldsList = [];
         this.columns.forEach(column => {
             this.columnsProcess[column.columnName] = column.process;
+            this.fieldsList.push(column);
+            this.includesvalues.push(column.fieldName);
         });
+        this.includesvalues.push(this.fieldsConfiguration.idFieldName);
+        if (this.fieldsConfiguration.titleFieldNames) {
+            this.includesvalues.concat(this.fieldsConfiguration.titleFieldNames.map(field => field.fieldPath));
+        }
+        if (this.fieldsConfiguration.urlImageTemplate) {
+            this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlImageTemplate));
+        }
+        if (this.fieldsConfiguration.urlThumbnailTemplate) {
+            this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate));
+        }
+        if (this.fieldsConfiguration.imageEnabled) {
+            this.includesvalues.push(this.fieldsConfiguration.imageEnabled);
+        }
+        if (this.fieldsConfiguration.thumbnailEnabled) {
+            this.includesvalues.push(this.fieldsConfiguration.thumbnailEnabled);
+        }
+        const setOfIncludeValues = new Set(this.includesvalues);
+        this.includesvalues = Array.from(setOfIncludeValues);
     }
 
     public static getJsonSchema(): Object {
@@ -281,7 +304,7 @@ export class ResultListContributor extends Contributor {
         }
         this.sort = sort;
         this.geoOrderSort = {};
-        this.getHitsObservable(this.sort)
+        this.getHitsObservable(this.includesvalues, this.sort)
             .map(f => this.computeData(f))
             .map(f => this.setData(f))
             .map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
@@ -297,7 +320,7 @@ export class ResultListContributor extends Contributor {
             'sort': 'geodistance:' + lat.toString() + ' ' + lng.toString()
         };
         this.geoOrderSort = sort;
-        this.getHitsObservable(this.geoOrderSort)
+        this.getHitsObservable(this.includesvalues, this.geoOrderSort)
             .map(f => this.computeData(f))
             .map(f => this.setData(f))
             .map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
@@ -350,19 +373,19 @@ export class ResultListContributor extends Contributor {
     */
     public getMoreData(from: number) {
         if (this.geoOrderSort !== {}) {
-            this.getHitsObservable(this.geoOrderSort, from * this.getConfigValue('search_size'))
+            this.getHitsObservable(this.includesvalues, this.geoOrderSort, from * this.getConfigValue('search_size'))
                 .map(f => this.computeData(f))
                 .map(f => f.forEach(d => { this.data.push(d); }))
                 .subscribe(data => data);
         } else {
-            this.getHitsObservable(this.sort, from * this.getConfigValue('search_size'))
+            this.getHitsObservable(this.includesvalues, this.sort, from * this.getConfigValue('search_size'))
                 .map(f => this.computeData(f))
                 .map(f => f.forEach(d => { this.data.push(d); }))
                 .subscribe(data => data);
         }
     }
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
-        return this.getHitsObservable(this.geoOrderSort);
+        return this.getHitsObservable(this.includesvalues, this.geoOrderSort);
     }
 
     public computeData(hits: Hits): Array<Map<string, string | number | Date>> {
@@ -373,17 +396,27 @@ export class ResultListContributor extends Contributor {
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
                     const process: string = this.columnsProcess[element.columnName];
-                    let resultValue = null;
-                    if (process.trim().length > 0) {
-                        resultValue = eval(this.columnsProcess[element.columnName]);
-                    } else {
-                        resultValue = result;
+                    let resultValue = result;
+                    if (process) {
+                        if (process.trim().length > 0) {
+                            resultValue = eval(this.columnsProcess[element.columnName]);
+                        }
                     }
                     map.set(element.fieldName, resultValue);
                 });
-                if (this.fieldsConfiguration.titleFieldName) {
-                    const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.titleFieldName);
-                    map.set(this.fieldsConfiguration.titleFieldName, resultValue);
+                if (this.fieldsConfiguration.titleFieldNames) {
+                    this.fieldsConfiguration.titleFieldNames.forEach(field => {
+                        this.setProcessFieldData(h, field, map, 'title');
+                    });
+                }
+                if (this.fieldsConfiguration.tooltipFieldNames) {
+                    this.fieldsConfiguration.tooltipFieldNames.forEach(field => {
+                        this.setProcessFieldData(h, field, map, 'tooltip');
+                    });
+                }
+                if (this.fieldsConfiguration.iconCssClass) {
+                    const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.iconCssClass);
+                    map.set(this.fieldsConfiguration.iconCssClass, resultValue);
                 }
                 if (this.fieldsConfiguration.urlImageTemplate) {
                     this.setUrlField('urlImageTemplate', h, map);
@@ -437,9 +470,8 @@ export class ResultListContributor extends Contributor {
         return Observable.from([]);
     }
 
-    private getHitsObservable(sort?: Sort, from?: number): Observable<Hits> {
+    private getHitsObservable(includesvalues: Array<string>, sort?: Sort, from?: number): Observable<Hits> {
         const projection: Projection = {};
-        let includesvalue = '';
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
         if (sort) {
             search.sort = sort;
@@ -447,29 +479,8 @@ export class ResultListContributor extends Contributor {
         if (from) {
             search.size.from = from;
         }
-        this.fieldsList = [];
-        this.columns.forEach(element => {
-            this.fieldsList.push(element);
-            includesvalue = includesvalue + ',' + element.fieldName;
-        });
-        if (this.fieldsConfiguration.titleFieldName) {
-            includesvalue = includesvalue + ',' + this.fieldsConfiguration.titleFieldName;
-        }
-        includesvalue = includesvalue + ',' + this.fieldsConfiguration.idFieldName;
-        if (this.fieldsConfiguration.urlImageTemplate) {
-            includesvalue = includesvalue + ',' + this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlImageTemplate);
-        }
-        if (this.fieldsConfiguration.urlThumbnailTemplate) {
-            includesvalue = includesvalue + ',' + this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate);
-        }
-        if (this.fieldsConfiguration.imageEnabled) {
-            includesvalue = includesvalue + ',' + this.fieldsConfiguration.imageEnabled;
-        }
-        if (this.fieldsConfiguration.thumbnailEnabled) {
-            includesvalue = includesvalue + ',' + this.fieldsConfiguration.thumbnailEnabled;
-        }
         search.projection = projection;
-        projection.includes = includesvalue.trim().substring(1);
+        projection.includes = includesvalues.join(',');
         const newData = [];
         const searchResult = this.collaborativeSearcheService
             .resolveButNotHits([projType.search, search])
@@ -528,5 +539,17 @@ export class ResultListContributor extends Contributor {
                         getElementFromJsonObject(h.data, f));
                 }
             });
+    }
+
+    private setProcessFieldData(h: Hit, field: Field, map: Map<string, string | number | Date>, dataType: string) {
+        const result: string = getElementFromJsonObject(h.data, field.fieldPath);
+        const process: string = field.process;
+        let resultValue = result;
+        if (process) {
+            if (process.trim().length > 0) {
+                resultValue = eval(field.process);
+            }
+        }
+        map.set(field.fieldPath + '_' + dataType, resultValue);
     }
 }

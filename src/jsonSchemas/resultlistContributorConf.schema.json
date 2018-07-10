@@ -31,8 +31,48 @@
                     "description": "Url template of thumbnail",
                     "type": "string"
                 },
-                "titleFieldName": {
-                    "description": "Field name of title for item",
+                "titleFieldNames": {
+                    "description": "Fields elements to draw title of a grid element",
+                    "type": "array",
+                    "items": {
+                        "description": "Fields",
+                        "type": "object",
+                        "properties": {
+                            "fieldPath": {
+                                "description": "Path of field",
+                                "type": "string"
+                            },
+                            "process": {
+                                "description": "Process transformation to display (ex : result.trim())",
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "tooltipFieldNames": {
+                    "description": "Fields elements to draw tooltip  of a grid element",
+                    "type": "array",
+                    "items": {
+                        "description": "Fields",
+                        "type": "object",
+                        "properties": {
+                            "fieldPath": {
+                                "description": "Path of field",
+                                "type": "string"
+                            },
+                            "process": {
+                                "description": "Process transformation to display (ex : result.trim())",
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "icon": {
+                    "description": "Material icon value",
+                    "type": "string"
+                },
+                "iconCssClass": {
+                    "description": "Field path of field to customize css class",
                     "type": "string"
                 }
             }
