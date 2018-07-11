@@ -1,8 +1,24 @@
 # Change Log
 
+## [v7.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.1.0) (2018-07-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.5...v7.1.0)
+
+**New stuff:**
+
+- RESULTLIST : Add new fieldconfiguration Data [\#75](https://github.com/gisaia/ARLAS-web-contributors/issues/75)
+- RESULTLIST : Add tooltip in resultlist action [\#74](https://github.com/gisaia/ARLAS-web-contributors/issues/74)
+- Map : drawType of interface Style should be optional [\#69](https://github.com/gisaia/ARLAS-web-contributors/issues/69)
+- Add new fieldconfiguration Data [\#73](https://github.com/gisaia/ARLAS-web-contributors/pull/73) ([mbarbet](https://github.com/mbarbet))
+
 ## [v7.0.5](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.5) (2018-06-26)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.4...v7.0.5)
+
+**Fixed bugs:**
+
+- RANGE : condition on existance of min&max in a rangeResponse is wrong [\#66](https://github.com/gisaia/ARLAS-web-contributors/issues/66)
+- Fix : checking the existence of min/max in rangeResponse [\#67](https://github.com/gisaia/ARLAS-web-contributors/pull/67) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [v7.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.4) (2018-06-25)
 
