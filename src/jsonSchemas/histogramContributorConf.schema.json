@@ -36,6 +36,10 @@
                     "Last 30 days", "Last 60 days", "Last 90 days", "Last 6 months", "L"
                 ]
             }
+        },
+        "jsonpath":{
+            "description": "Json path to find value used in aggregation, for example  $.count or $.metrics[0].value, $.count is used by default if this property is not setted.",
+            "type": "string"
         }
     },
     "required": [

@@ -35,6 +35,7 @@ import { SelectedOutputValues, DataType, StringifiedTimeShortcut, TimeShortcut }
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
+import * as jsonpath from 'jsonpath';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -77,6 +78,10 @@ export class HistogramContributor extends Contributor {
     */
     private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
     /**
+    * Json path to explore element aggregation, count by default
+    */
+    private json_path: string = this.getConfigValue('jsonpath') !== undefined ? this.getConfigValue('jsonpath') : '$.count';
+    /**
     * Number of buckets in the histogram. If not specified, the interval in the aggregagtion model is used instead.
     */
     private nbBuckets: number = this.getConfigValue('numberOfBuckets');
@@ -95,7 +100,7 @@ export class HistogramContributor extends Contributor {
     /**
     * Max value of all bucketn use for oneDimension histogram palette
     */
-    private maxCount = 0;
+    private maxValue = 0;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -167,20 +172,20 @@ export class HistogramContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
-        this.maxCount = 0;
+        this.maxValue = 0;
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
-              return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                     <RangeRequest>{filter: null, field: this.field}], this.identifier)
+                return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
+                <RangeRequest>{ filter: null, field: this.field }], this.identifier)
                     .map((rangeResponse: RangeResponse) => {
                         const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
                             (rangeResponse.max - rangeResponse.min) : 0;
                         this.range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
                         this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
-                    }).flatMap( () =>
+                    }).flatMap(() =>
                         this.collaborativeSearcheService.resolveButNotAggregation(
-                         [projType.aggregate, this.aggregations],
-                         this.identifier)
+                            [projType.aggregate, this.aggregations],
+                            this.identifier)
                     ));
             } else {
                 return this.collaborativeSearcheService.resolveButNotAggregation(
@@ -195,10 +200,11 @@ export class HistogramContributor extends Contributor {
         const dataTab = new Array<{ key: number, value: number }>();
         if (aggResponse.elements !== undefined) {
             aggResponse.elements.forEach(element => {
-                if (this.maxCount <= element.count) {
-                    this.maxCount = element.count;
+                const value = jsonpath.query(element, this.json_path)[0];
+                if (this.maxValue <= value) {
+                    this.maxValue = value;
                 }
-                dataTab.push({ key: element.key, value: element.count });
+                dataTab.push({ key: element.key, value: value });
             });
         }
         return dataTab;
@@ -209,7 +215,7 @@ export class HistogramContributor extends Contributor {
             this.chartData = data;
         } else {
             data.forEach(obj => {
-                obj.value = obj.value / this.maxCount;
+                obj.value = obj.value / this.maxValue;
             });
             this.chartData = data;
         }
