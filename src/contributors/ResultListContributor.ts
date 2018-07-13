@@ -33,6 +33,7 @@ import { getElementFromJsonObject, isArray, download } from '../utils/utils';
 import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration, Column, Detail, Field } from '../models/models';
 import * as jsonpath from 'jsonpath';
 import * as jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
+import { AggregationResponse } from 'arlas-api';
 
 /**
 * Interface define in Arlas-web-components
@@ -157,6 +158,10 @@ export class ResultListContributor extends Contributor {
     */
     public fieldsList: Array<{ columnName: string, fieldName: string, dataType: string }> = [];
     /**
+* List of column of the table, @Input() fieldsList of ResultListComponent.
+*/
+    public dropDownMapValues: Map<string, Observable<Array<string>>> = new Map<string, Observable<Array<string>>>();
+    /**
     * Instance of DetailedDataRetriever class, @Input() detailedDataRetriever of ResultListComponent.
     */
     public detailedDataRetriever = new ResultListDetailedDataRetriever();
@@ -167,6 +172,8 @@ export class ResultListContributor extends Contributor {
 
 
     public filtersMap: Map<string, string | number | Date> = new Map<string, string | number | Date>();
+    public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
+
     /**
      * Sort parameter of the list.
     */
@@ -175,11 +182,7 @@ export class ResultListContributor extends Contributor {
      * geoSort parameter of the list.
     */
     private geoOrderSort: Sort = {};
-
     private includesvalues = new Array<string>();
-
-
-    public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
     /**
@@ -202,6 +205,15 @@ export class ResultListContributor extends Contributor {
             this.columnsProcess[column.columnName] = column.process;
             this.fieldsList.push(column);
             this.includesvalues.push(column.fieldName);
+            if (column.dropdown) {
+                let size = 10;
+                if (column.dropdownsize) {
+                    size = column.dropdownsize;
+                }
+                this.dropDownMapValues.set(column.fieldName, this.getDropDownValues(column.fieldName, size.toString()));
+            } else {
+                this.dropDownMapValues.set(column.fieldName, Observable.from([[]]));
+            }
         });
         this.includesvalues.push(this.fieldsConfiguration.idFieldName);
         if (this.fieldsConfiguration.titleFieldNames) {
@@ -541,7 +553,7 @@ export class ResultListContributor extends Contributor {
             });
     }
 
-    private setProcessFieldData(h: Hit, field: Field, map: Map<string, string | number | Date>, dataType: string) {
+    private setProcessFieldData(h: Hit, field: Field, map: Map<string, string | number | Date>, dataType: string): void {
         const result: string = getElementFromJsonObject(h.data, field.fieldPath);
         const process: string = field.process;
         let resultValue = result;
@@ -551,5 +563,16 @@ export class ResultListContributor extends Contributor {
             }
         }
         map.set(field.fieldPath + '_' + dataType, resultValue);
+    }
+
+    private getDropDownValues(field: string, size: string): Observable<Array<string>> {
+        const aggregations: Aggregation[] = new Array<Aggregation>();
+        aggregations.push({
+            type: Aggregation.TypeEnum.Term,
+            field: field,
+            size: size
+        });
+        const result = this.collaborativeSearcheService.resolveAggregation([projType.aggregate, aggregations]);
+        return result.map(aggResponse => aggResponse.elements.map(element => (<any>element).key_as_string));
     }
 }

@@ -72,7 +72,7 @@
                     "type": "string"
                 },
                 "iconCssClass": {
-                    "description": "Field path of field to customize css class",
+                    "description": "Field path of field to customize css",
                     "type": "string"
                 }
             }
@@ -99,6 +99,14 @@
                     "process": {
                         "description": "Process transformation to display (ex : result.trim())",
                         "type": "string"
+                    },
+                    "dropdown": {
+                        "description": "Whether the filter column search has a dropdown list",
+                        "type": "boolean"
+                    },
+                    "dropdownsize": {
+                        "description": "Size of dropdown list, 10 by default",
+                        "type": "number"
                     }
                 }
             }
