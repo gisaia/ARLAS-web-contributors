@@ -32,6 +32,7 @@ import {
     Expression, AggregationResponse
 } from 'arlas-api';
 import * as jsonSchema from '../jsonSchemas/powerbarsContributorConf.schema.json';
+import * as jsonpath from 'jsonpath';
 
 /**
 * This contributor works with the Angular PowerbarsComponent of the Arlas-web-components project.
@@ -60,6 +61,10 @@ export class PowerbarsContributor extends Contributor {
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
     private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+    /**
+    * Json path to explore element aggregation, count by default
+    */
+    private json_path: string = this.getConfigValue('jsonpath') !== undefined ? this.getConfigValue('jsonpath') : '$.count';
     /**
     * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
     */
@@ -115,7 +120,8 @@ export class PowerbarsContributor extends Contributor {
         const powerbarsTab = new Array<[string, number]>();
         if (aggregationResonse.elements !== undefined) {
             aggregationResonse.elements.forEach(element => {
-                powerbarsTab.push([element.key, element.count]);
+                const value = jsonpath.query(element, this.json_path)[0];
+                powerbarsTab.push([element.key, value]);
             });
             this.sortPowerBarsTab(powerbarsTab);
         }
@@ -172,7 +178,7 @@ export class PowerbarsContributor extends Contributor {
     }
 
     /**
-     * Sorts the powerbarsTab from the biggest term count to the lower
+     * Sorts the powerbarsTab from the biggest term value to the lower
      */
     private sortPowerBarsTab(powerbarsTab: Array<[string, number]>): void {
         powerbarsTab.sort((a: [string, number], b: [string, number]) => b[1] - a[1]);

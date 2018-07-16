@@ -4,11 +4,19 @@
     "description": "The Configuration of Powerbars Contributor",
     "type": "object",
     "$id": "powerbarsContributorConf.schema.json",
-    "allOf": [{ "$ref": "rootContributorConf.schema.json#" }],
+    "allOf": [
+        {
+            "$ref": "rootContributorConf.schema.json#"
+        }
+    ],
     "properties": {
-        "title":{
+        "title": {
             "description": "Title of PowerBar",
-            "type":"string"
+            "type": "string"
+        },
+        "jsonpath": {
+            "description": "Json path to find value used in aggregation, for example  $.count or $.metrics[0].value, $.count is used by default if this property is not setted.",
+            "type": "string"
         }
     },
     "required": [

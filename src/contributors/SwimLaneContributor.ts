@@ -31,6 +31,7 @@ import { SelectedOutputValues, DataType } from '../models/models';
 import { Aggregation, AggregationResponse, RangeResponse, RangeRequest } from 'arlas-api';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
+import * as jsonpath from 'jsonpath';
 
 
 export class SwimLaneContributor extends Contributor {
@@ -57,7 +58,10 @@ export class SwimLaneContributor extends Contributor {
     public aggregations: Aggregation[] = this.getConfigValue('swimlanes')[0]['aggregationmodels'];
 
     public field: string = this.getConfigValue('swimlanes')[0]['field'];
-
+    /**
+    * Json path to explore element aggregation, count by default
+    */
+    public json_path: string;
     /**
     * Number of buckets in the swimlane. If not specified, the interval in the aggregagtion model is used instead.
     */
@@ -85,6 +89,11 @@ export class SwimLaneContributor extends Contributor {
         configService: ConfigService, private isOneDimension?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
+        if (this.getConfigValue('swimlanes')[0]['jsonpath'] !== undefined) {
+            this.json_path = this.getConfigValue('swimlanes')[0]['jsonpath'];
+        } else {
+            this.json_path = '$.count';
+        }
     }
     public static getJsonSchema(): Object {
         return jsonSchema;
@@ -105,17 +114,17 @@ export class SwimLaneContributor extends Contributor {
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
-              return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                     <RangeRequest>{filter: null, field: this.field}], this.identifier)
+                return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
+                <RangeRequest>{ filter: null, field: this.field }], this.identifier)
                     .map((rangeResponse: RangeResponse) => {
                         const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
                             (rangeResponse.max - rangeResponse.min) : 0;
                         this.range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
                         this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
-                    }).flatMap( () =>
+                    }).flatMap(() =>
                         this.collaborativeSearcheService.resolveButNotAggregation(
-                         [projType.aggregate, this.aggregations],
-                         this.identifier)
+                            [projType.aggregate, this.aggregations],
+                            this.identifier)
                     ));
             } else {
                 return this.collaborativeSearcheService.resolveButNotAggregation(
@@ -134,7 +143,10 @@ export class SwimLaneContributor extends Contributor {
                 const key = element.key;
                 const dataTab = new Array<{ key: number, value: number }>();
                 element.elements.forEach(e => {
-                    e.elements.forEach(el => dataTab.push({ key: el.key, value: el.count }));
+                    e.elements.forEach(el => {
+                        const value = jsonpath.query(el, this.json_path)[0];
+                        dataTab.push({ key: el.key, value: value });
+                    });
                 });
                 mapResponse.set(key, dataTab);
             });

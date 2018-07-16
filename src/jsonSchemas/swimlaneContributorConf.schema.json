@@ -42,6 +42,10 @@
                     "name": {},
                     "aggregationmodels": {
                         "$ref": "rootContributorConf.schema.json#/definitions/aggregationmodels"
+                    },
+                    "jsonpath": {
+                        "description": "Json path to find value used in aggregation, for example  $.count or $.metrics[0].value, $.count is used by default if this property is not setted.",
+                        "type": "string"
                     }
                 }
             }
