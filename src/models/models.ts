@@ -105,6 +105,8 @@ export interface Column {
     fieldName: string;
     dataType: string;
     process: string;
+    dropdown: boolean;
+    dropdownsize: number;
 }
 
 export interface Detail {
