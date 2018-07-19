@@ -92,8 +92,7 @@ export class ChipsSearchContributor extends Contributor {
                             q: [[k]]
                         };
                         const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
-                            [projType.count,
-                            {}],
+                            [projType.count, {}], this.collaborativeSearcheService.collaborations,
                             this.identifier,
                             filter
                         );
@@ -157,7 +156,7 @@ export class ChipsSearchContributor extends Contributor {
                     q: [[value]]
                 };
                 const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
-                    [projType.count, {}],
+                    [projType.count, {}], this.collaborativeSearcheService.collaborations,
                     this.identifier,
                     filter
                 );

@@ -17,8 +17,10 @@
  * under the License.
  */
 
-import { Contributor, CollaborationEvent, Collaboration, projType, OperationEnum,
-    CollaborativesearchService, ConfigService } from 'arlas-web-core';
+import {
+    Contributor, CollaborationEvent, Collaboration, projType, OperationEnum,
+    CollaborativesearchService, ConfigService
+} from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
 import { DonutArc, SelectionTree } from '../models/models';
@@ -43,8 +45,8 @@ export class DonutContributor extends Contributor {
     /**
      * List of selected nodes to be returned to the donut component as an input
      */
-    public selectedArcsList: Array<Array<{ringName: string, name: string}>> =
-    new Array<Array<{ringName: string, name: string}>>();
+    public selectedArcsList: Array<Array<{ ringName: string, name: string }>> =
+        new Array<Array<{ ringName: string, name: string }>>();
     /**
      * ARLAS Server Aggregation used to draw the donut, defined in configuration
      */
@@ -52,8 +54,8 @@ export class DonutContributor extends Contributor {
     /**
      * List of selected nodes returned from the donut component
      */
-    private componentSelectedArcsList: Array<Array<{ringName: string, name: string}>> =
-    new Array<Array<{ringName: string, name: string}>>();
+    private componentSelectedArcsList: Array<Array<{ ringName: string, name: string }>> =
+        new Array<Array<{ ringName: string, name: string }>>();
 
     constructor(
         identifier: string,
@@ -86,7 +88,7 @@ export class DonutContributor extends Contributor {
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, this.aggregations],
+            [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.identifier
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
@@ -97,7 +99,7 @@ export class DonutContributor extends Contributor {
     }
 
     public computeData(aggregationResonse: AggregationResponse): DonutArc {
-        const donutArc: DonutArc = {id: 'root', name: 'root', ringName: 'root', isOther: false, children: []};
+        const donutArc: DonutArc = { id: 'root', name: 'root', ringName: 'root', isOther: false, children: [] };
         this.populateChildren(donutArc, aggregationResonse, 0);
         return donutArc;
     }
@@ -111,9 +113,9 @@ export class DonutContributor extends Contributor {
         if (collaboration) {
             const filter = collaboration.filter;
             if (filter === null) {
-                this.selectedArcsList = new Array<Array<{ringName: string, name: string}>>();
+                this.selectedArcsList = new Array<Array<{ ringName: string, name: string }>>();
             } else {
-                this.selectedArcsList = new Array<Array<{ringName: string, name: string}>>();
+                this.selectedArcsList = new Array<Array<{ ringName: string, name: string }>>();
                 const fFilters = filter.f;
                 const fieldsList = [];
                 const mapFiledValues = new Map<string, Set<string>>();
@@ -125,7 +127,7 @@ export class DonutContributor extends Contributor {
                     fieldsList.push(fFilter[0].field);
                 });
                 fieldsList.reverse();
-                const node: SelectionTree =  {field: 'root', value: 'root', children: []};
+                const node: SelectionTree = { field: 'root', value: 'root', children: [] };
                 const lastChildren = [];
                 this.builtSelectionTree(fieldsList[0], node, mapFiledValues, fieldsList, lastChildren);
                 lastChildren.forEach(lastNode => {
@@ -134,54 +136,54 @@ export class DonutContributor extends Contributor {
                 // ADD THE HIGHER SELECTED NODES TO selectedArcsList
                 let depth = 0;
                 this.selectedArcsList.forEach(function (nodePath) {
-                  if (nodePath.length > depth) {
-                    depth = nodePath.length;
-                  }
+                    if (nodePath.length > depth) {
+                        depth = nodePath.length;
+                    }
                 });
                 this.componentSelectedArcsList.forEach(arc => {
-                  if (arc.length < depth) {
-                    this.selectedArcsList.push(arc);
-                  }
+                    if (arc.length < depth) {
+                        this.selectedArcsList.push(arc);
+                    }
                 });
             }
         } else {
-            this.selectedArcsList = new Array<Array<{ringName: string, name: string}>>();
+            this.selectedArcsList = new Array<Array<{ ringName: string, name: string }>>();
         }
         return Observable.from([]);
     }
 
-    public selectedArcsListChanged(selectedArcsList: Array<Array<{ringName: string, name: string}>>): void {
+    public selectedArcsListChanged(selectedArcsList: Array<Array<{ ringName: string, name: string }>>): void {
         this.componentSelectedArcsList = selectedArcsList;
         if (selectedArcsList.length > 0) {
             const filter: Filter = { f: [] };
-                    this.aggregations.forEach(aggregation => {
-                        const equalExpression: Expression = {
-                            field: aggregation.field,
-                            op: Expression.OpEnum.Eq,
-                            value: ''
-                        };
-                        const valuesSet = new Set<string>();
-                        selectedArcsList.forEach(arcPath => {
-                            arcPath.every( arc => {
-                                if (arc.ringName === aggregation.field) {
-                                    valuesSet.add(arc.name);
-                                }
-                                return arc.ringName !== aggregation.field;
-                            });
-                        });
-                        valuesSet.forEach(value => {
-                            equalExpression.value += value + ',';
-                        });
-                        if (equalExpression.value !== '') {
-                            equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
-                            filter.f.push([equalExpression]);
+            this.aggregations.forEach(aggregation => {
+                const equalExpression: Expression = {
+                    field: aggregation.field,
+                    op: Expression.OpEnum.Eq,
+                    value: ''
+                };
+                const valuesSet = new Set<string>();
+                selectedArcsList.forEach(arcPath => {
+                    arcPath.every(arc => {
+                        if (arc.ringName === aggregation.field) {
+                            valuesSet.add(arc.name);
                         }
+                        return arc.ringName !== aggregation.field;
                     });
-                    const collaboration: Collaboration = {
-                        filter: filter,
-                        enabled: true
-                    };
-                    this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
+                });
+                valuesSet.forEach(value => {
+                    equalExpression.value += value + ',';
+                });
+                if (equalExpression.value !== '') {
+                    equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
+                    filter.f.push([equalExpression]);
+                }
+            });
+            const collaboration: Collaboration = {
+                filter: filter,
+                enabled: true
+            };
+            this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
         } else {
             this.collaborativeSearcheService.removeFilter(this.identifier);
         }
@@ -190,7 +192,7 @@ export class DonutContributor extends Contributor {
     private builtSelectionTree(field: string, node: SelectionTree, mapFiledValues: Map<string, Set<string>>,
         fieldsList: Array<string>, lastChildren: SelectionTree[]): void {
         mapFiledValues.get(field).forEach(value => {
-            const n: SelectionTree = {field: field, value: value, children: [], parent: node};
+            const n: SelectionTree = { field: field, value: value, children: [], parent: node };
             const nextField = this.getNextField(field, fieldsList);
             if (nextField !== null) {
                 this.builtSelectionTree(nextField, n, mapFiledValues, fieldsList, lastChildren);
@@ -210,7 +212,7 @@ export class DonutContributor extends Contributor {
         }
     }
 
-    private getNodeAsArray(n: SelectionTree): Array<{ringName: string, name: string}> {
+    private getNodeAsArray(n: SelectionTree): Array<{ ringName: string, name: string }> {
         const nodePathAsArray = new Array();
         nodePathAsArray.push({ ringName: n.field, name: n.value });
         if (n.parent && n.parent.parent) {
@@ -223,7 +225,7 @@ export class DonutContributor extends Contributor {
         return nodePathAsArray;
     }
 
-    private populateChildren (donutData: DonutArc, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
+    private populateChildren(donutData: DonutArc, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
         const ring = donutData.children;
         const field = this.aggregations[aggregationLevel].field;
         const countOfOthers = aggregationResponse.sumotherdoccounts;
@@ -237,8 +239,10 @@ export class DonutContributor extends Contributor {
             let isOther = false;
             for (let i = 0; i < aggregationBuckets.length && !isOther; i++) {
                 const bucket = aggregationBuckets[i];
-                const arc: DonutArc = {id: field + bucket.key + bucket.count, name: bucket.key,
-                     ringName: field, isOther: false, children: []};
+                const arc: DonutArc = {
+                    id: field + bucket.key + bucket.count, name: bucket.key,
+                    ringName: field, isOther: false, children: []
+                };
                 relativeTotal += bucket.count;
                 if (bucket.elements !== undefined && bucket.elements[0].elements !== undefined) {
                     if (bucket.count / (countOfBuckets + countOfOthers) >= this.arcMinPourcentage) {
@@ -257,13 +261,17 @@ export class DonutContributor extends Contributor {
             }
 
             if (isOther) {
-                const arc: DonutArc = {id: field + aggregationResponse.key + aggregationResponse.count, name: 'OTHER', ringName: field,
-                 isOther: true, size: countOfOthers + (countOfBuckets - relativeTotal)};
+                const arc: DonutArc = {
+                    id: field + aggregationResponse.key + aggregationResponse.count, name: 'OTHER', ringName: field,
+                    isOther: true, size: countOfOthers + (countOfBuckets - relativeTotal)
+                };
                 ring.push(arc);
             } else {
                 if (countOfOthers > 0) {
-                    const arc = { id: field + aggregationResponse.key + aggregationResponse.count, name: 'OTHER', ringName: field,
-                        isOther: true, size: countOfOthers };
+                    const arc = {
+                        id: field + aggregationResponse.key + aggregationResponse.count, name: 'OTHER', ringName: field,
+                        isOther: true, size: countOfOthers
+                    };
                     ring.push(arc);
                 }
             }

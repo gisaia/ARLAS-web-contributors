@@ -66,7 +66,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             f: [[expression]]
         };
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
-            projType.search, search],
+            projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
             this.contributor.identifier, filter);
         const obs: Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> = searchResult.map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
@@ -233,8 +233,25 @@ export class ResultListContributor extends Contributor {
         }
         const setOfIncludeValues = new Set(this.includesvalues);
         this.includesvalues = Array.from(setOfIncludeValues);
-    }
 
+        this.collaborativeSearcheService.collaborationBus
+            // if filter comes from other contributor or if it's a remove filter
+            .filter(c => c.id !== this.identifier || c.operation === 1)
+            .subscribe(c => {
+                this.dropDownMapValues.clear();
+                this.columns.forEach(column => {
+                    if (column.dropdown) {
+                        let size = 10;
+                        if (column.dropdownsize) {
+                            size = column.dropdownsize;
+                        }
+                        this.dropDownMapValues.set(column.fieldName, this.getDropDownValues(column.fieldName, size.toString()));
+                    } else {
+                        this.dropDownMapValues.set(column.fieldName, Observable.from([[]]));
+                    }
+                });
+            });
+    }
     public static getJsonSchema(): Object {
         return jsonSchema;
     }
@@ -259,7 +276,8 @@ export class ResultListContributor extends Contributor {
             f: [[expression]]
         };
         const actionsList = new Array<string>();
-        searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], null, filter);
+        searchResult = this.collaborativeSearcheService
+            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, filter);
         searchResult.map(data => JSON.stringify(data)).subscribe(
             data => {
                 download(data.toString(), elementidentifier.idValue + '.json', 'text/json');
@@ -346,35 +364,56 @@ export class ResultListContributor extends Contributor {
         if (filterMap.size === 0) {
             this.collaborativeSearcheService.removeFilter(this.identifier);
         } else {
-            const expressions: Array<Expression> = [];
+            const filterValue: Filter = {
+                f: []
+            };
             filterMap.forEach((k, v) => {
                 let op;
                 if (v === this.fieldsConfiguration.idFieldName) {
                     op = Expression.OpEnum.Eq;
-                } else {
-                    op = Expression.OpEnum.Like;
-                }
-                if (k.toString().indexOf(',') > 0) {
-                    k.toString().split(',').forEach(va => {
+                    const expressions: Array<Expression> = [];
+                    if (k.toString().indexOf(',') > 0) {
+                        k.toString().split(',').forEach(va => {
+                            const expression: Expression = {
+                                field: v,
+                                op: op,
+                                value: <string>va
+                            };
+                            expressions.push(expression);
+                        });
+                    } else {
                         const expression: Expression = {
                             field: v,
                             op: op,
-                            value: <string>va
+                            value: <string>k
                         };
                         expressions.push(expression);
-                    });
+                    }
+                    filterValue.f.push(expressions);
                 } else {
-                    const expression: Expression = {
-                        field: v,
-                        op: op,
-                        value: <string>k
-                    };
-                    expressions.push(expression);
+                    op = Expression.OpEnum.Like;
+                    if (k.toString().indexOf(',') > 0) {
+                        const expressions: Array<Expression> = [];
+                        k.toString().split(',').forEach(va => {
+                            const expression: Expression = {
+                                field: v,
+                                op: op,
+                                value: <string>va
+                            };
+                            expressions.push(expression);
+                        });
+                        filterValue.f.push(expressions);
+                    } else {
+                        const expression: Expression = {
+                            field: v,
+                            op: op,
+                            value: <string>k
+                        };
+                        filterValue.f.push([expression]);
+                    }
                 }
             });
-            const filterValue: Filter = {
-                f: [expressions]
-            };
+
             const collaboration: Collaboration = { filter: filterValue, enabled: true };
             this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
         }
@@ -384,7 +423,7 @@ export class ResultListContributor extends Contributor {
     * @param from· number of time that's scroll bar down
     */
     public getMoreData(from: number) {
-        if (this.geoOrderSort !== {}) {
+        if (this.geoOrderSort) {
             this.getHitsObservable(this.includesvalues, this.geoOrderSort, from * this.getConfigValue('search_size'))
                 .map(f => this.computeData(f))
                 .map(f => f.forEach(d => { this.data.push(d); }))
@@ -482,6 +521,21 @@ export class ResultListContributor extends Contributor {
         return Observable.from([]);
     }
 
+    public resolveDropDownButNot(column: Column) {
+        this.columns.filter(c => c.fieldName !== column.fieldName).forEach(co => {
+            if (co.dropdown) {
+                let size = 10;
+                if (co.dropdownsize) {
+                    size = column.dropdownsize;
+                }
+                this.dropDownMapValues.set(co.fieldName, this.getDropDownValues(co.fieldName, size.toString()));
+            } else {
+                this.dropDownMapValues.set(co.fieldName, Observable.from([[]]));
+            }
+        });
+
+    }
+
     private getHitsObservable(includesvalues: Array<string>, sort?: Sort, from?: number): Observable<Hits> {
         const projection: Projection = {};
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
@@ -495,7 +549,7 @@ export class ResultListContributor extends Contributor {
         projection.includes = includesvalues.join(',');
         const newData = [];
         const searchResult = this.collaborativeSearcheService
-            .resolveButNotHits([projType.search, search])
+            .resolveButNotHits([projType.search, search], this.collaborativeSearcheService.collaborations)
             .finally(() => this.collaborativeSearcheService.contribFilterBus.next(this));
         return searchResult;
     }
@@ -572,7 +626,18 @@ export class ResultListContributor extends Contributor {
             field: field,
             size: size
         });
-        const result = this.collaborativeSearcheService.resolveAggregation([projType.aggregate, aggregations]);
-        return result.map(aggResponse => aggResponse.elements.map(element => (<any>element).key_as_string));
+        const result = this.collaborativeSearcheService
+            .resolveButNotAggregation([projType.aggregate, aggregations], this.collaborativeSearcheService.collaborations);
+        if (result) {
+            return result.map(aggResponse => {
+                if (aggResponse.elements) {
+                    return aggResponse.elements.map(element => (<any>element).key_as_string);
+                } else {
+                    return [];
+                }
+            });
+        } else {
+            return Observable.from([]);
+        }
     }
 }

@@ -138,7 +138,8 @@ export class MapContributor extends Contributor {
                     pwithin: [[pwithin.trim()]],
                 };
             }
-            const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
+            const count: Observable<Hits> = this.collaborativeSearcheService
+                .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations, '', filter);
             if (count) {
                 return count.flatMap(c => {
                     if (c.totalnb <= this.nbMaxFeatureForCluster) {
@@ -257,7 +258,8 @@ export class MapContributor extends Contributor {
         const filter: Filter = {
             f: [[expression]]
         };
-        searchResult = this.collaborativeSearcheService.resolveHits([projType.search, search], '', filter);
+        searchResult = this.collaborativeSearcheService
+            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, '', filter);
         return searchResult.map(h => {
             const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
             const rect = polygon(geojsonData.coordinates);
@@ -398,7 +400,8 @@ export class MapContributor extends Contributor {
                     pwithin: [[pwithin.trim()]],
                 };
             }
-            const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}], '', filter);
+            const count: Observable<Hits> = this.collaborativeSearcheService
+                .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations, '', filter);
             if (count) {
                 count.subscribe(value => {
                     if (value.totalnb <= this.nbMaxFeatureForCluster) {
@@ -496,7 +499,7 @@ export class MapContributor extends Contributor {
                 aggregations: aggregations
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.geohashgeoaggregate, geohahsAggregation], this.isFlat);
+                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations, this.isFlat);
             tabOfGeohash.push(geoAggregateData);
         });
         return Observable.from(tabOfGeohash).mergeAll();
@@ -574,7 +577,7 @@ export class MapContributor extends Contributor {
                 z: tile.z
             };
             const searchResult: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.tiledgeosearch, tiledSearch], this.isFlat,
+                [projType.tiledgeosearch, tiledSearch], this.collaborativeSearcheService.collaborations, this.isFlat,
                 null, filter);
             tabOfTile.push(searchResult);
         });

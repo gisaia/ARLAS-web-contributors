@@ -173,23 +173,36 @@ export class HistogramContributor extends Contributor {
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
         this.maxValue = 0;
+        const collaborations = new Map<string, Collaboration>();
+        this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
-                return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                <RangeRequest>{ filter: null, field: this.field }], this.identifier)
+                const agg = this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
+                <RangeRequest>{ filter: null, field: this.field }], collaborations, this.identifier)
                     .map((rangeResponse: RangeResponse) => {
                         const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
                             (rangeResponse.max - rangeResponse.min) : 0;
-                        this.range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
-                        this.aggregations[0].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
-                    }).flatMap(() =>
-                        this.collaborativeSearcheService.resolveButNotAggregation(
-                            [projType.aggregate, this.aggregations],
-                            this.identifier)
-                    ));
+                        const range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
+                        const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
+                        const result = {
+                            range: range,
+                            aggregationPrecision: aggregationPrecision
+                        };
+                        return result;
+                    }).map((r => {
+                        this.range = r.range;
+                        this.aggregations[0].interval = r.aggregationPrecision;
+                        return this.collaborativeSearcheService.resolveButNotAggregation(
+                            [projType.aggregate, this.aggregations], collaborations,
+                            this.identifier);
+                    }
+                    )).flatMap(a => a);
+
+                return agg;
+
             } else {
                 return this.collaborativeSearcheService.resolveButNotAggregation(
-                    [projType.aggregate, this.aggregations],
+                    [projType.aggregate, this.aggregations], collaborations,
                     this.identifier);
             }
         } else {
