@@ -106,7 +106,7 @@ export class PowerbarsContributor extends Contributor {
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, this.aggregations],
+            [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.identifier
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {

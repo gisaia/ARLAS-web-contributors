@@ -108,14 +108,15 @@ export class SwimLaneContributor extends Contributor {
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
-
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
+        const collaborations = new Map<string, Collaboration>();
+        this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
                 return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                <RangeRequest>{ filter: null, field: this.field }], this.identifier)
+                <RangeRequest>{ filter: null, field: this.field }], collaborations, this.identifier)
                     .map((rangeResponse: RangeResponse) => {
                         const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
                             (rangeResponse.max - rangeResponse.min) : 0;
@@ -123,12 +124,12 @@ export class SwimLaneContributor extends Contributor {
                         this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
                     }).flatMap(() =>
                         this.collaborativeSearcheService.resolveButNotAggregation(
-                            [projType.aggregate, this.aggregations],
+                            [projType.aggregate, this.aggregations], collaborations,
                             this.identifier)
                     ));
             } else {
                 return this.collaborativeSearcheService.resolveButNotAggregation(
-                    [projType.aggregate, this.aggregations],
+                    [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
                     this.identifier);
             }
         } else {
