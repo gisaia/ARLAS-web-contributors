@@ -17,7 +17,6 @@
  * under the License.
  */
 
-import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import {
     Collaboration,
@@ -27,11 +26,8 @@ import {
     OperationEnum,
     projType, CollaborationEvent
 } from 'arlas-web-core';
-import {
-    Hits, Filter, Aggregation,
-    Expression, AggregationResponse, RangeResponse, RangeRequest, AggregationsRequest,
-} from 'arlas-api';
-import { SelectedOutputValues, DataType, StringifiedTimeShortcut, TimeShortcut } from '../models/models';
+import { Filter, Aggregation, AggregationResponse, RangeResponse, RangeRequest} from 'arlas-api';
+import { SelectedOutputValues, DataType, StringifiedTimeShortcut } from '../models/models';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
@@ -76,7 +72,7 @@ export class HistogramContributor extends Contributor {
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
-    private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+    protected aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
     /**
     * Json path to explore element aggregation, count by default
     */
@@ -84,23 +80,23 @@ export class HistogramContributor extends Contributor {
     /**
     * Number of buckets in the histogram. If not specified, the interval in the aggregagtion model is used instead.
     */
-    private nbBuckets: number = this.getConfigValue('numberOfBuckets');
+    protected nbBuckets: number = this.getConfigValue('numberOfBuckets');
     /**
     * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
     */
-    private field: string = (this.aggregations !== undefined) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
+    protected field: string = (this.aggregations !== undefined) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
     /**
     * Start value of selection use to the display of filterDisplayName
     */
-    private startValue: string;
+    protected startValue: string;
     /**
     * End value of selection use to the display of filterDisplayName
     */
-    private endValue: string;
+    protected endValue: string;
     /**
     * Max value of all bucketn use for oneDimension histogram palette
     */
-    private maxValue = 0;
+    protected maxValue = 0;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -109,9 +105,9 @@ export class HistogramContributor extends Contributor {
     */
     constructor(
         identifier: string,
-        private dataType: DataType.numeric | DataType.time,
+        protected dataType: DataType.numeric | DataType.time,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService, private isOneDimension?: boolean
+        configService: ConfigService, protected isOneDimension?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
         const lastAggregation: Aggregation = this.aggregations[this.aggregations.length - 1];
@@ -173,42 +169,13 @@ export class HistogramContributor extends Contributor {
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
         this.maxValue = 0;
-        const collaborations = new Map<string, Collaboration>();
-        this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            if (this.nbBuckets) {
-                const agg = this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                <RangeRequest>{ filter: null, field: this.field }], collaborations, this.identifier)
-                    .map((rangeResponse: RangeResponse) => {
-                        const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
-                            (rangeResponse.max - rangeResponse.min) : 0;
-                        const range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
-                        const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
-                        const result = {
-                            range: range,
-                            aggregationPrecision: aggregationPrecision
-                        };
-                        return result;
-                    }).map((r => {
-                        this.range = r.range;
-                        this.aggregations[0].interval = r.aggregationPrecision;
-                        return this.collaborativeSearcheService.resolveButNotAggregation(
-                            [projType.aggregate, this.aggregations], collaborations,
-                            this.identifier);
-                    }
-                    )).flatMap(a => a);
-
-                return agg;
-
-            } else {
-                return this.collaborativeSearcheService.resolveButNotAggregation(
-                    [projType.aggregate, this.aggregations], collaborations,
-                    this.identifier);
-            }
+            return this.fetchDataGivenFilter(this.identifier);
         } else {
             return Observable.from([]);
         }
     }
+
     public computeData(aggResponse: AggregationResponse): Array<{ key: number, value: number }> {
         const dataTab = new Array<{ key: number, value: number }>();
         if (aggResponse.elements !== undefined) {
@@ -243,5 +210,39 @@ export class HistogramContributor extends Contributor {
         this.endValue = resultList[3];
         return Observable.from([]);
 
+    }
+
+    protected fetchDataGivenFilter(identifier: string, additionalFilter?: Filter): Observable<AggregationResponse> {
+        const collaborations = new Map<string, Collaboration>();
+        this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
+        if (this.nbBuckets) {
+            const agg = this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
+            <RangeRequest>{ filter: null, field: this.field }], collaborations, identifier, additionalFilter)
+                .map((rangeResponse: RangeResponse) => {
+                    const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
+                        (rangeResponse.max - rangeResponse.min) : 0;
+                    const range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
+                    const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
+                    const result = {
+                        range: range,
+                        aggregationPrecision: aggregationPrecision
+                    };
+                    return result;
+                }).map((r => {
+                    this.range = r.range;
+                    this.aggregations[0].interval = r.aggregationPrecision;
+                    return this.collaborativeSearcheService.resolveButNotAggregation(
+                        [projType.aggregate, this.aggregations], collaborations,
+                        identifier, additionalFilter);
+                }
+                )).flatMap(a => a);
+
+            return agg;
+
+        } else {
+            return this.collaborativeSearcheService.resolveButNotAggregation(
+                [projType.aggregate, this.aggregations], collaborations,
+                identifier, additionalFilter);
+        }
     }
 }
