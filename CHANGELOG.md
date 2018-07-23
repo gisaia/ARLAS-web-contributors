@@ -1,11 +1,27 @@
 # Change Log
 
+## [v7.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.2.0) (2018-07-23)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.1.0...v7.2.0)
+
+**New stuff:**
+
+- Contributor with aggregation : enable other metric as value. [\#68](https://github.com/gisaia/ARLAS-web-contributors/issues/68)
+- Improve result list [\#80](https://github.com/gisaia/ARLAS-web-contributors/pull/80) ([mbarbet](https://github.com/mbarbet))
+- Add dropdown values in resultlist [\#79](https://github.com/gisaia/ARLAS-web-contributors/pull/79) ([mbarbet](https://github.com/mbarbet))
+- Add a detailed histogram contributor [\#72](https://github.com/gisaia/ARLAS-web-contributors/pull/72) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+**Fixed bugs:**
+
+- RESULTLIST : sort is not applied to all loaded data [\#53](https://github.com/gisaia/ARLAS-web-contributors/issues/53)
+
 ## [v7.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.1.0) (2018-07-11)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.5...v7.1.0)
 
 **New stuff:**
 
+- Update ARLAS-web-core version to 7.1.0 [\#76](https://github.com/gisaia/ARLAS-web-contributors/issues/76)
 - RESULTLIST : Add new fieldconfiguration Data [\#75](https://github.com/gisaia/ARLAS-web-contributors/issues/75)
 - RESULTLIST : Add tooltip in resultlist action [\#74](https://github.com/gisaia/ARLAS-web-contributors/issues/74)
 - Map : drawType of interface Style should be optional [\#69](https://github.com/gisaia/ARLAS-web-contributors/issues/69)
