@@ -4,6 +4,7 @@ import { AggregationResponse, Filter } from 'arlas-api';
 import * as jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json';
 
 import { Observable } from 'rxjs/Observable';
+import { DateExpression } from '../models/models';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -48,17 +49,21 @@ export class DetailedHistogramContributor extends HistogramContributor {
                     // THE EXPRESSION VALUE CONTAINS COMMA SEPARATED RANGES '[MIN1<MAX1],[MIN2<MAX2]'
                     const valuesList = expression.value.split(',');
                     const lastValue: string = valuesList[valuesList.length - 1];
-                    if (this.selectionExtentPercentage) {
-                        const lastValueWithoutBrackets = lastValue.substring(1).slice(0, -1);
-                        const intervals = lastValueWithoutBrackets.split('<');
-                        const offset = (Number(intervals[1]) - Number(intervals[0])) * this.selectionExtentPercentage;
-                        const min = Number(intervals[0]) - offset;
-                        const max = Number(intervals[1]) + offset;
-                        expression.value = '[' + min + '<' + max + ']';
-
+                    const lastValueWithoutBrackets = lastValue.substring(1).slice(0, -1);
+                    const intervals = lastValueWithoutBrackets.split('<');
+                    let min;
+                    let max;
+                    if (Number(intervals[0]) && Number(intervals[1])) {
+                        min = Number(intervals[0]);
+                        max = Number(intervals[1]);
                     } else {
-                        expression.value = lastValue;
+                        min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false);
+                        max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true);
                     }
+                    const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
+                    const minOffset = Math.trunc(min - offset);
+                    const maxOffset = Math.trunc(max + offset);
+                    expression.value = '[' + minOffset + '<' + maxOffset + ']';
                     // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
                     additionalFilter.f = [additionalFilter.f[0]];
                 }
