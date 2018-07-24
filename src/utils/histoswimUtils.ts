@@ -100,6 +100,10 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
                 if ((<Array<{ key: number, value: number }>>data).length > 0) {
                     currentIntervalSelected.startvalue = <number>data[0].key;
                     currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
+                    if ((<Array<{ key: number, value: number }>>data).length > 1) {
+                        const dataInterval = (<number>data[1].key - <number>data[0].key);
+                        currentIntervalSelected.endvalue += dataInterval;
+                    }
                 }
             } else {
                 const minMax = getMinMax(<Map<string, Array<{ key: number, value: number }>>>data);
@@ -153,6 +157,10 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
             if ((<Array<{ key: number, value: number }>>data).length > 0) {
                 currentIntervalSelected.startvalue = <number>data[0].key;
                 currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
+                if ((<Array<{ key: number, value: number }>>data).length > 1) {
+                    const dataInterval = (<number>data[1].key - <number>data[0].key);
+                    currentIntervalSelected.endvalue += dataInterval;
+                }
             }
         } else {
             const minMax = getMinMax(<Map<string, Array<{ key: number, value: number }>>>data);
@@ -176,6 +184,7 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
 function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Array<number> {
     let min;
     let max;
+    let dataInterval;
     data.forEach((k, v) => {
         if (min === undefined) {
             min = k.map(kv => kv.key).sort()[0];
@@ -191,7 +200,13 @@ function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Ar
                 max = k.map(kv => kv.key).sort()[k.length - 1];
             }
         }
+        if (k.length > 1 && dataInterval === undefined) {
+            dataInterval = <number>k[1].key - <number>k[0].key;
+        }
     });
+    if (dataInterval !== undefined) {
+        max += dataInterval;
+    }
     return [min, max];
 }
 
