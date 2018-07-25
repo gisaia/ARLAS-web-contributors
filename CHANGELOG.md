@@ -1,5 +1,13 @@
 # Change Log
 
+## [v7.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.2.1) (2018-07-25)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.2.0...v7.2.1)
+
+**Fixed bugs:**
+
+- Add timeLabel property. It's calculated after : [\#82](https://github.com/gisaia/ARLAS-web-contributors/pull/82) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
 ## [v7.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.2.0) (2018-07-23)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.1.0...v7.2.0)
@@ -14,6 +22,7 @@
 **Fixed bugs:**
 
 - RESULTLIST : sort is not applied to all loaded data [\#53](https://github.com/gisaia/ARLAS-web-contributors/issues/53)
+- Fix bug : support date expression in DetailedHistogramContributor [\#81](https://github.com/gisaia/ARLAS-web-contributors/pull/81) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [v7.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.1.0) (2018-07-11)
 
