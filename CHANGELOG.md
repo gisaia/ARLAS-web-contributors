@@ -1,8 +1,16 @@
 # Change Log
 
+## [v7.3.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.1) (2018-07-25)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.0...v7.3.1)
+
 ## [v7.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.0) (2018-07-25)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.2.1...v7.3.0)
+
+**New stuff:**
+
+- Add Analytics contributor [\#85](https://github.com/gisaia/ARLAS-web-contributors/pull/85) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.2.1) (2018-07-25)
 
