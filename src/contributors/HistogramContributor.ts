@@ -98,6 +98,10 @@ export class HistogramContributor extends Contributor {
     */
     protected maxValue = 0;
     /**
+    * Labels of the timelines
+    */
+    public timeLabel;
+    /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
@@ -155,16 +159,26 @@ export class HistogramContributor extends Contributor {
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
+        this.timeLabel = this.getShortcutLabel(this.intervalSelection, this.startValue, this.endValue);
     }
 
-    public getShortcutLabel(): string {
+    public getShortcutLabel(intervalSelection: SelectedOutputValues, startValue: string, endValue: string): string {
         if (this.timeShortcuts) {
-            const labels = this.timeShortcuts.filter(t => (t.from === this.startValue) && (t.to === this.endValue)).map(t => t.label);
+            const labels = this.timeShortcuts.filter(t => (t.from === startValue) && (t.to === endValue)).map(t => t.label);
             if (labels.length === 1) {
                 return labels[0];
+            } else {
+                if (intervalSelection) {
+                    const start = +intervalSelection.startvalue;
+                    const end = +intervalSelection.endvalue;
+                    return start + ' to ' + end;
+                } else {
+                    return '';
+                }
             }
+        } else {
+            return '';
         }
-        return null;
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
@@ -208,6 +222,7 @@ export class HistogramContributor extends Contributor {
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];
         this.endValue = resultList[3];
+        this.timeLabel = this.getShortcutLabel(this.intervalSelection, this.startValue, this.endValue);
         return Observable.from([]);
 
     }
