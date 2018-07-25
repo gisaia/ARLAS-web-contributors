@@ -1,11 +1,16 @@
 # Change Log
 
+## [v7.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.0) (2018-07-25)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.2.1...v7.3.0)
+
 ## [v7.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.2.1) (2018-07-25)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.2.0...v7.2.1)
 
 **Fixed bugs:**
 
+- HISTOGRAM : set selection to the end of last bucket when there is no filter on the histogram [\#83](https://github.com/gisaia/ARLAS-web-contributors/issues/83)
 - Add timeLabel property. It's calculated after : [\#82](https://github.com/gisaia/ARLAS-web-contributors/pull/82) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [v7.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.2.0) (2018-07-23)
