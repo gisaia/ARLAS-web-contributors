@@ -126,9 +126,9 @@ arlas-api@7.0.3:
     portable-fetch "3.0.0"
     url "0.11.0"
 
-arlas-web-core@7.2.*:
-  version "7.2.0"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-7.2.0.tgz#ed2b5d30266ffd91125eb11e5c0003a0108147ba"
+arlas-web-core@7.3.*:
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-7.3.0.tgz#fb5425266e405046a31f73db7f3ebee6bada4196"
   dependencies:
     arlas-api "7.0.3"
     rxjs "^5.5.6"
@@ -639,8 +639,8 @@ extend-shallow@^3.0.0, extend-shallow@^3.0.2:
     is-extendable "^1.0.1"
 
 extend@^3.0.0:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/extend/-/extend-3.0.1.tgz#a755ea7bc1adfcc5a31ce7e762dbaadc5e636444"
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/extend/-/extend-3.0.2.tgz#f8b1136b4071fbd8eb140aff858b1019ec2915fa"
 
 extglob@^2.0.4:
   version "2.0.4"
@@ -2304,8 +2304,8 @@ tslint@~5.9.1:
     tsutils "^2.12.1"
 
 tsutils@^2.12.1:
-  version "2.28.0"
-  resolved "https://registry.yarnpkg.com/tsutils/-/tsutils-2.28.0.tgz#6bd71e160828f9d019b6f4e844742228f85169a1"
+  version "2.29.0"
+  resolved "https://registry.yarnpkg.com/tsutils/-/tsutils-2.29.0.tgz#32b488501467acbedd4b85498673a0812aca0b99"
   dependencies:
     tslib "^1.8.1"
 

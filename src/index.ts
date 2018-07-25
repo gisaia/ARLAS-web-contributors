@@ -25,6 +25,7 @@ import { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 import { MapContributor } from './contributors/MapContributor';
 import { ResultListContributor } from './contributors/ResultListContributor';
 import { DonutContributor } from './contributors/DonutContributor';
+import { AnalyticsContributor } from './contributors/AnalyticsContributor';
 
 export { PowerbarsContributor } from './contributors/PowerbarsContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
@@ -34,7 +35,7 @@ export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 export { SwimLaneContributor } from './contributors/SwimLaneContributor';
 export { DonutContributor } from './contributors/DonutContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
-
+export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 
 
 export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum } from './models/models';
@@ -48,6 +49,7 @@ contributors.set('map', MapContributor);
 contributors.set('swimlane', SwimLaneContributor);
 contributors.set('chipsearch', ChipsSearchContributor);
 contributors.set('donut', DonutContributor);
+contributors.set('analytics', AnalyticsContributor);
 
 export {contributors};
 
