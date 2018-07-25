@@ -38,7 +38,7 @@ export class AnalyticsContributor extends Contributor {
      * Map of string,boolean retrieved from Server response and to be returned for the component as input
      * @Input() inputData
      */
-    public analitycsIdtoShowed: Map<string, boolean> = new Map<string, boolean>();
+    public analitycsIdtoShow: Map<string, boolean> = new Map<string, boolean>();
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
@@ -108,11 +108,11 @@ export class AnalyticsContributor extends Contributor {
     public setData(data: Map<string, number>): Map<string, number> {
         this.groupIdToValues.forEach((values, key) => {
             if (values.indexOf('*') > 0) {
-                this.analitycsIdtoShowed.set(key, true);
+                this.analitycsIdtoShow.set(key, true);
             } else if (values.map(v => data.get(v)).filter(v => v !== undefined && v > 0).length > 0) {
-                this.analitycsIdtoShowed.set(key, true);
+                this.analitycsIdtoShow.set(key, true);
             } else {
-                this.analitycsIdtoShowed.set(key, false);
+                this.analitycsIdtoShow.set(key, false);
             }
         });
         return data;
