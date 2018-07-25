@@ -107,7 +107,7 @@ export class AnalyticsContributor extends Contributor {
 
     public setData(data: Map<string, number>): Map<string, number> {
         this.groupIdToValues.forEach((values, key) => {
-            if (values.indexOf('*') > 0) {
+            if (values.indexOf('*') > -1) {
                 this.analitycsIdtoShow.set(key, true);
             } else if (values.map(v => data.get(v)).filter(v => v !== undefined && v > 0).length > 0) {
                 this.analitycsIdtoShow.set(key, true);
