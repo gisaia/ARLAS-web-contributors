@@ -455,6 +455,10 @@ export class ResultListContributor extends Contributor {
                     }
                     map.set(element.fieldName, resultValue);
                 });
+                if (this.fieldsConfiguration.idFieldName) {
+                    const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.idFieldName);
+                    map.set(this.fieldsConfiguration.idFieldName, resultValue);
+                }
                 if (this.fieldsConfiguration.titleFieldNames) {
                     this.fieldsConfiguration.titleFieldNames.forEach(field => {
                         this.setProcessFieldData(h, field, map, 'title');
