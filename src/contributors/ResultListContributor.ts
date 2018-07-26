@@ -350,6 +350,7 @@ export class ResultListContributor extends Contributor {
             'sort': 'geodistance:' + lat.toString() + ' ' + lng.toString()
         };
         this.geoOrderSort = sort;
+        this.sort = {};
         this.getHitsObservable(this.includesvalues, this.geoOrderSort)
             .map(f => this.computeData(f))
             .map(f => this.setData(f))
@@ -436,7 +437,15 @@ export class ResultListContributor extends Contributor {
         }
     }
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
-        return this.getHitsObservable(this.includesvalues, this.geoOrderSort);
+        let sort: Sort = {};
+        if (this.geoOrderSort.sort) {
+            sort = this.geoOrderSort;
+        } else {
+            if (this.sort.sort) {
+                sort = this.sort;
+            }
+        }
+        return this.getHitsObservable(this.includesvalues, sort);
     }
 
     public computeData(hits: Hits): Array<Map<string, string | number | Date>> {
