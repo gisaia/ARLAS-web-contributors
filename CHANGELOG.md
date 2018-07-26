@@ -1,8 +1,16 @@
 # Change Log
 
+## [v7.3.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.2) (2018-07-26)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.1...v7.3.2)
+
 ## [v7.3.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.1) (2018-07-25)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.0...v7.3.1)
+
+**Fixed bugs:**
+
+- Fix bug typo [\#86](https://github.com/gisaia/ARLAS-web-contributors/pull/86) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.0) (2018-07-25)
 
