@@ -1,8 +1,20 @@
 # Change Log
 
+## [v7.3.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.3) (2018-07-26)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.2...v7.3.3)
+
+**Fixed bugs:**
+
+- Fix geoSort check in result list [\#90](https://github.com/gisaia/ARLAS-web-contributors/pull/90) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
 ## [v7.3.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.2) (2018-07-26)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.1...v7.3.2)
+
+**Fixed bugs:**
+
+- Add id field in data map [\#89](https://github.com/gisaia/ARLAS-web-contributors/pull/89) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.3.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.1) (2018-07-25)
 
