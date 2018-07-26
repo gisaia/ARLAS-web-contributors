@@ -423,7 +423,7 @@ export class ResultListContributor extends Contributor {
     * @param from· number of time that's scroll bar down
     */
     public getMoreData(from: number) {
-        if (this.geoOrderSort) {
+        if (this.geoOrderSort.sort) {
             this.getHitsObservable(this.includesvalues, this.geoOrderSort, from * this.getConfigValue('search_size'))
                 .map(f => this.computeData(f))
                 .map(f => f.forEach(d => { this.data.push(d); }))
