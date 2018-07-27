@@ -1,5 +1,13 @@
 # Change Log
 
+## [v7.3.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.4) (2018-07-27)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.3...v7.3.4)
+
+**Fixed bugs:**
+
+- Apply sort/geosort when on new collaborations [\#91](https://github.com/gisaia/ARLAS-web-contributors/pull/91) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
 ## [v7.3.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.3) (2018-07-26)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.2...v7.3.3)
