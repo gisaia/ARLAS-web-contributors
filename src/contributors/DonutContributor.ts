@@ -41,7 +41,7 @@ export class DonutContributor extends Contributor {
     /**
      * The minimum ratio of the arc in its ring needed to be plot. Otherwise the arc is considered as OTHER
      */
-    public arcMinPourcentage = 0.04;
+    public arcMinPourcentage = (this.getConfigValue('arcMinPourcentage')) ? this.getConfigValue('arcMinPourcentage') : 0.01;
     /**
      * List of selected nodes to be returned to the donut component as an input
      */
