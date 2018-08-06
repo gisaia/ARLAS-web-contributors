@@ -262,8 +262,7 @@ export class MapContributor extends Contributor {
             .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, '', filter);
         return searchResult.map(h => {
             const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
-            const rect = polygon(geojsonData.coordinates);
-            const box = bbox(rect);
+            const box = bbox(geojsonData);
             const minX = box[0];
             const minY = box[1];
             const maxX = box[2];
