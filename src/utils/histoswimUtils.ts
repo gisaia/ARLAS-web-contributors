@@ -46,8 +46,8 @@ export function getvaluesChanged(values: SelectedOutputValues[],
         if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
             const endDate = new Date(value.endvalue.toString());
             const startDate = new Date(value.startvalue.toString());
-            startValue = startDate.toLocaleString();
-            endValue = endDate.toLocaleString();
+            startValue = startDate.toUTCString().split(',')[1].replace('GMT', '');
+            endValue = endDate.toUTCString().split(',')[1].replace('GMT', '');
             end = endDate.valueOf();
             start = startDate.valueOf();
         } else if (Number(start).toString() !== 'NaN' && Number(end).toString() !== 'NaN') {
