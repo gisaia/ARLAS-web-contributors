@@ -195,9 +195,9 @@ export class DateExpression {
     public toMillisecond(roundUp: boolean): number {
         let dateValue: moment.Moment;
         if (this.anchorDate === 'now') {
-            dateValue = moment();
+            dateValue = moment().utc();
         } else {
-            dateValue = moment(this.anchorDate);
+            dateValue = moment(this.anchorDate).utc();
         }
         if (this.translationDuration && this.translationUnit) {
             switch (this.translationUnit) {
