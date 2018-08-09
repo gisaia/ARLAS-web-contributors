@@ -1,5 +1,30 @@
 # Change Log
 
+## [v7.3.5](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.5) (2018-08-09)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.7...v7.3.5)
+
+**New stuff:**
+
+- Detailed Histogram: Add an attribute of the current selection in the main contributor to avoid board effect [\#94](https://github.com/gisaia/ARLAS-web-contributors/issues/94)
+
+**Fixed bugs:**
+
+- Histograms: use utc as date locale [\#100](https://github.com/gisaia/ARLAS-web-contributors/issues/100)
+- MAP: enhance getBoundsTofit with all geomtry type [\#95](https://github.com/gisaia/ARLAS-web-contributors/issues/95)
+
+## [v7.0.7](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.7) (2018-08-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.6...v7.0.7)
+
+## [v7.0.6](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.6) (2018-08-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.4...v7.0.6)
+
+**Fixed bugs:**
+
+- DONUT : arcMinPercentage is not configurable [\#87](https://github.com/gisaia/ARLAS-web-contributors/issues/87)
+
 ## [v7.3.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.4) (2018-07-27)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.3...v7.3.4)
