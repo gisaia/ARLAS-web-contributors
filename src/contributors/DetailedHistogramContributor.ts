@@ -4,7 +4,7 @@ import { AggregationResponse, Filter } from 'arlas-api';
 import * as jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json';
 
 import { Observable } from 'rxjs/Observable';
-import { DateExpression } from '../models/models';
+import { DateExpression, SelectedOutputValues } from '../models/models';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -23,6 +23,11 @@ export class DetailedHistogramContributor extends HistogramContributor {
      * offset + selectionextent = data extent
      */
     public selectionExtentPercentage = this.getConfigValue('selectionExtentPercentage');
+
+    /**
+     * The current selection on the main histogram
+     */
+    public currentSelectedInterval: SelectedOutputValues;
 
     /**
     * @returns Package name for the configuration service.
@@ -66,6 +71,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
                     expression.value = '[' + minOffset + '<' + maxOffset + ']';
                     // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
                     additionalFilter.f = [additionalFilter.f[0]];
+                    this.currentSelectedInterval = {startvalue: min, endvalue: max};
                 }
             }
             return this.fetchDataGivenFilter(this.annexedContributorId, additionalFilter);
