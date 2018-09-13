@@ -98,9 +98,10 @@ export class DonutContributor extends Contributor {
         }
     }
 
-    public computeData(aggregationResonse: AggregationResponse): DonutArc {
-        const donutArc: DonutArc = { id: 'root', name: 'root', ringName: 'root', isOther: false, children: [] };
-        this.populateChildren(donutArc, aggregationResonse, 0);
+    public computeData(aggregationResponse: AggregationResponse): DonutArc {
+        const donutArc: DonutArc = { id: 'root', name: 'root', ringName: 'root', isOther: false, children: [],
+         size: aggregationResponse.totalnb };
+        this.populateChildren(donutArc, aggregationResponse, 0);
         return donutArc;
     }
 
@@ -247,6 +248,7 @@ export class DonutContributor extends Contributor {
                 if (bucket.elements !== undefined && bucket.elements[0].elements !== undefined) {
                     if (bucket.count / (countOfBuckets + countOfOthers) >= this.arcMinPourcentage) {
                         arc.isOther = false;
+                        arc.size = bucket.count;
                         this.populateChildren(arc, bucket.elements[0], aggregationLevel + 1);
                         ring.push(arc);
                     } else {
