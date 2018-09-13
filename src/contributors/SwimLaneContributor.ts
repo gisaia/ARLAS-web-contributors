@@ -27,9 +27,8 @@ import {
     projType
 } from 'arlas-web-core';
 import { Observable } from 'rxjs/Observable';
-import { SelectedOutputValues, DataType } from '../models/models';
-import { Aggregation, AggregationResponse, RangeResponse, RangeRequest } from 'arlas-api';
-import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
+import { Aggregation, AggregationResponse, RangeResponse, RangeRequest, Filter, Expression } from 'arlas-api';
+import { getAggregationPrecision } from '../utils/histoswimUtils';
 import * as jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
 import * as jsonpath from 'jsonpath';
 
@@ -40,24 +39,32 @@ export class SwimLaneContributor extends Contributor {
     @Input() data of Swimlane Component
     */
     public swimData: Map<string, Array<{ key: number, value: number }>> = new Map<string, Array<{ key: number, value: number }>>();
+
     /**
-    * New selection current need to be draw on the histogram (could be set to
-    @Input() intervalSelection of Swimlane Component
-    */
-    public intervalSelection: SelectedOutputValues;
+     * selectedSwimlanes is the list of selected terms in the swimlane.
+     */
+    public selectedSwimlanes: Set<string>;
+
     /**
-    * New selections need to be draw on the Swimlane (could be set to
-    @Input() intervalSelection of Swimlane Component
-    */
-    public intervalListSelection: SelectedOutputValues[] = [];
-    /**
-     * Swimlanes's range
-    */
+     * The range of data that this contributor fetches.
+     */
     public range: RangeResponse;
 
+    /**
+     * List of aggregation models used to fetch data
+     */
     public aggregations: Aggregation[] = this.getConfigValue('swimlanes')[0]['aggregationmodels'];
 
-    public field: string = this.getConfigValue('swimlanes')[0]['field'];
+    /**
+     * Numeric/temporal field represented on the x axis of the swimlane.
+     */
+    public xAxisField: string = this.getConfigValue('swimlanes')[0]['xAxisField'];
+
+    /**
+     * The term field that separates the swimlane to lanes.
+     */
+    public termField: string = this.getConfigValue('swimlanes')[0]['termField'];
+
     /**
     * Json path to explore element aggregation, count by default
     */
@@ -66,25 +73,15 @@ export class SwimLaneContributor extends Contributor {
     * Number of buckets in the swimlane. If not specified, the interval in the aggregagtion model is used instead.
     */
     private nbBuckets: number = this.getConfigValue('numberOfBuckets');
-    /**
-    * Start value of selection use to the display of filterDisplayName
-    */
-    private startValue: string;
-    /**
-    * End value of selection use to the display of filterDisplayName
-    */
-    private endValue: string;
 
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param dataType  type of data histrogram (time or numeric).
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
         identifier: string,
-        private dataType: DataType.numeric | DataType.time,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, private isOneDimension?: boolean
     ) {
@@ -103,11 +100,28 @@ export class SwimLaneContributor extends Contributor {
 * Set filter on value change, use in output of component
 * @param value DateType.millisecond | DateType.second
 */
-    public valueChanged(values: SelectedOutputValues[]) {
-        const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService);
-        this.intervalSelection = resultList[0];
-        this.startValue = resultList[1];
-        this.endValue = resultList[2];
+    public valueChanged(selectedSwimlanes: Set<string>) {
+        const filterValue: Filter = { f: [] };
+        const equalExpression: Expression = {
+            field: this.termField,
+            op: Expression.OpEnum.Eq,
+            value: ''
+        };
+        if (selectedSwimlanes.size > 0) {
+            selectedSwimlanes.forEach(selectedLane => {
+                equalExpression.value += selectedLane + ',';
+            });
+            equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
+            filterValue.f.push([equalExpression]);
+            const collaboration: Collaboration = {
+                filter: filterValue,
+                enabled: true
+            };
+            this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
+        } else {
+            this.collaborativeSearcheService.removeFilter(this.identifier);
+        }
+        this.selectedSwimlanes = selectedSwimlanes;
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
@@ -116,7 +130,7 @@ export class SwimLaneContributor extends Contributor {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
                 return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                <RangeRequest>{ filter: null, field: this.field }], collaborations, this.identifier)
+                <RangeRequest>{ filter: null, field: this.xAxisField }], collaborations, this.identifier)
                     .map((rangeResponse: RangeResponse) => {
                         const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
                             (rangeResponse.max - rangeResponse.min) : 0;
@@ -160,12 +174,23 @@ export class SwimLaneContributor extends Contributor {
         return this.swimData;
     }
 
-    public setSelection(data: Map<string, Array<{ key: number, value: number }>>, c: Collaboration): any {
-        const resultList = getSelectionToSet(data, c, this.dataType);
-        this.intervalListSelection = resultList[0];
-        this.intervalSelection = resultList[1];
-        this.startValue = resultList[2];
-        this.endValue = resultList[3];
+    public setSelection(data: Map<string, Array<{ key: number, value: number }>>, collaboration: Collaboration): any {
+        if (collaboration) {
+            const f = collaboration.filter;
+            if (f === null) {
+                this.selectedSwimlanes = new Set();
+            } else {
+                const selectedSwimlanesAsArray = f.f[0];
+                this.selectedSwimlanes = new Set();
+                selectedSwimlanesAsArray.forEach(termsList => {
+                    termsList.value.split(',').forEach(term => {
+                        this.selectedSwimlanes.add(term);
+                    });
+                });
+            }
+        } else {
+            this.selectedSwimlanes = new Set();
+        }
         return Observable.from([]);
 
     }
