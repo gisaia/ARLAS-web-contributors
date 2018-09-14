@@ -1,5 +1,23 @@
 # Change Log
 
+## [v7.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.4.0) (2018-09-14)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.5...v7.4.0)
+
+**Breaking changes:**
+
+- SWIMLANE : Remove brush selection and include selection by lanes [\#106](https://github.com/gisaia/ARLAS-web-contributors/issues/106)
+
+**New stuff:**
+
+- HISTOGRAMS: Include decimals in interval calculation [\#98](https://github.com/gisaia/ARLAS-web-contributors/issues/98)
+- MAP : Manage include bbox [\#88](https://github.com/gisaia/ARLAS-web-contributors/issues/88)
+- Manage include bbox [\#93](https://github.com/gisaia/ARLAS-web-contributors/pull/93) ([mbarbet](https://github.com/mbarbet))
+
+**Fixed bugs:**
+
+- DONUT : The parent node size is not systematically the sum of children nodes sizes [\#104](https://github.com/gisaia/ARLAS-web-contributors/issues/104)
+
 ## [v7.3.5](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.5) (2018-08-09)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.7...v7.3.5)
