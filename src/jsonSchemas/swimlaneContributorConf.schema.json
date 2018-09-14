@@ -13,23 +13,12 @@
             "description": "The name of the Contributor",
             "type": "string"
         },
-        "dateunit": {
-            "description": "Unit of Swimlane second or millisecond",
-            "enum": [
-                "millisecond",
-                "second"
-            ]
-        },
         "datatype": {
             "description": "Type of data for Swimlane",
             "enum": [
                 "numeric",
                 "time"
             ]
-        },
-        "field": {
-            "description": "The field of the principal aggregation",
-            "type": "string"
         },
         "swimlanes": {
             "description": "List of swimlanes",
@@ -40,6 +29,14 @@
                 "properties": {
                     "id": {},
                     "name": {},
+                    "xAxisField": {
+                        "description": "Numeric/temporal field represented on the x axis of the swimlane",
+                        "type": "string"
+                    },
+                    "termField": {
+                        "description": "The term field that separates the swimlane to lanes",
+                        "type": "string"
+                    },
                     "aggregationmodels": {
                         "$ref": "rootContributorConf.schema.json#/definitions/aggregationmodels"
                     },
@@ -47,7 +44,14 @@
                         "description": "Json path to find value used in aggregation, for example  $.count or $.metrics[0].value, $.count is used by default if this property is not setted.",
                         "type": "string"
                     }
-                }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "xAxisField",
+                    "termField",
+                    "aggregationmodels"
+                ]
             }
         },
         "numberOfBuckets": {
