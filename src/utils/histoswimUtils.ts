@@ -216,57 +216,103 @@ export function getAggregationPrecision(nbBuckets: number, range: number, aggreg
     const HOUR_IN_MILLISECOND = 3600000;
     const MINUTE_IN_MILLISECOND = 60000;
     const SECOND_IN_MILLISECOND = 1000;
-    if (aggregationType === Aggregation.TypeEnum.Datehistogram) {
-        let intervalValue = bucketInterval / DAY_IN_MILLISECOND;
-        if (intervalValue > 1) {
-            if (intervalValue >= 1 && intervalValue <= 3) {
-                /**Nb days between 1 and 3 => aggregation in hours (multiple of 24) */
-                intervalValue = Math.round(bucketInterval / HOUR_IN_MILLISECOND);
-                intervalValue = roundToNearestMultiple(intervalValue, 24);
-                return { value: intervalValue, unit: Interval.UnitEnum.Hour };
-            } else if (intervalValue > 3 && intervalValue <= 15) {
-                /**Nb days between 4 and 15 => aggregation in days */
-                intervalValue = Math.round(intervalValue);
-                return { value: intervalValue, unit: Interval.UnitEnum.Day };
-            } else {
-                /**Nb days greater than 15 => aggregation in days (multiple of 15) */
-                intervalValue = Math.round(intervalValue);
-                intervalValue = roundToNearestMultiple(intervalValue, 15);
-                return { value: intervalValue, unit: Interval.UnitEnum.Day };
-            }
-        } else {
-            intervalValue = bucketInterval / HOUR_IN_MILLISECOND;
-            if (intervalValue > 6 && intervalValue < 24) {
-                /**Nb hours between 6 than 24 => aggregation in hours */
-                intervalValue = Math.round(intervalValue);
-                return { value: intervalValue, unit: Interval.UnitEnum.Hour };
-            } else if (intervalValue > 1 && intervalValue <= 6) {
-                /**Nb hours between 1 than 6 => aggregation in minutes (multiple of 60) */
-                intervalValue = bucketInterval / MINUTE_IN_MILLISECOND;
-                intervalValue = Math.round(intervalValue);
-                intervalValue = roundToNearestMultiple(intervalValue, 60);
-                return { value: intervalValue, unit: Interval.UnitEnum.Minute };
-            } else {
-                intervalValue = bucketInterval / MINUTE_IN_MILLISECOND;
-                /**Nb minutes between 5 than 60 => aggregation in minutes (multiple of 5) */
-                if (intervalValue > 5) {
+    if (range > 0) {
+        if (aggregationType === Aggregation.TypeEnum.Datehistogram) {
+            let intervalValue = bucketInterval / DAY_IN_MILLISECOND;
+            if (intervalValue > 1) {
+                if (intervalValue >= 1 && intervalValue <= 3) {
+                    /**Nb days between 1 and 3 => aggregation in hours (multiple of 24) */
+                    intervalValue = Math.round(bucketInterval / HOUR_IN_MILLISECOND);
+                    intervalValue = roundToNearestMultiple(intervalValue, 24);
+                    return { value: intervalValue, unit: Interval.UnitEnum.Hour };
+                } else if (intervalValue > 3 && intervalValue <= 15) {
+                    /**Nb days between 4 and 15 => aggregation in days */
                     intervalValue = Math.round(intervalValue);
-                    intervalValue = roundToNearestMultiple(intervalValue, 5);
-                    return { value: intervalValue, unit: Interval.UnitEnum.Minute };
-                } else if (intervalValue > 1 && intervalValue < 5) {
-                    /**Nb minutes less than 5 => aggregation in minutes */
+                    return { value: intervalValue, unit: Interval.UnitEnum.Day };
+                } else {
+                    /**Nb days greater than 15 => aggregation in days (multiple of 15) */
                     intervalValue = Math.round(intervalValue);
+                    intervalValue = roundToNearestMultiple(intervalValue, 15);
+                    return { value: intervalValue, unit: Interval.UnitEnum.Day };
+                }
+            } else {
+                intervalValue = bucketInterval / HOUR_IN_MILLISECOND;
+                if (intervalValue > 6 && intervalValue < 24) {
+                    /**Nb hours between 6 than 24 => aggregation in hours */
+                    intervalValue = Math.round(intervalValue);
+                    return { value: intervalValue, unit: Interval.UnitEnum.Hour };
+                } else if (intervalValue > 1 && intervalValue <= 6) {
+                    /**Nb hours between 1 than 6 => aggregation in minutes (multiple of 60) */
+                    intervalValue = bucketInterval / MINUTE_IN_MILLISECOND;
+                    intervalValue = Math.round(intervalValue);
+                    intervalValue = roundToNearestMultiple(intervalValue, 60);
                     return { value: intervalValue, unit: Interval.UnitEnum.Minute };
                 } else {
-                    /**Nb seconds less than or equal 60 => aggregation in seconds */
-                    intervalValue = bucketInterval / SECOND_IN_MILLISECOND;
-                    intervalValue = Math.max(1, Math.round(intervalValue));
-                    return { value: intervalValue, unit: Interval.UnitEnum.Second };
+                    intervalValue = bucketInterval / MINUTE_IN_MILLISECOND;
+                    /**Nb minutes between 5 than 60 => aggregation in minutes (multiple of 5) */
+                    if (intervalValue > 5) {
+                        intervalValue = Math.round(intervalValue);
+                        intervalValue = roundToNearestMultiple(intervalValue, 5);
+                        return { value: intervalValue, unit: Interval.UnitEnum.Minute };
+                    } else if (intervalValue > 1 && intervalValue < 5) {
+                        /**Nb minutes less than 5 => aggregation in minutes */
+                        intervalValue = Math.round(intervalValue);
+                        return { value: intervalValue, unit: Interval.UnitEnum.Minute };
+                    } else {
+                        /**Nb seconds less than or equal 60 => aggregation in seconds */
+                        intervalValue = bucketInterval / SECOND_IN_MILLISECOND;
+                        intervalValue = Math.max(1, Math.round(intervalValue));
+                        return { value: intervalValue, unit: Interval.UnitEnum.Second };
+                    }
                 }
             }
+        } else {
+            // Apply log10 on bucketInterval to get the power order
+            const order = Math.log10(bucketInterval);
+            let intervalValue = Math.round(bucketInterval);
+            if (order >= 2) {
+                // If bucketInterval power order is n >= 2, then it will be rounded to the nearest multiple of [5 * 10^(n-1)]
+                intervalValue = roundToNearestMultiple(intervalValue, 5 * Math.pow(10, Math.trunc(order) - 1));
+            } else if (order > 1 && order < 2) {
+                // If bucketInterval power order is n = 1 (bucketInterval between 10 and 99),
+                // then it will be rounded to the nearest multiple of 20 if bucketInterval > 20
+                // and rouned to the nearest multiple of 5 if bucketInterval is between 10 and 20
+                if (intervalValue > 20) {
+                    intervalValue = roundToNearestMultiple(intervalValue, 20);
+                } else {
+                    intervalValue = roundToNearestMultiple(intervalValue, 5);
+                }
+            } else if (order > 0 && order < 1) {
+                // If bucketInterval power order is n = 0 (bucketInterval between 1 and 10)),
+                if (bucketInterval < 1.5) {
+                    intervalValue = 1;
+                } else if (bucketInterval >= 1.5 && bucketInterval < 3.5)  {
+                    intervalValue = 2;
+                } else if (bucketInterval >= 3.5 && bucketInterval < 7.5) {
+                    intervalValue = 5;
+                } else {
+                    intervalValue = 10;
+                }
+            } else if (order < 0) { // which means bucketInterval between 0 and 1
+                const absoluteOrder = -Math.trunc(order) + 1;
+                const scientificDecimal = Math.round(bucketInterval * Math.pow(10, absoluteOrder));
+                // bucketInterval =  (scienctificDecimal) * 10^(-absoluteOrder) where 1<=scienctificDecimal<=9
+                if (scientificDecimal <= 3) {
+                    intervalValue = scientificDecimal * 1 / Math.pow(10, absoluteOrder);
+                } else if (scientificDecimal > 3 && scientificDecimal <= 7 ) {
+                    intervalValue = 5 / Math.pow(10, absoluteOrder);
+                } else {
+                    intervalValue = 1 / Math.pow(10, absoluteOrder - 1);
+                }
+            }
+            return { value: intervalValue};
         }
     } else {
-        return { value: Math.max(Math.round(bucketInterval), 1)};
+        if (aggregationType === Aggregation.TypeEnum.Datehistogram) {
+            return {value: 1, unit: Interval.UnitEnum.Day };
+        } else {
+            return {value: 1};
+        }
     }
 }
 
