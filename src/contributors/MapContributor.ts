@@ -36,6 +36,10 @@ import { decode_bbox, bboxes } from 'ngeohash';
 import * as jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 import { polygon } from '@turf/helpers';
 import bbox from '@turf/bbox';
+import bboxPolygon from '@turf/bbox-polygon';
+import booleanContains from '@turf/boolean-contains';
+import { last } from 'rxjs/operator/last';
+
 
 export enum drawType {
     RECTANGLE,
@@ -316,18 +320,33 @@ export class MapContributor extends Contributor {
     }
 
     public onChangeBbox(newBbox: Array<Object>) {
-
         let filters: Filter;
         const pwithinArray: Array<string> = [];
-        newBbox.forEach(v => {
+        const numberOfBbox = newBbox.length;
+        const lastBbox = newBbox[numberOfBbox - 1];
+        const lastCoord = lastBbox['geometry']['coordinates'][0];
+        const north = lastCoord[1][1];
+        const west = this.wrap(lastCoord[2][0], -180, 180);
+        const south = lastCoord[0][1];
+        const east = this.wrap(lastCoord[0][0], -180, 180);
+        const last_pwithin = west + ',' + south + ',' + east + ',' + north;
+        const lastBboxFeature = bboxPolygon([west, south, east, north]);
+        for (let _i = 0; _i < numberOfBbox - 1; _i++) {
+            const v = newBbox[_i];
             const coord = v['geometry']['coordinates'][0];
-            const north = coord[1][1];
-            const west = this.wrap(coord[2][0], -180, 180);
-            const south = coord[0][1];
-            const east = this.wrap(coord[0][0], -180, 180);
-            const pwithin = west + ',' + south + ',' + east + ',' + north;
-            pwithinArray.push(pwithin.trim().toLocaleLowerCase());
-        });
+            const n = coord[1][1];
+            const w = this.wrap(coord[2][0], -180, 180);
+            const s = coord[0][1];
+            const e = this.wrap(coord[0][0], -180, 180);
+            const pwithin = w + ',' + s + ',' + e + ',' + n;
+            const bboxFeature = bboxPolygon([west, south, east, north]);
+            const isbboxInclude = booleanContains(lastBboxFeature, bboxFeature);
+            const isLastBboxInclude = booleanContains(bboxFeature, lastBboxFeature);
+            if (!isbboxInclude && !isLastBboxInclude) {
+                pwithinArray.push(pwithin.trim().toLocaleLowerCase());
+            }
+        }
+        pwithinArray.push(last_pwithin.trim().toLocaleLowerCase());
         if (this.isGIntersect) {
             filters = {
                 gintersect: [pwithinArray],
@@ -344,10 +363,6 @@ export class MapContributor extends Contributor {
         this.isBbox = true;
         this.collaborativeSearcheService.setFilter(this.identifier, data);
     }
-
-
-
-
 
     /**
     * Function call on onMove event output component

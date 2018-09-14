@@ -12,6 +12,8 @@
   "license": " Apache-2.0",
   "dependencies": {
     "@turf/bbox": "^6.0.1",
+    "@turf/bbox-polygon": "^6.0.1",
+    "@turf/boolean-contains": "^6.0.1",
     "@turf/helpers": "^6.1.4",
     "@types/file-saver": "^0.0.1",
     "@types/jsonpath": "^0.2.0",
