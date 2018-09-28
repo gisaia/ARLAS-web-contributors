@@ -265,7 +265,7 @@ export class MapContributor extends Contributor {
         searchResult = this.collaborativeSearcheService
             .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, '', filter);
         return searchResult.map(h => {
-            const geojsonData = getElementFromJsonObject(h.hits[0].data, this.getConfigValue('geometry'));
+            const geojsonData = getElementFromJsonObject(h.hits[0].md, 'geometry');
             const box = bbox(geojsonData);
             const minX = box[0];
             const minY = box[1];
