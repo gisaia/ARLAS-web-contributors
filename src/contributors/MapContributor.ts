@@ -339,7 +339,7 @@ export class MapContributor extends Contributor {
             const s = coord[0][1];
             const e = this.wrap(coord[0][0], -180, 180);
             const pwithin = w + ',' + s + ',' + e + ',' + n;
-            const bboxFeature = bboxPolygon([west, south, east, north]);
+            const bboxFeature = bboxPolygon([w, s, e, n]);
             const isbboxInclude = booleanContains(lastBboxFeature, bboxFeature);
             const isLastBboxInclude = booleanContains(bboxFeature, lastBboxFeature);
             if (!isbboxInclude && !isLastBboxInclude) {
