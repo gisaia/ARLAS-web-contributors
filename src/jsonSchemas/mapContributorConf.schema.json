@@ -30,11 +30,15 @@
             "description": "Geometry field of index",
             "type": "string"
         },
-        "drawtype": {
-            "description": "Type of representation for aggregate data",
+        "geomStrategy": {
+            "description": "Geometry method of representation for aggregate data",
             "enum": [
-                "CIRCLE",
-                "RECTANGLE"
+                "bbox",
+                "centroid",
+                "first",
+                "last",
+                "byDefault",
+                "geohash"
             ]
         },
         "isFlat": {
@@ -115,7 +119,7 @@
         "idFieldName",
         "initZoom",
         "geometry",
-        "drawtype",
+        "geomStrategy",
         "zoomLevelFullData",
         "zoomLevelForTestCount",
         "nbMaxDefautFeatureForCluster",
