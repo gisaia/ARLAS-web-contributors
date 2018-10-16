@@ -26,7 +26,7 @@ import { MapContributor } from './contributors/MapContributor';
 import { ResultListContributor } from './contributors/ResultListContributor';
 import { DonutContributor } from './contributors/DonutContributor';
 import { AnalyticsContributor } from './contributors/AnalyticsContributor';
-
+import { TopoMapContributor} from './contributors/TopoMapContributor';
 export { PowerbarsContributor } from './contributors/PowerbarsContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
 export { ResultListContributor } from './contributors/ResultListContributor';
@@ -36,6 +36,7 @@ export { SwimLaneContributor } from './contributors/SwimLaneContributor';
 export { DonutContributor } from './contributors/DonutContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
 export { AnalyticsContributor } from './contributors/AnalyticsContributor';
+export { TopoMapContributor} from './contributors/TopoMapContributor';
 
 
 export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum } from './models/models';
@@ -46,6 +47,7 @@ contributors.set('detailedhistogram', DetailedHistogramContributor);
 contributors.set('powerbars', PowerbarsContributor);
 contributors.set('resultlist', ResultListContributor);
 contributors.set('map', MapContributor);
+contributors.set('topomap', TopoMapContributor);
 contributors.set('swimlane', SwimLaneContributor);
 contributors.set('chipsearch', ChipsSearchContributor);
 contributors.set('donut', DonutContributor);
