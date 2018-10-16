@@ -136,14 +136,9 @@ export class MapContributor extends Contributor {
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
             const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
-            let filter = {};
-            if (!this.isBbox) {
-                filter = {
-                    pwithin: [[pwithin.trim()]],
-                };
-            }
             const count: Observable<Hits> = this.collaborativeSearcheService
-                .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations, '', filter);
+                .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
+                this.identifier, this.getFilterForCount(pwithin));
             if (count) {
                 return count.flatMap(c => {
                     if (c.totalnb <= this.nbMaxFeatureForCluster) {
@@ -408,14 +403,9 @@ export class MapContributor extends Contributor {
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-            let filter = {};
-            if (!this.isBbox) {
-                filter = {
-                    pwithin: [[pwithin.trim()]],
-                };
-            }
             const count: Observable<Hits> = this.collaborativeSearcheService
-                .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations, '', filter);
+                .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
+                this.identifier, this.getFilterForCount(pwithin));
             if (count) {
                 count.subscribe(value => {
                     if (value.totalnb <= this.nbMaxFeatureForCluster) {
@@ -667,5 +657,32 @@ export class MapContributor extends Contributor {
 
     private tileToString(tile: { x: number, y: number, z: number }): string {
         return tile.x.toString() + tile.y.toString() + tile.z.toString();
+    }
+
+    private getFilterForCount(pwithin: string) {
+        let filter = {};
+        const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
+        if (collaboration !== null && collaboration !== undefined) {
+            if (collaboration.enabled) {
+                let bboxs = [];
+                if (this.isGIntersect) {
+                    bboxs = collaboration.filter.gintersect[0];
+                } else {
+                    bboxs = collaboration.filter.pwithin[0];
+                }
+                filter = {
+                    pwithin: [[pwithin.trim()], bboxs]
+                };
+            } else {
+                filter = {
+                    pwithin: [[pwithin.trim()]],
+                };
+            }
+        } else {
+            filter = {
+                pwithin: [[pwithin.trim()]],
+            };
+        }
+        return filter;
     }
 }
