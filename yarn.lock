@@ -159,8 +159,8 @@ arlas-api@8.0.0:
     url "0.11.0"
 
 arlas-web-core@8.0.*:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-8.0.0.tgz#152eacbb94f717d01f8e5ae29c17473b8a028547"
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-8.0.1.tgz#30aa11ac3d87a07783d2de6ccaee80a087754268"
   dependencies:
     arlas-api "8.0.0"
     rxjs "^5.5.6"
