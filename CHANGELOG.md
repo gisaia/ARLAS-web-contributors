@@ -1,5 +1,15 @@
 # Change Log
 
+## [v7.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.4.1) (2018-10-16)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.4.0...v7.4.1)
+
+**Fixed bugs:**
+
+- Map Bug : multi BBOx is broken [\#116](https://github.com/gisaia/ARLAS-web-contributors/issues/116)
+- Fix multi bbox selection [\#117](https://github.com/gisaia/ARLAS-web-contributors/pull/117) ([mbarbet](https://github.com/mbarbet))
+- Fix \#112 [\#113](https://github.com/gisaia/ARLAS-web-contributors/pull/113) ([mbarbet](https://github.com/mbarbet))
+
 ## [v7.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.4.0) (2018-09-14)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.5...v7.4.0)
