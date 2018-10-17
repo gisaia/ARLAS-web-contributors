@@ -1,12 +1,28 @@
 # Change Log
 
-## [v7.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.4.1) (2018-10-16)
+## [v8.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v8.0.0) (2018-10-17)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.4.1...v8.0.0)
+
+**Breaking changes:**
+
+- Map : implement contributor for display topology agg [\#115](https://github.com/gisaia/ARLAS-web-contributors/issues/115)
+- Add TopoMapContributor [\#120](https://github.com/gisaia/ARLAS-web-contributors/pull/120) ([mbarbet](https://github.com/mbarbet))
+- Replace drawType by geomStrategy [\#119](https://github.com/gisaia/ARLAS-web-contributors/pull/119) ([mbarbet](https://github.com/mbarbet))
+
+**New stuff:**
+
+- MAP : enhance computeDataGeohashGeoaggregate [\#114](https://github.com/gisaia/ARLAS-web-contributors/issues/114)
+
+## [v7.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.4.1) (2018-10-17)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.4.0...v7.4.1)
 
 **Fixed bugs:**
 
 - Map Bug : multi BBOx is broken [\#116](https://github.com/gisaia/ARLAS-web-contributors/issues/116)
+- MAP: Disable and Remove BBOX have the same impact on the map analytic/data switch [\#103](https://github.com/gisaia/ARLAS-web-contributors/issues/103)
+- Improve count test map with bbox [\#118](https://github.com/gisaia/ARLAS-web-contributors/pull/118) ([mbarbet](https://github.com/mbarbet))
 - Fix multi bbox selection [\#117](https://github.com/gisaia/ARLAS-web-contributors/pull/117) ([mbarbet](https://github.com/mbarbet))
 - Fix \#112 [\#113](https://github.com/gisaia/ARLAS-web-contributors/pull/113) ([mbarbet](https://github.com/mbarbet))
 
