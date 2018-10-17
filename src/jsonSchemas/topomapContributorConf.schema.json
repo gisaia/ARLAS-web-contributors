@@ -1,20 +1,17 @@
 {
     "$schema": "http://json-schema.org/draft-06/schema#",
-    "title": "Contributors Configuration",
-    "description": "The Configuration of Contributors",
+    "title": "Map Contributor Configuration",
+    "description": "The Configuration of Topo Map Contributor",
     "type": "object",
-    "$id": "rootContributorConf.schema.json",
-    "definitions": {
-        "identifier": {
-            "description": "The unique identifier for a Contributor",
-            "type": "string"
-        },
-        "name": {
-            "description": "The name of the Contributor",
-            "type": "string"
-        },
-        "aggregationmodels": {
-            "description": "List of aggregation, order matters",
+    "$id": "topomapContributorConf.schema.json",
+    "allOf": [
+        {
+            "$ref": "mapContributorConf.schema.json#"
+        }
+    ],
+    "properties": {
+        "topo_aggregationmodels": {
+            "description": "List of topo aggregation, order matters",
             "type": "array",
             "minItems": 1,
             "items": {
@@ -79,22 +76,19 @@
                     "field"
                 ]
             }
-        }
-    },
-    "properties": {
-        "identifier": {
-            "$ref": "#/definitions/identifier"
         },
-        "name": {
-            "$ref": "#/definitions/name"
+        "field_cardinality": {
+            "description": "Cardinality field for term aggregation",
+            "type": "string"
         },
-        "aggregationmodels": {
-            "$ref": "#/definitions/aggregationmodels"
+        "field_geometry": {
+            "description": "Geometry field for geohash aggregation",
+            "type": "string"
         }
     },
     "required": [
-        "identifier",
-        "name",
-        "aggregationmodels"
+        "topo_aggregationmodels",
+        "field_cardinality",
+        "field_geometry"
     ]
 }

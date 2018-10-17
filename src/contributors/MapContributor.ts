@@ -38,7 +38,7 @@ import { polygon } from '@turf/helpers';
 import bbox from '@turf/bbox';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { last } from 'rxjs/operator/last';
+import { getBounds, tileToString } from './../utils/mapUtils';
 
 
 export enum geomStrategyEnum {
@@ -48,7 +48,7 @@ export enum geomStrategyEnum {
     last,
     byDefault,
     geohash
-  }
+}
 export enum fetchType {
     tile,
     geohash
@@ -80,28 +80,30 @@ export class MapContributor extends Contributor {
     public fetchType: fetchType = fetchType.geohash;
     public zoomToPrecisionCluster: Array<Array<number>> = this.getConfigValue('zoomToPrecisionCluster');
     public maxPrecision: Array<number> = this.getConfigValue('maxPrecision');
-    private maxValueGeoHash = 0;
-    private zoom = this.getConfigValue('initZoom');
-    private tiles: Array<{ x: number, y: number, z: number }> = new Array<{ x: number, y: number, z: number }>();
-    private geohashList: Array<string> = bboxes(-90, -180, 90, 180, 1);
-    private currentGeohashList: Array<string> = new Array<string>();
-    private currentStringedTilesList: Array<string> = new Array<string>();
-    private isBbox = false;
-    private mapExtend = [90, -180, -90, 180];
-    private zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
-    private zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
-    private nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
-    private idFieldName = this.getConfigValue('idFieldName');
-    private geomStrategy = this.getConfigValue('geomStrategy');
-    private isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
-    private isGIntersect = false;
-    private strategyEnum = geomStrategyEnum;
+
+    public maxValueGeoHash = 0;
+    public zoom = this.getConfigValue('initZoom');
+    public tiles: Array<{ x: number, y: number, z: number }> = new Array<{ x: number, y: number, z: number }>();
+    public geohashList: Array<string> = bboxes(-90, -180, 90, 180, 1);
+    public currentGeohashList: Array<string> = new Array<string>();
+    public currentStringedTilesList: Array<string> = new Array<string>();
+    public isBbox = false;
+    public mapExtend = [90, -180, -90, 180];
+    public zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
+    public zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
+    public nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
+    public idFieldName = this.getConfigValue('idFieldName');
+    public geomStrategy = this.getConfigValue('geomStrategy');
+    public isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
+    public isGIntersect = false;
+    public strategyEnum = geomStrategyEnum;
+
     /**
     /**
     * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
     */
-    private aggregation: Array<Aggregation> = this.getConfigValue('aggregationmodels');
-    private precision;
+    public aggregation: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+    public precision;
 
     /**
     * Build a new contributor.
@@ -112,10 +114,10 @@ export class MapContributor extends Contributor {
     */
     constructor(
         public identifier,
-        private onRemoveBboxBus: Subject<boolean>,
-        private redrawTile: Subject<boolean>,
-        collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService,
+        public onRemoveBboxBus: Subject<boolean>,
+        public redrawTile: Subject<boolean>,
+        public collaborativeSearcheService: CollaborativesearchService,
+        public configService: ConfigService,
         gIntersect?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
@@ -252,28 +254,10 @@ export class MapContributor extends Contributor {
     }
 
     public getBoundsToFit(elementidentifier: ElementIdentifier): Observable<Array<Array<number>>> {
-        let searchResult: Observable<Hits>;
-        const search: Search = { size: { size: 1 } };
-        const expression: Expression = {
-            field: elementidentifier.idFieldName,
-            op: Expression.OpEnum.Eq,
-            value: elementidentifier.idValue
-        };
-        const filter: Filter = {
-            f: [[expression]]
-        };
-        searchResult = this.collaborativeSearcheService
-            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, '', filter);
-        return searchResult.map(h => {
-            const geojsonData = getElementFromJsonObject(h.hits[0].md, 'geometry');
-            const box = bbox(geojsonData);
-            const minX = box[0];
-            const minY = box[1];
-            const maxX = box[2];
-            const maxY = box[3];
-            return [[minX, minY], [maxX, maxY]];
-        });
+        const bounddsToFit = getBounds(elementidentifier, this.collaborativeSearcheService);
+        return bounddsToFit;
     }
+
     public switchLayerCluster(style: Style) {
         if (this.strategyEnum[style.geomStrategy].toString() !== this.geomStrategy.toString()) {
             this.geomStrategy = style.geomStrategy;
@@ -373,7 +357,6 @@ export class MapContributor extends Contributor {
         this.geohashList = newMove.geohash;
         this.zoom = newMove.zoom;
         this.getNbMaxFeatureFromZoom(newMove.zoom);
-
         const precision = this.getPrecisionFromZoom(newMove.zoom);
         let precisionChanged = false;
         if (precision !== this.precision && this.isGeoaggregateCluster) {
@@ -422,9 +405,9 @@ export class MapContributor extends Contributor {
                         }
                         const newTilesList = new Array<any>();
                         newMove.tiles.forEach(tile => {
-                            if (this.currentStringedTilesList.indexOf(this.tileToString(tile)) < 0) {
+                            if (this.currentStringedTilesList.indexOf(tileToString(tile)) < 0) {
                                 newTilesList.push(tile);
-                                this.currentStringedTilesList.push(this.tileToString(tile));
+                                this.currentStringedTilesList.push(tileToString(tile));
                             }
                         });
                         // if new extend is not totaly include in old extend
@@ -472,7 +455,7 @@ export class MapContributor extends Contributor {
         }
     }
 
-    private drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
+    public drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataTileSearch(tiles)
             .map(f => this.computeDataTileSearch(f))
@@ -483,7 +466,7 @@ export class MapContributor extends Contributor {
             })
             .subscribe(data => data);
     }
-    private drawGeoaggregateGeohash(geohashList: Array<string>) {
+    public drawGeoaggregateGeohash(geohashList: Array<string>) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataGeohashGeoaggregate(geohashList)
             .map(f => this.computeDataGeohashGeoaggregate(f))
@@ -494,7 +477,7 @@ export class MapContributor extends Contributor {
             }).subscribe(data => data);
     }
 
-    private fetchDataGeohashGeoaggregate(geohashList: Array<string>): Observable<FeatureCollection> {
+    public fetchDataGeohashGeoaggregate(geohashList: Array<string>): Observable<FeatureCollection> {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
         const aggregations = this.aggregation;
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
@@ -516,7 +499,7 @@ export class MapContributor extends Contributor {
         return Observable.from(tabOfGeohash).mergeAll();
     }
 
-    private computeDataGeohashGeoaggregate(featureCollection: FeatureCollection): Array<any> {
+    public computeDataGeohashGeoaggregate(featureCollection: FeatureCollection): Array<any> {
         const featuresResults = [];
         if (featureCollection.features !== undefined) {
             featureCollection.features.forEach(feature => {
@@ -527,19 +510,19 @@ export class MapContributor extends Contributor {
             featureCollection.features.forEach(feature => {
                 feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
                 feature.properties['point_count'] = feature.properties.count;
-                    featuresResults.push(feature);
+                featuresResults.push(feature);
             });
         }
         return featuresResults;
     }
-    private setDataGeohashGeoaggregate(features: Array<any>): any {
+    public setDataGeohashGeoaggregate(features: Array<any>): any {
         features.forEach(f => this.geojsondata.features.push(f));
         this.isGeoaggregateCluster = true;
         return features;
 
     }
 
-    private fetchDataTileSearch(tiles: Array<{ x: number, y: number, z: number }>): Observable<FeatureCollection> {
+    public fetchDataTileSearch(tiles: Array<{ x: number, y: number, z: number }>): Observable<FeatureCollection> {
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
         const filter: Filter = {};
         const search: Search = { size: { size: this.nbMaxFeatureForCluster } };
@@ -571,7 +554,7 @@ export class MapContributor extends Contributor {
         return Observable.from(tabOfTile).mergeAll();
     }
 
-    private computeDataTileSearch(featureCollection: FeatureCollection): Array<any> {
+    public computeDataTileSearch(featureCollection: FeatureCollection): Array<any> {
         const dataSet = new Set(this.geojsondata.features.map(f => {
             if (f.properties !== undefined) {
                 return f.properties[this.idFieldName];
@@ -587,12 +570,12 @@ export class MapContributor extends Contributor {
             return [];
         }
     }
-    private setDataTileSearch(features: Array<any>): any {
+    public setDataTileSearch(features: Array<any>): any {
         features.forEach(f => this.geojsondata.features.push(f));
         this.isGeoaggregateCluster = false;
         return features;
     }
-    private getPrecisionFromZoom(zoom: number): number {
+    public getPrecisionFromZoom(zoom: number): number {
         const zoomToPrecisionClusterObject = {};
         const zoomToPrecisionCluster = this.zoomToPrecisionCluster;
         zoomToPrecisionCluster.forEach(triplet => {
@@ -609,24 +592,9 @@ export class MapContributor extends Contributor {
             return this.getConfigValue('maxPrecision')[0];
         }
     }
-    private isLatLngInBbox(lat, lng, box) {
-        const polyPoints = [[box[2], box[3]], [box[0], box[3]],
-        [box[0], box[1]], [box[2], box[1]],
-        [box[2], box[3]]];
-        const x = lat;
-        const y = lng;
-        let inside = false;
-        for (let i = 0, j = polyPoints.length - 1; i < polyPoints.length; j = i++) {
-            const xi = polyPoints[i][0], yi = polyPoints[i][1];
-            const xj = polyPoints[j][0], yj = polyPoints[j][1];
-            const intersect = ((yi > y) !== (yj > y))
-                && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) { inside = !inside; }
-        }
-        return inside;
-    }
 
-    private getNbMaxFeatureFromZoom(zoom: number) {
+
+    public getNbMaxFeatureFromZoom(zoom: number) {
         const zoomToNbMaxFeatureForClusterObject = {};
         const zoomToNbMaxFeatureForCluster: Array<Array<number>> = this.getConfigValue('zoomToNbMaxFeatureForCluster');
         zoomToNbMaxFeatureForCluster.forEach(couple => {
@@ -638,11 +606,7 @@ export class MapContributor extends Contributor {
         }
     }
 
-    private tileToString(tile: { x: number, y: number, z: number }): string {
-        return tile.x.toString() + tile.y.toString() + tile.z.toString();
-    }
-
-    private getFilterForCount(pwithin: string) {
+    public getFilterForCount(pwithin: string) {
         let filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         if (collaboration !== null && collaboration !== undefined) {
@@ -667,5 +631,9 @@ export class MapContributor extends Contributor {
             };
         }
         return filter;
+    }
+
+    private tileToString(tile: { x: number, y: number, z: number }): string {
+        return tile.x.toString() + tile.y.toString() + tile.z.toString();
     }
 }
