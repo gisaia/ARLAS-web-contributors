@@ -41,10 +41,14 @@ import booleanContains from '@turf/boolean-contains';
 import { last } from 'rxjs/operator/last';
 
 
-export enum drawType {
-    RECTANGLE,
-    CIRCLE
-}
+export enum geomStrategyEnum {
+    bbox,
+    centroid,
+    first,
+    last,
+    byDefault,
+    geohash
+  }
 export enum fetchType {
     tile,
     geohash
@@ -53,7 +57,7 @@ export interface Style {
     id: string;
     name: string;
     layerIds: Set<string>;
-    drawType?: drawType;
+    geomStrategy?: geomStrategyEnum;
     isDefault?: boolean;
 }
 /**
@@ -88,9 +92,10 @@ export class MapContributor extends Contributor {
     private zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
     private nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
     private idFieldName = this.getConfigValue('idFieldName');
-    private drawtype = drawType[this.getConfigValue('drawtype')];
+    private geomStrategy = this.getConfigValue('geomStrategy');
     private isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
     private isGIntersect = false;
+    private strategyEnum = geomStrategyEnum;
     /**
     /**
     * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
@@ -168,8 +173,8 @@ export class MapContributor extends Contributor {
     public setGIntersect(active: boolean) {
         this.isGIntersect = active;
     }
-    public setDrawType(type: string) {
-        this.drawtype = drawType[type];
+    public setGeomStrategy(geomStrategy: string) {
+        this.geomStrategy = this.strategyEnum[geomStrategy];
     }
 
     public setData(data: any) {
@@ -270,8 +275,8 @@ export class MapContributor extends Contributor {
         });
     }
     public switchLayerCluster(style: Style) {
-        if (drawType[style.drawType].toString() !== this.drawtype.toString()) {
-            this.drawtype = drawType[style.drawType];
+        if (this.strategyEnum[style.geomStrategy].toString() !== this.geomStrategy.toString()) {
+            this.geomStrategy = style.geomStrategy;
             if (this.isGeoaggregateCluster) {
                 this.geojsondata.features = [];
                 this.drawGeoaggregateGeohash(this.currentGeohashList);
@@ -493,6 +498,8 @@ export class MapContributor extends Contributor {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
         const aggregations = this.aggregation;
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
+        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetchGeometry.strategy = this.geomStrategy);
+        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.fetchGeometry.strategy = this.geomStrategy);
         const geohashSet = new Set(geohashList);
         geohashSet.forEach(geohash => {
             if (this.currentGeohashList.indexOf(geohash) < 0) {
@@ -517,34 +524,10 @@ export class MapContributor extends Contributor {
                     this.maxValueGeoHash = feature.properties.count;
                 }
             });
-            const allfeatures: Array<any> = [];
             featureCollection.features.forEach(feature => {
-                const box: Array<number> = decode_bbox(feature.properties.geohash);
-                const coordinates = [[
-                    [box[3], box[2]],
-                    [box[3], box[0]],
-                    [box[1], box[0]],
-                    [box[1], box[2]],
-                    [box[3], box[2]],
-                ]];
-                const polygonGeojson = {
-                    type: 'Feature',
-                    properties: feature.properties,
-                    geometry: {
-                        type: 'Polygon',
-                        coordinates: coordinates
-                    }
-                };
-                polygonGeojson.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
-                polygonGeojson.properties['point_count'] = feature.properties.count;
-                polygonGeojson.properties['geohash'] = feature.properties.geohash;
                 feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
                 feature.properties['point_count'] = feature.properties.count;
-                if (this.drawtype.toString() === drawType.CIRCLE.toString()) {
                     featuresResults.push(feature);
-                } else if (this.drawtype.toString() === drawType.RECTANGLE.toString()) {
-                    featuresResults.push(polygonGeojson);
-                }
             });
         }
         return featuresResults;
