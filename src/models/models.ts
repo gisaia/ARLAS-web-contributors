@@ -17,9 +17,7 @@
  * under the License.
  */
 
-import { Subject } from 'rxjs/Subject';
-import * as moment from 'moment';
-
+import moment from 'moment';
 /**
 * Enum of sorting value define in Arlas-web-components
 */

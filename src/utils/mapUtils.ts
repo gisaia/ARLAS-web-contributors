@@ -5,6 +5,7 @@ import { projType } from 'arlas-web-core';
 import { getElementFromJsonObject } from './utils';
 import bbox from '@turf/bbox';
 import { CollaborativesearchService } from 'arlas-web-core/services/collaborativesearch.service';
+import { map } from 'rxjs/internal/operators/map';
 
 
 export function getBounds(elementidentifier: ElementIdentifier, collaborativeSearcheService: CollaborativesearchService)
@@ -21,7 +22,9 @@ export function getBounds(elementidentifier: ElementIdentifier, collaborativeSea
     };
     searchResult = collaborativeSearcheService
         .resolveHits([projType.search, search], collaborativeSearcheService.collaborations, '', filter);
-    return searchResult.map(h => {
+    return searchResult
+    .pipe(
+    map(h => {
         const geojsonData = getElementFromJsonObject(h.hits[0].md, 'geometry');
         const box = bbox(geojsonData);
         const minX = box[0];
@@ -29,7 +32,7 @@ export function getBounds(elementidentifier: ElementIdentifier, collaborativeSea
         const maxX = box[2];
         const maxY = box[3];
         return [[minX, minY], [maxX, maxY]];
-    });
+    }));
 }
 
 export function tileToString(tile: { x: number, y: number, z: number }): string {

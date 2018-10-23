@@ -20,9 +20,6 @@
 import { Collaboration, CollaborativesearchService, projType } from 'arlas-web-core';
 import { SelectedOutputValues, DataType, DateExpression } from '../models/models';
 import { Expression, Filter, Aggregation, Search, Sort, Interval } from 'arlas-api';
-import { Observable } from 'rxjs/Observable';
-import { interval } from 'rxjs/observable/interval';
-
 
 export function getvaluesChanged(values: SelectedOutputValues[],
     field: string,

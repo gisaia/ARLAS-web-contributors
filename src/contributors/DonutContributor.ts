@@ -21,10 +21,10 @@ import {
     Contributor, CollaborationEvent, Collaboration, projType, OperationEnum,
     CollaborativesearchService, ConfigService
 } from 'arlas-web-core';
-import { Observable } from 'rxjs/Observable';
+import { Observable, from} from 'rxjs';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
 import { DonutArc, SelectionTree } from '../models/models';
-import * as jsonSchema from '../jsonSchemas/donutContributorConf.schema.json';
+import jsonSchema from '../jsonSchemas/donutContributorConf.schema.json';
 
 
 
@@ -94,7 +94,7 @@ export class DonutContributor extends Contributor {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
         } else {
-            return Observable.from([]);
+            return from([]);
         }
     }
 
@@ -150,7 +150,7 @@ export class DonutContributor extends Contributor {
         } else {
             this.selectedArcsList = new Array<Array<{ ringName: string, name: string }>>();
         }
-        return Observable.from([]);
+        return from([]);
     }
 
     public selectedArcsListChanged(selectedArcsList: Array<Array<{ ringName: string, name: string }>>): void {

@@ -1,9 +1,9 @@
 import { HistogramContributor } from './HistogramContributor';
 import { CollaborationEvent, OperationEnum, Collaboration } from 'arlas-web-core';
 import { AggregationResponse, Filter } from 'arlas-api';
-import * as jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json';
+import jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json';
 
-import { Observable } from 'rxjs/Observable';
+import { Observable, from } from 'rxjs';
 import { DateExpression, SelectedOutputValues } from '../models/models';
 
 /**
@@ -76,7 +76,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
             }
             return this.fetchDataGivenFilter(this.annexedContributorId, additionalFilter);
         } else {
-            return Observable.from([]);
+            return from([]);
         }
     }
 

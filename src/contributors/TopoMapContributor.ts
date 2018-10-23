@@ -39,6 +39,8 @@ import bbox from '@turf/bbox';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import { MapContributor, fetchType } from './MapContributor';
+import { flatMap, mergeAll, map } from 'rxjs/operators';
+import { from } from 'rxjs/observable/from';
 
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
@@ -92,7 +94,7 @@ export class TopoMapContributor extends MapContributor {
             // test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
             const newCount = this.getTopoCardinality(this.field_cardinality, this.field_geometry, this.getFilterForCount(pwithin));
             if (newCount) {
-                return newCount.flatMap(
+                return newCount.pipe(flatMap(
                     feat => {
                         this.size = feat.map(f => <number>f.properties[this.field_cardinality + '_cardinality_'])
                             .reduce((a, b) => a + b, 0);
@@ -107,7 +109,7 @@ export class TopoMapContributor extends MapContributor {
                             this.aggregation = this.getConfigValue('aggregationmodels');
                             return this.fetchDataGeohashGeoaggregate(this.geohashList);
                         }
-                    });
+                    }));
             }
         }
     }
@@ -138,7 +140,7 @@ export class TopoMapContributor extends MapContributor {
                 [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations, this.isFlat);
             tabOfGeohash.push(geoAggregateData);
         });
-        return Observable.from(tabOfGeohash).mergeAll();
+        return from(tabOfGeohash).pipe(mergeAll());
     }
 
 
@@ -284,9 +286,9 @@ export class TopoMapContributor extends MapContributor {
         aggregationsMetrics.push(aggregationMetric);
         const features: Observable<Feature[]> = this.collaborativeSearcheService
             .resolveButNotFeatureCollection([projType.geoaggregate, aggregationsMetrics],
-            this.collaborativeSearcheService.collaborations, true, '',
-            filter)
-            .map(data => data.features);
+                this.collaborativeSearcheService.collaborations, true, '',
+                filter)
+            .pipe(map(data => data.features));
         return features;
     }
 }

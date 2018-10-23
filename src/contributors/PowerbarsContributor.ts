@@ -17,8 +17,7 @@
  * under the License.
  */
 
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
+import { Observable, from } from 'rxjs';
 import {
     Collaboration,
     CollaborativesearchService,
@@ -31,8 +30,8 @@ import {
     Hits, Filter, Aggregation,
     Expression, AggregationResponse
 } from 'arlas-api';
-import * as jsonSchema from '../jsonSchemas/powerbarsContributorConf.schema.json';
-import * as jsonpath from 'jsonpath';
+import jsonSchema from '../jsonSchemas/powerbarsContributorConf.schema.json';
+import jp from 'jsonpath/jsonpath.min';
 
 /**
 * This contributor works with the Angular PowerbarsComponent of the Arlas-web-components project.
@@ -112,7 +111,7 @@ export class PowerbarsContributor extends Contributor {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
         } else {
-            return Observable.from([]);
+            return from([]);
         }
     }
 
@@ -120,7 +119,7 @@ export class PowerbarsContributor extends Contributor {
         const powerbarsTab = new Array<[string, number]>();
         if (aggregationResonse.elements !== undefined) {
             aggregationResonse.elements.forEach(element => {
-                const value = jsonpath.query(element, this.json_path)[0];
+                const value = jp.query(element, this.json_path)[0];
                 powerbarsTab.push([element.key, value]);
             });
             this.sortPowerBarsTab(powerbarsTab);
@@ -150,7 +149,7 @@ export class PowerbarsContributor extends Contributor {
         } else {
             this.selectedBars = new Set();
         }
-        return Observable.from([]);
+        return from([]);
     }
 
     public selectedBarsChanged(selectedBars: Set<string>) {
