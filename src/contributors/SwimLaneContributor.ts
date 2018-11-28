@@ -26,11 +26,14 @@ import {
     OperationEnum,
     projType
 } from 'arlas-web-core';
-import { Observable } from 'rxjs/Observable';
+import { Observable, from } from 'rxjs';
+import { map, flatMap } from 'rxjs/operators';
+
 import { Aggregation, AggregationResponse, RangeResponse, RangeRequest, Filter, Expression } from 'arlas-api';
 import { getAggregationPrecision } from '../utils/histoswimUtils';
-import * as jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
-import * as jsonpath from 'jsonpath';
+import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
+import jp from 'jsonpath/jsonpath.min';
+
 
 
 export class SwimLaneContributor extends Contributor {
@@ -131,23 +134,27 @@ export class SwimLaneContributor extends Contributor {
             if (this.nbBuckets) {
                 return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
                 <RangeRequest>{ filter: null, field: this.xAxisField }], collaborations, this.identifier)
-                    .map((rangeResponse: RangeResponse) => {
-                        const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
-                            (rangeResponse.max - rangeResponse.min) : 0;
-                        this.range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
-                        this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
-                    }).flatMap(() =>
+                    .pipe(
+                        map((rangeResponse: RangeResponse) => {
+                            const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
+                                (rangeResponse.max - rangeResponse.min) : 0;
+                            this.range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
+                            this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
+                        }),
+                        flatMap(() =>
                         this.collaborativeSearcheService.resolveButNotAggregation(
                             [projType.aggregate, this.aggregations], collaborations,
                             this.identifier)
-                    ));
+                        )
+                    )
+                );
             } else {
                 return this.collaborativeSearcheService.resolveButNotAggregation(
                     [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
                     this.identifier);
             }
         } else {
-            return Observable.from([]);
+            return from([]);
         }
     }
 
@@ -159,7 +166,7 @@ export class SwimLaneContributor extends Contributor {
                 const dataTab = new Array<{ key: number, value: number }>();
                 element.elements.forEach(e => {
                     e.elements.forEach(el => {
-                        const value = jsonpath.query(el, this.json_path)[0];
+                        const value = jp.query(el, this.json_path)[0];
                         dataTab.push({ key: el.key, value: value });
                     });
                 });
@@ -191,7 +198,7 @@ export class SwimLaneContributor extends Contributor {
         } else {
             this.selectedSwimlanes = new Set();
         }
-        return Observable.from([]);
+        return from([]);
 
     }
 

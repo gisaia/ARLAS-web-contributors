@@ -17,8 +17,8 @@
  * under the License.
  */
 
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
+import { Observable, Subject } from 'rxjs';
+import { map, finalize, flatMap, mergeAll } from 'rxjs/operators';
 
 import {
     CollaborativesearchService, Contributor,
@@ -27,18 +27,19 @@ import {
 } from 'arlas-web-core';
 import {
     Search, Expression, Hits,
-    AggregationResponse, Aggregation, Projection,
-    Filter, FeatureCollection, Size
+    Aggregation, Projection,
+    Filter, FeatureCollection
 } from 'arlas-api';
-import { Action, OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
+import { OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
 import { decode_bbox, bboxes } from 'ngeohash';
-import * as jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
-import { polygon } from '@turf/helpers';
+import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
+
 import bbox from '@turf/bbox';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import { getBounds, tileToString } from './../utils/mapUtils';
+import { from } from 'rxjs/observable/from';
 
 
 export enum geomStrategyEnum {
@@ -147,7 +148,7 @@ export class MapContributor extends Contributor {
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
                 this.identifier, this.getFilterForCount(pwithin));
             if (count) {
-                return count.flatMap(c => {
+                return count.pipe(flatMap(c => {
                     if (c.totalnb <= this.nbMaxFeatureForCluster) {
                         this.geojsondata.features = [];
                         this.fetchType = fetchType.tile;
@@ -157,7 +158,7 @@ export class MapContributor extends Contributor {
                         this.geojsondata.features = [];
                         return this.fetchDataGeohashGeoaggregate(this.geohashList);
                     }
-                });
+                }));
             }
         }
     }
@@ -250,7 +251,7 @@ export class MapContributor extends Contributor {
                 'features': []
             };
         }
-        return Observable.from([]);
+        return from([]);
     }
 
     public getBoundsToFit(elementidentifier: ElementIdentifier): Observable<Array<Array<number>>> {
@@ -458,23 +459,28 @@ export class MapContributor extends Contributor {
     public drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataTileSearch(tiles)
-            .map(f => this.computeDataTileSearch(f))
-            .map(f => this.setDataTileSearch(f))
-            .finally(() => {
-                this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
-                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
-            })
+            .pipe(
+                map(f => this.computeDataTileSearch(f)),
+                map(f => this.setDataTileSearch(f)),
+                finalize(() => {
+                    this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                    this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                })
+            )
             .subscribe(data => data);
     }
     public drawGeoaggregateGeohash(geohashList: Array<string>) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataGeohashGeoaggregate(geohashList)
-            .map(f => this.computeDataGeohashGeoaggregate(f))
-            .map(f => this.setDataGeohashGeoaggregate(f))
-            .finally(() => {
-                this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
-                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
-            }).subscribe(data => data);
+            .pipe(
+                map(f => this.computeDataGeohashGeoaggregate(f)),
+                map(f => this.setDataGeohashGeoaggregate(f)),
+                finalize(() => {
+                    this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                    this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                })
+            )
+            .subscribe(data => data);
     }
 
     public fetchDataGeohashGeoaggregate(geohashList: Array<string>): Observable<FeatureCollection> {
@@ -496,7 +502,7 @@ export class MapContributor extends Contributor {
                 [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations, this.isFlat);
             tabOfGeohash.push(geoAggregateData);
         });
-        return Observable.from(tabOfGeohash).mergeAll();
+        return from(tabOfGeohash).pipe(mergeAll());
     }
 
     public computeDataGeohashGeoaggregate(featureCollection: FeatureCollection): Array<any> {
@@ -551,7 +557,7 @@ export class MapContributor extends Contributor {
                 null, filter);
             tabOfTile.push(searchResult);
         });
-        return Observable.from(tabOfTile).mergeAll();
+        return from(tabOfTile).pipe(mergeAll());
     }
 
     public computeDataTileSearch(featureCollection: FeatureCollection): Array<any> {

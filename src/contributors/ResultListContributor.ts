@@ -17,23 +17,23 @@
  * under the License.
  */
 
-import { tryCatch } from 'rxjs/util/tryCatch';
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
+
+import { Observable, from } from 'rxjs';
+import { filter, map, finalize } from 'rxjs/operators';
+
 import {
     CollaborativesearchService, Contributor,
     ConfigService, projType, Collaboration, CollaborationEvent
 } from 'arlas-web-core';
 import {
-    Search, Size, Sort,
-    Projection, FeatureCollection, Hits,
+    Search, Sort,
+    Projection, Hits,
     Filter, Aggregation, Expression, Hit
 } from 'arlas-api';
 import { getElementFromJsonObject, isArray, download } from '../utils/utils';
-import { Action, ElementIdentifier, triggerType, SortEnum, FieldsConfiguration, Column, Detail, Field } from '../models/models';
-import * as jsonpath from 'jsonpath';
-import * as jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
-import { AggregationResponse } from 'arlas-api';
+import { Action, ElementIdentifier, SortEnum, Column, Detail, Field } from '../models/models';
+import jp from 'jsonpath/jsonpath.min';
+import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 
 /**
 * Interface define in Arlas-web-components
@@ -62,13 +62,13 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             op: Expression.OpEnum.Eq,
             value: identifier
         };
-        const filter: Filter = {
+        const filterExpression: Filter = {
             f: [[expression]]
         };
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
-            this.contributor.identifier, filter);
-        const obs: Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> = searchResult.map(searchData => {
+            this.contributor.identifier, filterExpression);
+        const obs: Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> = searchResult.pipe(map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details: Array<Detail> = this.contributor.getConfigValue('details');
             details.forEach(group => {
@@ -76,7 +76,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 group.fields.forEach(field => {
                     let results = '';
                     if (field.path.indexOf('.') < 0) {
-                        results = jsonpath.query(searchData.hits[0].data, '$.' + field.path).join(',');
+                        results = jp.query(searchData.hits[0].data, '$.' + field.path).join(',');
                     } else {
                         let query = '$.';
                         let composePath = '';
@@ -100,7 +100,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                             }
                         });
                         query = query.substring(0, query.length - lastElementLength);
-                        results = jsonpath.query(searchData.hits[0].data, query).join(', ');
+                        results = jp.query(searchData.hits[0].data, query).join(', ');
                     }
                     if (results.length > 0) {
                         detailedDataMap.set(field.label, results);
@@ -125,7 +125,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             });
             const objectResult = { details: detailsMap, actions: actions };
             return objectResult;
-        });
+        }));
         return obs;
     }
     /**
@@ -212,7 +212,7 @@ export class ResultListContributor extends Contributor {
                 }
                 this.dropDownMapValues.set(column.fieldName, this.getDropDownValues(column.fieldName, size.toString()));
             } else {
-                this.dropDownMapValues.set(column.fieldName, Observable.from([[]]));
+                this.dropDownMapValues.set(column.fieldName, from([[]]));
             }
         });
         this.includesvalues.push(this.fieldsConfiguration.idFieldName);
@@ -236,7 +236,7 @@ export class ResultListContributor extends Contributor {
 
         this.collaborativeSearcheService.collaborationBus
             // if filter comes from other contributor or if it's a remove filter
-            .filter(c => c.id !== this.identifier || c.operation === 1)
+            .pipe(filter(c => c.id !== this.identifier || c.operation === 1))
             .subscribe(c => {
                 this.dropDownMapValues.clear();
                 this.columns.forEach(column => {
@@ -247,7 +247,7 @@ export class ResultListContributor extends Contributor {
                         }
                         this.dropDownMapValues.set(column.fieldName, this.getDropDownValues(column.fieldName, size.toString()));
                     } else {
-                        this.dropDownMapValues.set(column.fieldName, Observable.from([[]]));
+                        this.dropDownMapValues.set(column.fieldName, from([[]]));
                     }
                 });
             });
@@ -272,13 +272,12 @@ export class ResultListContributor extends Contributor {
             op: Expression.OpEnum.Eq,
             value: elementidentifier.idValue
         };
-        const filter: Filter = {
+        const filterExpression: Filter = {
             f: [[expression]]
         };
-        const actionsList = new Array<string>();
         searchResult = this.collaborativeSearcheService
-            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, filter);
-        searchResult.map(data => JSON.stringify(data)).subscribe(
+            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, filterExpression);
+        searchResult.pipe(map(data => JSON.stringify(data))).subscribe(
             data => {
                 download(data.toString(), elementidentifier.idValue + '.json', 'text/json');
             }
@@ -335,9 +334,11 @@ export class ResultListContributor extends Contributor {
         this.sort = sort;
         this.geoOrderSort = {};
         this.getHitsObservable(this.includesvalues, this.sort)
-            .map(f => this.computeData(f))
-            .map(f => this.setData(f))
-            .map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+            .pipe(
+                map(f => this.computeData(f)),
+                map(f => this.setData(f)),
+                map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+            )
             .subscribe(data => data);
     }
     /**
@@ -352,9 +353,11 @@ export class ResultListContributor extends Contributor {
         this.geoOrderSort = sort;
         this.sort = {};
         this.getHitsObservable(this.includesvalues, this.geoOrderSort)
-            .map(f => this.computeData(f))
-            .map(f => this.setData(f))
-            .map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+            .pipe(
+                map(f => this.computeData(f)),
+                map(f => this.setData(f)),
+                map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+            )
             .subscribe(data => data);
     }
     /**
@@ -421,18 +424,22 @@ export class ResultListContributor extends Contributor {
     }
     /**
     * Method call when emit the output moreDataEvent
-    * @param from· number of time that's scroll bar down
+    * @param startFrom· number of time that's scroll bar down
     */
-    public getMoreData(from: number) {
+    public getMoreData(startFrom: number) {
         if (this.geoOrderSort.sort) {
-            this.getHitsObservable(this.includesvalues, this.geoOrderSort, from * this.getConfigValue('search_size'))
-                .map(f => this.computeData(f))
-                .map(f => f.forEach(d => { this.data.push(d); }))
+            this.getHitsObservable(this.includesvalues, this.geoOrderSort, startFrom * this.getConfigValue('search_size'))
+                .pipe(
+                    map(f => this.computeData(f)),
+                    map(f => f.forEach(d => { this.data.push(d); }))
+                )
                 .subscribe(data => data);
         } else {
-            this.getHitsObservable(this.includesvalues, this.sort, from * this.getConfigValue('search_size'))
-                .map(f => this.computeData(f))
-                .map(f => f.forEach(d => { this.data.push(d); }))
+            this.getHitsObservable(this.includesvalues, this.sort, startFrom * this.getConfigValue('search_size'))
+                .pipe(
+                    map(f => this.computeData(f)),
+                    map(f => f.forEach(d => { this.data.push(d); }))
+                )
                 .subscribe(data => data);
         }
     }
@@ -452,7 +459,7 @@ export class ResultListContributor extends Contributor {
         const listResult = new Array<Map<string, string | number | Date>>();
         if (hits.nbhits > 0) {
             hits.hits.forEach(h => {
-                const map = new Map<string, string | number | Date>();
+                const fieldValueMap = new Map<string, string | number | Date>();
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
                     const process: string = this.columnsProcess[element.columnName];
@@ -462,49 +469,49 @@ export class ResultListContributor extends Contributor {
                             resultValue = eval(this.columnsProcess[element.columnName]);
                         }
                     }
-                    map.set(element.fieldName, resultValue);
+                    fieldValueMap.set(element.fieldName, resultValue);
                 });
                 if (this.fieldsConfiguration.idFieldName) {
                     const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.idFieldName);
-                    map.set(this.fieldsConfiguration.idFieldName, resultValue);
+                    fieldValueMap.set(this.fieldsConfiguration.idFieldName, resultValue);
                 }
                 if (this.fieldsConfiguration.titleFieldNames) {
                     this.fieldsConfiguration.titleFieldNames.forEach(field => {
-                        this.setProcessFieldData(h, field, map, 'title');
+                        this.setProcessFieldData(h, field, fieldValueMap, 'title');
                     });
                 }
                 if (this.fieldsConfiguration.tooltipFieldNames) {
                     this.fieldsConfiguration.tooltipFieldNames.forEach(field => {
-                        this.setProcessFieldData(h, field, map, 'tooltip');
+                        this.setProcessFieldData(h, field, fieldValueMap, 'tooltip');
                     });
                 }
                 if (this.fieldsConfiguration.iconCssClass) {
                     const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.iconCssClass);
-                    map.set(this.fieldsConfiguration.iconCssClass, resultValue);
+                    fieldValueMap.set(this.fieldsConfiguration.iconCssClass, resultValue);
                 }
                 if (this.fieldsConfiguration.urlImageTemplate) {
-                    this.setUrlField('urlImageTemplate', h, map);
+                    this.setUrlField('urlImageTemplate', h, fieldValueMap);
                 }
                 if (this.fieldsConfiguration.urlThumbnailTemplate) {
-                    this.setUrlField('urlThumbnailTemplate', h, map);
+                    this.setUrlField('urlThumbnailTemplate', h, fieldValueMap);
                 }
                 if (this.fieldsConfiguration.imageEnabled) {
                     const imageEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.imageEnabled);
                     if (imageEnabled != null) {
-                        map.set('imageEnabled', imageEnabled.toString());
+                        fieldValueMap.set('imageEnabled', imageEnabled.toString());
                     } else {
-                        map.set('imageEnabled', '');
+                        fieldValueMap.set('imageEnabled', '');
                     }
                 }
                 if (this.fieldsConfiguration.thumbnailEnabled) {
                     const thumbnailEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.thumbnailEnabled);
                     if (thumbnailEnabled != null) {
-                        map.set('thumbnailEnabled', thumbnailEnabled.toString());
+                        fieldValueMap.set('thumbnailEnabled', thumbnailEnabled.toString());
                     } else {
-                        map.set('thumbnailEnabled', '');
+                        fieldValueMap.set('thumbnailEnabled', '');
                     }
                 }
-                listResult.push(map);
+                listResult.push(fieldValueMap);
             });
         }
         return listResult;
@@ -517,21 +524,21 @@ export class ResultListContributor extends Contributor {
     }
     public setSelection(listResult: Array<Map<string, string | number | Date>>, collaboration: Collaboration): any {
         if (collaboration !== null) {
-            const map = new Map<string, string | number | Date>();
+            const fieldValueMap = new Map<string, string | number | Date>();
             collaboration.filter.f.forEach(e => {
                 e.forEach(f => {
-                    if (map.get(f.field) === undefined) {
-                        map.set(f.field, f.value);
+                    if (fieldValueMap.get(f.field) === undefined) {
+                        fieldValueMap.set(f.field, f.value);
                     } else {
-                        map.set(f.field, map.get(f.field) + ',' + f.value);
+                        fieldValueMap.set(f.field, fieldValueMap.get(f.field) + ',' + f.value);
                     }
                 });
             });
-            this.filtersMap = map;
+            this.filtersMap = fieldValueMap;
         } else {
             this.filtersMap = new Map<string, string | number | Date>();
         }
-        return Observable.from([]);
+        return from([]);
     }
 
     public resolveDropDownButNot(column: Column) {
@@ -543,27 +550,29 @@ export class ResultListContributor extends Contributor {
                 }
                 this.dropDownMapValues.set(co.fieldName, this.getDropDownValues(co.fieldName, size.toString()));
             } else {
-                this.dropDownMapValues.set(co.fieldName, Observable.from([[]]));
+                this.dropDownMapValues.set(co.fieldName, from([[]]));
             }
         });
 
     }
 
-    private getHitsObservable(includesvalues: Array<string>, sort?: Sort, from?: number): Observable<Hits> {
+    private getHitsObservable(includesvalues: Array<string>, sort?: Sort, origin?: number): Observable<Hits> {
         const projection: Projection = {};
         const search: Search = { size: { size: this.getConfigValue('search_size') } };
         if (sort) {
             search.sort = sort;
         }
-        if (from) {
-            search.size.from = from;
+        if (origin) {
+            search.size.from = origin;
         }
         search.projection = projection;
         projection.includes = includesvalues.join(',');
         const newData = [];
         const searchResult = this.collaborativeSearcheService
             .resolveButNotHits([projType.search, search], this.collaborativeSearcheService.collaborations)
-            .finally(() => this.collaborativeSearcheService.contribFilterBus.next(this));
+            .pipe(
+               finalize(() => this.collaborativeSearcheService.contribFilterBus.next(this))
+            );
         return searchResult;
     }
     private fieldsFromUrlTemplate(urlTemplate: string): string {
@@ -581,7 +590,7 @@ export class ResultListContributor extends Contributor {
                 return t;
             }).join(',');
     }
-    private setUrlField(urlField: string, h: Hit, map: Map<string, string | number | Date>) {
+    private setUrlField(urlField: string, h: Hit, fieldValueMap: Map<string, string | number | Date>) {
         this.fieldsConfiguration[urlField]
             .split('/')
             .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
@@ -609,18 +618,18 @@ export class ResultListContributor extends Contributor {
                         } else {
                             urlTemplate = v;
                         }
-                        map.set(f, urlTemplate);
+                        fieldValueMap.set(f, urlTemplate);
                     } else {
-                        map.set(f, urlTemplate);
+                        fieldValueMap.set(f, urlTemplate);
                     }
                 } else {
-                    map.set(f,
+                    fieldValueMap.set(f,
                         getElementFromJsonObject(h.data, f));
                 }
             });
     }
 
-    private setProcessFieldData(h: Hit, field: Field, map: Map<string, string | number | Date>, dataType: string): void {
+    private setProcessFieldData(h: Hit, field: Field, fieldValueMap: Map<string, string | number | Date>, dataType: string): void {
         const result: string = getElementFromJsonObject(h.data, field.fieldPath);
         const process: string = field.process;
         let resultValue = result;
@@ -629,7 +638,7 @@ export class ResultListContributor extends Contributor {
                 resultValue = eval(field.process);
             }
         }
-        map.set(field.fieldPath + '_' + dataType, resultValue);
+        fieldValueMap.set(field.fieldPath + '_' + dataType, resultValue);
     }
 
     private getDropDownValues(field: string, size: string): Observable<Array<string>> {
@@ -642,15 +651,15 @@ export class ResultListContributor extends Contributor {
         const result = this.collaborativeSearcheService
             .resolveButNotAggregation([projType.aggregate, aggregations], this.collaborativeSearcheService.collaborations);
         if (result) {
-            return result.map(aggResponse => {
+            return result.pipe(map(aggResponse => {
                 if (aggResponse.elements) {
                     return aggResponse.elements.map(element => (<any>element).key_as_string);
                 } else {
                     return [];
                 }
-            });
+            }));
         } else {
-            return Observable.from([]);
+            return from([]);
         }
     }
 }

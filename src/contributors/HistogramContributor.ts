@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable } from 'rxjs/Observable';
+import { Observable, from } from 'rxjs';
 import {
     Collaboration,
     CollaborativesearchService,
@@ -29,9 +29,10 @@ import {
 import { Filter, Aggregation, AggregationResponse, RangeResponse, RangeRequest} from 'arlas-api';
 import { SelectedOutputValues, DataType, StringifiedTimeShortcut } from '../models/models';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
-import * as jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
+import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
-import * as jsonpath from 'jsonpath';
+import jp from 'jsonpath/jsonpath.min';
+import { map, flatMap } from 'rxjs/operators';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -186,7 +187,7 @@ export class HistogramContributor extends Contributor {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return this.fetchDataGivenFilter(this.identifier);
         } else {
-            return Observable.from([]);
+            return from([]);
         }
     }
 
@@ -194,7 +195,7 @@ export class HistogramContributor extends Contributor {
         const dataTab = new Array<{ key: number, value: number }>();
         if (aggResponse.elements !== undefined) {
             aggResponse.elements.forEach(element => {
-                const value = jsonpath.query(element, this.json_path)[0];
+                const value = jp.query(element, this.json_path)[0];
                 if (this.maxValue <= value) {
                     this.maxValue = value;
                 }
@@ -223,7 +224,7 @@ export class HistogramContributor extends Contributor {
         this.startValue = resultList[2];
         this.endValue = resultList[3];
         this.timeLabel = this.getShortcutLabel(this.intervalSelection, this.startValue, this.endValue);
-        return Observable.from([]);
+        return from([]);
 
     }
 
@@ -233,24 +234,28 @@ export class HistogramContributor extends Contributor {
         if (this.nbBuckets) {
             const agg = this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
             <RangeRequest>{ filter: null, field: this.field }], collaborations, identifier, additionalFilter)
-                .map((rangeResponse: RangeResponse) => {
-                    const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
-                        (rangeResponse.max - rangeResponse.min) : 0;
-                    const range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
-                    const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
-                    const result = {
-                        range: range,
-                        aggregationPrecision: aggregationPrecision
-                    };
-                    return result;
-                }).map((r => {
-                    this.range = r.range;
-                    this.aggregations[0].interval = r.aggregationPrecision;
-                    return this.collaborativeSearcheService.resolveButNotAggregation(
-                        [projType.aggregate, this.aggregations], collaborations,
-                        identifier, additionalFilter);
-                }
-                )).flatMap(a => a);
+                .pipe(
+                    map((rangeResponse: RangeResponse) => {
+                        const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
+                            (rangeResponse.max - rangeResponse.min) : 0;
+                        const range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
+                        const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
+                        const result = {
+                            range: range,
+                            aggregationPrecision: aggregationPrecision
+                        };
+                        return result;
+                    }),
+                    map((r => {
+                        this.range = r.range;
+                        this.aggregations[0].interval = r.aggregationPrecision;
+                        return this.collaborativeSearcheService.resolveButNotAggregation(
+                            [projType.aggregate, this.aggregations], collaborations,
+                            identifier, additionalFilter);
+                    }
+                    )),
+                    flatMap(a => a)
+                );
 
             return agg;
 

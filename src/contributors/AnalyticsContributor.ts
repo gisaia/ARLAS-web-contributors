@@ -17,14 +17,14 @@
  * under the License.
  */
 
-import * as jsonSchema from '../jsonSchemas/analyticsContributorConf.schema.json';
-import * as jsonpath from 'jsonpath';
+import jsonSchema from '../jsonSchemas/analyticsContributorConf.schema.json';
+import jp from 'jsonpath/jsonpath.min';
 import {
     Contributor, CollaborativesearchService, ConfigService,
     CollaborationEvent, projType, OperationEnum, Collaboration
 } from 'arlas-web-core';
 import { Aggregation, AggregationResponse } from 'arlas-api';
-import { Observable } from 'rxjs/Observable';
+import { Observable, from } from 'rxjs';
 
 /**
 * This contributor works with the Angular Analytic board of the Arlas-web-components project.
@@ -90,7 +90,7 @@ export class AnalyticsContributor extends Contributor {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
         } else {
-            return Observable.from([]);
+            return from([]);
         }
     }
 
@@ -98,7 +98,7 @@ export class AnalyticsContributor extends Contributor {
         const valueToMetric = new Map<string, number>();
         if (aggregationResonse.elements !== undefined) {
             aggregationResonse.elements.forEach(element => {
-                const value = jsonpath.query(element, this.json_path)[0];
+                const value = jp.query(element, this.json_path)[0];
                 valueToMetric.set(element.key, value);
             });
         }
@@ -119,6 +119,6 @@ export class AnalyticsContributor extends Contributor {
     }
 
     public setSelection(data: Array<[string, number]>, collaboration: Collaboration): any {
-        return Observable.from([]);
+        return from([]);
     }
 }

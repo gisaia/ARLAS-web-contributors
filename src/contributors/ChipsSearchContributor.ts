@@ -17,8 +17,10 @@
  * under the License.
  */
 
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
+import { Observable, Subject, from } from 'rxjs';
+import { map, mergeAll } from 'rxjs/operators';
+
+
 import {
     Collaboration,
     CollaborativesearchService,
@@ -28,7 +30,7 @@ import {
     projType, CollaborationEvent
 } from 'arlas-web-core';
 import { Hits, Filter } from 'arlas-api';
-import * as jsonSchema from '../jsonSchemas/chipssearchContributorConf.schema.json';
+import jsonSchema from '../jsonSchemas/chipssearchContributorConf.schema.json';
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.
@@ -96,9 +98,13 @@ export class ChipsSearchContributor extends Contributor {
                             this.identifier,
                             filter
                         );
-                        tabOfCount.push(countData.map(c => {
-                            return { label: k, hits: c };
-                        }));
+                        tabOfCount.push(
+                            countData.pipe(
+                                map(c => {
+                                    return { label: k, hits: c };
+                                })
+                            )
+                        );
                     }
                 });
             } else {
@@ -111,7 +117,7 @@ export class ChipsSearchContributor extends Contributor {
                 this.query = '';
             }
         }
-        return Observable.from(tabOfCount).mergeAll();
+        return from(tabOfCount).pipe(mergeAll());
     }
 
     public computeData(data: { label: string, hits: Hits }): { label: string, hits: Hits } {
@@ -124,11 +130,11 @@ export class ChipsSearchContributor extends Contributor {
             query = query + q + '||';
         });
         this.query = query.substring(0, query.length - 2);
-        return Observable.from([]);
+        return from([]);
 
     }
     public setSelection(collaboration: Collaboration): any {
-        return Observable.from([]);
+        return from([]);
     }
 
     /**
