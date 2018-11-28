@@ -174,21 +174,21 @@ argparse@^1.0.7:
   dependencies:
     sprintf-js "~1.0.2"
 
-arlas-api@8.0.0:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-8.0.0.tgz#f678f61a06cd10c5c5975fd9482b077b5c51207f"
-  integrity sha512-kdybze7Hx+YOKt67hkeQscA2dEi86WT6yK2OjNtbNINTb0qJVAz4aRSAw5Hm7gJwrXRJKfK7nD5UEF3lB0G2kA==
+arlas-api@9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/arlas-api/-/arlas-api-9.0.0.tgz#9d332e85782002ce09d883c734b7bc84f430da8a"
+  integrity sha512-S89PfiYnYZxhaqDHa0DIK7A8qWGRhySWdYtB7b0JSRutAnDmG3wWjFJ9FWgefTK+QF55Hl7reuoolhcy8Wnq5g==
   dependencies:
     es6-promise "4.2.4"
     portable-fetch "3.0.0"
     url "0.11.0"
 
-arlas-web-core@9.0.0-beta.0:
-  version "9.0.0-beta.0"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-9.0.0-beta.0.tgz#2facd3b4df04de43450a919c328e36add671e01e"
-  integrity sha512-9Y2dIw42X4A4CU7mXjg5EPj40LPv2kLFlHa/OoTikW6RzOysiiNqqpj+V8C8w+fbsHAebt9N9V4RzFDo0WSUhQ==
+arlas-web-core@9.0.*:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-9.0.0.tgz#5d3de55ec1c98445d2784def1b701d41edb2fcd1"
+  integrity sha512-Ge41DVi2Ckwvj9v2sv28e9R5dYh0TpGmLNOxSMEYFr+aLdS+QcNUcZS+U3t4y4b3ZC9sXkYUdDt79fh20+cYYA==
   dependencies:
-    arlas-api "8.0.0"
+    arlas-api "9.0.0"
     rxjs "~6.3.3"
     rxjs-compat "6.3.3"
 
