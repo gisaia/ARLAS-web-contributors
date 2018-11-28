@@ -1,5 +1,13 @@
 # Change Log
 
+## [v9.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.0.0) (2018-11-28)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v8.0.1...v9.0.0)
+
+**Miscellaneous:**
+
+- Update README.md and CONTRIBUTING.md  [\#124](https://github.com/gisaia/ARLAS-web-contributors/issues/124) [[documentation](https://github.com/gisaia/ARLAS-web-contributors/labels/documentation)]
+
 ## [v8.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v8.0.1) (2018-11-27)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v8.0.0...v8.0.1)
