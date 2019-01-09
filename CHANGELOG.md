@@ -1,8 +1,17 @@
 # Change Log
 
+## [v9.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.1) (2019-01-09)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.1.0...v9.1.1)
+
 ## [v9.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.0) (2019-01-09)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.0.1...v9.1.0)
+
+**New stuff:**
+
+- Powerbars : enhance aggregation model for search [\#127](https://github.com/gisaia/ARLAS-web-contributors/issues/127)
+- Implement update powerbars data [\#131](https://github.com/gisaia/ARLAS-web-contributors/pull/131) ([mbarbet](https://github.com/mbarbet))
 
 **Fixed bugs:**
 
