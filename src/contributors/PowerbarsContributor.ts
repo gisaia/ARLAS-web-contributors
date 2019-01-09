@@ -60,14 +60,18 @@ export class PowerbarsContributor extends Contributor {
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
     private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+
     /**
     * Json path to explore element aggregation, count by default
     */
     private json_path: string = this.getConfigValue('jsonpath') !== undefined ? this.getConfigValue('jsonpath') : '$.count';
+
     /**
     * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
     */
     private field: string = (this.aggregations !== undefined) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
+
+    private search = '';
 
     /**
     * Build a new contributor.
@@ -79,7 +83,8 @@ export class PowerbarsContributor extends Contributor {
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
-        title: string
+        title: string,
+
 
     ) {
         super(identifier, configService, collaborativeSearcheService);
@@ -104,9 +109,16 @@ export class PowerbarsContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
+        const filterAgg: Filter = {};
+        if (this.search.length > 0) {
+            this.aggregations[this.aggregations.length - 1].include = encodeURI(this.search).concat('.*');
+            filterAgg.q = [[this.field.concat(':').concat(this.search).concat('*')]];
+        } else {
+            delete this.aggregations[this.aggregations.length - 1].include;
+        }
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier
+            this.identifier, filterAgg
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
@@ -176,12 +188,37 @@ export class PowerbarsContributor extends Contributor {
         this.selectedBars = selectedBars;
     }
 
+
+    public updatePowerbarsData(search: any) {
+        this.search = search.value;
+        const filterAgg: Filter = {};
+        if (this.search.length > 0) {
+            this.aggregations[this.aggregations.length - 1].include = encodeURI(this.search).concat('.*');
+            filterAgg.q = [[this.field.concat(':').concat(this.search).concat('*')]];
+        } else {
+            delete this.aggregations[this.aggregations.length - 1].include;
+        }
+        const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
+            [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
+            this.identifier, filterAgg
+        );
+        aggregationObservable.subscribe(aggregationResonse => {
+            const powerbarsTab = new Array<[string, number]>();
+            if (aggregationResonse.elements !== undefined) {
+                aggregationResonse.elements.forEach(element => {
+                    const value = jp.query(element, this.json_path)[0];
+                    powerbarsTab.push([element.key, value]);
+                });
+                this.sortPowerBarsTab(powerbarsTab);
+            }
+            this.powerbarsData = powerbarsTab;
+        });
+    }
+
     /**
      * Sorts the powerbarsTab from the biggest term value to the lower
      */
     private sortPowerBarsTab(powerbarsTab: Array<[string, number]>): void {
         powerbarsTab.sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
     }
-
 }
-
