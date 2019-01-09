@@ -190,7 +190,7 @@ export class PowerbarsContributor extends Contributor {
 
 
     public updatePowerbarsData(search: any) {
-        this.search = search.value;
+        this.search = search;
         const filterAgg: Filter = {};
         if (this.search.length > 0) {
             this.aggregations[this.aggregations.length - 1].include = encodeURI(this.search).concat('.*');
