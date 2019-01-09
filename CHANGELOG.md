@@ -1,8 +1,20 @@
 # Change Log
 
+## [v9.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.0) (2019-01-09)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.0.1...v9.1.0)
+
+**Fixed bugs:**
+
+- Fix mkDoc image version [\#129](https://github.com/gisaia/ARLAS-web-contributors/pull/129) ([mbarbet](https://github.com/mbarbet))
+
 ## [v9.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.0.1) (2018-11-28)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.0.0...v9.0.1)
+
+**Breaking changes:**
+
+- Upgrade rxjs to 6 [\#123](https://github.com/gisaia/ARLAS-web-contributors/issues/123)
 
 ## [v9.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.0.0) (2018-11-28)
 

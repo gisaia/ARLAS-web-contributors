@@ -183,10 +183,10 @@ arlas-api@9.0.0:
     portable-fetch "3.0.0"
     url "0.11.0"
 
-arlas-web-core@9.0.*:
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-9.0.0.tgz#5d3de55ec1c98445d2784def1b701d41edb2fcd1"
-  integrity sha512-Ge41DVi2Ckwvj9v2sv28e9R5dYh0TpGmLNOxSMEYFr+aLdS+QcNUcZS+U3t4y4b3ZC9sXkYUdDt79fh20+cYYA==
+arlas-web-core@9.1.*:
+  version "9.1.0"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-9.1.0.tgz#a23fc06c094f847aa7181bd1bcfb19cb7d855ddb"
+  integrity sha512-jXYPPehUTUjelruXgmmNjCp83EOly6EJ4uj5mUmQ/umkPZRjn1WSkqikwDWW+T39xJQSiAzkjlK068n0WEYrGw==
   dependencies:
     arlas-api "9.0.0"
     rxjs "~6.3.3"
