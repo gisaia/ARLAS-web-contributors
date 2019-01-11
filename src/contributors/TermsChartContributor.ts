@@ -24,7 +24,7 @@
 
 import { Contributor, CollaborativesearchService, ConfigService, CollaborationEvent,
      projType, OperationEnum, Collaboration } from 'arlas-web-core';
-import { Aggregation, AggregationResponse } from 'arlas-api';
+import { Aggregation, AggregationResponse, Filter } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/termsChartContributorConf.schema.json';
 import { Observable, from } from 'rxjs';
 import { FormattedTermsChartData } from '../models/models.js';
@@ -52,6 +52,7 @@ export class TermsChartContributor extends Contributor {
      * ARLAS Server Aggregation used to draw the donut and powerbars, defined in configuration
      */
     private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+    private search = '';
 
     private donutService: DonutContributorService ;
     private powerbarsService: PowerbarsContributorService;
@@ -87,9 +88,16 @@ export class TermsChartContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
+        const filterAgg: Filter = {};
+        if (this.search.length > 0) {
+            this.aggregations[this.aggregations.length - 1].include = encodeURI(this.search).concat('.*');
+            filterAgg.q = [[this.aggregations[0].field.concat(':').concat(this.search).concat('*')]];
+        } else {
+            delete this.aggregations[this.aggregations.length - 1].include;
+        }
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier
+            this.identifier, filterAgg
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
@@ -125,5 +133,10 @@ export class TermsChartContributor extends Contributor {
     public selectedBarsChanged(selectedBars: Set<string>) {
         this.powerbarsService.updateCollaborationOnSelectedBarsChange(selectedBars, this.aggregations[0].field);
         this.formattedSelectedTerms.selectedBars = selectedBars;
+    }
+
+    public updatePowerbarsData(search: any) {
+        this.search = search;
+        this.powerbarsService.updatePowerbarsData(search, this.aggregations, '$.count', this.formattedTermsChartData.powerbarsData);
     }
 }

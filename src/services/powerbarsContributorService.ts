@@ -1,5 +1,5 @@
-import { CollaborativesearchService, Collaboration } from 'arlas-web-core';
-import { AggregationResponse, Filter, Expression } from 'arlas-api';
+import { CollaborativesearchService, Collaboration, projType } from 'arlas-web-core';
+import { AggregationResponse, Filter, Expression, Aggregation } from 'arlas-api';
 import jp from 'jsonpath/jsonpath.min';
 
 export class PowerbarsContributorService {
@@ -60,6 +60,31 @@ export class PowerbarsContributorService {
         } else {
             this.collaborativeSearcheService.removeFilter(this.identifier);
         }
+    }
+
+    public updatePowerbarsData(search: any, aggregations: Array<Aggregation>, json_path: string, powerbarsData: Array<[string, number]>) {
+        const filterAgg: Filter = {};
+        if (search.length > 0) {
+            aggregations[aggregations.length - 1].include = encodeURI(search).concat('.*');
+            filterAgg.q = [[aggregations[0].field.concat(':').concat(search).concat('*')]];
+        } else {
+            delete aggregations[aggregations.length - 1].include;
+        }
+        const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
+            [projType.aggregate, aggregations], this.collaborativeSearcheService.collaborations,
+            this.identifier, filterAgg
+        );
+        aggregationObservable.subscribe(aggregationResponse => {
+            const powerbarsTab = new Array<[string, number]>();
+            if (aggregationResponse.elements !== undefined) {
+                aggregationResponse.elements.forEach(element => {
+                    const value = jp.query(element, json_path)[0];
+                    powerbarsTab.push([element.key, value]);
+                });
+                this.sortPowerBarsTab(powerbarsTab);
+            }
+            powerbarsData = powerbarsTab;
+        });
     }
 
     /**

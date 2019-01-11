@@ -26,7 +26,7 @@ import {
     OperationEnum,
     projType, CollaborationEvent
 } from 'arlas-web-core';
-import { Aggregation, AggregationResponse } from 'arlas-api';
+import { Aggregation, AggregationResponse, Filter } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/powerbarsContributorConf.schema.json';
 import { PowerbarsContributorService } from '../services/powerbarsContributorService.js';
 
@@ -144,28 +144,7 @@ export class PowerbarsContributor extends Contributor {
 
     public updatePowerbarsData(search: any) {
         this.search = search;
-        const filterAgg: Filter = {};
-        if (this.search.length > 0) {
-            this.aggregations[this.aggregations.length - 1].include = encodeURI(this.search).concat('.*');
-            filterAgg.q = [[this.field.concat(':').concat(this.search).concat('*')]];
-        } else {
-            delete this.aggregations[this.aggregations.length - 1].include;
-        }
-        const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg
-        );
-        aggregationObservable.subscribe(aggregationResonse => {
-            const powerbarsTab = new Array<[string, number]>();
-            if (aggregationResonse.elements !== undefined) {
-                aggregationResonse.elements.forEach(element => {
-                    const value = jp.query(element, this.json_path)[0];
-                    powerbarsTab.push([element.key, value]);
-                });
-                this.sortPowerBarsTab(powerbarsTab);
-            }
-            this.powerbarsData = powerbarsTab;
-        });
+        this.powerbarsService.updatePowerbarsData(search, this.aggregations, this.json_path, this.powerbarsData);
     }
 
     /**
