@@ -27,6 +27,9 @@ import { ResultListContributor } from './contributors/ResultListContributor';
 import { DonutContributor } from './contributors/DonutContributor';
 import { AnalyticsContributor } from './contributors/AnalyticsContributor';
 import { TopoMapContributor} from './contributors/TopoMapContributor';
+import { TermsChartContributor } from './contributors/TermsChartContributor';
+import { DonutContributorService } from './services/donutContributorService';
+import { PowerbarsContributorService } from './services/powerbarsContributorService';
 export { PowerbarsContributor } from './contributors/PowerbarsContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
 export { ResultListContributor } from './contributors/ResultListContributor';
@@ -37,7 +40,9 @@ export { DonutContributor } from './contributors/DonutContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
 export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { TopoMapContributor} from './contributors/TopoMapContributor';
-
+export { TermsChartContributor } from './contributors/TermsChartContributor';
+export { DonutContributorService } from './services/donutContributorService';
+export { PowerbarsContributorService } from './services/powerbarsContributorService';
 
 export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum } from './models/models';
 
@@ -52,6 +57,7 @@ contributors.set('swimlane', SwimLaneContributor);
 contributors.set('chipsearch', ChipsSearchContributor);
 contributors.set('donut', DonutContributor);
 contributors.set('analytics', AnalyticsContributor);
+contributors.set('terms', TermsChartContributor);
 
 export {contributors};
 

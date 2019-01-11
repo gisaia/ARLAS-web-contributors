@@ -26,12 +26,9 @@ import {
     OperationEnum,
     projType, CollaborationEvent
 } from 'arlas-web-core';
-import {
-    Hits, Filter, Aggregation,
-    Expression, AggregationResponse
-} from 'arlas-api';
+import { Aggregation, AggregationResponse } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/powerbarsContributorConf.schema.json';
-import jp from 'jsonpath/jsonpath.min';
+import { PowerbarsContributorService } from '../services/powerbarsContributorService.js';
 
 /**
 * This contributor works with the Angular PowerbarsComponent of the Arlas-web-components project.
@@ -39,23 +36,23 @@ import jp from 'jsonpath/jsonpath.min';
 * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
 */
 export class PowerbarsContributor extends Contributor {
-
-    /**
+     /**
      * data retrieved from Server response and to be returned for the component as input
      * @Input() inputData
      */
     public powerbarsData: Array<[string, number]>;
 
     /**
-     * selectedBar is term selected in the component. Used for the display of filterDisplayName
+     * selectedBars is the list of selected terms in the component.
      */
     public selectedBars: Set<string>;
 
     /**
      * Title given to the aggregation result
      */
-    public powerbarsTitle: string;
+    public title: string;
 
+    public powerbarsService: PowerbarsContributorService;
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
@@ -67,7 +64,7 @@ export class PowerbarsContributor extends Contributor {
     private json_path: string = this.getConfigValue('jsonpath') !== undefined ? this.getConfigValue('jsonpath') : '$.count';
 
     /**
-    * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
+    * ARLAS Server field of aggregation used to draw the powerbars, retrieve from Aggregation
     */
     private field: string = (this.aggregations !== undefined) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
 
@@ -83,12 +80,11 @@ export class PowerbarsContributor extends Contributor {
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
-        title: string,
-
-
+        title: string
     ) {
         super(identifier, configService, collaborativeSearcheService);
-        this.powerbarsTitle = title;
+        this.powerbarsService = new PowerbarsContributorService(identifier, collaborativeSearcheService);
+        this.title = title;
     }
 
     public static getJsonSchema(): Object {
@@ -99,7 +95,7 @@ export class PowerbarsContributor extends Contributor {
     * @returns Pretty name of contribution based on selected bar
     */
     public getFilterDisplayName(): string {
-        return this.powerbarsTitle;
+        return this.title;
     }
     /**
     * @returns Package name for the configuration service.
@@ -127,67 +123,24 @@ export class PowerbarsContributor extends Contributor {
         }
     }
 
-    public computeData(aggregationResonse: AggregationResponse): Array<[string, number]> {
-        const powerbarsTab = new Array<[string, number]>();
-        if (aggregationResonse.elements !== undefined) {
-            aggregationResonse.elements.forEach(element => {
-                const value = jp.query(element, this.json_path)[0];
-                powerbarsTab.push([element.key, value]);
-            });
-            this.sortPowerBarsTab(powerbarsTab);
-        }
-        return powerbarsTab;
+    public computeData(aggregationResponse: AggregationResponse): Array<[string, number]> {
+        return this.powerbarsService.computeData(aggregationResponse, this.json_path);
     }
 
     public setData(data: Array<[string, number]>): Array<[string, number]> {
         this.powerbarsData = data;
-        return this.powerbarsData;
+        return data;
     }
 
     public setSelection(data: Array<[string, number]>, collaboration: Collaboration): any {
-        if (collaboration) {
-            const f = collaboration.filter;
-            if (f === null) {
-                this.selectedBars = new Set();
-            } else {
-                const selectedBarsAsArray = f.f[0];
-                this.selectedBars = new Set();
-                selectedBarsAsArray.forEach(termsList => {
-                    termsList.value.split(',').forEach(term => {
-                        this.selectedBars.add(term);
-                    });
-                });
-            }
-        } else {
-            this.selectedBars = new Set();
-        }
+        this.selectedBars = this.powerbarsService.getSelectedBars(collaboration);
         return from([]);
     }
 
     public selectedBarsChanged(selectedBars: Set<string>) {
-        const filterValue: Filter = { f: [] };
-        const equalExpression: Expression = {
-            field: this.field,
-            op: Expression.OpEnum.Eq,
-            value: ''
-        };
-        if (selectedBars.size > 0) {
-            selectedBars.forEach(selectedBar => {
-                equalExpression.value += selectedBar + ',';
-            });
-            equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
-            filterValue.f.push([equalExpression]);
-            const collaboration: Collaboration = {
-                filter: filterValue,
-                enabled: true
-            };
-            this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
-        } else {
-            this.collaborativeSearcheService.removeFilter(this.identifier);
-        }
+        this.powerbarsService.updateCollaborationOnSelectedBarsChange(selectedBars, this.field);
         this.selectedBars = selectedBars;
     }
-
 
     public updatePowerbarsData(search: any) {
         this.search = search;

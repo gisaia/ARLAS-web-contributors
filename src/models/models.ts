@@ -56,6 +56,10 @@ export interface ElementIdentifier {
 export enum DataType {
     numeric, time
 }
+export interface FormattedTermsChartData {
+    donutData: DonutArc;
+    powerbarsData: Array<[string, number]>;
+}
 /**
 * Object of start and end value of the chart selector.
 */

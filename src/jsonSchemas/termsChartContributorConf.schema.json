@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "title": "Terms Contributor Configuration",
+    "description": "The Configuration of Contributor that treats terms aggregation and fill terms charts (donut & powerbars) of data",
+    "type": "object",
+    "$id": "termsChartContributorConf.schema.json",
+    "allOf": [{ "$ref": "rootContributorConf.schema.json#" }],
+    "properties": {
+        "title":{
+            "description": "Title of Donut",
+            "type":"string"
+        }
+    },
+    "required": [
+        "title"
+    ]
+}
