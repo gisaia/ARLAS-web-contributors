@@ -50,12 +50,6 @@ export class DonutContributor extends Contributor {
      * ARLAS Server Aggregation used to draw the donut, defined in configuration
      */
     private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
-    /**
-     * List of selected nodes returned from the donut component
-     */
-    private componentSelectedArcsList: Array<Array<SimpleNode>> =
-        new Array<Array<SimpleNode>>();
-
     constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
@@ -118,33 +112,15 @@ export class DonutContributor extends Contributor {
                 this.selectedArcsList = new Array<Array<{ fieldName: string, fieldValue: string }>>();
                 const fFilters = filter.f;
                 const fieldsList = [];
-                const mapFiledValues = new Map<string, Set<string>>();
+                const mapFieldValues = new Map<string, Set<string>>();
                 fFilters.forEach(fFilter => {
                     const values = fFilter[0].value.split(',');
                     const valuesAsSet = new Set<string>();
                     values.forEach(v => valuesAsSet.add(v));
-                    mapFiledValues.set(fFilter[0].field, valuesAsSet);
+                    mapFieldValues.set(fFilter[0].field, valuesAsSet);
                     fieldsList.push(fFilter[0].field);
                 });
-                fieldsList.reverse();
-                const node: SelectionTree = { field: 'root', value: 'root', children: [] };
-                const lastChildren = [];
-                this.builtSelectionTree(fieldsList[0], node, mapFiledValues, fieldsList, lastChildren);
-                lastChildren.forEach(lastNode => {
-                    this.selectedArcsList.push(this.getNodeAsArray(lastNode));
-                });
-                // ADD THE HIGHER SELECTED NODES TO selectedArcsList
-                let depth = 0;
-                this.selectedArcsList.forEach(function (nodePath) {
-                    if (nodePath.length > depth) {
-                        depth = nodePath.length;
-                    }
-                });
-                this.componentSelectedArcsList.forEach(arc => {
-                    if (arc.length < depth) {
-                        this.selectedArcsList.push(arc);
-                    }
-                });
+                this.selectedArcsList = this.getSelectedNodesPaths(fieldsList, mapFieldValues, this.donutData);
             }
         } else {
             this.selectedArcsList = new Array<Array<{ fieldName: string, fieldValue: string }>>();
@@ -153,7 +129,6 @@ export class DonutContributor extends Contributor {
     }
 
     public selectedArcsListChanged(selectedArcsList: Array<Array<{ fieldName: string, fieldValue: string }>>): void {
-        this.componentSelectedArcsList = selectedArcsList;
         if (selectedArcsList.length > 0) {
             const filter: Filter = { f: [] };
             this.aggregations.forEach(aggregation => {
@@ -189,40 +164,76 @@ export class DonutContributor extends Contributor {
         }
     }
 
-    private builtSelectionTree(field: string, node: SelectionTree, mapFiledValues: Map<string, Set<string>>,
-        fieldsList: Array<string>, lastChildren: SelectionTree[]): void {
-        mapFiledValues.get(field).forEach(value => {
-            const n: SelectionTree = { field: field, value: value, children: [], parent: node };
-            const nextField = this.getNextField(field, fieldsList);
-            if (nextField !== null) {
-                this.builtSelectionTree(nextField, n, mapFiledValues, fieldsList, lastChildren);
-            } else {
-                lastChildren.push(n);
-            }
-            node.children.push(n);
-        });
+    /**
+     * @description This method returns the paths of each selected node (the path directions is from the parent to the child).
+     * Those paths are constructed from the values comming from the `Collaboration`
+     * of this contributor and stored in the `mapFieldValues`
+     * @param fieldsList List of fields (which corresponds to the levels of the tree)
+     * @param mapFieldValues maps each field name to its values (nodes names)
+     * @param data the data tree
+     * @param selectedNodesPathsList optional parameter used for recursivity of the method.
+     * It is the list of selected nodes paths returned by the method
+     * @param selectedNodesPath This path is transmitted to next node level to be enriched if children
+     * nodes are to be selected before adding it to `selectedNodesPathsList`
+     */
+    private getSelectedNodesPaths(fieldsList: Array<string>, mapFieldValues: Map<string, Set<string>>, data: TreeNode,
+        selectedNodesPathsList?: Array<Array<SimpleNode>>, selectedNodesPath?: Array<SimpleNode>):
+        Array<Array<SimpleNode>> {
+        if (!selectedNodesPathsList) {
+            selectedNodesPathsList = new Array();
+        }
+        const field = fieldsList.length > 0 ? fieldsList[0] : undefined;
+        if (field) {
+            mapFieldValues.get(field).forEach(value => {
+                const currentLevelPath = selectedNodesPath ? selectedNodesPath : [];
+                const node: TreeNode = this.getNode(field, value, data);
+                const pathToAddInList: Array<SimpleNode> = [];
+                Object.assign(pathToAddInList, currentLevelPath);
+                if (node) {
+                    pathToAddInList.push({ fieldName: node.fieldName, fieldValue: node.fieldValue });
+                    if (!node.children || node.children.length === 0) {
+                        pathToAddInList.reverse();
+                        selectedNodesPathsList.push(pathToAddInList);
+                    } else {
+                        if (fieldsList.length > 1) {
+                            this.getSelectedNodesPaths(fieldsList.slice(1), mapFieldValues, node, selectedNodesPathsList, pathToAddInList);
+                        } else {
+                            pathToAddInList.reverse();
+                            selectedNodesPathsList.push(pathToAddInList);
+                        }
+                    }
+                } else {
+                    if (currentLevelPath.length > 0) {
+                        pathToAddInList.reverse();
+                        selectedNodesPathsList.push(pathToAddInList);
+                    }
+                }
+            });
+        }
+        return selectedNodesPathsList;
     }
 
-    private getNextField(field: string, fieldsList: Array<string>): string {
-        const fieldIndex = fieldsList.indexOf(field);
-        if (fieldIndex === fieldsList.length - 1) {
-            return null;
+    /**
+        * @description This method fethes the first node from the `data` tree that has the same `field` and `name`
+        * @param field Field of the node
+        * @param name Name of the node
+        * @param data the tree data from which the node is fetched
+        */
+    private getNode(field: string, name: string, data: TreeNode): TreeNode {
+        if (data && data.fieldValue === name && data.fieldName === field) {
+            return data;
         } else {
-            return fieldsList[fieldIndex + 1];
-        }
-    }
-
-    private getNodeAsArray(n: SelectionTree): Array<{ fieldName: string, fieldValue: string }> {
-        const nodePathAsArray = new Array();
-        nodePathAsArray.push({ fieldName: n.field, fieldValue: n.value });
-        if (n.parent && n.parent.parent) {
-            while (n.parent.parent) {
-                n = n.parent;
-                nodePathAsArray.push({ fieldName: n.field, fieldValue: n.value });
+            if (data && data.children) {
+                for (const child of data.children) {
+                    const existingNode = this.getNode(field, name, child);
+                    if (existingNode) {
+                        return existingNode;
+                    }
+                }
+            } else {
+                return null;
             }
         }
-        nodePathAsArray.reverse();
-        return nodePathAsArray;
     }
 
     private populateChildren(donutData: TreeNode, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
