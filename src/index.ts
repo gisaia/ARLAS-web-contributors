@@ -27,6 +27,8 @@ import { ResultListContributor } from './contributors/ResultListContributor';
 import { DonutContributor } from './contributors/DonutContributor';
 import { AnalyticsContributor } from './contributors/AnalyticsContributor';
 import { TopoMapContributor} from './contributors/TopoMapContributor';
+import { TreeContributor } from './contributors/TreeContributor';
+export { TreeContributor } from './contributors/TreeContributor';
 export { PowerbarsContributor } from './contributors/PowerbarsContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
 export { ResultListContributor } from './contributors/ResultListContributor';
@@ -52,6 +54,7 @@ contributors.set('swimlane', SwimLaneContributor);
 contributors.set('chipsearch', ChipsSearchContributor);
 contributors.set('donut', DonutContributor);
 contributors.set('analytics', AnalyticsContributor);
+contributors.set('tree', TreeContributor);
 
 export {contributors};
 

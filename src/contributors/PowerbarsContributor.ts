@@ -17,61 +17,44 @@
  * under the License.
  */
 
-import { Observable, from } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
     Collaboration,
     CollaborativesearchService,
     ConfigService,
-    Contributor,
-    OperationEnum,
-    projType, CollaborationEvent
+    CollaborationEvent
 } from 'arlas-web-core';
-import {
-    Hits, Filter, Aggregation,
-    Expression, AggregationResponse
-} from 'arlas-api';
+import { AggregationResponse } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/powerbarsContributorConf.schema.json';
-import jp from 'jsonpath/jsonpath.min';
+import { TreeNode, SimpleNode } from '../models/models.js';
+import { TreeContributor } from './TreeContributor.js';
 
 /**
 * This contributor works with the Angular PowerbarsComponent of the Arlas-web-components project.
 * This class make the brigde between the component which displays the data and the
 * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
+
+* This contributor is deprecated.
 */
-export class PowerbarsContributor extends Contributor {
+export class PowerbarsContributor extends TreeContributor {
 
     /**
      * data retrieved from Server response and to be returned for the component as input
      * @Input() inputData
      */
-    public powerbarsData: Array<[string, number]>;
+    public powerbarsData: TreeNode;
 
     /**
-     * selectedBar is term selected in the component. Used for the display of filterDisplayName
+     * List of selected nodes to be returned to a powerbars component to determine the powerbars to select
      */
-    public selectedBars: Set<string>;
+    public selectedBars: Array<Array<SimpleNode>> = new Array<Array<SimpleNode>>();
 
     /**
      * Title given to the aggregation result
      */
     public powerbarsTitle: string;
 
-    /**
-    * ARLAS Server Aggregation used to draw the chart, define in configuration
-    */
-    private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
 
-    /**
-    * Json path to explore element aggregation, count by default
-    */
-    private json_path: string = this.getConfigValue('jsonpath') !== undefined ? this.getConfigValue('jsonpath') : '$.count';
-
-    /**
-    * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
-    */
-    private field: string = (this.aggregations !== undefined) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
-
-    private search = '';
 
     /**
     * Build a new contributor.
@@ -84,10 +67,8 @@ export class PowerbarsContributor extends Contributor {
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
         title: string,
-
-
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(identifier, collaborativeSearcheService, configService, title);
         this.powerbarsTitle = title;
     }
 
@@ -109,116 +90,30 @@ export class PowerbarsContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
-        const filterAgg: Filter = {};
-        if (this.search.length > 0) {
-            this.aggregations[this.aggregations.length - 1].include = encodeURI(this.search).concat('.*');
-            filterAgg.q = [[this.field.concat(':').concat(this.search).concat('*')]];
-        } else {
-            delete this.aggregations[this.aggregations.length - 1].include;
-        }
-        const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg
-        );
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            return aggregationObservable;
-        } else {
-            return from([]);
-        }
+        return super.fetchData(collaborationEvent);
     }
 
-    public computeData(aggregationResonse: AggregationResponse): Array<[string, number]> {
-        const powerbarsTab = new Array<[string, number]>();
-        if (aggregationResonse.elements !== undefined) {
-            aggregationResonse.elements.forEach(element => {
-                const value = jp.query(element, this.json_path)[0];
-                powerbarsTab.push([element.key, value]);
-            });
-            this.sortPowerBarsTab(powerbarsTab);
-        }
-        return powerbarsTab;
+    public computeData(aggregationResponse: AggregationResponse): TreeNode {
+        return super.computeData(aggregationResponse);
     }
 
-    public setData(data: Array<[string, number]>): Array<[string, number]> {
-        this.powerbarsData = data;
+    public setData(data: TreeNode): TreeNode {
+        this.powerbarsData = super.setData(data);
         return this.powerbarsData;
     }
 
-    public setSelection(data: Array<[string, number]>, collaboration: Collaboration): any {
-        if (collaboration) {
-            const f = collaboration.filter;
-            if (f === null) {
-                this.selectedBars = new Set();
-            } else {
-                const selectedBarsAsArray = f.f[0];
-                this.selectedBars = new Set();
-                selectedBarsAsArray.forEach(termsList => {
-                    termsList.value.split(',').forEach(term => {
-                        this.selectedBars.add(term);
-                    });
-                });
-            }
-        } else {
-            this.selectedBars = new Set();
-        }
-        return from([]);
+    public setSelection(data: TreeNode, collaboration: Collaboration): any {
+        const selection = super.setSelection(data, collaboration);
+        this.selectedBars = this.selectedNodesPathsList;
+        return selection;
     }
 
-    public selectedBarsChanged(selectedBars: Set<string>) {
-        const filterValue: Filter = { f: [] };
-        const equalExpression: Expression = {
-            field: this.field,
-            op: Expression.OpEnum.Eq,
-            value: ''
-        };
-        if (selectedBars.size > 0) {
-            selectedBars.forEach(selectedBar => {
-                equalExpression.value += selectedBar + ',';
-            });
-            equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
-            filterValue.f.push([equalExpression]);
-            const collaboration: Collaboration = {
-                filter: filterValue,
-                enabled: true
-            };
-            this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
-        } else {
-            this.collaborativeSearcheService.removeFilter(this.identifier);
-        }
-        this.selectedBars = selectedBars;
+    public selectedBarsChanged(selectedBars: Array<Array<SimpleNode>>) {
+        super.selectedNodesListChanged(selectedBars);
     }
 
 
     public updatePowerbarsData(search: any) {
-        this.search = search;
-        const filterAgg: Filter = {};
-        if (this.search.length > 0) {
-            this.aggregations[this.aggregations.length - 1].include = encodeURI(this.search).concat('.*');
-            filterAgg.q = [[this.field.concat(':').concat(this.search).concat('*')]];
-        } else {
-            delete this.aggregations[this.aggregations.length - 1].include;
-        }
-        const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg
-        );
-        aggregationObservable.subscribe(aggregationResonse => {
-            const powerbarsTab = new Array<[string, number]>();
-            if (aggregationResonse.elements !== undefined) {
-                aggregationResonse.elements.forEach(element => {
-                    const value = jp.query(element, this.json_path)[0];
-                    powerbarsTab.push([element.key, value]);
-                });
-                this.sortPowerBarsTab(powerbarsTab);
-            }
-            this.powerbarsData = powerbarsTab;
-        });
-    }
-
-    /**
-     * Sorts the powerbarsTab from the biggest term value to the lower
-     */
-    private sortPowerBarsTab(powerbarsTab: Array<[string, number]>): void {
-        powerbarsTab.sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+        super.updateTreeDataSearch(search);
     }
 }
