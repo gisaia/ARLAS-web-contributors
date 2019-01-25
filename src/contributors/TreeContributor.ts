@@ -1,55 +1,43 @@
-/*
- * Licensed to Gisaïa under one or more contributor
- * license agreements. See the NOTICE.txt file distributed with
- * this work for additional information regarding copyright
- * ownership. Gisaïa licenses this file to you under
- * the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
-import {
-    Contributor, CollaborationEvent, Collaboration, projType, OperationEnum,
-    CollaborativesearchService, ConfigService
-} from 'arlas-web-core';
 import { Observable, from} from 'rxjs';
+
+import { Contributor, ConfigService, CollaborativesearchService, CollaborationEvent,
+    OperationEnum, projType, Collaboration } from 'arlas-web-core';
+import { TreeNode, SelectionTree, SimpleNode } from '../models/models';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
-import { TreeNode, SimpleNode } from '../models/models';
 import jsonSchema from '../jsonSchemas/donutContributorConf.schema.json';
 
 
-
-export class DonutContributor extends Contributor {
-
-    /**
+export class TreeContributor extends Contributor {
+   /**
      * Title given to the aggregation result
      */
     public title: string;
     /**
      * Data retrieved from ARLAS-server response and to be returned for the donut component as an input
      */
-    public donutData: TreeNode;
+    public treeData: TreeNode;
+    /**
+     * first level of treeData flatten to an Array of [fieldValue, size]
+     */
+    public flattenFirstLevelNodes: Array<[string, number]>;
     /**
      * The minimum ratio of the arc in its ring needed to be plot. Otherwise the arc is considered as OTHER
      */
-    public arcMinPourcentage = (this.getConfigValue('arcMinPourcentage')) ? this.getConfigValue('arcMinPourcentage') : 0.01;
+    public nodeValueMinPourcentage = (this.getConfigValue('nodeValueMinPourcentage')) ?
+        this.getConfigValue('nodeValueMinPourcentage') : 0.01;
     /**
      * List of selected nodes to be returned to the donut component as an input
      */
-    public selectedArcsList: Array<Array<SimpleNode>> = new Array<Array<SimpleNode>>();
+    public selectedNodesPathsList: Array<Array<SimpleNode>> = new Array<Array<SimpleNode>>();
+    /**
+     * List of selected nodes of first level flattened to a Set of fieldValue
+     */
+    public selectedFirstLevelNodesList: Set<string>;
     /**
      * ARLAS Server Aggregation used to draw the donut, defined in configuration
      */
     private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+
     constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
@@ -72,7 +60,7 @@ export class DonutContributor extends Contributor {
     * @returns Package name for the configuration service.
     */
     public getPackageName(): string {
-        return 'arlas.web.contributors.donut';
+        return 'arlas.web.contributors.tree';
     }
 
     public getFilterDisplayName(): string {
@@ -92,44 +80,94 @@ export class DonutContributor extends Contributor {
     }
 
     public computeData(aggregationResponse: AggregationResponse): TreeNode {
-        const donutArc: TreeNode = { id: 'root', fieldValue: 'root', fieldName: 'root', isOther: false, children: [],
+        const node: TreeNode = { id: 'root', fieldValue: 'root', fieldName: 'root', isOther: false, children: [],
          size: aggregationResponse.totalnb };
-        this.populateChildren(donutArc, aggregationResponse, 0);
-        return donutArc;
+        this.populateChildren(node, aggregationResponse, 0);
+        return node;
     }
 
     public setData(data: TreeNode): TreeNode {
-        this.donutData = data;
+        this.treeData = data;
+        this.flattenFirstLevelNodes = new Array();
+        if (data.children) {
+            data.children.forEach(node => {
+                if (!node.isOther) {
+                    this.flattenFirstLevelNodes.push([node.fieldValue, node.size]);
+                }
+            });
+        }
         return data;
     }
 
     public setSelection(data: TreeNode, collaboration: Collaboration): any {
+        this.selectedNodesPathsList = new Array<Array<SimpleNode>>();
+        this.selectedFirstLevelNodesList = new Set();
         if (collaboration) {
             const filter = collaboration.filter;
-            if (filter === null) {
-                this.selectedArcsList = new Array<Array<{ fieldName: string, fieldValue: string }>>();
-            } else {
-                this.selectedArcsList = new Array<Array<{ fieldName: string, fieldValue: string }>>();
+            if (filter) {
                 const fFilters = filter.f;
                 const fieldsList = [];
-                const mapFieldValues = new Map<string, Set<string>>();
-                fFilters.forEach(fFilter => {
+                const mapFiledValues = new Map<string, Set<string>>();
+                let firstField = null;
+                for (let i = 0; i < fFilters.length; i++) {
+                    const fFilter = fFilters[i];
+                    if (i === 0) {
+                        firstField = fFilter[0].field;
+                    }
                     const values = fFilter[0].value.split(',');
                     const valuesAsSet = new Set<string>();
                     values.forEach(v => valuesAsSet.add(v));
-                    mapFieldValues.set(fFilter[0].field, valuesAsSet);
+                    mapFiledValues.set(fFilter[0].field, valuesAsSet);
                     fieldsList.push(fFilter[0].field);
-                });
-                this.selectedArcsList = this.getSelectedNodesPaths(fieldsList, mapFieldValues, this.donutData);
+                }
+                this.selectedNodesPathsList = this.getSelectedNodesPaths(fieldsList, mapFiledValues, this.treeData);
+                if (firstField) {
+                    this.selectedFirstLevelNodesList = mapFiledValues.get(firstField);
+                }
             }
         } else {
-            this.selectedArcsList = new Array<Array<{ fieldName: string, fieldValue: string }>>();
+            this.selectedNodesPathsList = new Array<Array<SimpleNode>>();
         }
         return from([]);
     }
 
-    public selectedArcsListChanged(selectedArcsList: Array<Array<{ fieldName: string, fieldValue: string }>>): void {
-        if (selectedArcsList.length > 0) {
+    public selectedFirstLevelNodesChanged(selectedFirstLevelNodes: Set<string>) {
+        const upperLevelsExpressions: Array<Array<Expression>> = new Array();
+        const collaboration = this.collaborativeSearcheService.collaborations.get(this.identifier);
+        if (collaboration && collaboration.filter) {
+            Object.assign(upperLevelsExpressions, this.collaborativeSearcheService.collaborations.get(this.identifier).filter.f);
+            upperLevelsExpressions.shift();
+        }
+        const filterValue: Filter = { f: [] };
+        const equalExpression: Expression = {
+            field: this.aggregations[0].field,
+            op: Expression.OpEnum.Eq,
+            value: ''
+        };
+        if (selectedFirstLevelNodes.size > 0) {
+            selectedFirstLevelNodes.forEach(selectedBar => {
+                equalExpression.value += selectedBar + ',';
+            });
+            equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
+            filterValue.f.push([equalExpression]);
+            if (upperLevelsExpressions) {
+                upperLevelsExpressions.forEach(expressions => {
+                    filterValue.f.push(expressions);
+                });
+            }
+            const resultedCollaboration: Collaboration = {
+                filter: filterValue,
+                enabled: true
+            };
+            this.collaborativeSearcheService.setFilter(this.identifier, resultedCollaboration);
+        } else {
+            this.collaborativeSearcheService.removeFilter(this.identifier);
+        }
+        this.selectedFirstLevelNodesList = selectedFirstLevelNodes;
+    }
+
+    public selectedNodesListChanged(selectedNodesPathsList: Array<Array<SimpleNode>>): void {
+        if (selectedNodesPathsList.length > 0) {
             const filter: Filter = { f: [] };
             this.aggregations.forEach(aggregation => {
                 const equalExpression: Expression = {
@@ -138,12 +176,12 @@ export class DonutContributor extends Contributor {
                     value: ''
                 };
                 const valuesSet = new Set<string>();
-                selectedArcsList.forEach(arcPath => {
-                    arcPath.every(arc => {
-                        if (arc.fieldName === aggregation.field) {
-                            valuesSet.add(arc.fieldValue);
+                selectedNodesPathsList.forEach(nodesPath => {
+                    nodesPath.every(node => {
+                        if (node.fieldName === aggregation.field) {
+                            valuesSet.add(node.fieldValue);
                         }
-                        return arc.fieldName !== aggregation.field;
+                        return node.fieldName !== aggregation.field;
                     });
                 });
                 valuesSet.forEach(value => {
@@ -164,7 +202,7 @@ export class DonutContributor extends Contributor {
         }
     }
 
-    /**
+   /**
      * @description This method returns the paths of each selected node (the path directions is from the parent to the child).
      * Those paths are constructed from the values comming from the `Collaboration`
      * of this contributor and stored in the `mapFieldValues`
@@ -236,8 +274,8 @@ export class DonutContributor extends Contributor {
         }
     }
 
-    private populateChildren(donutData: TreeNode, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
-        const ring = donutData.children;
+    private populateChildren(nodeToPopulate: TreeNode, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
+        const nodeChildren = nodeToPopulate.children;
         const field = this.aggregations[aggregationLevel].field;
         const countOfOthers = aggregationResponse.sumotherdoccounts;
         if (aggregationResponse.elements !== undefined && aggregationResponse.name !== undefined) {
@@ -250,25 +288,25 @@ export class DonutContributor extends Contributor {
             let isOther = false;
             for (let i = 0; i < aggregationBuckets.length && !isOther; i++) {
                 const bucket = aggregationBuckets[i];
-                const arc: TreeNode = {
+                const childNode: TreeNode = {
                     id: field + bucket.key + bucket.count, fieldValue: bucket.key,
                     fieldName: field, isOther: false, children: []
                 };
                 relativeTotal += bucket.count;
                 if (bucket.elements !== undefined && bucket.elements[0].elements !== undefined) {
-                    if (bucket.count / (countOfBuckets + countOfOthers) >= this.arcMinPourcentage) {
-                        arc.isOther = false;
-                        arc.size = bucket.count;
-                        this.populateChildren(arc, bucket.elements[0], aggregationLevel + 1);
-                        ring.push(arc);
+                    if (bucket.count / (countOfBuckets + countOfOthers) >= this.nodeValueMinPourcentage) {
+                        childNode.isOther = false;
+                        childNode.size = bucket.count;
+                        this.populateChildren(childNode, bucket.elements[0], aggregationLevel + 1);
+                        nodeChildren.push(childNode);
                     } else {
                         relativeTotal -= bucket.count;
                         isOther = true;
                     }
                 } else {
-                    arc.isOther = false;
-                    arc.size = bucket.count;
-                    ring.push(arc);
+                    childNode.isOther = false;
+                    childNode.size = bucket.count;
+                    nodeChildren.push(childNode);
                 }
             }
 
@@ -277,18 +315,18 @@ export class DonutContributor extends Contributor {
                     id: field + aggregationResponse.key + aggregationResponse.count, fieldValue: 'OTHER', fieldName: field,
                     isOther: true, size: countOfOthers + (countOfBuckets - relativeTotal)
                 };
-                ring.push(arc);
+                nodeChildren.push(arc);
             } else {
                 if (countOfOthers > 0) {
                     const arc: TreeNode = {
                         id: field + aggregationResponse.key + aggregationResponse.count, fieldValue: 'OTHER', fieldName: field,
                         isOther: true, size: countOfOthers
                     };
-                    ring.push(arc);
+                    nodeChildren.push(arc);
                 }
             }
         } else {
-            donutData = null;
+            nodeToPopulate = null;
         }
     }
 }
