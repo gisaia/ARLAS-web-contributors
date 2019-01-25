@@ -23,7 +23,7 @@ import {
 } from 'arlas-web-core';
 import { Observable, from} from 'rxjs';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
-import { DonutArc, SelectionTree } from '../models/models';
+import { TreeNode, SelectionTree, SimpleNode } from '../models/models';
 import jsonSchema from '../jsonSchemas/donutContributorConf.schema.json';
 
 
@@ -37,7 +37,7 @@ export class DonutContributor extends Contributor {
     /**
      * Data retrieved from ARLAS-server response and to be returned for the donut component as an input
      */
-    public donutData: DonutArc;
+    public donutData: TreeNode;
     /**
      * The minimum ratio of the arc in its ring needed to be plot. Otherwise the arc is considered as OTHER
      */
@@ -45,8 +45,7 @@ export class DonutContributor extends Contributor {
     /**
      * List of selected nodes to be returned to the donut component as an input
      */
-    public selectedArcsList: Array<Array<{ ringName: string, name: string }>> =
-        new Array<Array<{ ringName: string, name: string }>>();
+    public selectedArcsList: Array<Array<SimpleNode>> = new Array<Array<SimpleNode>>();
     /**
      * ARLAS Server Aggregation used to draw the donut, defined in configuration
      */
@@ -54,8 +53,8 @@ export class DonutContributor extends Contributor {
     /**
      * List of selected nodes returned from the donut component
      */
-    private componentSelectedArcsList: Array<Array<{ ringName: string, name: string }>> =
-        new Array<Array<{ ringName: string, name: string }>>();
+    private componentSelectedArcsList: Array<Array<SimpleNode>> =
+        new Array<Array<SimpleNode>>();
 
     constructor(
         identifier: string,
@@ -98,25 +97,25 @@ export class DonutContributor extends Contributor {
         }
     }
 
-    public computeData(aggregationResponse: AggregationResponse): DonutArc {
-        const donutArc: DonutArc = { id: 'root', name: 'root', ringName: 'root', isOther: false, children: [],
+    public computeData(aggregationResponse: AggregationResponse): TreeNode {
+        const donutArc: TreeNode = { id: 'root', fieldValue: 'root', fieldName: 'root', isOther: false, children: [],
          size: aggregationResponse.totalnb };
         this.populateChildren(donutArc, aggregationResponse, 0);
         return donutArc;
     }
 
-    public setData(data: DonutArc): DonutArc {
+    public setData(data: TreeNode): TreeNode {
         this.donutData = data;
         return data;
     }
 
-    public setSelection(data: DonutArc, collaboration: Collaboration): any {
+    public setSelection(data: TreeNode, collaboration: Collaboration): any {
         if (collaboration) {
             const filter = collaboration.filter;
             if (filter === null) {
-                this.selectedArcsList = new Array<Array<{ ringName: string, name: string }>>();
+                this.selectedArcsList = new Array<Array<{ fieldName: string, fieldValue: string }>>();
             } else {
-                this.selectedArcsList = new Array<Array<{ ringName: string, name: string }>>();
+                this.selectedArcsList = new Array<Array<{ fieldName: string, fieldValue: string }>>();
                 const fFilters = filter.f;
                 const fieldsList = [];
                 const mapFiledValues = new Map<string, Set<string>>();
@@ -148,12 +147,12 @@ export class DonutContributor extends Contributor {
                 });
             }
         } else {
-            this.selectedArcsList = new Array<Array<{ ringName: string, name: string }>>();
+            this.selectedArcsList = new Array<Array<{ fieldName: string, fieldValue: string }>>();
         }
         return from([]);
     }
 
-    public selectedArcsListChanged(selectedArcsList: Array<Array<{ ringName: string, name: string }>>): void {
+    public selectedArcsListChanged(selectedArcsList: Array<Array<{ fieldName: string, fieldValue: string }>>): void {
         this.componentSelectedArcsList = selectedArcsList;
         if (selectedArcsList.length > 0) {
             const filter: Filter = { f: [] };
@@ -166,10 +165,10 @@ export class DonutContributor extends Contributor {
                 const valuesSet = new Set<string>();
                 selectedArcsList.forEach(arcPath => {
                     arcPath.every(arc => {
-                        if (arc.ringName === aggregation.field) {
-                            valuesSet.add(arc.name);
+                        if (arc.fieldName === aggregation.field) {
+                            valuesSet.add(arc.fieldValue);
                         }
-                        return arc.ringName !== aggregation.field;
+                        return arc.fieldName !== aggregation.field;
                     });
                 });
                 valuesSet.forEach(value => {
@@ -213,20 +212,20 @@ export class DonutContributor extends Contributor {
         }
     }
 
-    private getNodeAsArray(n: SelectionTree): Array<{ ringName: string, name: string }> {
+    private getNodeAsArray(n: SelectionTree): Array<{ fieldName: string, fieldValue: string }> {
         const nodePathAsArray = new Array();
-        nodePathAsArray.push({ ringName: n.field, name: n.value });
+        nodePathAsArray.push({ fieldName: n.field, fieldValue: n.value });
         if (n.parent && n.parent.parent) {
             while (n.parent.parent) {
                 n = n.parent;
-                nodePathAsArray.push({ ringName: n.field, name: n.value });
+                nodePathAsArray.push({ fieldName: n.field, fieldValue: n.value });
             }
         }
         nodePathAsArray.reverse();
         return nodePathAsArray;
     }
 
-    private populateChildren(donutData: DonutArc, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
+    private populateChildren(donutData: TreeNode, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
         const ring = donutData.children;
         const field = this.aggregations[aggregationLevel].field;
         const countOfOthers = aggregationResponse.sumotherdoccounts;
@@ -240,9 +239,9 @@ export class DonutContributor extends Contributor {
             let isOther = false;
             for (let i = 0; i < aggregationBuckets.length && !isOther; i++) {
                 const bucket = aggregationBuckets[i];
-                const arc: DonutArc = {
-                    id: field + bucket.key + bucket.count, name: bucket.key,
-                    ringName: field, isOther: false, children: []
+                const arc: TreeNode = {
+                    id: field + bucket.key + bucket.count, fieldValue: bucket.key,
+                    fieldName: field, isOther: false, children: []
                 };
                 relativeTotal += bucket.count;
                 if (bucket.elements !== undefined && bucket.elements[0].elements !== undefined) {
@@ -263,15 +262,15 @@ export class DonutContributor extends Contributor {
             }
 
             if (isOther) {
-                const arc: DonutArc = {
-                    id: field + aggregationResponse.key + aggregationResponse.count, name: 'OTHER', ringName: field,
+                const arc: TreeNode = {
+                    id: field + aggregationResponse.key + aggregationResponse.count, fieldValue: 'OTHER', fieldName: field,
                     isOther: true, size: countOfOthers + (countOfBuckets - relativeTotal)
                 };
                 ring.push(arc);
             } else {
                 if (countOfOthers > 0) {
-                    const arc = {
-                        id: field + aggregationResponse.key + aggregationResponse.count, name: 'OTHER', ringName: field,
+                    const arc: TreeNode = {
+                        id: field + aggregationResponse.key + aggregationResponse.count, fieldValue: 'OTHER', fieldName: field,
                         isOther: true, size: countOfOthers
                     };
                     ring.push(arc);
