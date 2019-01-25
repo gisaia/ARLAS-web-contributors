@@ -99,6 +99,8 @@ export class MapContributor extends Contributor {
     public isGIntersect = false;
     public strategyEnum = geomStrategyEnum;
 
+    public countExtendBus = new Subject<{ count: number, threshold: number }>();
+
     /**
     /**
     * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
@@ -146,9 +148,13 @@ export class MapContributor extends Contributor {
             const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                this.identifier, this.getFilterForCount(pwithin));
+                    this.identifier, this.getFilterForCount(pwithin));
             if (count) {
                 return count.pipe(flatMap(c => {
+                    this.countExtendBus.next({
+                        count: c.totalnb,
+                        threshold: this.nbMaxFeatureForCluster
+                    });
                     if (c.totalnb <= this.nbMaxFeatureForCluster) {
                         this.geojsondata.features = [];
                         this.fetchType = fetchType.tile;
@@ -159,6 +165,11 @@ export class MapContributor extends Contributor {
                         return this.fetchDataGeohashGeoaggregate(this.geohashList);
                     }
                 }));
+            } else {
+                this.countExtendBus.next({
+                    count: 0,
+                    threshold: this.nbMaxFeatureForCluster
+                });
             }
         }
     }
@@ -394,9 +405,13 @@ export class MapContributor extends Contributor {
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                this.identifier, this.getFilterForCount(pwithin));
+                    this.identifier, this.getFilterForCount(pwithin));
             if (count) {
                 count.subscribe(value => {
+                    this.countExtendBus.next({
+                        count: value.totalnb,
+                        threshold: this.nbMaxFeatureForCluster
+                    });
                     if (value.totalnb <= this.nbMaxFeatureForCluster) {
                         this.fetchType = fetchType.tile;
                         this.currentGeohashList = [];
@@ -443,6 +458,11 @@ export class MapContributor extends Contributor {
                         }
                     }
                     this.mapExtend = newMove.extendForLoad;
+                });
+            } else {
+                this.countExtendBus.next({
+                    count: 0,
+                    threshold: this.nbMaxFeatureForCluster
                 });
             }
         }
