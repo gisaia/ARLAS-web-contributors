@@ -4,7 +4,7 @@ import { Contributor, ConfigService, CollaborativesearchService, CollaborationEv
     OperationEnum, projType, Collaboration } from 'arlas-web-core';
 import { TreeNode, SelectionTree, SimpleNode } from '../models/models';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
-import jsonSchema from '../jsonSchemas/donutContributorConf.schema.json';
+import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
 
 /**
@@ -17,7 +17,7 @@ export class TreeContributor extends Contributor {
      */
     public title: string;
     /**
-     * Data retrieved from ARLAS-server response and to be returned for the donut component as an input
+     * Data retrieved from ARLAS-server response and to be returned for the donut/powerbars component as an input
      */
     public treeData: TreeNode;
     /**
@@ -30,7 +30,7 @@ export class TreeContributor extends Contributor {
      */
     public selectedNodesPathsList: Array<Array<SimpleNode>> = new Array<Array<SimpleNode>>();
     /**
-     * ARLAS Server Aggregation used to draw the donut, defined in configuration
+     * ARLAS Server Aggregation used to draw the donut/powerbars, defined in configuration
      */
     private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
     /**
