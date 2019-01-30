@@ -124,6 +124,7 @@ export interface TreeNode {
     fieldValue: string;
     isOther: boolean;
     size?: number;
+    metricValue?: number;
     children?: Array<TreeNode>;
 }
 
