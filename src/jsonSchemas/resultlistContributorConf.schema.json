@@ -74,6 +74,10 @@
                 "iconCssClass": {
                     "description": "Field path of field to customize css",
                     "type": "string"
+                },
+                "iconColorFieldName": {
+                    "description": "Field path of field to use in arlas color service for icon color",
+                    "type": "string"
                 }
             }
         },
@@ -107,6 +111,10 @@
                     "dropdownsize": {
                         "description": "Size of dropdown list, 10 by default",
                         "type": "number"
+                    },
+                    "useColorService": {
+                        "description": "Wether if use color service for column value",
+                        "type": "boolean"
                     }
                 }
             }
