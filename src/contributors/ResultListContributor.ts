@@ -235,6 +235,12 @@ export class ResultListContributor extends Contributor {
         if (this.fieldsConfiguration.thumbnailEnabled) {
             this.includesvalues.push(this.fieldsConfiguration.thumbnailEnabled);
         }
+        if (this.fieldsConfiguration.iconCssClass) {
+            this.includesvalues.push(this.fieldsConfiguration.iconCssClass);
+        }
+        if (this.fieldsConfiguration.iconColorFieldName) {
+            this.includesvalues.push(this.fieldsConfiguration.iconColorFieldName);
+        }
         const setOfIncludeValues = new Set(this.includesvalues);
         this.includesvalues = Array.from(setOfIncludeValues);
 
@@ -492,6 +498,10 @@ export class ResultListContributor extends Contributor {
                 if (this.fieldsConfiguration.iconCssClass) {
                     const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.iconCssClass);
                     fieldValueMap.set(this.fieldsConfiguration.iconCssClass, resultValue);
+                }
+                if (this.fieldsConfiguration.iconColorFieldName) {
+                    const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.iconColorFieldName);
+                    fieldValueMap.set(this.fieldsConfiguration.iconColorFieldName.concat('_title'), resultValue);
                 }
                 if (this.fieldsConfiguration.urlImageTemplate) {
                     this.setUrlField('urlImageTemplate', h, fieldValueMap);
