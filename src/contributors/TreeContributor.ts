@@ -135,19 +135,19 @@ export class TreeContributor extends Contributor {
                 const currentSelectedNodesPathsMap = new Map();
                 selectedNodesPathsList.forEach(path => {
                     let id = '';
-                    path.forEach(node => {
-                        id +=  node.fieldName + node.fieldValue ;
-                    });
-                    currentSelectedNodesPathsMap.set(id, path);
+                    for (let i = 1; i <= path.length; i++) {
+                        id += path[path.length - i].fieldName + path[path.length - i].fieldValue;
+                        currentSelectedNodesPathsMap.set(id, path.slice(path.length - i, path.length));
+                    }
                 });
                 // Array of array to Map
                 const olderSelectedNodesPathsMap = new Map();
                 this.selectedNodesPathsList.forEach(path => {
                     let id = '';
-                    path.forEach(node => {
-                        id += node.fieldName + node.fieldValue;
-                    });
-                    olderSelectedNodesPathsMap.set(id, path);
+                    for (let i = 1; i <= path.length; i++) {
+                      id += path[path.length - i].fieldName + path[path.length - i].fieldValue;
+                      olderSelectedNodesPathsMap.set(id, path.slice(path.length - i, path.length));
+                    }
                 });
                 const mergedMap = new Map([...Array.from(currentSelectedNodesPathsMap.entries()),
                     ...Array.from(olderSelectedNodesPathsMap.entries())]);
@@ -157,13 +157,6 @@ export class TreeContributor extends Contributor {
                     // check if path has all its nodes fieldNames and fieldValues coherant with the filters in collaboration
                     for (let i = 0; i < value.length; i++) {
                       if (!mapFiledValues.get(value[i].fieldName) || !mapFiledValues.get(value[i].fieldName).has(value[i].fieldValue)) {
-                        addpath = false;
-                        break;
-                      }
-                    }
-                    // check if there is a path that is already included in a longer path
-                    for (const k of Array.from(mergedMap.keys())) {
-                      if (k.includes(key) && key !== k) {
                         addpath = false;
                         break;
                       }
