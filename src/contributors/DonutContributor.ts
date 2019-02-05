@@ -29,7 +29,7 @@ import { TreeContributor } from './TreeContributor';
 
 
 /**
- * Deprecated contributor. Use TreeContributor instead.
+ * @deprecated
  */
 export class DonutContributor extends TreeContributor {
 

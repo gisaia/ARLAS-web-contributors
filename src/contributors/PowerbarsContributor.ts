@@ -34,7 +34,7 @@ import { TreeContributor } from './TreeContributor.js';
 * This class make the brigde between the component which displays the data and the
 * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
 
-* This contributor is deprecated.
+* @deprecated
 */
 export class PowerbarsContributor extends TreeContributor {
 
