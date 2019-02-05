@@ -31,7 +31,7 @@ import {
     Filter, Aggregation, Expression, Hit
 } from 'arlas-api';
 import { getElementFromJsonObject, isArray, download } from '../utils/utils';
-import { Action, ElementIdentifier, SortEnum, Column, Detail, Field } from '../models/models';
+import { Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration } from '../models/models';
 import jp from 'jsonpath/jsonpath.min';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 
@@ -150,16 +150,16 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
  */
 export class ResultListContributor extends Contributor {
     /**
-    * Data to feed result list, @Input() data of ResultListComponent.
+    * Data to populate result list, @Input() data of ResultListComponent.
     */
     public data: Array<Map<string, string | number | Date>> = new Array<Map<string, string | number | Date>>();
     /**
-    * List of column of the table, @Input() fieldsList of ResultListComponent.
+    * List of columns of the table, @Input() fieldsList of ResultListComponent.
     */
-    public fieldsList: Array<{ columnName: string, fieldName: string, dataType: string }> = [];
+    public fieldsList: Array<{ columnName: string, fieldName: string, dataType: string, useColorService?: boolean }> = [];
     /**
-* List of column of the table, @Input() fieldsList of ResultListComponent.
-*/
+    * List of values to select mapped to each field represented on the resultList. The list of values to select is wrapped in an Observable.
+    */
     public dropDownMapValues: Map<string, Observable<Array<string>>> = new Map<string, Observable<Array<string>>>();
     /**
     * Instance of DetailedDataRetriever class, @Input() detailedDataRetriever of ResultListComponent.
@@ -170,8 +170,12 @@ export class ResultListContributor extends Contributor {
     */
     public actionToTriggerOnClick: Array<Action> = [];
 
-
     public filtersMap: Map<string, string | number | Date> = new Map<string, string | number | Date>();
+
+    /**
+     A configuration object that allows to set id field, title field, fields used in tooltip/icons and urls
+   * to images && thumbnails
+     */
     public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
 
     /**
@@ -230,6 +234,12 @@ export class ResultListContributor extends Contributor {
         }
         if (this.fieldsConfiguration.thumbnailEnabled) {
             this.includesvalues.push(this.fieldsConfiguration.thumbnailEnabled);
+        }
+        if (this.fieldsConfiguration.iconCssClass) {
+            this.includesvalues.push(this.fieldsConfiguration.iconCssClass);
+        }
+        if (this.fieldsConfiguration.iconColorFieldName) {
+            this.includesvalues.push(this.fieldsConfiguration.iconColorFieldName);
         }
         const setOfIncludeValues = new Set(this.includesvalues);
         this.includesvalues = Array.from(setOfIncludeValues);
@@ -488,6 +498,10 @@ export class ResultListContributor extends Contributor {
                 if (this.fieldsConfiguration.iconCssClass) {
                     const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.iconCssClass);
                     fieldValueMap.set(this.fieldsConfiguration.iconCssClass, resultValue);
+                }
+                if (this.fieldsConfiguration.iconColorFieldName) {
+                    const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.iconColorFieldName);
+                    fieldValueMap.set(this.fieldsConfiguration.iconColorFieldName.concat('_title'), resultValue);
                 }
                 if (this.fieldsConfiguration.urlImageTemplate) {
                     this.setUrlField('urlImageTemplate', h, fieldValueMap);

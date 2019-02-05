@@ -118,13 +118,19 @@ export interface FieldDetail {
     process: string;
 }
 
-export interface DonutArc {
-    name: string;
+export interface TreeNode {
     id: string;
-    ringName: string;
+    fieldName: string;
+    fieldValue: string;
     isOther: boolean;
     size?: number;
-    children?: Array<DonutArc>;
+    metricValue?: number;
+    children?: Array<TreeNode>;
+}
+
+export interface SimpleNode {
+    fieldName: string;
+    fieldValue: string;
 }
 
 export interface SelectionTree {
