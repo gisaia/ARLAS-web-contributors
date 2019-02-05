@@ -1,6 +1,54 @@
 # Change Log
 
-## [v9.1.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.3) (2019-01-11)
+## [v9.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0) (2019-02-05)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.3...v9.2.0)
+
+**Breaking changes:**
+
+- Refactor the DonutContributor data type to make it generic to any tree structure data [\#139](https://github.com/gisaia/ARLAS-web-contributors/issues/139)
+
+**New stuff:**
+
+- Adapt fieldsList attribute of ResultListContributor to specify whether to apply color service on a field value  [\#138](https://github.com/gisaia/ARLAS-web-contributors/issues/138)
+
+**Fixed bugs:**
+
+- TreeContrbutor fix : include search filter when fetching data [\#148](https://github.com/gisaia/ARLAS-web-contributors/pull/148) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+## [v9.2.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0-beta.3) (2019-02-01)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.2...v9.2.0-beta.3)
+
+**New stuff:**
+
+- Enhance setSelection of TreeContributor [\#147](https://github.com/gisaia/ARLAS-web-contributors/pull/147) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+**Fixed bugs:**
+
+- Fix bug icon title field value missing [\#146](https://github.com/gisaia/ARLAS-web-contributors/pull/146) ([mbarbet](https://github.com/mbarbet))
+
+## [v9.2.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0-beta.2) (2019-01-31)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.1...v9.2.0-beta.2)
+
+## [v9.2.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0-beta.1) (2019-01-30)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.0...v9.2.0-beta.1)
+
+**Fixed bugs:**
+
+- Fix json schema import in TreeContributor [\#145](https://github.com/gisaia/ARLAS-web-contributors/pull/145) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+## [v9.2.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0-beta.0) (2019-01-30)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.1.3...v9.2.0-beta.0)
+
+**Fixed bugs:**
+
+-  Fix the selected nodes list construction [\#135](https://github.com/gisaia/ARLAS-web-contributors/pull/135) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+## [v9.1.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.3) (2019-01-25)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.1.2...v9.1.3)
 
