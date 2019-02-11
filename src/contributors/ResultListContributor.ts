@@ -74,9 +74,9 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             details.forEach(group => {
                 const detailedDataMap = new Map<string, string>();
                 group.fields.forEach(field => {
-                    let results = '';
+                    let result = '';
                     if (field.path.indexOf('.') < 0) {
-                        results = jp.query(searchData.hits[0].data, '$.' + field.path).join(',');
+                        result = jp.query(searchData.hits[0].data, '$.' + field.path).join(',');
                     } else {
                         let query = '$.';
                         let composePath = '';
@@ -100,10 +100,17 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                             }
                         });
                         query = query.substring(0, query.length - lastElementLength);
-                        results = jp.query(searchData.hits[0].data, query).join(', ');
+                        result = jp.query(searchData.hits[0].data, query).join(', ');
                     }
-                    if (results.length > 0) {
-                        detailedDataMap.set(field.label, results);
+                    if (result.length > 0) {
+                        const process: string = field.process;
+                        let resultValue = result;
+                        if (process) {
+                            if (process.trim().length > 0) {
+                                resultValue = eval(field.process);
+                            }
+                        }
+                        detailedDataMap.set(field.label, resultValue);
                     }
                 });
                 detailsMap.set(group.name, detailedDataMap);
