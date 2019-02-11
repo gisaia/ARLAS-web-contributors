@@ -1,5 +1,9 @@
 # Change Log
 
+## [v9.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.1) (2019-02-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0...v9.2.1)
+
 ## [v9.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0) (2019-02-05)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.3...v9.2.0)
@@ -7,10 +11,12 @@
 **Breaking changes:**
 
 - Refactor the DonutContributor data type to make it generic to any tree structure data [\#139](https://github.com/gisaia/ARLAS-web-contributors/issues/139)
+- Implement a tree contributor that is generic to DonutContributor and PowerbarsContributors [\#137](https://github.com/gisaia/ARLAS-web-contributors/issues/137)
 
 **New stuff:**
 
 - Adapt fieldsList attribute of ResultListContributor to specify whether to apply color service on a field value  [\#138](https://github.com/gisaia/ARLAS-web-contributors/issues/138)
+- MapContributor : emit current extent count info [\#128](https://github.com/gisaia/ARLAS-web-contributors/issues/128)
 
 **Fixed bugs:**
 
