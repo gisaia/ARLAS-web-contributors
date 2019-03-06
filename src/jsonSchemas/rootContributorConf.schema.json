@@ -5,6 +5,21 @@
     "type": "object",
     "$id": "rootContributorConf.schema.json",
     "definitions": {
+        "type": {
+            "enum": [
+                "analytics",
+                "chipssearch",
+                "detailedhistogram",
+                "donut",
+                "histogram",
+                "powerbars",
+                "map",
+                "resultlist",
+                "swimlane",
+                "topomap",
+                "tree"
+            ]
+        },
         "identifier": {
             "description": "The unique identifier for a Contributor",
             "type": "string"
@@ -93,6 +108,7 @@
         }
     },
     "required": [
+        "type",
         "identifier",
         "name",
         "aggregationmodels"
