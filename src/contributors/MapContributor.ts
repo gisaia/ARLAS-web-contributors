@@ -551,7 +551,7 @@ export class MapContributor extends Contributor {
     public fetchDataTileSearch(tiles: Array<{ x: number, y: number, z: number }>): Observable<FeatureCollection> {
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
         const filter: Filter = {};
-        const search: Search = { page: { size: this.nbMaxFeatureForCluster } };
+        const search: Search = { page: { size: this.nbMaxFeatureForCluster }, form: {flat: this.isFlat} };
         const projection: Projection = {};
         let includes = '';
         let separator = '';
