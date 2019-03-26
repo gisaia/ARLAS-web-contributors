@@ -27,7 +27,7 @@ import {
     projType, CollaborationEvent
 } from 'arlas-web-core';
 import { Filter, Aggregation, AggregationResponse, RangeResponse, RangeRequest} from 'arlas-api';
-import { SelectedOutputValues, DataType, StringifiedTimeShortcut } from '../models/models';
+import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
@@ -110,7 +110,6 @@ export class HistogramContributor extends Contributor {
     */
     constructor(
         identifier: string,
-        protected dataType: DataType.numeric | DataType.time,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, protected isOneDimension?: boolean
     ) {
@@ -218,7 +217,7 @@ export class HistogramContributor extends Contributor {
     }
 
     public setSelection(data: Array<{ key: number, value: number }>, collaboration: Collaboration): any {
-        const resultList = getSelectionToSet(data, collaboration, this.dataType);
+        const resultList = getSelectionToSet(data, collaboration);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];

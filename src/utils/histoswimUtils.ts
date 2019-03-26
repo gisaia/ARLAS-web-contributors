@@ -18,8 +18,8 @@
  */
 
 import { Collaboration, CollaborativesearchService, projType } from 'arlas-web-core';
-import { SelectedOutputValues, DataType, DateExpression } from '../models/models';
-import { Expression, Filter, Aggregation, Search, Interval } from 'arlas-api';
+import { SelectedOutputValues, DateExpression } from '../models/models';
+import { Expression, Filter, Aggregation, Search, Sort, Interval } from 'arlas-api';
 
 export function getvaluesChanged(values: SelectedOutputValues[],
     field: string,
@@ -72,8 +72,7 @@ export function getvaluesChanged(values: SelectedOutputValues[],
 }
 
 export function getSelectionToSet(data: Array<{ key: number, value: number }> | Map<string, Array<{ key: number, value: number }>>,
-    collaboration: Collaboration,
-    dataType: DataType,
+    collaboration: Collaboration
 ): any[] {
     let intervalListSelection;
     let intervalSelection;
