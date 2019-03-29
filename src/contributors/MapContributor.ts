@@ -507,8 +507,8 @@ export class MapContributor extends Contributor {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
         const aggregations = this.aggregation;
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
-        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetchGeometry.strategy = this.geomStrategy);
-        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.fetchGeometry.strategy = this.geomStrategy);
+        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetch_geometry.strategy = this.geomStrategy);
+        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.fetch_geometry.strategy = this.geomStrategy);
         const geohashSet = new Set(geohashList);
         geohashSet.forEach(geohash => {
             if (this.currentGeohashList.indexOf(geohash) < 0) {
@@ -551,7 +551,7 @@ export class MapContributor extends Contributor {
     public fetchDataTileSearch(tiles: Array<{ x: number, y: number, z: number }>): Observable<FeatureCollection> {
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
         const filter: Filter = {};
-        const search: Search = { size: { size: this.nbMaxFeatureForCluster } };
+        const search: Search = { page: { size: this.nbMaxFeatureForCluster }, form: {flat: this.isFlat} };
         const projection: Projection = {};
         let includes = '';
         let separator = '';
