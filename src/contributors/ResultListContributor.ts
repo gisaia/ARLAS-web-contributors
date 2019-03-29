@@ -188,11 +188,11 @@ export class ResultListContributor extends Contributor {
     /**
      * Sort parameter of the list.
     */
-    private sort:string ="";
+    private sort = '';
     /**
      * geoSort parameter of the list.
     */
-    private geoOrderSort:string ="";
+    private geoOrderSort = '';
     private includesvalues = new Array<string>();
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
@@ -342,12 +342,12 @@ export class ResultListContributor extends Contributor {
         } else if (sortOutput.sortDirection.toString() === '1') {
             prefix = '-';
         }
-        let sort: string = "";
+        let sort = '';
         if (prefix !== null) {
             sort = prefix + sortOutput.fieldName;
         }
         this.sort = sort;
-        this.geoOrderSort = "";
+        this.geoOrderSort = '';
         this.getHitsObservable(this.includesvalues, this.sort)
             .pipe(
                 map(f => this.computeData(f)),
@@ -361,10 +361,10 @@ export class ResultListContributor extends Contributor {
     * @param sort sort params
     */
     public geoSort(lat: number, lng: number) {
-        let sort: string = "";
-        sort = 'geodistance:' + lat.toString() + ' ' + lng.toString()
+        let sort = '';
+        sort = 'geodistance:' + lat.toString() + ' ' + lng.toString();
         this.geoOrderSort = sort;
-        this.sort = "";
+        this.sort = '';
         this.getHitsObservable(this.includesvalues, this.geoOrderSort)
             .pipe(
                 map(f => this.computeData(f)),
@@ -457,7 +457,7 @@ export class ResultListContributor extends Contributor {
         }
     }
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
-        let sort: string = "";
+        let sort = '';
         if (this.geoOrderSort) {
             sort = this.geoOrderSort;
         } else {
