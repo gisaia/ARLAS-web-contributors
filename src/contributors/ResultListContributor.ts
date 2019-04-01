@@ -26,7 +26,7 @@ import {
     ConfigService, projType, Collaboration, CollaborationEvent
 } from 'arlas-web-core';
 import {
-    Search, Sort,
+    Search,
     Projection, Hits,
     Filter, Aggregation, Expression, Hit
 } from 'arlas-api';
@@ -56,7 +56,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     */
     public getData(identifier: string): Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> {
         let searchResult: Observable<Hits>;
-        const search: Search = { size: { size: 1 } };
+        const search: Search = { page: { size: 1 } };
         const expression: Expression = {
             field: this.contributor.fieldsConfiguration.idFieldName,
             op: Expression.OpEnum.Eq,
@@ -188,11 +188,11 @@ export class ResultListContributor extends Contributor {
     /**
      * Sort parameter of the list.
     */
-    private sort: Sort = {};
+    private sort = '';
     /**
      * geoSort parameter of the list.
     */
-    private geoOrderSort: Sort = {};
+    private geoOrderSort = '';
     private includesvalues = new Array<string>();
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
@@ -279,7 +279,7 @@ export class ResultListContributor extends Contributor {
     public downloadItem(elementidentifier: ElementIdentifier) {
         let searchResult: Observable<Hits>;
         const search: Search = {
-            size: { size: 1 },
+            page: { size: 1 },
             form: {
                 pretty: true
             }
@@ -342,14 +342,12 @@ export class ResultListContributor extends Contributor {
         } else if (sortOutput.sortDirection.toString() === '1') {
             prefix = '-';
         }
-        let sort: Sort = {};
+        let sort = '';
         if (prefix !== null) {
-            sort = {
-                'sort': prefix + sortOutput.fieldName
-            };
+            sort = prefix + sortOutput.fieldName;
         }
         this.sort = sort;
-        this.geoOrderSort = {};
+        this.geoOrderSort = '';
         this.getHitsObservable(this.includesvalues, this.sort)
             .pipe(
                 map(f => this.computeData(f)),
@@ -363,12 +361,10 @@ export class ResultListContributor extends Contributor {
     * @param sort sort params
     */
     public geoSort(lat: number, lng: number) {
-        let sort: Sort = {};
-        sort = {
-            'sort': 'geodistance:' + lat.toString() + ' ' + lng.toString()
-        };
+        let sort = '';
+        sort = 'geodistance:' + lat.toString() + ' ' + lng.toString();
         this.geoOrderSort = sort;
-        this.sort = {};
+        this.sort = '';
         this.getHitsObservable(this.includesvalues, this.geoOrderSort)
             .pipe(
                 map(f => this.computeData(f)),
@@ -444,7 +440,7 @@ export class ResultListContributor extends Contributor {
     * @param startFrom· number of time that's scroll bar down
     */
     public getMoreData(startFrom: number) {
-        if (this.geoOrderSort.sort) {
+        if (this.geoOrderSort) {
             this.getHitsObservable(this.includesvalues, this.geoOrderSort, startFrom * this.getConfigValue('search_size'))
                 .pipe(
                     map(f => this.computeData(f)),
@@ -461,11 +457,11 @@ export class ResultListContributor extends Contributor {
         }
     }
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
-        let sort: Sort = {};
-        if (this.geoOrderSort.sort) {
+        let sort = '';
+        if (this.geoOrderSort) {
             sort = this.geoOrderSort;
         } else {
-            if (this.sort.sort) {
+            if (this.sort) {
                 sort = this.sort;
             }
         }
@@ -577,14 +573,14 @@ export class ResultListContributor extends Contributor {
 
     }
 
-    private getHitsObservable(includesvalues: Array<string>, sort?: Sort, origin?: number): Observable<Hits> {
+    private getHitsObservable(includesvalues: Array<string>, sort?: string, origin?: number): Observable<Hits> {
         const projection: Projection = {};
-        const search: Search = { size: { size: this.getConfigValue('search_size') } };
+        const search: Search = { page: { size: this.getConfigValue('search_size') } };
         if (sort) {
-            search.sort = sort;
+            search.page.sort = sort;
         }
         if (origin) {
-            search.size.from = origin;
+            search.page.from = origin;
         }
         search.projection = projection;
         projection.includes = includesvalues.join(',');

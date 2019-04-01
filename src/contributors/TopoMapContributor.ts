@@ -28,7 +28,7 @@ import {
 import {
     Search, Expression, Hits,
     AggregationResponse, Aggregation, Projection,
-    Filter, FeatureCollection, Size, Metric, Feature
+    Filter, FeatureCollection, Metric, Feature
 } from 'arlas-api';
 import { Action, OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
@@ -126,7 +126,7 @@ export class TopoMapContributor extends MapContributor {
         const aggregations = this.aggregation;
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.size = this.size.toString());
-        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetchGeometry.strategy = this.geomStrategy);
+        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetch_geometry.strategy = this.geomStrategy);
         const geohashSet = new Set(geohashList);
         geohashSet.forEach(geohash => {
             if (this.currentGeohashList.indexOf(geohash) < 0) {
@@ -271,8 +271,8 @@ export class TopoMapContributor extends MapContributor {
         const aggregationsMetrics = new Array<Aggregation>();
         const metrics = new Array<Metric>();
         const metric: Metric = {
-            collectField: collectField,
-            collectFct: Metric.CollectFctEnum.CARDINALITY
+            collect_field: collectField,
+            collect_fct: Metric.CollectFctEnum.CARDINALITY
         };
         metrics.push(metric);
         const aggregationMetric: Aggregation = {
