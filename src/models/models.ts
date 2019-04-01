@@ -50,12 +50,7 @@ export interface ElementIdentifier {
     idFieldName: string;
     idValue: string;
 }
-/**
-* Enum of time unit that the timeline mode could draw.
-*/
-export enum DataType {
-    numeric, time
-}
+
 /**
 * Object of start and end value of the chart selector.
 */
