@@ -1,8 +1,25 @@
 # Change Log
 
+## [v10.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.0.0) (2019-04-01)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/10.0.0-beta.0...v10.0.0)
+
+**Breaking changes:**
+
+- Remove $ from configuration package name [\#130](https://github.com/gisaia/ARLAS-web-contributors/issues/130)
+- Update contributors to v10.0.0 of arlas-api [\#161](https://github.com/gisaia/ARLAS-web-contributors/pull/161) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+## [10.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/10.0.0-beta.0) (2019-03-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.1...10.0.0-beta.0)
+
 ## [v9.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.1) (2019-02-11)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0...v9.2.1)
+
+**Fixed bugs:**
+
+- Active process in detail [\#154](https://github.com/gisaia/ARLAS-web-contributors/pull/154) ([mbarbet](https://github.com/mbarbet))
 
 ## [v9.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0) (2019-02-05)
 
