@@ -10,13 +10,6 @@
         }
     ],
     "properties": {
-        "datatype": {
-            "description": "Type of data for histogram",
-            "enum": [
-                "numeric",
-                "time"
-            ]
-        },
         "isOneDimension": {
             "description": "True if it's one dimension histogram",
             "type": "boolean"
@@ -43,7 +36,6 @@
         }
     },
     "required": [
-        "datatype",
         "isOneDimension"
     ]
 }
