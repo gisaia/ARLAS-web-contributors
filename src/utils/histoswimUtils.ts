@@ -19,7 +19,7 @@
 
 import { Collaboration, CollaborativesearchService, projType } from 'arlas-web-core';
 import { SelectedOutputValues, DataType, DateExpression } from '../models/models';
-import { Expression, Filter, Aggregation, Search, Sort, Interval } from 'arlas-api';
+import { Expression, Filter, Aggregation, Search, Interval } from 'arlas-api';
 
 export function getvaluesChanged(values: SelectedOutputValues[],
     field: string,

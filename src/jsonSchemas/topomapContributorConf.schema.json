@@ -53,7 +53,7 @@
                             }
                         }
                     },
-                    "fetchGeometry": {
+                    "fetch_geometry": {
                         "description": "How to retrieve geometry for term and geohash aggregation",
                         "type": "object",
                         "properties": {

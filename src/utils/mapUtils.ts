@@ -11,7 +11,7 @@ import { map } from 'rxjs/internal/operators/map';
 export function getBounds(elementidentifier: ElementIdentifier, collaborativeSearcheService: CollaborativesearchService)
     : Observable<Array<Array<number>>> {
     let searchResult: Observable<Hits>;
-    const search: Search = { size: { size: 1 } };
+    const search: Search = { page: { size: 1 } };
     const expression: Expression = {
         field: elementidentifier.idFieldName,
         op: Expression.OpEnum.Eq,
