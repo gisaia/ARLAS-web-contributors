@@ -43,6 +43,7 @@ export class TopoMapContributor extends MapContributor {
     private field_geometry: string = this.getConfigValue('field_geometry');
     private size = 1000;
     private METRICS_FLAT_CHAR = '-';
+    private AGGREGATION_MODELS = 'aggregationmodels';
 
     /**
     * Build a new contributor.
@@ -77,6 +78,7 @@ export class TopoMapContributor extends MapContributor {
         }
         this.maxValueGeoHash = 0;
         if (this.zoom < this.zoomLevelForTestCount) {
+            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
             this.geojsondata.features = [];
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
@@ -96,7 +98,7 @@ export class TopoMapContributor extends MapContributor {
                         } else {
                             // Classique AGG geohash
                             this.geojsondata.features = [];
-                            this.aggregation = this.getConfigValue('aggregationmodels');
+                            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
                             return this.fetchDataGeohashGeoaggregate(this.geohashList);
                         }
                     }));
@@ -151,6 +153,7 @@ export class TopoMapContributor extends MapContributor {
             this.currentGeohashList = [];
         }
         if (newMove.zoom < this.zoomLevelForTestCount) {
+            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
             if (!this.isGeoaggregateCluster) {
                 this.geojsondata.features = [];
                 this.currentGeohashList = [];
@@ -206,7 +209,7 @@ export class TopoMapContributor extends MapContributor {
                                 this.drawGeoaggregateGeohash(newGeohashList);
                             }
                         } else {
-                            this.aggregation = this.getConfigValue('aggregationmodels');
+                            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
                             if (!this.isGeoaggregateCluster) {
                                 this.geojsondata.features = [];
                                 this.currentGeohashList = [];
