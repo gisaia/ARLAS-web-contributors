@@ -21,24 +21,13 @@ import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 
 import {
-    CollaborativesearchService, Contributor,
-    ConfigService, Collaboration, OperationEnum,
-    projType, GeohashAggregation, TiledSearch, CollaborationEvent
+    CollaborativesearchService, ConfigService, OperationEnum,
+    projType, GeohashAggregation, CollaborationEvent
 } from 'arlas-web-core';
-import {
-    Search, Expression, Hits,
-    AggregationResponse, Aggregation, Projection,
-    Filter, FeatureCollection, Size, Metric, Feature
-} from 'arlas-api';
-import { Action, OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
-import { getElementFromJsonObject } from '../utils/utils';
-import { decode_bbox, bboxes } from 'ngeohash';
+import { Aggregation, FeatureCollection, Metric, Feature } from 'arlas-api';
+import { OnMoveResult } from '../models/models';
 import * as jsonSchema from '../jsonSchemas/topomapContributorConf.schema.json';
-import { polygon, feature } from '@turf/helpers';
-import bbox from '@turf/bbox';
-import bboxPolygon from '@turf/bbox-polygon';
-import booleanContains from '@turf/boolean-contains';
-import { MapContributor, fetchType } from './MapContributor';
+import { MapContributor } from './MapContributor';
 import { flatMap, mergeAll, map } from 'rxjs/operators';
 import { from } from 'rxjs/observable/from';
 
@@ -53,6 +42,7 @@ export class TopoMapContributor extends MapContributor {
     private field_cardinality: string = this.getConfigValue('field_cardinality');
     private field_geometry: string = this.getConfigValue('field_geometry');
     private size = 1000;
+    private METRICS_FLAT_CHAR = '-';
 
     /**
     * Build a new contributor.
@@ -96,7 +86,7 @@ export class TopoMapContributor extends MapContributor {
             if (newCount) {
                 return newCount.pipe(flatMap(
                     feat => {
-                        this.size = feat.map(f => <number>f.properties[this.field_cardinality + '_cardinality_'])
+                        this.size = feat.map(f => <number>f.properties[this.field_cardinality.replace('.', this.METRICS_FLAT_CHAR) + '_cardinality_'])
                             .reduce((a, b) => a + b, 0);
                         if (this.size <= this.nbMaxFeatureForCluster) {
                             // AGG TOPO
@@ -188,7 +178,7 @@ export class TopoMapContributor extends MapContributor {
             if (count) {
                 count
                     .subscribe(feat => {
-                        this.size = feat.map(f => <number>f.properties[this.field_cardinality + '_cardinality_'])
+                        this.size = feat.map(f => <number>f.properties[this.field_cardinality.replace('.', this.METRICS_FLAT_CHAR) + '_cardinality_'])
                             .reduce((a, b) => a + b, 0);
                         if (this.size <= this.nbMaxFeatureForCluster) {
                             this.aggregation = this.topoAggregation;
