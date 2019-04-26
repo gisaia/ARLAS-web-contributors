@@ -21,7 +21,7 @@
     "arlas-web-core": "9.2.*",
     "file-saver": "1.3.3",
     "moment": "^2.22.1",
-    "jsonpath": "^1.0.0",
+    "jsonpath": "^1.0.1",
     "ngeohash": "^0.6.0",
     "rxjs": "~6.3.3",
     "rxjs-compat": "6.3.3",
