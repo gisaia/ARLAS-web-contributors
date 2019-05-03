@@ -143,6 +143,7 @@ export class MapContributor extends Contributor {
         if (this.zoom < this.zoomLevelForTestCount) {
             this.fetchType = fetchType.geohash;
             this.geojsondata.features = [];
+            this.currentGeohashList = [];
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
             const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
