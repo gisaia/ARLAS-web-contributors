@@ -39,7 +39,7 @@ import bbox from '@turf/bbox';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import { MapContributor, fetchType } from './MapContributor';
-import { flatMap, mergeAll, map } from 'rxjs/operators';
+import { flatMap, mergeAll, map, finalize } from 'rxjs/operators';
 import { from } from 'rxjs/observable/from';
 
 /**
@@ -107,7 +107,7 @@ export class TopoMapContributor extends MapContributor {
                             // AGG TOPO
                             this.geojsondata.features = [];
                             this.aggregation = this.topoAggregation;
-                            return this.fetchDataGeohashGeoaggregate(this.geohashList);
+                            return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, {pwithin: [[pwithin]]});
                         } else {
                             // Classique AGG geohash
                             this.geojsondata.features = [];
@@ -127,6 +127,10 @@ export class TopoMapContributor extends MapContributor {
     }
 
     public fetchDataGeohashGeoaggregate(geohashList: Array<string>): Observable<FeatureCollection> {
+        return this.fetchTopoDataGeohashGeoaggregate(geohashList, null);
+    }
+
+    public fetchTopoDataGeohashGeoaggregate(geohashList: Array<string>, filter: Filter): Observable<FeatureCollection> {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
         const aggregations = this.aggregation;
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
@@ -142,7 +146,8 @@ export class TopoMapContributor extends MapContributor {
                 aggregations: aggregations
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations, this.isFlat);
+                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
+                this.isFlat, null, filter);
             tabOfGeohash.push(geoAggregateData);
         });
         return from(tabOfGeohash).pipe(mergeAll());
@@ -150,8 +155,8 @@ export class TopoMapContributor extends MapContributor {
 
 
     /**
-* Function call on onMove event output component
-*/
+    * Function called on onMove event emitted by the mapcomponent output
+    */
     public onMove(newMove: OnMoveResult) {
         this.geohashList = newMove.geohash;
         this.zoom = newMove.zoom;
@@ -210,17 +215,14 @@ export class TopoMapContributor extends MapContributor {
                                     this.currentGeohashList.push(geohash);
                                 }
                             });
-                            if (newGeohashList.length > 0) {
-                                this.drawGeoaggregateGeohash(newGeohashList);
-                            }
                             // if new extend is not totaly include in old extend
-                            if (newMove.extendForLoad[0] > this.mapExtend[0]
+                            if (newGeohashList.length > 0 || newMove.extendForLoad[0] > this.mapExtend[0]
                                 || newMove.extendForLoad[2] < this.mapExtend[2]
                                 || newMove.extendForLoad[1] < this.mapExtend[1]
                                 || newMove.extendForLoad[3] > this.mapExtend[3]
                                 || this.isGeoaggregateCluster
                             ) {
-                                this.drawGeoaggregateGeohash(newGeohashList);
+                                this.drawTopoGeoaggregateGeohash(newGeohashList, {pwithin: [[pwithin]]});
                             }
                         } else {
                             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
@@ -248,6 +250,20 @@ export class TopoMapContributor extends MapContributor {
                     });
             }
         }
+    }
+
+    public drawTopoGeoaggregateGeohash(geohashList: Array<string>, filter: Filter) {
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
+        this.fetchTopoDataGeohashGeoaggregate(geohashList, filter)
+            .pipe(
+                map(f => this.computeDataGeohashGeoaggregate(f)),
+                map(f => this.setDataGeohashGeoaggregate(f)),
+                finalize(() => {
+                    this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                    this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                })
+            )
+            .subscribe(data => data);
     }
 
     public computeDataGeohashGeoaggregate(featureCollection: FeatureCollection): Array<any> {
