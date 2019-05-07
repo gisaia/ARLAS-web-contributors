@@ -1,5 +1,24 @@
 # Change Log
 
+## [v10.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.0.1) (2019-05-07)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.2...v10.0.1)
+
+**Fixed bugs:**
+
+- MAP & TOPOMAP : data is not loaded on existing tiles after applying an external collaboration [\#169](https://github.com/gisaia/ARLAS-web-contributors/issues/169)
+- TopoMapContributor : topologies are not fetched on the current extent of map [\#165](https://github.com/gisaia/ARLAS-web-contributors/issues/165)
+- TopoMapContributor: aggregation is not reset to geohash when current zoom \< zoomLevelForTestCount [\#164](https://github.com/gisaia/ARLAS-web-contributors/issues/164)
+- TopoMapContributor: getTopoCardinality doesn't work for nested \[field\_cardinality\] [\#163](https://github.com/gisaia/ARLAS-web-contributors/issues/163)
+
+## [v9.2.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.2) (2019-04-26)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.0.0...v9.2.2)
+
+**Fixed bugs:**
+
+- Active process in detail of list [\#153](https://github.com/gisaia/ARLAS-web-contributors/issues/153)
+
 ## [v10.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.0.0) (2019-04-01)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/10.0.0-beta.0...v10.0.0)
@@ -7,6 +26,7 @@
 **Breaking changes:**
 
 - Remove $ from configuration package name [\#130](https://github.com/gisaia/ARLAS-web-contributors/issues/130)
+- Remove unused \[dataType\] attribute from Histogram contributor [\#126](https://github.com/gisaia/ARLAS-web-contributors/issues/126)
 - Update contributors to v10.0.0 of arlas-api [\#161](https://github.com/gisaia/ARLAS-web-contributors/pull/161) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [10.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/10.0.0-beta.0) (2019-03-06)
