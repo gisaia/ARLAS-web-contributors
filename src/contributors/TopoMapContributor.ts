@@ -90,6 +90,7 @@ export class TopoMapContributor extends MapContributor {
         }
         this.maxValueGeoHash = 0;
         if (this.zoom < this.zoomLevelForTestCount) {
+            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
             this.geojsondata.features = [];
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
@@ -165,6 +166,7 @@ export class TopoMapContributor extends MapContributor {
             this.currentGeohashList = [];
         }
         if (newMove.zoom < this.zoomLevelForTestCount) {
+            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
             if (!this.isGeoaggregateCluster) {
                 this.geojsondata.features = [];
                 this.currentGeohashList = [];
