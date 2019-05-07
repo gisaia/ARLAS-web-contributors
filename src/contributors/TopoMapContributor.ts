@@ -53,6 +53,8 @@ export class TopoMapContributor extends MapContributor {
     private field_cardinality: string = this.getConfigValue('field_cardinality');
     private field_geometry: string = this.getConfigValue('field_geometry');
     private size = 1000;
+    private METRICS_FLAT_CHAR = '_';
+    private AGGREGATION_MODELS = 'aggregationmodels';
 
     /**
     * Build a new contributor.
@@ -97,7 +99,8 @@ export class TopoMapContributor extends MapContributor {
             if (newCount) {
                 return newCount.pipe(flatMap(
                     feat => {
-                        this.size = feat.map(f => <number>f.properties[this.field_cardinality + '_cardinality_'])
+                        const flattenedFieldCardinality = this.field_cardinality.replace('.', this.METRICS_FLAT_CHAR);
+                        this.size = feat.map(f => <number>f.properties[flattenedFieldCardinality + '_cardinality_'])
                             .reduce((a, b) => a + b, 0);
                         if (this.size <= this.nbMaxFeatureForCluster) {
                             // AGG TOPO
@@ -107,7 +110,7 @@ export class TopoMapContributor extends MapContributor {
                         } else {
                             // Classique AGG geohash
                             this.geojsondata.features = [];
-                            this.aggregation = this.getConfigValue('aggregationmodels');
+                            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
                             return this.fetchDataGeohashGeoaggregate(this.geohashList);
                         }
                     }));
@@ -189,7 +192,8 @@ export class TopoMapContributor extends MapContributor {
             if (count) {
                 count
                     .subscribe(feat => {
-                        this.size = feat.map(f => <number>f.properties[this.field_cardinality + '_cardinality_'])
+                        const flattenedFieldCardinality = this.field_cardinality.replace('.', this.METRICS_FLAT_CHAR);
+                        this.size = feat.map(f => <number>f.properties[flattenedFieldCardinality + '_cardinality_'])
                             .reduce((a, b) => a + b, 0);
                         if (this.size <= this.nbMaxFeatureForCluster) {
                             this.aggregation = this.topoAggregation;
@@ -217,7 +221,7 @@ export class TopoMapContributor extends MapContributor {
                                 this.drawGeoaggregateGeohash(newGeohashList);
                             }
                         } else {
-                            this.aggregation = this.getConfigValue('aggregationmodels');
+                            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
                             if (!this.isGeoaggregateCluster) {
                                 this.geojsondata.features = [];
                                 this.currentGeohashList = [];
