@@ -134,6 +134,7 @@ export class MapContributor extends Contributor {
     }
     public fetchData(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         this.currentStringedTilesList = [];
+        this.currentGeohashList = [];
         if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
             if (collaborationEvent.all || collaborationEvent.id === this.identifier) {
                 this.onRemoveBboxBus.next(true);

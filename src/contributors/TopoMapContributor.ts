@@ -80,6 +80,7 @@ export class TopoMapContributor extends MapContributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
+        this.currentGeohashList = [];
         if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
             if (collaborationEvent.all || collaborationEvent.id === this.identifier) {
                 this.onRemoveBboxBus.next(true);
