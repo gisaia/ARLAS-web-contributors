@@ -185,6 +185,8 @@ export class ResultListContributor extends Contributor {
      */
     public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
 
+    public filter = {};
+
     /**
      * Sort parameter of the list.
     */
@@ -586,9 +588,9 @@ export class ResultListContributor extends Contributor {
         projection.includes = includesvalues.join(',');
         const newData = [];
         const searchResult = this.collaborativeSearcheService
-            .resolveButNotHits([projType.search, search], this.collaborativeSearcheService.collaborations)
+            .resolveButNotHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, this.filter)
             .pipe(
-               finalize(() => this.collaborativeSearcheService.contribFilterBus.next(this))
+                finalize(() => this.collaborativeSearcheService.contribFilterBus.next(this))
             );
         return searchResult;
     }
