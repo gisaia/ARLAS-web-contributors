@@ -3,7 +3,7 @@
  * license agreements. See the NOTICE.txt file distributed with
  * this work for additional information regarding copyright
  * ownership. Gisaïa licenses this file to you under
- * the Apache License, Version 2.0 (the "License"); you may
+ * the Apache License, Version 2.0 (the 'License'); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,7 +11,7 @@
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
@@ -537,6 +537,7 @@ export class MapContributor extends Contributor {
             featureCollection.features.forEach(feature => {
                 feature.properties['point_count_normalize'] = feature.properties.count / this.maxValueGeoHash * 100;
                 feature.properties['point_count'] = feature.properties.count;
+                feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
                 featuresResults.push(feature);
             });
         }
@@ -552,7 +553,7 @@ export class MapContributor extends Contributor {
     public fetchDataTileSearch(tiles: Array<{ x: number, y: number, z: number }>): Observable<FeatureCollection> {
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
         const filter: Filter = {};
-        const search: Search = { page: { size: this.nbMaxFeatureForCluster }, form: {flat: this.isFlat} };
+        const search: Search = { page: { size: this.nbMaxFeatureForCluster }, form: { flat: this.isFlat } };
         const projection: Projection = {};
         let includes = '';
         let separator = '';
@@ -663,4 +664,26 @@ export class MapContributor extends Contributor {
     private tileToString(tile: { x: number, y: number, z: number }): string {
         return tile.x.toString() + tile.y.toString() + tile.z.toString();
     }
+
+    private intToString(value: number): string {
+        let newValue = value.toString();
+        if (value >= 1000) {
+            const suffixes = ['', 'k', 'M', 'b', 't'];
+            const suffixNum = Math.floor(('' + value).length / 3);
+            let shortValue: number;
+            for (let precision = 3; precision >= 1; precision--) {
+                shortValue = parseFloat((suffixNum !== 0 ? (value / Math.pow(1000, suffixNum)) : value)
+                    .toPrecision(precision));
+                const dotLessShortValue = (shortValue + '').replace(/[^a-zA-Z 0-9]+/g, '');
+                if (dotLessShortValue.length <= 2) { break; }
+            }
+            let shortNum = shortValue.toString();
+            if (shortValue % 1 !== 0) {
+               shortNum = shortValue.toFixed(1);
+            }
+            newValue = shortNum + suffixes[suffixNum];
+        }
+        return newValue.toString();
+    }
 }
+
