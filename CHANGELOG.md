@@ -1,5 +1,14 @@
 # Change Log
 
+## [v10.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.2.0) (2019-07-04)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.1.0...v10.2.0)
+
+**New stuff:**
+
+- \[MAP\] Aggregation result formating [\#177](https://github.com/gisaia/ARLAS-web-contributors/issues/177)
+- Add new map count aggregate format [\#178](https://github.com/gisaia/ARLAS-web-contributors/pull/178) ([mbarbet](https://github.com/mbarbet))
+
 ## [v10.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.1.0) (2019-05-22)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.0.1...v10.1.0)
