@@ -28,7 +28,7 @@ import {
 import {
     Search, Expression, Hits,
     Aggregation, Projection,
-    Filter, FeatureCollection
+    Filter, FeatureCollection, Page
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
@@ -60,6 +60,11 @@ export interface Style {
     layerIds: Set<string>;
     geomStrategy?: geomStrategyEnum;
     isDefault?: boolean;
+}
+
+export enum dataMode {
+    simple,
+    dynamic
 }
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
@@ -100,6 +105,15 @@ export class MapContributor extends Contributor {
     public strategyEnum = geomStrategyEnum;
 
     public countExtendBus = new Subject<{ count: number, threshold: number }>();
+    // By default the contributor compute the data in dynamic way, switch cluster/feature mode with zoom and number of features
+    // In the simple mode the contributor return just the features (with a sort and size and optional filter)
+    public dataMode: dataMode = dataMode.dynamic;
+
+    public expressionFilter: Expression;
+    public searchSize = 100;
+    public searchSort = '';
+
+
 
     /**
     /**
@@ -132,7 +146,24 @@ export class MapContributor extends Contributor {
     public static getJsonSchema(): Object {
         return jsonSchema;
     }
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
+
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
+        switch (this.dataMode) {
+            case dataMode.simple: {
+                return this.fetchDataSimpleMode(collaborationEvent);
+            }
+            case dataMode.dynamic: {
+                return this.fetchDataDynamicMode(collaborationEvent);
+            }
+        }
+    }
+
+    public fetchDataSimpleMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
+        this.geojsondata.features = [];
+        return this.fetchDataGeoSearch();
+    }
+
+    public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         this.currentStringedTilesList = [];
         this.currentGeohashList = [];
         if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
@@ -361,10 +392,31 @@ export class MapContributor extends Contributor {
         this.collaborativeSearcheService.setFilter(this.identifier, data);
     }
 
+
+
+
+    public onMove(newMove: OnMoveResult) {
+        switch (this.dataMode) {
+            case dataMode.simple: {
+                this.onMoveSimpleMode(newMove);
+                break;
+            }
+            case dataMode.dynamic: {
+                this.onMoveDynamicMode(newMove);
+                break;
+            }
+        }
+    }
+
+    public onMoveSimpleMode(newMove: OnMoveResult) {
+        this.mapExtend = newMove.extendForLoad;
+        this.drawGeoSearch();
+    }
+
     /**
     * Function call on onMove event output component
     */
-    public onMove(newMove: OnMoveResult) {
+    public onMoveDynamicMode(newMove: OnMoveResult) {
 
         this.tiles = newMove.tiles;
         this.geohashList = newMove.geohash;
@@ -427,6 +479,7 @@ export class MapContributor extends Contributor {
                                 this.currentStringedTilesList.push(tileToString(tile));
                             }
                         });
+
                         // if new extend is not totaly include in old extend
                         if (newMove.extendForLoad[0] > this.mapExtend[0]
                             || newMove.extendForLoad[2] < this.mapExtend[2]
@@ -475,6 +528,20 @@ export class MapContributor extends Contributor {
                 this.collaborativeSearcheService.removeFilter(this.identifier);
             }
         }
+    }
+
+    public drawGeoSearch(fromParam?) {
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
+        this.fetchDataGeoSearch(from)
+            .pipe(
+                map(f => this.computeDataTileSearch(f)),
+                map(f => this.setDataTileSearch(f)),
+                finalize(() => {
+                    this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                    this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                })
+            )
+            .subscribe(data => data);
     }
 
     public drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
@@ -550,9 +617,44 @@ export class MapContributor extends Contributor {
 
     }
 
+    public fetchDataGeoSearch(fromParam?): Observable<FeatureCollection> {
+        const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2]
+            + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
+        const filter: Filter = this.getFilterForCount(pwithin);
+        if (this.expressionFilter !== undefined) {
+            filter.f = [[this.expressionFilter]];
+        }
+        const search: Search = { page: { size: this.searchSize, sort: this.searchSort }, form: { flat: this.isFlat } };
+        if (fromParam !== undefined) {
+            search.page.from = fromParam;
+        }
+        const projection: Projection = {};
+        let includes = '';
+        let separator = '';
+        if (this.includeFeaturesFields !== undefined) {
+            this.includeFeaturesFields.forEach(field => {
+                if (field !== this.idFieldName) {
+                    includes += separator + field;
+                    separator = ',';
+                }
+            });
+        }
+        projection.includes = this.idFieldName + ',' + includes;
+        search.projection = projection;
+        return this.collaborativeSearcheService.resolveButNotFeatureCollection(
+            [projType.geosearch, search], this.collaborativeSearcheService.collaborations, this.isFlat,
+            null, filter);
+
+    }
+
     public fetchDataTileSearch(tiles: Array<{ x: number, y: number, z: number }>): Observable<FeatureCollection> {
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
-        const filter: Filter = {};
+        let filter: Filter = {};
+        if (this.expressionFilter !== undefined) {
+            filter = {
+                f: [[this.expressionFilter]]
+            };
+        }
         const search: Search = { page: { size: this.nbMaxFeatureForCluster }, form: { flat: this.isFlat } };
         const projection: Projection = {};
         let includes = '';
@@ -679,7 +781,7 @@ export class MapContributor extends Contributor {
             }
             let shortNum = shortValue.toString();
             if (shortValue % 1 !== 0) {
-               shortNum = shortValue.toFixed(1);
+                shortNum = shortValue.toFixed(1);
             }
             newValue = shortNum + suffixes[suffixNum];
         }
