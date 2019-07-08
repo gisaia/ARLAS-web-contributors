@@ -532,7 +532,7 @@ export class MapContributor extends Contributor {
 
     public drawGeoSearch(fromParam?) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        this.fetchDataGeoSearch(from)
+        this.fetchDataGeoSearch(fromParam)
             .pipe(
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
