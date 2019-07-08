@@ -1,5 +1,9 @@
 # Change Log
 
+## [v10.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.2.1) (2019-07-08)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.2.0...v10.2.1)
+
 ## [v10.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.2.0) (2019-07-04)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.1.0...v10.2.0)
@@ -7,6 +11,8 @@
 **New stuff:**
 
 - \[MAP\] Aggregation result formating [\#177](https://github.com/gisaia/ARLAS-web-contributors/issues/177)
+- New way to visualize map data [\#175](https://github.com/gisaia/ARLAS-web-contributors/issues/175)
+- Add method to force map feature mode [\#179](https://github.com/gisaia/ARLAS-web-contributors/pull/179) ([mbarbet](https://github.com/mbarbet))
 - Add new map count aggregate format [\#178](https://github.com/gisaia/ARLAS-web-contributors/pull/178) ([mbarbet](https://github.com/mbarbet))
 
 ## [v10.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.1.0) (2019-05-22)
