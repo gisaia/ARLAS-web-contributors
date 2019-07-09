@@ -28,7 +28,7 @@ import {
 import {
     Search, Expression, Hits,
     Aggregation, Projection,
-    Filter, FeatureCollection, Page
+    Filter, Page, FeatureCollection
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
 import { getElementFromJsonObject } from '../utils/utils';
@@ -40,6 +40,8 @@ import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import { getBounds, tileToString } from './../utils/mapUtils';
 import { from } from 'rxjs/observable/from';
+import * as helpers from '@turf/helpers';
+
 
 
 export enum geomStrategyEnum {
@@ -112,8 +114,6 @@ export class MapContributor extends Contributor {
     public expressionFilter: Expression;
     public searchSize = 100;
     public searchSort = '';
-
-
 
     /**
     /**
@@ -237,8 +237,8 @@ export class MapContributor extends Contributor {
 
     public setSelection(data: any, collaboration: Collaboration): any {
         if (this.fetchType === fetchType.geohash) {
-            this.geojsondata.features.forEach(feature => {
-                feature.properties['point_count_normalize'] = feature.properties.point_count / this.maxValueGeoHash * 100;
+            this.geojsondata.features.forEach(f => {
+                f.properties['point_count_normalize'] = f.properties.point_count / this.maxValueGeoHash * 100;
             });
         }
         this.redrawTile.next(true);
@@ -347,6 +347,9 @@ export class MapContributor extends Contributor {
         return (w === min) ? max : w;
     }
 
+    /**
+    * @deprecated Use onChangeAoi global function.
+    */
     public onChangeBbox(newBbox: Array<Object>) {
         let filters: Filter;
         const pwithinArray: Array<string> = [];
@@ -391,6 +394,59 @@ export class MapContributor extends Contributor {
         this.isBbox = true;
         this.collaborativeSearcheService.setFilter(this.identifier, data);
     }
+
+
+
+    public onChangeAoi(fc: helpers.FeatureCollection) {
+        let filters: Filter;
+        if (fc.features.filter(f => f.properties.type === 'bbox').length > 0) {
+            const pwithinArray = this.getBboxsForQuery(fc.features);
+            if (this.isGIntersect) {
+                filters = {
+                    gintersect: [pwithinArray],
+                };
+            } else {
+                filters = {
+                    pwithin: [pwithinArray],
+                };
+            }
+            const data: Collaboration = {
+                filter: filters,
+                enabled: true
+            };
+
+            this.isBbox = true;
+            this.collaborativeSearcheService.setFilter(this.identifier, data);
+        } else if (fc.features.length > 0) {
+            const arrayBBox = bbox(fc);
+            const pwithinArray = [arrayBBox.join(',')];
+            if (this.isGIntersect) {
+                filters = {
+                    gintersect: [pwithinArray],
+                };
+            } else {
+                filters = {
+                    pwithin: [pwithinArray],
+                };
+            }
+            const data: Collaboration = {
+                filter: filters,
+                enabled: true
+            };
+
+            // Set Filter with bbox of aoi for testing
+            // this.isBbox = true;
+            // this.collaborativeSearcheService.setFilter(this.identifier, data);
+
+        } else {
+            this.isBbox = false;
+            if (this.collaborativeSearcheService.getCollaboration(this.identifier) !== null) {
+                this.collaborativeSearcheService.removeFilter(this.identifier);
+            }
+        }
+    }
+
+
 
 
 
@@ -521,6 +577,10 @@ export class MapContributor extends Contributor {
             }
         }
     }
+
+    /**
+    * @deprecated Use onChangeAoi global function.
+    */
     public onRemoveBbox(isBboxRemoved: boolean) {
         if (isBboxRemoved) {
             this.isBbox = false;
@@ -761,6 +821,36 @@ export class MapContributor extends Contributor {
             };
         }
         return filter;
+    }
+
+    private getBboxsForQuery(newBbox: Array<Object>) {
+        const bboxArray: Array<string> = [];
+        const numberOfBbox = newBbox.length;
+        const lastBbox = newBbox[numberOfBbox - 1];
+        const lastCoord = lastBbox['geometry']['coordinates'][0];
+        const north = lastCoord[1][1];
+        const west = this.wrap(lastCoord[2][0], -180, 180);
+        const south = lastCoord[0][1];
+        const east = this.wrap(lastCoord[0][0], -180, 180);
+        const last_bbox = west + ',' + south + ',' + east + ',' + north;
+        const lastBboxFeature = bboxPolygon([west, south, east, north]);
+        for (let _i = 0; _i < numberOfBbox - 1; _i++) {
+            const v = newBbox[_i];
+            const coord = v['geometry']['coordinates'][0];
+            const n = coord[1][1];
+            const w = this.wrap(coord[2][0], -180, 180);
+            const s = coord[0][1];
+            const e = this.wrap(coord[0][0], -180, 180);
+            const box = w + ',' + s + ',' + e + ',' + n;
+            const bboxFeature = bboxPolygon([w, s, e, n]);
+            const isbboxInclude = booleanContains(lastBboxFeature, bboxFeature);
+            const isLastBboxInclude = booleanContains(bboxFeature, lastBboxFeature);
+            if (!isbboxInclude && !isLastBboxInclude) {
+                bboxArray.push(box.trim().toLocaleLowerCase());
+            }
+        }
+        bboxArray.push(last_bbox.trim().toLocaleLowerCase());
+        return bboxArray;
     }
 
     private tileToString(tile: { x: number, y: number, z: number }): string {
