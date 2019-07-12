@@ -47,6 +47,9 @@ export class ChipsSearchContributor extends Contributor {
     * Map of string/number, label/count of all chips, use in input of component
     */
     public chipMapData: Map<string, number> = new Map<string, number>();
+
+    public lastBackspaceBus: Subject<boolean>;
+
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -56,17 +59,10 @@ export class ChipsSearchContributor extends Contributor {
     */
     constructor(
         identifier: string,
-        private lastBackspaceBus: Subject<boolean>,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
         super(identifier, configService, collaborativeSearcheService);
-        // Subscribe to the sizeOnSearchBackspaceBus to remove last chip on backspace keyup
-        this.lastBackspaceBus.subscribe(value => {
-            if (value && this.chipMapData.size > 0) {
-                this.removeLastWord();
-            }
-        });
     }
 
     public static getJsonSchema(): Object {
@@ -185,6 +181,18 @@ export class ChipsSearchContributor extends Contributor {
         }
         this.setFilterFromMap();
     }
+    /**
+     * Subscribe to the sizeOnSearchBackspaceBus to remove last chip on backspace keyup
+     */
+    public activateLastBackspace(lastBackspace: Subject<boolean>) {
+        this.lastBackspaceBus = lastBackspace;
+        this.lastBackspaceBus.subscribe(value => {
+            if (value && this.chipMapData.size > 0) {
+                this.removeLastWord();
+            }
+        });
+    }
+
     /**
     * Remove last chip , set filter.
     */
