@@ -360,9 +360,6 @@ export class MapContributor extends Contributor {
         return (w === min) ? max : w;
     }
 
-    /**
-    * @deprecated Use onChangeAoi global function.
-    */
     public onChangeBbox(newBbox: Array<Object>) {
         let filters: Filter;
         const pwithinArray: Array<string> = [];
@@ -408,8 +405,11 @@ export class MapContributor extends Contributor {
         this.collaborativeSearcheService.setFilter(this.identifier, data);
     }
 
-
-
+    /**
+     * Runs when a geometry (bbox, polygon, ...) is drawn, removed or changed
+     * @beta This method is being tested. It will replace `onChangeBbox` and `onRemoveBbox`
+     * @param fc FeatureCollection object
+     */
     public onChangeAoi(fc: helpers.FeatureCollection) {
         let filters: Filter;
         if (fc.features.filter(f => f.properties.type === 'bbox').length > 0) {
@@ -459,11 +459,6 @@ export class MapContributor extends Contributor {
         }
     }
 
-
-
-
-
-
     public onMove(newMove: OnMoveResult) {
         switch (this.dataMode) {
             case dataMode.simple: {
@@ -483,7 +478,7 @@ export class MapContributor extends Contributor {
     }
 
     /**
-    * Function call on onMove event output component
+    * Function called on onMove event output component
     */
     public onMoveDynamicMode(newMove: OnMoveResult) {
 
@@ -591,9 +586,6 @@ export class MapContributor extends Contributor {
         }
     }
 
-    /**
-    * @deprecated Use onChangeAoi global function.
-    */
     public onRemoveBbox(isBboxRemoved: boolean) {
         if (isBboxRemoved) {
             this.isBbox = false;
