@@ -1,8 +1,28 @@
 # Change Log
 
+## [v11.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.0.0) (2019-07-25)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.2.1...v11.0.0)
+
+**New stuff:**
+
+- \[RESULTLIST\] add a property that indicates whether the beginning/end of the list is reached [\#192](https://github.com/gisaia/ARLAS-web-contributors/issues/192)
+- \[MAP\] \[beta\] Add a method onChangeAoi \(Area of interest\)  [\#183](https://github.com/gisaia/ARLAS-web-contributors/issues/183)
+- Implement search before/after  [\#176](https://github.com/gisaia/ARLAS-web-contributors/issues/176)
+- \[ChipsSearchContributor\] Remove onLastBackspace Subject from the contributor constructor arguments [\#187](https://github.com/gisaia/ARLAS-web-contributors/pull/187) ([sebbousquet](https://github.com/sebbousquet))
+- Add onChangeAoi method [\#185](https://github.com/gisaia/ARLAS-web-contributors/pull/185) ([mbarbet](https://github.com/mbarbet))
+
+**Miscellaneous:**
+
+- \[RESULTLIST\] : Deprecate 'getMoreData' method. [\#191](https://github.com/gisaia/ARLAS-web-contributors/issues/191)
+
 ## [v10.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.2.1) (2019-07-08)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.2.0...v10.2.1)
+
+**Fixed bugs:**
+
+- Fix typo in mapcontributor [\#181](https://github.com/gisaia/ARLAS-web-contributors/pull/181) ([mbarbet](https://github.com/mbarbet))
 
 ## [v10.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.2.0) (2019-07-04)
 
