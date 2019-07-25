@@ -17,7 +17,6 @@
  * under the License.
  */
 
-
 import { Observable, from } from 'rxjs';
 import { filter, map, finalize } from 'rxjs/operators';
 
@@ -30,19 +29,19 @@ import {
     Projection, Hits,
     Filter, Aggregation, Expression, Hit
 } from 'arlas-api';
-import { getElementFromJsonObject, isArray, download } from '../utils/utils';
-import { Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration } from '../models/models';
+import { getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex, ASC } from '../utils/utils';
+import { Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration, PageEnum } from '../models/models';
 import jp from 'jsonpath/jsonpath.min';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 
 /**
-* Interface define in Arlas-web-components
+* Interface defined in Arlas-web-components
 */
 export interface DetailedDataRetriever {
     getData(identifier: string): Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }>;
 }
 /**
-* Class instanciate to retrieve the detail of an item of a resultlistcomponent.
+* Implementation of `DetailedDataRetriever` interface to retrieve detailed information about an item in the resultlist.
 */
 export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     /**
@@ -52,7 +51,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     /**
     * Method to retrieve detail data of an item
     * @param identifier string id of the item
-    * @returns an observable of object which contains map key,value details and array of Action
+    * @returns an observable of object that contains details information in form of a map and an array of actions applicable on the item.
     */
     public getData(identifier: string): Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> {
         let searchResult: Observable<Hits>;
@@ -180,17 +179,30 @@ export class ResultListContributor extends Contributor {
     public filtersMap: Map<string, string | number | Date> = new Map<string, string | number | Date>();
 
     /**
-     A configuration object that allows to set id field, title field, fields used in tooltip/icons and urls
-   * to images && thumbnails
+     * A configuration object that allows to set id field, title field, fields used in tooltip/icons and urls to images & thumbnails
      */
     public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
 
-    public filter = {};
-
     /**
-     * Sort parameter of the list.
+     * Number of items in a page of the list. Default to 100.
+     */
+    public pageSize = this.getConfigValue('search_size') ? this.getConfigValue('search_size') : 100;
+    /**
+     * Maximum number of pages that the contributor fetches. Default to 3.
+     */
+    public maxPages = this.getConfigValue('max_pages') ? this.getConfigValue('max_pages') : 3;
+    /**
+     * Indicates whether the contributor reached the start/end page
+     */
+    public fetchState = { endListUp: true, endListDown: false };
+    /**
+     * A filter that is taken into account when fetching list items and that is not included in the global collaboration.
+     */
+    public filter = {};
+    /**
+     * comma seperated field names that sort the list. Order matters.
     */
-    private sort = '';
+    public sort = '';
     /**
      * geoSort parameter of the list.
     */
@@ -198,6 +210,9 @@ export class ResultListContributor extends Contributor {
     private includesvalues = new Array<string>();
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
+    /** CONSTANTS */
+    private NEXT_AFTER = '_nextAfter';
+    private PREVIOUS_AFTER = '_previousAfter';
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -348,7 +363,7 @@ export class ResultListContributor extends Contributor {
         if (prefix !== null) {
             sort = prefix + sortOutput.fieldName;
         }
-        this.sort = sort;
+        this.sort = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
         this.geoOrderSort = '';
         this.getHitsObservable(this.includesvalues, this.sort)
             .pipe(
@@ -438,26 +453,70 @@ export class ResultListContributor extends Contributor {
         }
     }
     /**
-    * Method call when emit the output moreDataEvent
-    * @param startFrom· number of time that's scroll bar down
-    */
+     * Method called to load more rows into the list.
+     * @param startFrom It corresponds to the number of times this method is being called. It's used to calculate an offset to get
+     * the following items
+     * @deprecated Use `getPage` method instead
+     */
     public getMoreData(startFrom: number) {
-        if (this.geoOrderSort) {
-            this.getHitsObservable(this.includesvalues, this.geoOrderSort, startFrom * this.getConfigValue('search_size'))
+        const sort = this.geoOrderSort ? this.geoOrderSort : this.sort;
+        const sortWithId = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
+        this.getHitsObservable(this.includesvalues, sortWithId, null, startFrom * this.pageSize)
+            .pipe(
+                map(f => this.computeData(f)),
+                map(f => f.forEach(d => { this.data.push(d); }))
+            )
+            .subscribe(data => data);
+    }
+    /**
+     * Get the previous/following page.
+     * @param reference the last/first hit returned in the list and from which next/previous data is fetched.
+     * @param whichPage Whether to fetch next or previous page.
+     */
+    public getPage(reference: Map<string, string | number | Date>, whichPage: PageEnum): void {
+        const sort = (this.geoOrderSort) ? this.geoOrderSort : this.sort;
+        let after;
+        if (whichPage === PageEnum.previous) {
+            after = reference.get(this.PREVIOUS_AFTER);
+        } else {
+            after = reference.get(this.NEXT_AFTER);
+        }
+        const sortWithId = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
+        if (after !== undefined) {
+            this.getHitsObservable(this.includesvalues, sortWithId, after, null, whichPage)
                 .pipe(
                     map(f => this.computeData(f)),
-                    map(f => f.forEach(d => { this.data.push(d); }))
+                    map(f => {
+                        /**
+                         * if maxPages === -1 then we keep adding data to the list without removing old data
+                         */
+                        if (this.maxPages !== -1) {
+                            (whichPage === PageEnum.next) ? f.forEach(d => { this.data.push(d); }) :
+                                f.reverse().forEach(d => { this.data.unshift(d); });
+                            (whichPage === PageEnum.next) ? removePageFromIndex(0, this.data, this.pageSize, this.maxPages) :
+                                removePageFromIndex(this.data.length - this.pageSize, this.data, this.pageSize, this.maxPages);
+                            if (f.length === 0) {
+                                /** notifies the end of fetching up-items or down-items */
+                                this.fetchState = { endListUp: whichPage === PageEnum.previous, endListDown: whichPage === PageEnum.next };
+                            } else {
+                                this.fetchState = { endListUp: false, endListDown: false };
+                            }
+                        } else {
+                            if (whichPage === PageEnum.next) {
+                                f.forEach(d => { this.data.push(d); });
+                            }
+                            this.fetchState = { endListUp: true, endListDown: f.length === 0 };
+                        }
+                        return f;
+                    })
                 )
                 .subscribe(data => data);
         } else {
-            this.getHitsObservable(this.includesvalues, this.sort, startFrom * this.getConfigValue('search_size'))
-                .pipe(
-                    map(f => this.computeData(f)),
-                    map(f => f.forEach(d => { this.data.push(d); }))
-                )
-                .subscribe(data => data);
+            this.fetchState = { endListUp: whichPage === PageEnum.previous, endListDown: whichPage === PageEnum.next };
         }
+
     }
+
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
         let sort = '';
         if (this.geoOrderSort) {
@@ -467,14 +526,30 @@ export class ResultListContributor extends Contributor {
                 sort = this.sort;
             }
         }
-        return this.getHitsObservable(this.includesvalues, sort);
+        return this.getHitsObservable(this.includesvalues, appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName));
     }
 
     public computeData(hits: Hits): Array<Map<string, string | number | Date>> {
         const listResult = new Array<Map<string, string | number | Date>>();
+        const next = hits.links.next;
+        const previous = hits.links.previous;
+        let nextAfter;
+        let previousAfter;
+        if (next) {
+            nextAfter = new URL(next.href).searchParams.get('after');
+        }
+        if (previous) {
+            previousAfter = new URL(previous.href).searchParams.get('before');
+        }
         if (hits.nbhits > 0) {
             hits.hits.forEach(h => {
                 const fieldValueMap = new Map<string, string | number | Date>();
+                if (next) {
+                    fieldValueMap.set(this.NEXT_AFTER, nextAfter);
+                }
+                if (previous) {
+                    fieldValueMap.set(this.PREVIOUS_AFTER, previousAfter);
+                }
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
                     const process: string = this.columnsProcess[element.columnName];
@@ -574,19 +649,33 @@ export class ResultListContributor extends Contributor {
         });
 
     }
-
-    private getHitsObservable(includesvalues: Array<string>, sort?: string, origin?: number): Observable<Hits> {
+    /**
+     * Returns an observable of Hits
+     * @param includesvalues List of field names to include in the Hits
+     * @param sort comma separated field names on which hits are sorted
+     * @param reference comma seperated field values from which next/previous data is fetched
+     * @param origin (page.from in arlas api) an offset from which fetching hits starts. It's ignored if reference is set.
+     */
+    private getHitsObservable(includesvalues: Array<string>, sort?: string, reference?: string,
+        origin?: number, whichPage?: PageEnum): Observable<Hits> {
         const projection: Projection = {};
-        const search: Search = { page: { size: this.getConfigValue('search_size') } };
+        const search: Search = { page: { size: this.pageSize } };
         if (sort) {
             search.page.sort = sort;
         }
-        if (origin) {
-            search.page.from = origin;
+        if (reference) {
+            if (whichPage === PageEnum.previous) {
+                search.page.before = reference;
+            } else {
+                search.page.after = reference;
+            }
+        } else {
+            if (origin !== undefined && origin !== null) {
+                search.page.from = origin;
+            }
         }
         search.projection = projection;
         projection.includes = includesvalues.join(',');
-        const newData = [];
         const searchResult = this.collaborativeSearcheService
             .resolveButNotHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, this.filter)
             .pipe(

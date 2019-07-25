@@ -57,3 +57,63 @@ export function download(text: string, name: string, type: string) {
     const file = new Blob([text], { type: type });
     FileSaver.saveAs(file, name);
 }
+
+export const ASC = 'asc';
+export const DESC = 'desc';
+
+/**
+ * @description appends the `idFieldName` to sortString
+ * @param sortString comma separated field names.
+ * @param order whether to apply ascending or descending sort on `idFieldName`. Possible values are `asc` and `desc`
+ */
+export function appendIdToSort(sortString: string, order: string = ASC, idFieldName: string): string {
+    let sortStringWithId = sortString;
+    const regex = new RegExp('-?' + idFieldName + ',?');
+    const match = sortString.match(regex);
+    if (match !== null) {
+        match.forEach(m => {
+            sortStringWithId = sortString.replace(m, '');
+        });
+    }
+    if (sortStringWithId.endsWith(',')) {
+        sortStringWithId = sortStringWithId.substring(0, sortStringWithId.length - 1);
+    }
+    const idFieldToAppend = (order === DESC) ? '-' + idFieldName : idFieldName;
+    if (sortStringWithId !== '') {
+        sortStringWithId += ',';
+    }
+    sortStringWithId += idFieldToAppend;
+    return sortStringWithId;
+}
+
+/**
+ * This method invert the sort direction of `sortString`. It is used when fetching previous pages.
+ * @param sortString comma separated fields on which sort is applied
+ */
+export function invertSortDirection(sortString: string): string {
+    if (sortString !== '') {
+        const invertedSortList = Array.from(sortString.split(',')).map(s => {
+            if (s.startsWith('-')) {
+                return s.substring(1, s.length);
+            } else {
+                return '-' + s;
+            }
+        });
+        return invertedSortList.join(',');
+    } else {
+        return sortString;
+    }
+}
+
+/**
+ *
+ * @param fromIndex remove `pageSize` elements from `data` array starting from `fromIndex`
+ * @param data the data list from which pages are removed
+ * @param pageSize how many hits/features are inside each page
+ * @param maxPages Maximum number of pages to keep in `data` list
+ */
+export function removePageFromIndex(fromIndex, data: Array<any>, pageSize: number, maxPages: number): void {
+    if (data.length > pageSize * maxPages) {
+        data.splice(fromIndex, pageSize);
+    }
+}

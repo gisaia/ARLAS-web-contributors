@@ -30,9 +30,9 @@ import {
     Aggregation, Projection,
     Filter, Page, FeatureCollection
 } from 'arlas-api';
-import { OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
-import { getElementFromJsonObject } from '../utils/utils';
-import { decode_bbox, bboxes } from 'ngeohash';
+import { OnMoveResult, ElementIdentifier, triggerType, PageEnum } from '../models/models';
+import { appendIdToSort, removePageFromIndex, ASC } from '../utils/utils';
+import { bboxes } from 'ngeohash';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bbox from '@turf/bbox';
@@ -107,21 +107,34 @@ export class MapContributor extends Contributor {
     public strategyEnum = geomStrategyEnum;
 
     public countExtendBus = new Subject<{ count: number, threshold: number }>();
-    // By default the contributor compute the data in dynamic way, switch cluster/feature mode with zoom and number of features
-    // In the simple mode the contributor return just the features (with a sort and size and optional filter)
+    /**
+     * By default the contributor computes the data in a dynamic way (`Dynamic mode`): it switches between
+     * `clusters` and `features` mode according to the zoom level and the number of features.
+     * In the `Simple mode` the contributor returns just the features (with a given sort and size and an optional filter)
+     */
     public dataMode: dataMode = dataMode.dynamic;
-
+    /**
+     * A filter that is taken into account when fetching features and that is not included in the global collaboration.
+     * It's used in `Simple mode` only.
+     */
     public expressionFilter: Expression;
+    /**
+     * Number of features fetched in a geosearch request. It's used in `Simple mode` only. Default to 100.
+     */
     public searchSize = 100;
-    public searchSort = '';
-
     /**
-    /**
-    * ARLAS Server Aggregation used to draw the data on small zoom level, define in configuration
+     * comma seperated field names that sort the features. Order matters. It's used in `Simple mode` only.
     */
+    public searchSort = '';
+    /**
+     * ARLAS Server Aggregation used to aggregate features and display them in `clusters` mode. Defined in configuration
+     */
     public aggregation: Array<Aggregation> = this.getConfigValue('aggregationmodels');
     public precision;
 
+    /** CONSTANTS */
+    private NEXT_AFTER = '_nextAfter';
+    private PREVIOUS_AFTER = '_previousAfter';
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -160,7 +173,8 @@ export class MapContributor extends Contributor {
 
     public fetchDataSimpleMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         this.geojsondata.features = [];
-        return this.fetchDataGeoSearch();
+        const sortWithId = appendIdToSort(this.searchSort, ASC, this.idFieldName);
+        return this.fetchDataGeoSearch(this.includeFeaturesFields, sortWithId);
     }
 
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
@@ -232,7 +246,6 @@ export class MapContributor extends Contributor {
                 return this.setDataGeohashGeoaggregate(data);
             }
         }
-
     }
 
     public setSelection(data: any, collaboration: Collaboration): any {
@@ -592,7 +605,8 @@ export class MapContributor extends Contributor {
 
     public drawGeoSearch(fromParam?) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        this.fetchDataGeoSearch(fromParam)
+        const sortWithId = appendIdToSort(this.searchSort, ASC, this.idFieldName);
+        this.fetchDataGeoSearch(this.includeFeaturesFields, sortWithId, null, null, fromParam)
             .pipe(
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
@@ -676,23 +690,76 @@ export class MapContributor extends Contributor {
         return features;
 
     }
-
-    public fetchDataGeoSearch(fromParam?): Observable<FeatureCollection> {
+    /**
+     * Get the previous/following set of data.
+     * @param reference the last/first feature returned  and from which next/previous data is fetched.
+     * @param sort comma separated field names on which feature are sorted.
+     * @param whichPage Whether to fetch next or previous set.
+     * @param maxPages The maxumum number of set features.
+     */
+    public getPage(reference: Map<string, string | number | Date>, sort: string, whichPage: PageEnum, maxPages: number): void {
+        let after;
+        if (whichPage === PageEnum.previous) {
+            after = reference.get(this.PREVIOUS_AFTER);
+        } else {
+            after = reference.get(this.NEXT_AFTER);
+        }
+        const sortWithId = appendIdToSort(sort, ASC, this.idFieldName);
+        if (after !== undefined) {
+            this.fetchDataGeoSearch(this.includeFeaturesFields, sortWithId, after, whichPage)
+                .pipe(
+                    map(f => (f && f.features) ? f.features : []),
+                    map(f => {
+                        if (maxPages !== -1) {
+                            (whichPage === PageEnum.next) ? f.forEach(d => { this.geojsondata.features.push(d); })
+                                : f.reverse().forEach(d => { this.geojsondata.features.unshift(d); });
+                            (whichPage === PageEnum.next) ? removePageFromIndex(0, this.geojsondata.features, this.searchSize, maxPages) :
+                                removePageFromIndex(this.geojsondata.features.length - this.searchSize, this.geojsondata.features,
+                                    this.searchSize, maxPages);
+                        } else {
+                            if (whichPage === PageEnum.next) {
+                                f.forEach(d => { this.geojsondata.features.push(d); });
+                            }
+                        }
+                        this.redrawTile.next(true);
+                    })
+                ).subscribe(data => data);
+        }
+    }
+    /**
+     * Fetches the data for the `Simple mode`
+     * @param includeFeaturesFields properties to include in geojson features
+     * @param sort comma separated field names on which feature are sorted.
+     * @param afterParam comma seperated field values from which next/previous data is fetched
+     * @param whichPage Whether to fetch next or previous set.
+     * @param fromParam (page.from in arlas api) an offset from which fetching hits starts. It's ignored if `afterParam` is set.
+     */
+    public fetchDataGeoSearch(includeFeaturesFields: Array<string>, sort: string,
+        afterParam?: string, whichPage?: PageEnum, fromParam?): Observable<FeatureCollection> {
         const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2]
             + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
         const filter: Filter = this.getFilterForCount(pwithin);
         if (this.expressionFilter !== undefined) {
             filter.f = [[this.expressionFilter]];
         }
-        const search: Search = { page: { size: this.searchSize, sort: this.searchSort }, form: { flat: this.isFlat } };
-        if (fromParam !== undefined) {
-            search.page.from = fromParam;
+        const search: Search = { page: { size: this.searchSize, sort: sort }, form: { flat: this.isFlat } };
+        if (afterParam) {
+            if (whichPage === PageEnum.next) {
+                search.page.after = afterParam;
+            } else {
+                search.page.before = afterParam;
+            }
+        } else {
+            if (fromParam !== undefined) {
+                search.page.from = fromParam;
+            }
         }
+
         const projection: Projection = {};
         let includes = '';
         let separator = '';
-        if (this.includeFeaturesFields !== undefined) {
-            this.includeFeaturesFields.forEach(field => {
+        if (includeFeaturesFields !== undefined) {
+            includeFeaturesFields.forEach(field => {
                 if (field !== this.idFieldName) {
                     includes += separator + field;
                     separator = ',';
@@ -749,8 +816,7 @@ export class MapContributor extends Contributor {
             if (f.properties !== undefined) {
                 return f.properties[this.idFieldName];
             }
-        }
-        ));
+        }));
         if (featureCollection.features !== undefined) {
             return featureCollection.features
                 .map(f => [f.properties[this.idFieldName], f])

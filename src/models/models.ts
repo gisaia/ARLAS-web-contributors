@@ -159,6 +159,11 @@ export enum DateUnitEnum {
     m = 'm',
     s = 's'
 }
+
+export enum PageEnum {
+    next = 'next', previous = 'previous'
+}
+
 export class DateExpression {
     public anchorDate: number | string;
     public translationDuration: number;

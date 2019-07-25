@@ -12,7 +12,11 @@
             "$ref": "rootContributorConf.schema.json#/definitions/name"
         },
         "search_size": {
-            "description": "The size of search result on server side",
+            "description": "The size of search result on server side. Defaults to 100",
+            "type": "integer"
+        },
+        "max_pages" : {
+            "description": "Maximum number of pages that the contributor fetches. Default to 3.",
             "type": "integer"
         },
         "fieldsConfiguration": {
