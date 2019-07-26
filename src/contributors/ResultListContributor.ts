@@ -206,7 +206,7 @@ export class ResultListContributor extends Contributor {
     /**
      * geoSort parameter of the list.
     */
-    private geoOrderSort = '';
+    public geoOrderSort = '';
     private includesvalues = new Array<string>();
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
@@ -380,7 +380,7 @@ export class ResultListContributor extends Contributor {
     public geoSort(lat: number, lng: number) {
         let sort = '';
         sort = 'geodistance:' + lat.toString() + ' ' + lng.toString();
-        this.geoOrderSort = sort;
+        this.geoOrderSort = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
         this.sort = '';
         this.getHitsObservable(this.includesvalues, this.geoOrderSort)
             .pipe(
