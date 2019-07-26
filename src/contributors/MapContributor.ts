@@ -100,7 +100,7 @@ export class MapContributor extends Contributor {
     public zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
     public zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
     public nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
-    public idFieldName = this.getConfigValue('idFieldName');
+    public idFieldName: string = this.getConfigValue('idFieldName');
     public geomStrategy = this.getConfigValue('geomStrategy');
     public isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
     public isGIntersect = false;
@@ -135,6 +135,8 @@ export class MapContributor extends Contributor {
     /** CONSTANTS */
     private NEXT_AFTER = '_nextAfter';
     private PREVIOUS_AFTER = '_previousAfter';
+    private FLAT_CHAR = '_';
+
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -804,14 +806,15 @@ export class MapContributor extends Contributor {
     }
 
     public computeDataTileSearch(featureCollection: FeatureCollection): Array<any> {
+        const idProperty = this.isFlat ? this.idFieldName.replace(/\./g, this.FLAT_CHAR) : this.idFieldName;
         const dataSet = new Set(this.geojsondata.features.map(f => {
             if (f.properties !== undefined) {
-                return f.properties[this.idFieldName];
+                return f.properties[idProperty];
             }
         }));
         if (featureCollection.features !== undefined) {
             return featureCollection.features
-                .map(f => [f.properties[this.idFieldName], f])
+                .map(f => [f.properties[idProperty], f])
                 .filter(f => dataSet.has(f[0]) === false)
                 .map(f => f[1]);
         } else {
