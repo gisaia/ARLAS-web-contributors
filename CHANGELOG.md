@@ -1,5 +1,14 @@
 # Change Log
 
+## [v11.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.0.1) (2019-07-29)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.0.0...v11.0.1)
+
+**Fixed bugs:**
+
+- \[MAP\] nested 'idFieldName' does not work properly [\#195](https://github.com/gisaia/ARLAS-web-contributors/issues/195)
+- \[RESULTLIST\] geosort does not append the identifier  [\#194](https://github.com/gisaia/ARLAS-web-contributors/issues/194)
+
 ## [v11.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.0.0) (2019-07-25)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.2.1...v11.0.0)
