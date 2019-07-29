@@ -349,10 +349,11 @@ export class ResultListContributor extends Contributor {
         }
     }
     /**
-    * Method call when emit the output sortColumnEvent
-    * @param sort sort params
+    * Method called when emit the output sortColumnEvent
+    * @param sortOutput sort param
+    * @param sortById whether to add a sort by id to the sorted column
     */
-    public sortColumn(sortOutput: { fieldName: string, sortDirection: SortEnum }) {
+    public sortColumn(sortOutput: { fieldName: string, sortDirection: SortEnum }, sortById?: boolean) {
         let prefix = null;
         if (sortOutput.sortDirection.toString() === '0') {
             prefix = '';
@@ -363,7 +364,11 @@ export class ResultListContributor extends Contributor {
         if (prefix !== null) {
             sort = prefix + sortOutput.fieldName;
         }
-        this.sort = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
+        if (sortById) {
+            this.sort = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
+        } else {
+            this.sort = sort;
+        }
         this.geoOrderSort = '';
         this.getHitsObservable(this.includesvalues, this.sort)
             .pipe(
@@ -374,13 +379,19 @@ export class ResultListContributor extends Contributor {
             .subscribe(data => data);
     }
     /**
-    * Method call when emit the output sortColumnEvent
-    * @param sort sort params
+    * Method sorts by geo-distance to a given geo-point
+    * @param lat latitude of the geo-point
+    * @param lng longitude of the geo-point
+    * @param sortById whether to add a sort by id to the geosort or not
     */
-    public geoSort(lat: number, lng: number) {
-        let sort = '';
-        sort = 'geodistance:' + lat.toString() + ' ' + lng.toString();
-        this.geoOrderSort = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
+    public geoSort(lat: number, lng: number, sortById?: boolean) {
+        let geosort = '';
+        geosort = 'geodistance:' + lat.toString() + ' ' + lng.toString();
+        if (sortById) {
+            this.geoOrderSort = appendIdToSort(geosort, ASC, this.fieldsConfiguration.idFieldName);
+        } else {
+            this.geoOrderSort = geosort;
+        }
         this.sort = '';
         this.getHitsObservable(this.includesvalues, this.geoOrderSort)
             .pipe(
@@ -456,12 +467,18 @@ export class ResultListContributor extends Contributor {
      * Method called to load more rows into the list.
      * @param startFrom It corresponds to the number of times this method is being called. It's used to calculate an offset to get
      * the following items
+     * @param sortById Whether to add a sortById to the cuurent sort/geosort
      * @deprecated Use `getPage` method instead
      */
-    public getMoreData(startFrom: number) {
-        const sort = this.geoOrderSort ? this.geoOrderSort : this.sort;
-        const sortWithId = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
-        this.getHitsObservable(this.includesvalues, sortWithId, null, startFrom * this.pageSize)
+    public getMoreData(startFrom: number, sortById?: boolean) {
+        const currentSort = this.geoOrderSort ? this.geoOrderSort : this.sort;
+        let sort;
+        if (sortById) {
+            sort = appendIdToSort(currentSort, ASC, this.fieldsConfiguration.idFieldName);
+        } else {
+            sort = currentSort;
+        }
+        this.getHitsObservable(this.includesvalues, sort, null, startFrom * this.pageSize)
             .pipe(
                 map(f => this.computeData(f)),
                 map(f => f.forEach(d => { this.data.push(d); }))
@@ -526,7 +543,7 @@ export class ResultListContributor extends Contributor {
                 sort = this.sort;
             }
         }
-        return this.getHitsObservable(this.includesvalues, appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName));
+        return this.getHitsObservable(this.includesvalues, sort);
     }
 
     public computeData(hits: Hits): Array<Map<string, string | number | Date>> {

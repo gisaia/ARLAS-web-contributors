@@ -175,8 +175,7 @@ export class MapContributor extends Contributor {
 
     public fetchDataSimpleMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         this.geojsondata.features = [];
-        const sortWithId = appendIdToSort(this.searchSort, ASC, this.idFieldName);
-        return this.fetchDataGeoSearch(this.includeFeaturesFields, sortWithId);
+        return this.fetchDataGeoSearch(this.includeFeaturesFields, this.searchSort);
     }
 
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
@@ -597,10 +596,10 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public drawGeoSearch(fromParam?) {
+    public drawGeoSearch(fromParam?: number, appendId?: boolean) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        const sortWithId = appendIdToSort(this.searchSort, ASC, this.idFieldName);
-        this.fetchDataGeoSearch(this.includeFeaturesFields, sortWithId, null, null, fromParam)
+        const sort = appendId ? appendIdToSort(this.searchSort, ASC, this.idFieldName) : this.searchSort;
+        this.fetchDataGeoSearch(this.includeFeaturesFields, sort, null, null, fromParam)
             .pipe(
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
