@@ -65,13 +65,12 @@ export class TopoMapContributor extends MapContributor {
     */
     constructor(
         public identifier,
-        public onRemoveBboxBus: Subject<boolean>,
         public redrawTile: Subject<boolean>,
         public collaborativeSearcheService: CollaborativesearchService,
         public configService: ConfigService,
         gIntersect?: boolean
     ) {
-        super(identifier, onRemoveBboxBus, redrawTile, collaborativeSearcheService, configService, gIntersect);
+        super(identifier, redrawTile, collaborativeSearcheService, configService, gIntersect);
     }
 
     public getPackageName(): string {
@@ -85,7 +84,7 @@ export class TopoMapContributor extends MapContributor {
         this.currentGeohashList = [];
         if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
             if (collaborationEvent.all || collaborationEvent.id === this.identifier) {
-                this.onRemoveBboxBus.next(true);
+               // this.onRemoveBboxBus.next(true);
             }
         }
         this.maxValueGeoHash = 0;

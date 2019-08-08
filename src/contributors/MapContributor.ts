@@ -42,7 +42,7 @@ import { getBounds, tileToString } from './../utils/mapUtils';
 import { from } from 'rxjs/observable/from';
 import * as helpers from '@turf/helpers';
 
-import { stringify,parse } from 'wellknown';
+import { stringify, parse } from 'wellknown';
 
 
 
@@ -84,11 +84,7 @@ export class MapContributor extends Contributor {
         'type': 'FeatureCollection',
         'features': []
     };
-    public geojsonbbox: { type: string, features: Array<any> }= {
-        'type': 'FeatureCollection',
-        'features': []
-    };
-    public geojsondraw: { type: string, features: Array<any> }= {
+    public geojsondraw: { type: string, features: Array<any> } = {
         'type': 'FeatureCollection',
         'features': []
     };
@@ -155,7 +151,6 @@ export class MapContributor extends Contributor {
     */
     constructor(
         public identifier,
-        public onRemoveBboxBus: Subject<boolean>,
         public redrawTile: Subject<boolean>,
         public collaborativeSearcheService: CollaborativesearchService,
         public configService: ConfigService,
@@ -192,7 +187,8 @@ export class MapContributor extends Contributor {
         this.currentGeohashList = [];
         if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
             if (collaborationEvent.all || collaborationEvent.id === this.identifier) {
-                this.onRemoveBboxBus.next(true);
+                // DONT REMEMBER WHY THIS CODE LIKE A HACK
+                // this.onRemoveBboxBus.next(true);
             }
         }
         this.maxValueGeoHash = 0;
@@ -273,8 +269,9 @@ export class MapContributor extends Contributor {
             } else {
                 aois = collaboration.filter.pwithin[0];
             }
-            if(aois.filter(aoi=>aoi.indexOf("POLYGON")<0).length>0){
+            if (aois.filter(aoi => aoi.indexOf('POLYGON') < 0).length > 0) {
                 // BBOX MODE
+                let index = 1;
                 aois.forEach(b => {
                     const box = b.split(',');
                     let coordinates = [];
@@ -293,13 +290,14 @@ export class MapContributor extends Contributor {
                             [(parseFloat(box[0])).toString(), box[3]],
                             [(parseFloat(box[0])).toString(), box[1]],
                             [(parseFloat(box[2]) + 360).toString(), box[1]]
-    
+
                         ]];
                     }
                     const polygonGeojson = {
                         type: 'Feature',
                         properties: {
-    
+                            source: 'bbox',
+                            arlas_id: index
                         },
                         geometry: {
                             type: 'Polygon',
@@ -307,24 +305,25 @@ export class MapContributor extends Contributor {
                         }
                     };
                     polygonGeojsons.push(polygonGeojson);
+                    index = index + 1;
                 });
-                this.geojsonbbox = {
+                this.geojsondraw = {
                     'type': 'FeatureCollection',
                     'features': polygonGeojsons
                 };
-            }else{
+            } else {
                 // WKT MODE
                 let index = 0;
-                aois.forEach(polygon=>{
+                aois.forEach(polygon => {
                     const geojsonWKT = parse(polygon);
                     const feature = {
-                      type: 'Feature',
-                      geometry: geojsonWKT,
-                      properties: { arlas_id: index }
+                        type: 'Feature',
+                        geometry: geojsonWKT,
+                        properties: { arlas_id: index }
                     };
                     polygonGeojsons.push(feature);
-                    index=index+1;
-                })
+                    index = index + 1;
+                });
                 this.geojsondraw = {
                     'type': 'FeatureCollection',
                     'features': polygonGeojsons
@@ -332,11 +331,10 @@ export class MapContributor extends Contributor {
             }
             this.isBbox = true;
         } else {
-            this.geojsonbbox = {
+            this.geojsondraw = {
                 'type': 'FeatureCollection',
                 'features': []
             };
-            this.geojsondraw =this.geojsonbbox;
         }
         return from([]);
     }
@@ -391,51 +389,6 @@ export class MapContributor extends Contributor {
         return (w === min) ? max : w;
     }
 
-    public onChangeBbox(newBbox: Array<Object>) {
-        let filters: Filter;
-        const pwithinArray: Array<string> = [];
-        const numberOfBbox = newBbox.length;
-        const lastBbox = newBbox[numberOfBbox - 1];
-        const lastCoord = lastBbox['geometry']['coordinates'][0];
-        const north = lastCoord[1][1];
-        const west = this.wrap(lastCoord[2][0], -180, 180);
-        const south = lastCoord[0][1];
-        const east = this.wrap(lastCoord[0][0], -180, 180);
-        const last_pwithin = west + ',' + south + ',' + east + ',' + north;
-        const lastBboxFeature = bboxPolygon([west, south, east, north]);
-        for (let _i = 0; _i < numberOfBbox - 1; _i++) {
-            const v = newBbox[_i];
-            const coord = v['geometry']['coordinates'][0];
-            const n = coord[1][1];
-            const w = this.wrap(coord[2][0], -180, 180);
-            const s = coord[0][1];
-            const e = this.wrap(coord[0][0], -180, 180);
-            const pwithin = w + ',' + s + ',' + e + ',' + n;
-            const bboxFeature = bboxPolygon([w, s, e, n]);
-            const isbboxInclude = booleanContains(lastBboxFeature, bboxFeature);
-            const isLastBboxInclude = booleanContains(bboxFeature, lastBboxFeature);
-            if (!isbboxInclude && !isLastBboxInclude) {
-                pwithinArray.push(pwithin.trim().toLocaleLowerCase());
-            }
-        }
-        pwithinArray.push(last_pwithin.trim().toLocaleLowerCase());
-        if (this.isGIntersect) {
-            filters = {
-                gintersect: [pwithinArray],
-            };
-        } else {
-            filters = {
-                pwithin: [pwithinArray],
-            };
-        }
-        const data: Collaboration = {
-            filter: filters,
-            enabled: true
-        };
-        this.isBbox = true;
-        this.collaborativeSearcheService.setFilter(this.identifier, data);
-    }
-
     /**
      * Runs when a geometry (bbox, polygon, ...) is drawn, removed or changed
      * @beta This method is being tested. It will replace `onChangeBbox` and `onRemoveBbox`
@@ -443,7 +396,7 @@ export class MapContributor extends Contributor {
      */
     public onChangeAoi(fc: helpers.FeatureCollection) {
         let filters: Filter;
-        if (fc.features.filter(f => f.properties.type === 'bbox').length > 0) {
+        if (fc.features.filter(f => f.properties.source === 'bbox').length > 0) {
             const pwithinArray = this.getBboxsForQuery(fc.features);
             if (this.isGIntersect) {
                 filters = {
@@ -616,14 +569,6 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public onRemoveBbox(isBboxRemoved: boolean) {
-        if (isBboxRemoved) {
-            this.isBbox = false;
-            if (this.collaborativeSearcheService.getCollaboration(this.identifier) !== null) {
-                this.collaborativeSearcheService.removeFilter(this.identifier);
-            }
-        }
-    }
 
     public drawGeoSearch(fromParam?: number, appendId?: boolean) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
