@@ -831,6 +831,18 @@ export class MapContributor extends Contributor {
     }
 
     public getFilterForCount(pwithin: string) {
+        // west, south, east, north
+        const pwithintab = pwithin.trim().split(',');
+        const west = pwithintab[0];
+        const east = pwithintab[2];
+        let finalPwithin = [pwithin.trim()];
+        if (parseFloat(west) > parseFloat(east)) {
+            finalPwithin = [];
+            const firstPwithin = pwithintab[0] + ',' + pwithintab[1] + ',' + '180' + ',' + pwithintab[3];
+            const secondPwithin = '-180' + ',' + pwithintab[1] + ',' + pwithintab[2] + ',' + pwithintab[3];
+            finalPwithin.push(firstPwithin.trim());
+            finalPwithin.push(secondPwithin.trim());
+        }
         let filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         if (collaboration !== null && collaboration !== undefined) {
@@ -839,34 +851,34 @@ export class MapContributor extends Contributor {
                 if (this.isGIntersect) {
                     bboxs = collaboration.filter.gintersect[0];
                     filter = {
-                        gintersect: [[pwithin.trim()], bboxs]
+                        gintersect: [finalPwithin, bboxs]
                     };
                 } else {
                     bboxs = collaboration.filter.pwithin[0];
                     filter = {
-                        pwithin: [[pwithin.trim()], bboxs]
+                        pwithin: [finalPwithin, bboxs]
                     };
                 }
 
             } else {
                 if (this.isGIntersect) {
                     filter = {
-                        gintersect: [[pwithin.trim()]],
+                        gintersect: [finalPwithin],
                     };
                 } else {
                     filter = {
-                        pwithin: [[pwithin.trim()]],
+                        pwithin: [finalPwithin],
                     };
                 }
             }
         } else {
             if (this.isGIntersect) {
                 filter = {
-                    gintersect: [[pwithin.trim()]],
+                    gintersect: [finalPwithin],
                 };
             } else {
                 filter = {
-                    pwithin: [[pwithin.trim()]],
+                    pwithin: [finalPwithin],
                 };
             }
         }
