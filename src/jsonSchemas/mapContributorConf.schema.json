@@ -113,6 +113,10 @@
                     }
                 ]
             }
+        },
+        "drawPrecision": {
+            "description": "Number of  digits after the decimal point for coordinates in geosjon used for filter",
+            "type": "number"
         }
     },
     "required": [

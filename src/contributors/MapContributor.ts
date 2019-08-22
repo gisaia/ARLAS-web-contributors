@@ -38,10 +38,9 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 import bbox from '@turf/bbox';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, tileToString } from './../utils/mapUtils';
+import { getBounds, tileToString, truncate } from './../utils/mapUtils';
 import { from } from 'rxjs/observable/from';
 import * as helpers from '@turf/helpers';
-
 import { stringify, parse } from 'wellknown';
 
 
@@ -108,6 +107,8 @@ export class MapContributor extends Contributor {
     public idFieldName: string = this.getConfigValue('idFieldName');
     public geomStrategy = this.getConfigValue('geomStrategy');
     public isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
+    public drawPrecision = this.getConfigValue('drawPrecision') !== undefined ? this.getConfigValue('drawPrecision') : 6;
+
     public isGIntersect = false;
     public strategyEnum = geomStrategyEnum;
 
@@ -386,7 +387,8 @@ export class MapContributor extends Contributor {
     public wrap(n: number, min: number, max: number): number {
         const d = max - min;
         const w = ((n - min) % d + d) % d + min;
-        return (w === min) ? max : w;
+        const factor = Math.pow(10, this.drawPrecision);
+        return (w === min) ? max : Math.round(w * factor) / factor;
     }
 
     /**
@@ -396,6 +398,7 @@ export class MapContributor extends Contributor {
      */
     public onChangeAoi(fc: helpers.FeatureCollection) {
         let filters: Filter;
+        fc = truncate(fc, { precision: this.drawPrecision });
         if (fc.features.filter(f => f.properties.source === 'bbox').length > 0) {
             const pwithinArray = this.getBboxsForQuery(fc.features);
             if (this.isGIntersect) {
