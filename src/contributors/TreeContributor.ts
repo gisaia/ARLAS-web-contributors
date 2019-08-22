@@ -17,10 +17,12 @@
  * under the License.
  */
 
-import { Observable, from} from 'rxjs';
+import { Observable, from } from 'rxjs';
 
-import { Contributor, ConfigService, CollaborativesearchService, CollaborationEvent,
-    OperationEnum, projType, Collaboration } from 'arlas-web-core';
+import {
+    Contributor, ConfigService, CollaborativesearchService, CollaborationEvent,
+    OperationEnum, projType, Collaboration
+} from 'arlas-web-core';
 import { TreeNode, SimpleNode } from '../models/models';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json';
@@ -31,9 +33,9 @@ import jp from 'jsonpath/jsonpath.min';
  * it can be used to fetch data for Donuts and powerbars
  */
 export class TreeContributor extends Contributor {
-   /**
-     * Title given to the aggregation result
-     */
+    /**
+      * Title given to the aggregation result
+      */
     public title: string;
     /**
      * Data retrieved from ARLAS-server response and to be returned for the donut/powerbars component as an input
@@ -94,8 +96,13 @@ export class TreeContributor extends Contributor {
         const filterAgg: Filter = {};
         // TODO : choose which level of aggregation to filter with `search`
         if (this.search.length > 0) {
-            this.aggregations[0].include = encodeURI(this.search).concat('.*');
-            filterAgg.q = [[this.aggregations[0].field.concat(':').concat(this.search).concat('*')]];
+            this.aggregations[0].include = '.*'.concat(encodeURI(this.search)).concat('.*');
+            const expression: Expression = {};
+            expression.field = this.aggregations[0].field;
+            expression.op = Expression.OpEnum.Like;
+            expression.value = '.*'.concat(this.search).concat('.*');
+            filterAgg.f = [[expression]];
+
         } else {
             delete this.aggregations[0].include;
         }
@@ -164,21 +171,21 @@ export class TreeContributor extends Contributor {
                 this.selectedNodesPathsList.forEach(path => {
                     let id = '';
                     for (let i = 1; i <= path.length; i++) {
-                      id += path[path.length - i].fieldName + path[path.length - i].fieldValue;
-                      olderSelectedNodesPathsMap.set(id, path.slice(path.length - i, path.length));
+                        id += path[path.length - i].fieldName + path[path.length - i].fieldValue;
+                        olderSelectedNodesPathsMap.set(id, path.slice(path.length - i, path.length));
                     }
                 });
                 const mergedMap = new Map([...Array.from(currentSelectedNodesPathsMap.entries()),
-                    ...Array.from(olderSelectedNodesPathsMap.entries())]);
+                ...Array.from(olderSelectedNodesPathsMap.entries())]);
                 const selectedPaths = new Array<Array<SimpleNode>>();
                 mergedMap.forEach((value, key) => {
                     let addpath = true;
                     // check if path has all its nodes fieldNames and fieldValues coherant with the filters in collaboration
                     for (let i = 0; i < value.length; i++) {
-                      if (!mapFiledValues.get(value[i].fieldName) || !mapFiledValues.get(value[i].fieldName).has(value[i].fieldValue)) {
-                        addpath = false;
-                        break;
-                      }
+                        if (!mapFiledValues.get(value[i].fieldName) || !mapFiledValues.get(value[i].fieldName).has(value[i].fieldValue)) {
+                            addpath = false;
+                            break;
+                        }
                     }
                     if (addpath) {
                         selectedPaths.push(value);
@@ -237,8 +244,12 @@ export class TreeContributor extends Contributor {
         this.search = search;
         const filterAgg: Filter = {};
         if (this.search.length > 0) {
-            this.aggregations[0].include = encodeURI(this.search).concat('.*');
-            filterAgg.q = [[this.aggregations[0].field.concat(':').concat(this.search).concat('*')]];
+            this.aggregations[0].include = '.*'.concat(encodeURI(this.search)).concat('.*');
+            const expression: Expression = {};
+            expression.field = this.aggregations[0].field;
+            expression.op = Expression.OpEnum.Like;
+            expression.value = '.*'.concat(this.search).concat('.*');
+            filterAgg.f = [[expression]];
         } else {
             delete this.aggregations[0].include;
         }
@@ -253,18 +264,18 @@ export class TreeContributor extends Contributor {
         });
     }
 
-   /**
-     * @description This method returns the paths of each selected node (the path directions is from the parent to the child).
-     * Those paths are constructed from the values comming from the `Collaboration`
-     * of this contributor and stored in the `mapFieldValues`
-     * @param fieldsList List of fields (which corresponds to the levels of the tree)
-     * @param mapFieldValues maps each field name to its values (nodes names)
-     * @param data the data tree
-     * @param selectedNodesPathsList optional parameter used for recursivity of the method.
-     * It is the list of selected nodes paths returned by the method
-     * @param selectedNodesPath This path is transmitted to next node level to be enriched if children
-     * nodes are to be selected before adding it to `selectedNodesPathsList`
-     */
+    /**
+      * @description This method returns the paths of each selected node (the path directions is from the parent to the child).
+      * Those paths are constructed from the values comming from the `Collaboration`
+      * of this contributor and stored in the `mapFieldValues`
+      * @param fieldsList List of fields (which corresponds to the levels of the tree)
+      * @param mapFieldValues maps each field name to its values (nodes names)
+      * @param data the data tree
+      * @param selectedNodesPathsList optional parameter used for recursivity of the method.
+      * It is the list of selected nodes paths returned by the method
+      * @param selectedNodesPath This path is transmitted to next node level to be enriched if children
+      * nodes are to be selected before adding it to `selectedNodesPathsList`
+      */
     private getSelectedNodesPaths(fieldsList: Array<string>, mapFieldValues: Map<string, Set<string>>, data: TreeNode,
         selectedNodesPathsList?: Array<Array<SimpleNode>>, selectedNodesPath?: Array<SimpleNode>):
         Array<Array<SimpleNode>> {
