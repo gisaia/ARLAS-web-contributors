@@ -1,8 +1,16 @@
 # Change Log
 
+## [v11.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.1.0) (2019-08-22)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.0.1...v11.1.0)
+
 ## [v11.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.0.1) (2019-07-29)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.0.0...v11.0.1)
+
+**New stuff:**
+
+- \[RESULTLIST\] \[MAP\] Make optional the addition of id field to the current sort [\#197](https://github.com/gisaia/ARLAS-web-contributors/issues/197)
 
 **Fixed bugs:**
 
