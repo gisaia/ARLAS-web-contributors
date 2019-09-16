@@ -1,8 +1,17 @@
 # Change Log
 
-## [v11.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.1.0) (2019-08-22)
+## [v11.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.1.1) (2019-09-16)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.1.0...v11.1.1)
+
+## [v11.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.1.0) (2019-09-16)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.0.1...v11.1.0)
+
+**New stuff:**
+
+- \[Tree\] Enhance updateTreeDataSearch filter [\#198](https://github.com/gisaia/ARLAS-web-contributors/issues/198)
+- Change tree search filter [\#199](https://github.com/gisaia/ARLAS-web-contributors/pull/199) ([mbarbet](https://github.com/mbarbet))
 
 ## [v11.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.0.1) (2019-07-29)
 
