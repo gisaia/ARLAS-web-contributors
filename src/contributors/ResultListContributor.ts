@@ -29,16 +29,18 @@ import {
     Projection, Hits,
     Filter, Aggregation, Expression, Hit
 } from 'arlas-api';
-import { getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex, ASC } from '../utils/utils';
-import { Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration, PageEnum } from '../models/models';
-import jp from 'jsonpath/jsonpath.min';
+import { getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex, ASC, getFieldValue } from '../utils/utils';
+import {
+    Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
+    PageEnum, AdditionalInfo, Attachment, AttachmentConfig
+} from '../models/models';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 
 /**
 * Interface defined in Arlas-web-components
 */
 export interface DetailedDataRetriever {
-    getData(identifier: string): Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }>;
+    getData(identifier: string): Observable<AdditionalInfo>;
 }
 /**
 * Implementation of `DetailedDataRetriever` interface to retrieve detailed information about an item in the resultlist.
@@ -53,7 +55,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     * @param identifier string id of the item
     * @returns an observable of object that contains details information in form of a map and an array of actions applicable on the item.
     */
-    public getData(identifier: string): Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> {
+    public getData(identifier: string): Observable<AdditionalInfo> {
         let searchResult: Observable<Hits>;
         const search: Search = { page: { size: 1 } };
         const expression: Expression = {
@@ -67,40 +69,13 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
             this.contributor.identifier, filterExpression);
-        const obs: Observable<{ details: Map<string, Map<string, string>>, actions: Array<Action> }> = searchResult.pipe(map(searchData => {
+        const obs: Observable<AdditionalInfo> = searchResult.pipe(map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details: Array<Detail> = this.contributor.getConfigValue('details');
             details.forEach(group => {
                 const detailedDataMap = new Map<string, string>();
                 group.fields.forEach(field => {
-                    let result = '';
-                    if (field.path.indexOf('.') < 0) {
-                        result = jp.query(searchData.hits[0].data, '$.' + field.path).join(',');
-                    } else {
-                        let query = '$.';
-                        let composePath = '';
-                        let lastElementLength: number;
-                        let isDataArray = false;
-                        let dataElement: any;
-                        field.path.split('.').forEach(pathElment => {
-                            if (isDataArray) {
-                                dataElement = getElementFromJsonObject(dataElement[0], pathElment);
-                            } else {
-                                composePath = composePath + '.' + pathElment;
-                                dataElement = getElementFromJsonObject(searchData.hits[0].data, composePath.substring(1));
-                            }
-                            isDataArray = isArray(dataElement);
-                            if (isArray(dataElement)) {
-                                query = query + pathElment + '[*].';
-                                lastElementLength = 4;
-                            } else {
-                                query = query + pathElment + '.';
-                                lastElementLength = 1;
-                            }
-                        });
-                        query = query.substring(0, query.length - lastElementLength);
-                        result = jp.query(searchData.hits[0].data, query).join(', ');
-                    }
+                    const result = getFieldValue(field.path, searchData.hits[0].data).join(',');
                     if (result.length > 0) {
                         const process: string = field.process;
                         let resultValue = result;
@@ -113,6 +88,33 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                     }
                 });
                 detailsMap.set(group.name, detailedDataMap);
+            });
+            const attachments = new Array<Attachment>();
+            const attachmentsConfig: Array<AttachmentConfig> = (this.contributor.getConfigValue('attachments') !== undefined)
+                ? (this.contributor.getConfigValue('attachments')) : ([]);
+            attachmentsConfig.forEach(att => {
+                const attachmentsValues = getFieldValue(att.attachmentsField, searchData.hits[0].data);
+                if (attachmentsValues && attachmentsValues.length === 1) {
+                    if (isArray(attachmentsValues[0])) {
+                        attachmentsValues[0].forEach(attachmentValue => {
+                            const label = getFieldValue(att.attachmentLabelField,
+                                attachmentValue).toString();
+                            const url = getFieldValue(att.attachementUrlField,
+                                attachmentValue).toString();
+                            const type = getFieldValue(att.attachmentTypeField,
+                                attachmentValue).toString();
+                            const description = getFieldValue(att.attachmentDescriptionField,
+                                attachmentValue).toString();
+                            attachments.push({
+                                label: label,
+                                url: url,
+                                description: description,
+                                type: type,
+                                icon: att.attachmentIcon
+                            });
+                        });
+                    }
+                }
             });
             const actions = new Array<Action>();
             this.contributor.actionToTriggerOnClick.forEach(action => {
@@ -129,8 +131,9 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 actions.push(ac);
 
             });
-            const objectResult = { details: detailsMap, actions: actions };
+            const objectResult = { details: detailsMap, actions: actions, attachments: attachments };
             return objectResult;
+
         }));
         return obs;
     }

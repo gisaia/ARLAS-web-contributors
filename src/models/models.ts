@@ -398,3 +398,26 @@ export interface Field {
     fieldPath: string;
     process?: string;
 }
+
+export interface Attachment {
+    url: string;
+    label?: string;
+    type?: string;
+    description?: string;
+    icon?: string;
+}
+
+export interface AdditionalInfo {
+    details?: Map<string, Map<string, string>>;
+    actions?: Array<Action>;
+    attachments?: Array<Attachment>;
+}
+
+export interface AttachmentConfig {
+    attachmentsField: string;
+    attachementUrlField: string;
+    attachmentLabelField?: string;
+    attachmentTypeField?: string;
+    attachmentDescriptionField?: string;
+    attachmentIcon?: string;
+}

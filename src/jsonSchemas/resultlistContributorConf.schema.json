@@ -15,7 +15,7 @@
             "description": "The size of search result on server side. Defaults to 100",
             "type": "integer"
         },
-        "max_pages" : {
+        "max_pages": {
             "description": "Maximum number of pages that the contributor fetches. Default to 3.",
             "type": "integer"
         },
@@ -179,6 +179,42 @@
                     "name",
                     "order",
                     "fields"
+                ]
+            }
+        },
+        "attachments": {
+            "description": "Attachments for one item, list of attachments",
+            "type": "array",
+            "items": {
+                "properties": {
+                    "attachmentsField": {
+                        "description": "Field path to attachements list",
+                        "type": "string"
+                    },
+                    "attachmentLabelField": {
+                        "description": "Path to Label field inside attachmentsField",
+                        "type": "string"
+                    },
+                    "attachementUrlField": {
+                        "description": "Path to Url field inside attachmentsField",
+                        "type": "string"
+                    },
+                    "attachmentTypeField": {
+                        "description": "Path to Type field inside attachmentsField",
+                        "type": "string"
+                    },
+                    "attachmentDescriptionField": {
+                        "description": "Path to Description field inside attachmentsField",
+                        "type": "string"
+                    },
+                    "attachmentIcon": {
+                        "description": "Material icon value",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "attachmentsField",
+                    "attachementUrlField"
                 ]
             }
         }
