@@ -18,6 +18,9 @@
  */
 
 import * as FileSaver from 'file-saver';
+import jp from 'jsonpath/jsonpath.min';
+import { Hits } from 'arlas-api';
+
 /**
 * Retrieve JSON element from JSON object and string path.
 * @param jsonObject  JSON Object.
@@ -116,4 +119,38 @@ export function removePageFromIndex(fromIndex, data: Array<any>, pageSize: numbe
     if (data.length > pageSize * maxPages) {
         data.splice(fromIndex, pageSize);
     }
+}
+
+export function getFieldValue(field: string, data: Hits): any {
+    let result = '';
+    if (field) {
+        if (field.indexOf('.') < 0) {
+            result = jp.query(data, '$.' + field);
+        } else {
+            let query = '$.';
+            let composePath = '';
+            let lastElementLength: number;
+            let isDataArray = false;
+            let dataElement: any;
+            field.split('.').forEach(pathElment => {
+                if (isDataArray) {
+                    dataElement = getElementFromJsonObject(dataElement[0], pathElment);
+                } else {
+                    composePath = composePath + '.' + pathElment;
+                    dataElement = getElementFromJsonObject(data, composePath.substring(1));
+                }
+                isDataArray = isArray(dataElement);
+                if (isArray(dataElement)) {
+                    query = query + pathElment + '[*].';
+                    lastElementLength = 4;
+                } else {
+                    query = query + pathElment + '.';
+                    lastElementLength = 1;
+                }
+            });
+            query = query.substring(0, query.length - lastElementLength);
+            result = jp.query(data, query);
+        }
+    }
+    return result;
 }
