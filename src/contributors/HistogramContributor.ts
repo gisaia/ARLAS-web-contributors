@@ -26,7 +26,7 @@ import {
     OperationEnum,
     projType, CollaborationEvent
 } from 'arlas-web-core';
-import { Filter, Aggregation, AggregationResponse, RangeResponse, RangeRequest} from 'arlas-api';
+import { Filter, Aggregation, AggregationResponse, RangeResponse, RangeRequest } from 'arlas-api';
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
@@ -65,6 +65,11 @@ export class HistogramContributor extends Contributor {
      * List of shortcuts labels to fetch from the predefined time shortcuts list
      */
     public timeShortcutsLabels: Array<string> = this.getConfigValue('timeShortcuts');
+
+    /**
+     * List of years shortcuts labels
+     */
+    public yearShortcutsLabels: Array<string> = this.getConfigValue('yearShortcuts');
 
     /**
      * Histogram's range
@@ -116,12 +121,18 @@ export class HistogramContributor extends Contributor {
         super(identifier, configService, collaborativeSearcheService);
         const lastAggregation: Aggregation = this.aggregations[this.aggregations.length - 1];
         if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
-            this.timeShortcuts = getPredefinedTimeShortcuts();
+            this.timeShortcuts = getPredefinedTimeShortcuts()
+                .filter(ts => ts.type.indexOf('year') < 0);
             if (this.timeShortcutsLabels) {
-                this.timeShortcuts = this.timeShortcuts.filter(s => this.timeShortcutsLabels.indexOf(s.label) >= 0);
+                this.timeShortcuts = getPredefinedTimeShortcuts()
+                    .filter(s => this.timeShortcutsLabels.indexOf(s.label) >= 0);
+            }
+            if (this.yearShortcutsLabels) {
+                this.timeShortcuts = this.timeShortcuts
+                    .concat(getPredefinedTimeShortcuts()
+                        .filter(s => this.yearShortcutsLabels.indexOf(s.label) >= 0));
             }
         }
-
     }
 
     public static getJsonSchema(): Object {
