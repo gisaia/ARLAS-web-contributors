@@ -41,7 +41,9 @@ import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 */
 export interface DetailedDataRetriever {
     getData(identifier: string): Observable<AdditionalInfo>;
+    getActions(item: any): Observable<Array<Action>>;
 }
+
 /**
 * Implementation of `DetailedDataRetriever` interface to retrieve detailed information about an item in the resultlist.
 */
@@ -50,6 +52,25 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     * Contributor which the ResultListDetailedDataRetriever works
     */
     private contributor: ResultListContributor;
+
+    public getActions(item: any): Observable<Array<Action>> {
+        const actions = new Array<Action>();
+        this.contributor.actionToTriggerOnClick.forEach(action => {
+            const ac: Action = {
+                id: action.id,
+                label: action.label,
+                tooltip: action.tooltip,
+                cssClass: ''
+            };
+            const cssClass = item.itemData ? item.itemData.get(action.cssClass) : undefined;
+            if (cssClass) {
+                ac.cssClass = cssClass;
+            }
+            actions.push(ac);
+
+        });
+        return from(new Array(actions));
+    }
     /**
     * Method to retrieve detail data of an item
     * @param identifier string id of the item
@@ -187,6 +208,10 @@ export class ResultListContributor extends Contributor {
     public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
 
     /**
+     * List of metadata fields to include in the search query
+     */
+    public includeMetadata: Array<string> = this.getConfigValue('includeMetadata');
+    /**
      * Number of items in a page of the list. Default to 100.
      */
     public pageSize = this.getConfigValue('search_size') ? this.getConfigValue('search_size') : 100;
@@ -267,6 +292,9 @@ export class ResultListContributor extends Contributor {
         }
         if (this.fieldsConfiguration.iconColorFieldName) {
             this.includesvalues.push(this.fieldsConfiguration.iconColorFieldName);
+        }
+        if (this.includeMetadata) {
+            this.includeMetadata.forEach(field => this.includesvalues.push(field));
         }
         const setOfIncludeValues = new Set(this.includesvalues);
         this.includesvalues = Array.from(setOfIncludeValues);
