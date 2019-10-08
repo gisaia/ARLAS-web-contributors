@@ -182,6 +182,14 @@
                 ]
             }
         },
+        "includeMetadata": {
+            "description": "List of metadata field paths to include in the search query",
+            "type": "array",
+            "items": {
+                "description": "metadata field path",
+                "type": "string"
+            }
+        },
         "attachments": {
             "description": "Attachments for one item, list of attachments",
             "type": "array",
