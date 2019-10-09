@@ -82,11 +82,6 @@ export class TopoMapContributor extends MapContributor {
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
         this.currentGeohashList = [];
-        if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
-            if (collaborationEvent.all || collaborationEvent.id === this.identifier) {
-               // this.onRemoveBboxBus.next(true);
-            }
-        }
         this.maxValueGeoHash = 0;
         if (this.zoom < this.zoomLevelForTestCount) {
             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);

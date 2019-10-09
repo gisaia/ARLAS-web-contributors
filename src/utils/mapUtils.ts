@@ -93,7 +93,7 @@ export function truncate(geojson, options) {
  * @param {number} coordinates maximum number of coordinates (primarly used to remove z coordinates)
  * @returns {Array<any>} mutated coordinates
  */
-function truncateCoords(coords, factor, coordinates) {
+export function truncateCoords(coords, factor, coordinates) {
     // Remove extra coordinates (usually elevation coordinates and more)
     if (coords.length > coordinates) {
         coords.splice(coordinates, coords.length);
@@ -103,4 +103,15 @@ function truncateCoords(coords, factor, coordinates) {
         coords[i] = Math.round(coords[i] * factor) / factor;
     }
     return coords;
+}
+
+
+export function isClockwise(poly) {
+    let sum = 0;
+    for (let i = 0; i < poly.length - 1; i++) {
+        const cur = poly[i];
+        const next = poly[i + 1];
+        sum += (next[0] - cur[0]) * (next[1] + cur[1]);
+    }
+    return sum > 0;
 }
