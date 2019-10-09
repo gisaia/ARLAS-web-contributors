@@ -34,7 +34,7 @@
             "description": "",
             "type":"array",
             "itesms":{
-                "type":"number"
+                "type":"string"
             }
         },
         "jsonpath":{
