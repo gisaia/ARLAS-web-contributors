@@ -1,5 +1,13 @@
 # Change Log
 
+## [v11.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.3.0) (2019-10-09)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.2.0...v11.3.0)
+
+**New stuff:**
+
+- Add getActions method to DetailedDataRetriever interface [\#212](https://github.com/gisaia/ARLAS-web-contributors/pull/212) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
 ## [v11.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.2.0) (2019-10-02)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.1.1...v11.2.0)
@@ -8,6 +16,7 @@
 
 - \[RESULTLIST\] Add attachments in detailed information [\#206](https://github.com/gisaia/ARLAS-web-contributors/issues/206)
 - \[Utils\] add a years in predefined time shortcut [\#205](https://github.com/gisaia/ARLAS-web-contributors/issues/205)
+- Remove lib vulnerability [\#210](https://github.com/gisaia/ARLAS-web-contributors/pull/210) ([mbarbet](https://github.com/mbarbet))
 - Update arlas core version [\#209](https://github.com/gisaia/ARLAS-web-contributors/pull/209) ([mbarbet](https://github.com/mbarbet))
 - Add years to time shortcut [\#208](https://github.com/gisaia/ARLAS-web-contributors/pull/208) ([mbarbet](https://github.com/mbarbet))
 
