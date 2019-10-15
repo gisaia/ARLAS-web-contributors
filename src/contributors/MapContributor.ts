@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, generate } from 'rxjs';
 import { map, finalize, flatMap, mergeAll } from 'rxjs/operators';
 
 import {
@@ -38,11 +38,10 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 import bbox from '@turf/bbox';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, tileToString } from './../utils/mapUtils';
+import { getBounds, tileToString, truncate, isClockwise } from './../utils/mapUtils';
 import { from } from 'rxjs/observable/from';
 import * as helpers from '@turf/helpers';
-
-
+import { stringify, parse } from 'wellknown';
 
 export enum geomStrategyEnum {
     bbox,
@@ -81,8 +80,10 @@ export class MapContributor extends Contributor {
         'type': 'FeatureCollection',
         'features': []
     };
-    public geojsonbbox: { type: string, features: Array<any> };
-
+    public geojsondraw: { type: string, features: Array<any> } = {
+        'type': 'FeatureCollection',
+        'features': []
+    };
     public includeFeaturesFields: Array<string> = this.getConfigValue('includeFeaturesFields');
     public isGeoaggregateCluster = true;
     public fetchType: fetchType = fetchType.geohash;
@@ -95,7 +96,6 @@ export class MapContributor extends Contributor {
     public geohashList: Array<string> = bboxes(-90, -180, 90, 180, 1);
     public currentGeohashList: Array<string> = new Array<string>();
     public currentStringedTilesList: Array<string> = new Array<string>();
-    public isBbox = false;
     public mapExtend = [90, -180, -90, 180];
     public zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
     public zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
@@ -103,6 +103,8 @@ export class MapContributor extends Contributor {
     public idFieldName: string = this.getConfigValue('idFieldName');
     public geomStrategy = this.getConfigValue('geomStrategy');
     public isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
+    public drawPrecision = this.getConfigValue('drawPrecision') !== undefined ? this.getConfigValue('drawPrecision') : 6;
+
     public isGIntersect = false;
     public strategyEnum = geomStrategyEnum;
 
@@ -146,7 +148,6 @@ export class MapContributor extends Contributor {
     */
     constructor(
         public identifier,
-        public onRemoveBboxBus: Subject<boolean>,
         public redrawTile: Subject<boolean>,
         public collaborativeSearcheService: CollaborativesearchService,
         public configService: ConfigService,
@@ -181,11 +182,6 @@ export class MapContributor extends Contributor {
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         this.currentStringedTilesList = [];
         this.currentGeohashList = [];
-        if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
-            if (collaborationEvent.all || collaborationEvent.id === this.identifier) {
-                this.onRemoveBboxBus.next(true);
-            }
-        }
         this.maxValueGeoHash = 0;
         if (this.zoom < this.zoomLevelForTestCount) {
             this.fetchType = fetchType.geohash;
@@ -258,52 +254,75 @@ export class MapContributor extends Contributor {
         this.redrawTile.next(true);
         if (collaboration !== null) {
             const polygonGeojsons = [];
-            let bboxs: any;
+            let aois: string[];
             if (this.isGIntersect) {
-                bboxs = collaboration.filter.gintersect[0];
+                aois = collaboration.filter.gintersect[0];
             } else {
-                bboxs = collaboration.filter.pwithin[0];
+                aois = collaboration.filter.pwithin[0];
             }
-            bboxs.forEach(b => {
-                const box = b.split(',');
-                let coordinates = [];
-                if (parseFloat(box[0]) < parseFloat(box[2])) {
-                    coordinates = [[
-                        [box[2], box[1]],
-                        [box[2], box[3]],
-                        [box[0], box[3]],
-                        [box[0], box[1]],
-                        [box[2], box[1]],
-                    ]];
-                } else {
-                    coordinates = [[
-                        [(parseFloat(box[2]) + 360).toString(), box[1]],
-                        [(parseFloat(box[2]) + 360).toString(), box[3]],
-                        [(parseFloat(box[0])).toString(), box[3]],
-                        [(parseFloat(box[0])).toString(), box[1]],
-                        [(parseFloat(box[2]) + 360).toString(), box[1]]
-
-                    ]];
-                }
-                const polygonGeojson = {
-                    type: 'Feature',
-                    properties: {
-
-                    },
-                    geometry: {
-                        type: 'Polygon',
-                        coordinates: coordinates
+            if (aois) {
+                let index = 1;
+                aois.forEach(aoi => {
+                    if (aoi.indexOf('POLYGON') < 0) {
+                        /** BBOX mode */
+                        const box = aoi.split(',');
+                        let coordinates = [];
+                        if (parseFloat(box[0]) < parseFloat(box[2])) {
+                            coordinates = [[
+                                [parseFloat(box[2]), parseFloat(box[1])],
+                                [parseFloat(box[2]), parseFloat(box[3])],
+                                [parseFloat(box[0]), parseFloat(box[3])],
+                                [parseFloat(box[0]), parseFloat(box[1])],
+                                [parseFloat(box[2]), parseFloat(box[1])]
+                            ]];
+                        } else {
+                            coordinates = [[
+                                [(parseFloat(box[2]) + 360), parseFloat(box[1])],
+                                [(parseFloat(box[2]) + 360), parseFloat(box[3])],
+                                [(parseFloat(box[0])), parseFloat(box[3])],
+                                [(parseFloat(box[0])), parseFloat(box[1])],
+                                [(parseFloat(box[2]) + 360), parseFloat(box[1])]
+                            ]];
+                        }
+                        const polygonGeojson = {
+                            type: 'Feature',
+                            properties: {
+                                source: 'bbox',
+                                arlas_id: index
+                            },
+                            geometry: {
+                                type: 'Polygon',
+                                coordinates: coordinates
+                            }
+                        };
+                        polygonGeojsons.push(polygonGeojson);
+                    } else {
+                        /** WKT mode */
+                        const geojsonWKT = parse(aoi);
+                        const feature = {
+                            type: 'Feature',
+                            geometry: geojsonWKT,
+                            properties: {
+                                source: 'wkt',
+                                arlas_id: index
+                            }
+                        };
+                        polygonGeojsons.push(feature);
                     }
+                    index = index + 1;
+                });
+                this.geojsondraw = {
+                    'type': 'FeatureCollection',
+                    'features': polygonGeojsons
                 };
-                polygonGeojsons.push(polygonGeojson);
-            });
-            this.geojsonbbox = {
-                'type': 'FeatureCollection',
-                'features': polygonGeojsons
-            };
-            this.isBbox = true;
+            } else {
+                this.geojsondraw = {
+                    'type': 'FeatureCollection',
+                    'features': []
+                };
+            }
         } else {
-            this.geojsonbbox = {
+            this.geojsondraw = {
                 'type': 'FeatureCollection',
                 'features': []
             };
@@ -352,58 +371,14 @@ export class MapContributor extends Contributor {
     * @returns Pretty name of contribution.
     */
     public getFilterDisplayName(): string {
-        return 'GeoBox';
+        return 'Area Of Interest';
     }
 
     public wrap(n: number, min: number, max: number): number {
         const d = max - min;
         const w = ((n - min) % d + d) % d + min;
-        return (w === min) ? max : w;
-    }
-
-    public onChangeBbox(newBbox: Array<Object>) {
-        let filters: Filter;
-        const pwithinArray: Array<string> = [];
-        const numberOfBbox = newBbox.length;
-        const lastBbox = newBbox[numberOfBbox - 1];
-        const lastCoord = lastBbox['geometry']['coordinates'][0];
-        const north = lastCoord[1][1];
-        const west = this.wrap(lastCoord[2][0], -180, 180);
-        const south = lastCoord[0][1];
-        const east = this.wrap(lastCoord[0][0], -180, 180);
-        const last_pwithin = west + ',' + south + ',' + east + ',' + north;
-        const lastBboxFeature = bboxPolygon([west, south, east, north]);
-        for (let _i = 0; _i < numberOfBbox - 1; _i++) {
-            const v = newBbox[_i];
-            const coord = v['geometry']['coordinates'][0];
-            const n = coord[1][1];
-            const w = this.wrap(coord[2][0], -180, 180);
-            const s = coord[0][1];
-            const e = this.wrap(coord[0][0], -180, 180);
-            const pwithin = w + ',' + s + ',' + e + ',' + n;
-            const bboxFeature = bboxPolygon([w, s, e, n]);
-            const isbboxInclude = booleanContains(lastBboxFeature, bboxFeature);
-            const isLastBboxInclude = booleanContains(bboxFeature, lastBboxFeature);
-            if (!isbboxInclude && !isLastBboxInclude) {
-                pwithinArray.push(pwithin.trim().toLocaleLowerCase());
-            }
-        }
-        pwithinArray.push(last_pwithin.trim().toLocaleLowerCase());
-        if (this.isGIntersect) {
-            filters = {
-                gintersect: [pwithinArray],
-            };
-        } else {
-            filters = {
-                pwithin: [pwithinArray],
-            };
-        }
-        const data: Collaboration = {
-            filter: filters,
-            enabled: true
-        };
-        this.isBbox = true;
-        this.collaborativeSearcheService.setFilter(this.identifier, data);
+        const factor = Math.pow(10, this.drawPrecision);
+        return (w === min) ? max : Math.round(w * factor) / factor;
     }
 
     /**
@@ -413,47 +388,44 @@ export class MapContributor extends Contributor {
      */
     public onChangeAoi(fc: helpers.FeatureCollection) {
         let filters: Filter;
-        if (fc.features.filter(f => f.properties.type === 'bbox').length > 0) {
-            const pwithinArray = this.getBboxsForQuery(fc.features);
+        const geoFilter: Array<string> = new Array();
+        fc = truncate(fc, { precision: this.drawPrecision });
+        if (fc.features.length > 0) {
+            if (fc.features.filter(f => f.properties.source === 'bbox').length > 0) {
+                const bboxs: Array<string> = this.getBboxsForQuery(fc.features
+                    .filter(f => f.properties.source === 'bbox'));
+                    bboxs.forEach(f => geoFilter.push(f));
+            }
+            const features = new Array<any>();
+            fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
+                if (isClockwise((<any>(f.geometry)).coordinates[0])) {
+                    features.push(f);
+                } else {
+                    const list = [];
+                    (<any>(f.geometry)).coordinates[0]
+                        .forEach((c) => list.push(c));
+                    const reverseList = list.reverse();
+                    (<any>(f.geometry)).coordinates[0] = reverseList;
+                    features.push(f);
+                }
+            });
+            features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
             if (this.isGIntersect) {
                 filters = {
-                    gintersect: [pwithinArray],
+                    gintersect: [geoFilter],
                 };
             } else {
                 filters = {
-                    pwithin: [pwithinArray],
+                    pwithin: [geoFilter],
                 };
             }
             const data: Collaboration = {
                 filter: filters,
                 enabled: true
             };
-
-            this.isBbox = true;
             this.collaborativeSearcheService.setFilter(this.identifier, data);
-        } else if (fc.features.length > 0) {
-            const arrayBBox = bbox(fc);
-            const pwithinArray = [arrayBBox.join(',')];
-            if (this.isGIntersect) {
-                filters = {
-                    gintersect: [pwithinArray],
-                };
-            } else {
-                filters = {
-                    pwithin: [pwithinArray],
-                };
-            }
-            const data: Collaboration = {
-                filter: filters,
-                enabled: true
-            };
-
-            // Set Filter with bbox of aoi for testing
-            // this.isBbox = true;
-            // this.collaborativeSearcheService.setFilter(this.identifier, data);
 
         } else {
-            this.isBbox = false;
             if (this.collaborativeSearcheService.getCollaboration(this.identifier) !== null) {
                 this.collaborativeSearcheService.removeFilter(this.identifier);
             }
@@ -587,14 +559,6 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public onRemoveBbox(isBboxRemoved: boolean) {
-        if (isBboxRemoved) {
-            this.isBbox = false;
-            if (this.collaborativeSearcheService.getCollaboration(this.identifier) !== null) {
-                this.collaborativeSearcheService.removeFilter(this.identifier);
-            }
-        }
-    }
 
     public drawGeoSearch(fromParam?: number, appendId?: boolean) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
@@ -856,28 +820,43 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public getFilterForCount(pwithin: string) {
+    public getFilterForCount(extent: string) {
+        // west, south, east, north
+        const extentTab = extent.trim().split(',');
+        const west = extentTab[0];
+        const east = extentTab[2];
+        let finalExtent = [extent.trim()];
+        if (parseFloat(west) > parseFloat(east)) {
+            finalExtent = [];
+            const firstExtent = extentTab[0] + ',' + extentTab[1] + ',' + '180' + ',' + extentTab[3];
+            const secondExtent = '-180' + ',' + extentTab[1] + ',' + extentTab[2] + ',' + extentTab[3];
+            finalExtent.push(firstExtent.trim());
+            finalExtent.push(secondExtent.trim());
+        }
         let filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         if (collaboration !== null && collaboration !== undefined) {
             if (collaboration.enabled) {
-                let bboxs = [];
+                let aois = [];
                 if (this.isGIntersect) {
-                    bboxs = collaboration.filter.gintersect[0];
+                    aois = collaboration.filter.gintersect[0];
+                    filter = {
+                        gintersect: [finalExtent, aois]
+                    };
                 } else {
-                    bboxs = collaboration.filter.pwithin[0];
+                    aois = collaboration.filter.pwithin[0];
+                    filter = {
+                        pwithin: [finalExtent, aois]
+                    };
                 }
-                filter = {
-                    pwithin: [[pwithin.trim()], bboxs]
-                };
             } else {
                 filter = {
-                    pwithin: [[pwithin.trim()]],
+                    pwithin: [finalExtent],
                 };
             }
         } else {
             filter = {
-                pwithin: [[pwithin.trim()]],
+                pwithin: [finalExtent],
             };
         }
         return filter;
