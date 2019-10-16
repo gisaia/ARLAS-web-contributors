@@ -17,7 +17,11 @@
  * under the License.
  */
 
+<<<<<<< HEAD
 import { Observable, Subject } from 'rxjs';
+=======
+import { Observable, Subject, generate, from } from 'rxjs';
+>>>>>>> Upgrade rxjs to 6.5.3
 import { map, finalize, flatMap, mergeAll } from 'rxjs/operators';
 
 import {
@@ -38,7 +42,7 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import { getBounds, tileToString, truncate, isClockwise } from './../utils/mapUtils';
-import { from } from 'rxjs/observable/from';
+
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 

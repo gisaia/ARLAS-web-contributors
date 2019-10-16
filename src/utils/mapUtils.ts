@@ -1,5 +1,5 @@
 import { Expression, Search, Hits, Filter } from 'arlas-api';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import { ElementIdentifier } from 'models/models';
 import { projType } from 'arlas-web-core';
 import { getElementFromJsonObject } from './utils';

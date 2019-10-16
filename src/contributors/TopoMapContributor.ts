@@ -17,30 +17,21 @@
  * under the License.
  */
 
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
+import { Observable, from } from 'rxjs';
 
 import {
-    CollaborativesearchService, Contributor,
-    ConfigService, Collaboration, OperationEnum,
-    projType, GeohashAggregation, TiledSearch, CollaborationEvent
+    CollaborativesearchService,
+    ConfigService,
+    projType, GeohashAggregation, CollaborationEvent
 } from 'arlas-web-core';
 import {
-    Search, Hits, Expression,
-    AggregationResponse, Aggregation, Projection,
+    Expression, Aggregation,
     Filter, FeatureCollection, Metric, Feature
 } from 'arlas-api';
-import { Action, OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
-import { getElementFromJsonObject } from '../utils/utils';
-import { decode_bbox, bboxes } from 'ngeohash';
+import { OnMoveResult } from '../models/models';
 import * as jsonSchema from '../jsonSchemas/topomapContributorConf.schema.json';
-import { polygon, feature } from '@turf/helpers';
-import bbox from '@turf/bbox';
-import bboxPolygon from '@turf/bbox-polygon';
-import booleanContains from '@turf/boolean-contains';
 import { MapContributor, fetchType } from './MapContributor';
 import { flatMap, mergeAll, map, finalize } from 'rxjs/operators';
-import { from } from 'rxjs/observable/from';
 
 
 /**
@@ -283,7 +274,6 @@ export class TopoMapContributor extends MapContributor {
                     this.maxValueGeoHash = f.properties.count;
                 }
             });
-            const allfeatures: Array<any> = [];
             featureCollection.features.forEach(f => {
                 f.properties['point_count_normalize'] = f.properties.count / this.maxValueGeoHash * 100;
                 f.properties['point_count'] = f.properties.count;
