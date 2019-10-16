@@ -1,5 +1,20 @@
 # Change Log
 
+## [v11.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.4.0) (2019-10-16)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.3.0...v11.4.0)
+
+**Breaking changes:**
+
+- \[MAP\] Use WKT polygon  for pwithin operator [\#203](https://github.com/gisaia/ARLAS-web-contributors/issues/203)
+
+**New stuff:**
+
+- \[MAP\] Check if WKT is clockwise [\#204](https://github.com/gisaia/ARLAS-web-contributors/issues/204)
+- \[MAP\] Enhance SetSelection method [\#188](https://github.com/gisaia/ARLAS-web-contributors/issues/188)
+- \[MAP\] Add a method to transform geojson to WKT [\#184](https://github.com/gisaia/ARLAS-web-contributors/issues/184)
+- MapContributor: generalize setFilter [\#180](https://github.com/gisaia/ARLAS-web-contributors/issues/180)
+
 ## [v11.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.3.0) (2019-10-09)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.2.0...v11.3.0)
@@ -7,6 +22,10 @@
 **New stuff:**
 
 - Add getActions method to DetailedDataRetriever interface [\#212](https://github.com/gisaia/ARLAS-web-contributors/pull/212) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+**Fixed bugs:**
+
+- yearShortcuts option doesn't work with number items [\#211](https://github.com/gisaia/ARLAS-web-contributors/issues/211)
 
 ## [v11.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.2.0) (2019-10-02)
 
