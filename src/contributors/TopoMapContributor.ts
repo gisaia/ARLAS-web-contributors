@@ -253,7 +253,12 @@ export class TopoMapContributor extends MapContributor {
                 map(f => this.computeDataGeohashGeoaggregate(f)),
                 map(f => this.setDataGeohashGeoaggregate(f)),
                 finalize(() => {
-                    this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                    if (this.fetchType === fetchType.geohash) {
+                        this.geojsondata.features.forEach(f => {
+                            f.properties['point_count_normalize'] = f.properties.point_count / this.maxValueGeoHash * 100;
+                        });
+                    }
+                    this.redrawTile.next(true);
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
             )

@@ -394,7 +394,7 @@ export class MapContributor extends Contributor {
             if (fc.features.filter(f => f.properties.source === 'bbox').length > 0) {
                 const bboxs: Array<string> = this.getBboxsForQuery(fc.features
                     .filter(f => f.properties.source === 'bbox'));
-                    bboxs.forEach(f => geoFilter.push(f));
+                bboxs.forEach(f => geoFilter.push(f));
             }
             const features = new Array<any>();
             fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
@@ -568,7 +568,7 @@ export class MapContributor extends Contributor {
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
                 finalize(() => {
-                    this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                    this.redrawTile.next(true);
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
             )
@@ -582,7 +582,9 @@ export class MapContributor extends Contributor {
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
                 finalize(() => {
-                    this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                    if (tiles.length > 0) {
+                        this.redrawTile.next(true);
+                    }
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
             )
@@ -595,7 +597,12 @@ export class MapContributor extends Contributor {
                 map(f => this.computeDataGeohashGeoaggregate(f)),
                 map(f => this.setDataGeohashGeoaggregate(f)),
                 finalize(() => {
-                    this.setSelection(null, this.collaborativeSearcheService.getCollaboration(this.identifier));
+                    if (this.fetchType === fetchType.geohash) {
+                        this.geojsondata.features.forEach(f => {
+                            f.properties['point_count_normalize'] = f.properties.point_count / this.maxValueGeoHash * 100;
+                        });
+                    }
+                    this.redrawTile.next(true);
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
             )
