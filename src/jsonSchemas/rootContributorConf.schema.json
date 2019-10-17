@@ -17,7 +17,8 @@
                 "resultlist",
                 "swimlane",
                 "topomap",
-                "tree"
+                "tree",
+                "metric"
             ]
         },
         "identifier": {

@@ -255,11 +255,11 @@ export class MapContributor extends Contributor {
         if (collaboration !== null) {
             const polygonGeojsons = [];
             let aois: string[];
-            if (this.isGIntersect) {
-                aois = collaboration.filter.gintersect[0];
-            } else {
-                aois = collaboration.filter.pwithin[0];
-            }
+            // if (this.isGIntersect) {
+            //     aois = collaboration.filter.gintersect[0];
+            // } else {
+            //     aois = collaboration.filter.pwithin[0];
+            // }
             if (aois) {
                 let index = 1;
                 aois.forEach(aoi => {
@@ -410,15 +410,15 @@ export class MapContributor extends Contributor {
                 }
             });
             features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
-            if (this.isGIntersect) {
-                filters = {
-                    gintersect: [geoFilter],
-                };
-            } else {
-                filters = {
-                    pwithin: [geoFilter],
-                };
-            }
+            // if (this.isGIntersect) {
+            //     filters = {
+            //         gintersect: [geoFilter],
+            //     };
+            // } else {
+            //     filters = {
+            //         pwithin: [geoFilter],
+            //     };
+            // }
             const data: Collaboration = {
                 filter: filters,
                 enabled: true
@@ -838,17 +838,17 @@ export class MapContributor extends Contributor {
         if (collaboration !== null && collaboration !== undefined) {
             if (collaboration.enabled) {
                 let aois = [];
-                if (this.isGIntersect) {
-                    aois = collaboration.filter.gintersect[0];
-                    filter = {
-                        gintersect: [finalExtent, aois]
-                    };
-                } else {
-                    aois = collaboration.filter.pwithin[0];
-                    filter = {
-                        pwithin: [finalExtent, aois]
-                    };
-                }
+                // if (this.isGIntersect) {
+                //     aois = collaboration.filter.gintersect[0];
+                //     filter = {
+                //         gintersect: [finalExtent, aois]
+                //     };
+                // } else {
+                //     aois = collaboration.filter.pwithin[0];
+                //     filter = {
+                //         pwithin: [finalExtent, aois]
+                //     };
+                // }
             } else {
                 filter = {
                     pwithin: [finalExtent],

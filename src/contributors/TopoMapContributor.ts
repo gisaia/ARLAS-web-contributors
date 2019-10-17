@@ -101,7 +101,7 @@ export class TopoMapContributor extends MapContributor {
                             // AGG TOPO
                             this.geojsondata.features = [];
                             this.aggregation = this.topoAggregation;
-                            return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, {pwithin: [[pwithin]]});
+                            return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, null);
                         } else {
                             // Classique AGG geohash
                             this.geojsondata.features = [];
@@ -216,7 +216,7 @@ export class TopoMapContributor extends MapContributor {
                                 || newMove.extendForLoad[3] > this.mapExtend[3]
                                 || this.isGeoaggregateCluster
                             ) {
-                                this.drawTopoGeoaggregateGeohash(newGeohashList, {pwithin: [[pwithin]]});
+                                this.drawTopoGeoaggregateGeohash(newGeohashList, null);
                             }
                         } else {
                             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
