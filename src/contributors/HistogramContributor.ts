@@ -135,6 +135,18 @@ export class HistogramContributor extends Contributor {
         }
     }
 
+    public getNbBuckets() {
+        return this.nbBuckets;
+    }
+
+    public getField() {
+        return this.field;
+    }
+
+    public getAggregations() {
+        return this.aggregations;
+    }
+
     public static getJsonSchema(): Object {
         return jsonSchema;
     }
