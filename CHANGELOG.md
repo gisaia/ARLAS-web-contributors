@@ -1,5 +1,13 @@
 # Change Log
 
+## [v11.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.4.1) (2019-10-23)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.0...v11.4.1)
+
+**New stuff:**
+
+- Optimize call to setSelection [\#216](https://github.com/gisaia/ARLAS-web-contributors/pull/216) ([mbarbet](https://github.com/mbarbet))
+
 ## [v11.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.4.0) (2019-10-16)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.3.0...v11.4.0)
