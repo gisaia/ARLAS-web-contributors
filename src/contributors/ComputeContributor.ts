@@ -36,7 +36,7 @@ export class ComputeContributor extends Contributor {
     /** Title of the contributor*/
     public title: string = this.getConfigValue('title');
 
-    public metricaValue: number;
+    public metricValue: number;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -69,7 +69,7 @@ export class ComputeContributor extends Contributor {
     }
 
     public setData(data: ComputationResponse): any {
-        this.metricaValue = data.value;
+        this.metricValue = data.value;
         return from([]);
 
     }
