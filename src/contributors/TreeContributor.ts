@@ -81,6 +81,10 @@ export class TreeContributor extends Contributor {
         return jsonSchema;
     }
 
+    public getAggregations() {
+        return this.aggregations;
+    }
+
     /**
     * @returns Package name for the configuration service.
     */
