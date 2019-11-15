@@ -28,6 +28,7 @@ import { DonutContributor } from './contributors/DonutContributor';
 import { AnalyticsContributor } from './contributors/AnalyticsContributor';
 import { TopoMapContributor} from './contributors/TopoMapContributor';
 import { TreeContributor } from './contributors/TreeContributor';
+import { ComputeContributor } from './contributors/ComputeContributor';
 export { TreeContributor } from './contributors/TreeContributor';
 export { PowerbarsContributor } from './contributors/PowerbarsContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
@@ -39,6 +40,7 @@ export { DonutContributor } from './contributors/DonutContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
 export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { TopoMapContributor} from './contributors/TopoMapContributor';
+export { ComputeContributor } from './contributors/ComputeContributor';
 
 
 export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum } from './models/models';
@@ -55,6 +57,7 @@ contributors.set('chipsearch', ChipsSearchContributor);
 contributors.set('donut', DonutContributor);
 contributors.set('analytics', AnalyticsContributor);
 contributors.set('tree', TreeContributor);
+contributors.set('metric', ComputeContributor);
 
 export {contributors};
 
