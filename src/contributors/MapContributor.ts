@@ -141,6 +141,8 @@ export class MapContributor extends Contributor {
     public defautCentroidField: string;
     public aggregationField: string;
 
+    public redrawTile: Subject<boolean> = new Subject<boolean>();
+
     /** CONSTANTS */
     private NEXT_AFTER = '_nextAfter';
     private PREVIOUS_AFTER = '_previousAfter';
@@ -155,7 +157,6 @@ export class MapContributor extends Contributor {
     */
     constructor(
         public identifier,
-        public redrawTile: Subject<boolean>,
         public collaborativeSearcheService: CollaborativesearchService,
         public configService: ConfigService
     ) {

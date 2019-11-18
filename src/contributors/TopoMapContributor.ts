@@ -66,10 +66,9 @@ export class TopoMapContributor extends MapContributor {
     */
     constructor(
         public identifier,
-        public redrawTile,
         public collaborativeSearcheService: CollaborativesearchService,
         public configService: ConfigService) {
-        super(identifier, redrawTile, collaborativeSearcheService, configService);
+        super(identifier, collaborativeSearcheService, configService);
     }
 
     public getPackageName(): string {
