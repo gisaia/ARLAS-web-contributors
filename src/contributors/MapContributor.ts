@@ -17,11 +17,7 @@
  * under the License.
  */
 
-<<<<<<< HEAD
-import { Observable, Subject } from 'rxjs';
-=======
 import { Observable, Subject, generate, from } from 'rxjs';
->>>>>>> Upgrade rxjs to 6.5.3
 import { map, finalize, flatMap, mergeAll } from 'rxjs/operators';
 
 import {
@@ -253,7 +249,7 @@ export class MapContributor extends Contributor {
 
     /**
      * Sets the query operation to apply (`within`, `intersects`, `notintersects`, `notwithin`)
-     * @param geoQueryOperation 
+     * @param geoQueryOperation
      */
     public setGeoQueryOperation(geoQueryOperation: string) {
         switch (geoQueryOperation.toLowerCase()) {
@@ -274,7 +270,7 @@ export class MapContributor extends Contributor {
 
     /**
      * Sets the geometry/point field to query
-     * @param geoQueryField 
+     * @param geoQueryField
      */
     public setGeoQueryField(geoQueryField: string) {
         this.geoQueryField = geoQueryField;
@@ -290,7 +286,7 @@ export class MapContributor extends Contributor {
 
     /**
      * Sets the point field on which geoaggregation is applied
-     * @param geoAggregateField 
+     * @param geoAggregateField
      */
     public setGeoAggregateGeomField(geoAggregateField: string) {
         const aggregations = this.aggregation;
@@ -301,7 +297,7 @@ export class MapContributor extends Contributor {
 
     /**
      * Sets the strategy of geoaggregation (`bbox`, `centroid`, `first`, `last`, `byDefault`, `geohash`)
-     * @param geomStrategy 
+     * @param geomStrategy
      */
     public setGeomStrategy(geomStrategy: geomStrategyEnum) {
         this.geomStrategy = geomStrategy;
@@ -759,7 +755,6 @@ export class MapContributor extends Contributor {
             .subscribe(data => data);
     }
     public drawGeoaggregateGeohash(geohashList: Array<string>) {
-    
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataGeohashGeoaggregate(geohashList)
             .pipe(
@@ -819,11 +814,9 @@ export class MapContributor extends Contributor {
         return featuresResults;
     }
     public setDataGeohashGeoaggregate(features: Array<any>): any {
-        console.log('set data')
         features.forEach(f => this.geojsondata.features.push(f));
         this.isGeoaggregateCluster = true;
         return features;
-
     }
     /**
      * Get the previous/following set of data.
