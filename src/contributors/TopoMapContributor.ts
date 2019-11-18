@@ -99,7 +99,7 @@ export class TopoMapContributor extends MapContributor {
                                     value: pwithin.trim()
                                 }]]
                             };
-                            this.addFilter(topoGeohashGeoFilter, this.additionalFilter)
+                            this.addFilter(topoGeohashGeoFilter, this.additionalFilter);
                             return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, topoGeohashGeoFilter);
                         } else {
                             // Classique AGG geohash
@@ -223,8 +223,8 @@ export class TopoMapContributor extends MapContributor {
                                         op: Expression.OpEnum.Within,
                                         value: pwithin.trim()
                                     }]]
-                                }
-                                this.addFilter(topoGeoaggregateGeohashFilter, this.additionalFilter)
+                                };
+                                this.addFilter(topoGeoaggregateGeohashFilter, this.additionalFilter);
                                 this.drawTopoGeoaggregateGeohash(newGeohashList, topoGeoaggregateGeohashFilter);
                             }
                         } else {

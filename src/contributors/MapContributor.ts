@@ -804,7 +804,8 @@ export class MapContributor extends Contributor {
                 aggregations: aggregations
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations, this.isFlat, null, this.additionalFilter);
+                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
+                this.isFlat, null, this.additionalFilter);
             tabOfGeohash.push(geoAggregateData);
         });
         return from(tabOfGeohash).pipe(mergeAll());
@@ -927,7 +928,7 @@ export class MapContributor extends Contributor {
                 f: [[this.expressionFilter]]
             };
         }
-        this.addFilter(filter, this.additionalFilter)
+        this.addFilter(filter, this.additionalFilter);
         const search: Search = { page: { size: this.nbMaxFeatureForCluster }, form: { flat: this.isFlat } };
         const projection: Projection = {};
         let includes = '';
@@ -1122,7 +1123,7 @@ export class MapContributor extends Contributor {
     }
 
     /**
-     * 
+     * adds the second filter to the first filter
      * @param filter filter to enrich
      * @param additionalFilter filter to add to the first filter
      */
@@ -1133,16 +1134,16 @@ export class MapContributor extends Contributor {
                     filter.f = [];
                 }
                 additionalFilter.f.forEach(additionalF => {
-                    filter.f.push(additionalF)
-                })
+                    filter.f.push(additionalF);
+                });
             }
             if (additionalFilter.q) {
                 if (!filter.q) {
                     filter.q = [];
                 }
                 additionalFilter.q.forEach(additionalQ => {
-                    filter.q.push(additionalQ)
-                })
+                    filter.q.push(additionalQ);
+                });
             }
         }
     }
