@@ -26,7 +26,7 @@ import {
     projType, GeohashAggregation, TiledSearch, CollaborationEvent
 } from 'arlas-web-core';
 import {
-    Search, Expression, Hits,
+    Search, Hits, Expression,
     AggregationResponse, Aggregation, Projection,
     Filter, FeatureCollection, Metric, Feature
 } from 'arlas-api';
@@ -41,6 +41,7 @@ import booleanContains from '@turf/boolean-contains';
 import { MapContributor, fetchType } from './MapContributor';
 import { flatMap, mergeAll, map, finalize } from 'rxjs/operators';
 import { from } from 'rxjs/observable/from';
+
 
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
@@ -65,12 +66,10 @@ export class TopoMapContributor extends MapContributor {
     */
     constructor(
         public identifier,
-        public redrawTile: Subject<boolean>,
+        public redrawTile,
         public collaborativeSearcheService: CollaborativesearchService,
-        public configService: ConfigService,
-        gIntersect?: boolean
-    ) {
-        super(identifier, redrawTile, collaborativeSearcheService, configService, gIntersect);
+        public configService: ConfigService) {
+        super(identifier, redrawTile, collaborativeSearcheService, configService);
     }
 
     public getPackageName(): string {
@@ -101,7 +100,13 @@ export class TopoMapContributor extends MapContributor {
                             // AGG TOPO
                             this.geojsondata.features = [];
                             this.aggregation = this.topoAggregation;
-                            return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, {pwithin: [[pwithin]]});
+                            return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, {
+                                f: [[{
+                                    field: this.aggregationField,
+                                    op: Expression.OpEnum.Within,
+                                    value: pwithin.trim()
+                                }]],
+                            });
                         } else {
                             // Classique AGG geohash
                             this.geojsondata.features = [];
@@ -216,7 +221,13 @@ export class TopoMapContributor extends MapContributor {
                                 || newMove.extendForLoad[3] > this.mapExtend[3]
                                 || this.isGeoaggregateCluster
                             ) {
-                                this.drawTopoGeoaggregateGeohash(newGeohashList, {pwithin: [[pwithin]]});
+                                this.drawTopoGeoaggregateGeohash(newGeohashList, {
+                                    f: [[{
+                                        field: this.aggregationField,
+                                        op: Expression.OpEnum.Within,
+                                        value: pwithin.trim()
+                                    }]],
+                                });
                             }
                         } else {
                             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
