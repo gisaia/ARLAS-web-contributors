@@ -28,7 +28,7 @@ import {
 import {
     Search, Expression, Hits,
     Aggregation, Projection,
-    Filter, FeatureCollection
+    Filter, FeatureCollection, Feature
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum } from '../models/models';
 import { appendIdToSort, removePageFromIndex, ASC } from '../utils/utils';
@@ -41,6 +41,8 @@ import { getBounds, tileToString, truncate, isClockwise } from './../utils/mapUt
 
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
+import { mix } from 'tinycolor2';
+
 
 export enum geomStrategyEnum {
     bbox,
@@ -87,6 +89,7 @@ export class MapContributor extends Contributor {
     /** Additional Arlas filter to add the BBOX and filter comming from Collaborations*/
     protected additionalFilter: Filter;
     public includeFeaturesFields: Array<string> = this.getConfigValue('includeFeaturesFields');
+    public generateFeaturesColors: boolean = this.getConfigValue('generateFeatureColors');
     public isGeoaggregateCluster = true;
     public fetchType: fetchType = fetchType.geohash;
     public zoomToPrecisionCluster: Array<Array<number>> = this.getConfigValue('zoomToPrecisionCluster');
@@ -116,6 +119,7 @@ export class MapContributor extends Contributor {
     public strategyEnum = geomStrategyEnum;
 
     public countExtendBus = new Subject<{ count: number, threshold: number }>();
+    public saturationWeight = 0.5;
     /**
      * By default the contributor computes the data in a dynamic way (`Dynamic mode`): it switches between
      * `clusters` and `features` mode according to the zoom level and the number of features.
@@ -969,6 +973,7 @@ export class MapContributor extends Contributor {
         }));
         if (featureCollection.features !== undefined) {
             return featureCollection.features
+                .map(f => this.setFeatureColor(f))
                 .map(f => [f.properties[idProperty].concat('_').concat(f.properties['geometry_path']), f])
                 .filter(f => dataSet.has(f[0]) === false)
                 .map(f => f[1]);
@@ -1219,6 +1224,30 @@ export class MapContributor extends Contributor {
                 this.geoShapeFields.push((parentPrefix ? parentPrefix : '') + fieldName);
             }
         }
+    }
+
+    private setFeatureColor(feature: Feature): Feature {
+        if (this.includeFeaturesFields && this.generateFeaturesColors) {
+            this.includeFeaturesFields.forEach((field: string) => {
+                feature.properties[field + '_color'] = this.getHexColor(feature.properties[field], 0.5);
+            });
+        }
+        return feature;
+    }
+
+    private getHexColor(key: string, saturationWeight: number): string {
+        const text = key + ':' + key;
+        // string to int
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        // int to rgb
+        let hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+        hex =  '00000'.substring(0, 6 - hex.length) + hex;
+        const color = mix(hex, hex);
+        color.saturate(color.toHsv().s * saturationWeight + ((1 - saturationWeight) * 100));
+        return color.toHexString();
     }
 }
 
