@@ -83,6 +83,9 @@ export class MapContributor extends Contributor {
         'type': 'FeatureCollection',
         'features': []
     };
+
+    /** Additional Arlas filter to add the BBOX and filter comming from Collaborations*/
+    protected additionalFilter: Filter;
     public includeFeaturesFields: Array<string> = this.getConfigValue('includeFeaturesFields');
     public isGeoaggregateCluster = true;
     public fetchType: fetchType = fetchType.geohash;
@@ -138,7 +141,7 @@ export class MapContributor extends Contributor {
     public aggregation: Array<Aggregation> = this.getConfigValue('aggregationmodels');
     public precision;
 
-    public defautCentroidField: string;
+    public defaultCentroidField: string;
     public aggregationField: string;
 
     public redrawTile: Subject<boolean> = new Subject<boolean>();
@@ -169,7 +172,7 @@ export class MapContributor extends Contributor {
                     this.getFieldProperties(fields, fieldName);
                 });
                 this.geoQueryField = collection.params.centroid_path;
-                this.defautCentroidField = collection.params.centroid_path;
+                this.defaultCentroidField = collection.params.centroid_path;
                 this.returned_geometries = collection.params.geometry_path;
                 if (this.aggregation !== undefined) {
                     this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.precision = a.interval.value);
@@ -181,6 +184,13 @@ export class MapContributor extends Contributor {
     }
     public static getJsonSchema(): Object {
         return jsonSchema;
+    }
+
+    public getAdditionalFilter(): Filter {
+        return this.additionalFilter;
+    }
+    public setAdditionalFilter(value: Filter) {
+        this.additionalFilter = value;
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<any> {
@@ -209,9 +219,11 @@ export class MapContributor extends Contributor {
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
             const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
+            const countFilter = this.getFilterForCount(pwithin);
+            this.addFilter(countFilter, this.additionalFilter);
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                    this.identifier, this.getFilterForCount(pwithin));
+                    this.identifier, countFilter);
             if (count) {
                 return count.pipe(flatMap(c => {
                     this.countExtendBus.next({
@@ -657,9 +669,11 @@ export class MapContributor extends Contributor {
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
+            const countFilter = this.getFilterForCount(pwithin);
+            this.addFilter(countFilter, this.additionalFilter);
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                    this.identifier, this.getFilterForCount(pwithin));
+                    this.identifier, countFilter);
             if (count) {
                 count.subscribe(value => {
                     this.countExtendBus.next({
@@ -790,7 +804,7 @@ export class MapContributor extends Contributor {
                 aggregations: aggregations
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations, this.isFlat);
+                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations, this.isFlat, null, this.additionalFilter);
             tabOfGeohash.push(geoAggregateData);
         });
         return from(tabOfGeohash).pipe(mergeAll());
@@ -870,6 +884,7 @@ export class MapContributor extends Contributor {
         if (this.expressionFilter !== undefined) {
             filter.f.push([this.expressionFilter]);
         }
+        this.addFilter(filter, this.additionalFilter);
         const search: Search = { page: { size: this.searchSize, sort: sort }, form: { flat: this.isFlat } };
         if (afterParam) {
             if (whichPage === PageEnum.next) {
@@ -912,6 +927,7 @@ export class MapContributor extends Contributor {
                 f: [[this.expressionFilter]]
             };
         }
+        this.addFilter(filter, this.additionalFilter)
         const search: Search = { page: { size: this.nbMaxFeatureForCluster }, form: { flat: this.isFlat } };
         const projection: Projection = {};
         let includes = '';
@@ -995,7 +1011,7 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public getFilterForCount(extent: string) {
+    public getFilterForCount(extent: string): Filter {
         // west, south, east, north
         const extentTab = extent.trim().split(',');
         const west = extentTab[0];
@@ -1008,7 +1024,7 @@ export class MapContributor extends Contributor {
             finalExtent.push(firstExtent.trim());
             finalExtent.push(secondExtent.trim());
         }
-        let filter = {};
+        let filter: Filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         if (collaboration !== null && collaboration !== undefined) {
             if (collaboration.enabled) {
@@ -1031,7 +1047,7 @@ export class MapContributor extends Contributor {
                         if (this.geoQueryOperation === Expression.OpEnum.Within || this.geoQueryOperation === Expression.OpEnum.Notwithin) {
                             geoQueryOperationForCount = Expression.OpEnum.Within;
                         }
-                        const andFilter = [];
+                        const andFilter: Array<Array<Expression>> = [];
                         aois.map(p => {
                             return {
                                 field: this.geoQueryField,
@@ -1044,7 +1060,11 @@ export class MapContributor extends Contributor {
                         andFilter.push([{
                             field: this.geoQueryField,
                             op: geoQueryOperationForCount,
-                            value: finalExtent
+                            value: finalExtent[0]
+                        }, {
+                            field: this.geoQueryField,
+                            op: geoQueryOperationForCount,
+                            value: finalExtent[1]
                         }]);
                         filter = {
                             f: andFilter
@@ -1062,29 +1082,69 @@ export class MapContributor extends Contributor {
                             }), [{
                                 field: this.geoQueryField,
                                 op: this.geoQueryOperation,
-                                value: finalExtent
-                            }]]
+                                value: finalExtent[0]
+                            }, {
+                                field: this.geoQueryField,
+                                op: this.geoQueryOperation,
+                                value: finalExtent[1]
+                            }
+                            ]]
                         };
                 }
             } else {
                 filter = {
                     f: [[{
-                        field: this.defautCentroidField,
+                        field: this.defaultCentroidField,
                         op: Expression.OpEnum.Within,
-                        value: finalExtent
+                        value: finalExtent[0]
+                    }, {
+                        field: this.defaultCentroidField,
+                        op: Expression.OpEnum.Within,
+                        value: finalExtent[1]
                     }]]
                 };
             }
         } else {
             filter = {
                 f: [[{
-                    field: this.defautCentroidField,
+                    field: this.defaultCentroidField,
                     op: Expression.OpEnum.Within,
-                    value: finalExtent
-                }]]
+                    value: finalExtent[0]
+                }, {
+                    field: this.defaultCentroidField,
+                    op: Expression.OpEnum.Within,
+                    value: finalExtent[1]
+                }
+                ]]
             };
         }
         return filter;
+    }
+
+    /**
+     * 
+     * @param filter filter to enrich
+     * @param additionalFilter filter to add to the first filter
+     */
+    protected addFilter(filter: Filter, additionalFilter: Filter): void {
+        if (additionalFilter) {
+            if (additionalFilter.f) {
+                if (!filter.f) {
+                    filter.f = [];
+                }
+                additionalFilter.f.forEach(additionalF => {
+                    filter.f.push(additionalF)
+                })
+            }
+            if (additionalFilter.q) {
+                if (!filter.q) {
+                    filter.q = [];
+                }
+                additionalFilter.q.forEach(additionalQ => {
+                    filter.q.push(additionalQ)
+                })
+            }
+        }
     }
 
     private getBboxsForQuery(newBbox: Array<Object>) {
