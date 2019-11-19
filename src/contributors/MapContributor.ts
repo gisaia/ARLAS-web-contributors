@@ -1022,16 +1022,29 @@ export class MapContributor extends Contributor {
         const extentTab = extent.trim().split(',');
         const west = extentTab[0];
         const east = extentTab[2];
-        let finalExtent = [extent.trim()];
+        let finalExtend = [extent.trim()];
         if (parseFloat(west) > parseFloat(east)) {
-            finalExtent = [];
+            finalExtend = [];
             const firstExtent = extentTab[0] + ',' + extentTab[1] + ',' + '180' + ',' + extentTab[3];
             const secondExtent = '-180' + ',' + extentTab[1] + ',' + extentTab[2] + ',' + extentTab[3];
-            finalExtent.push(firstExtent.trim());
-            finalExtent.push(secondExtent.trim());
+            finalExtend.push(firstExtent.trim());
+            finalExtend.push(secondExtent.trim());
         }
         let filter: Filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
+        const defaultQueryExpressions: Array<Expression> = [];
+        defaultQueryExpressions.push({
+            field: this.defaultCentroidField,
+            op: Expression.OpEnum.Within,
+            value: finalExtend[0]
+        });
+        if (finalExtend[1]) {
+            defaultQueryExpressions.push({
+                field: this.defaultCentroidField,
+                op: Expression.OpEnum.Within,
+                value: finalExtend[1]
+            });
+        }
         if (collaboration !== null && collaboration !== undefined) {
             if (collaboration.enabled) {
                 const aois: string[] = [];
@@ -1063,21 +1076,39 @@ export class MapContributor extends Contributor {
                         }).forEach(exp => {
                             andFilter.push([exp]);
                         });
-                        andFilter.push([{
+                        const extendForCountExpressions: Array<Expression> = [];
+                        extendForCountExpressions.push({
                             field: this.geoQueryField,
                             op: geoQueryOperationForCount,
-                            value: finalExtent[0]
-                        }, {
-                            field: this.geoQueryField,
-                            op: geoQueryOperationForCount,
-                            value: finalExtent[1]
-                        }]);
+                            value: finalExtend[0]
+                        });
+                        if (finalExtend[1]) {
+                            extendForCountExpressions.push({
+                                field: this.geoQueryField,
+                                op: geoQueryOperationForCount,
+                                value: finalExtend[1]
+                            });
+                        }
+                        andFilter.push(extendForCountExpressions);
                         filter = {
                             f: andFilter
                         };
                         break;
                     case Expression.OpEnum.Intersects:
                     case Expression.OpEnum.Within:
+                        const queryExpressions: Array<Expression> = [];
+                        queryExpressions.push({
+                            field: this.geoQueryField,
+                            op: this.geoQueryOperation,
+                            value: finalExtend[0]
+                        });
+                        if (finalExtend[1]) {
+                            queryExpressions.push({
+                                field: this.geoQueryField,
+                                op: this.geoQueryOperation,
+                                value: finalExtend[1]
+                            });
+                        }
                         filter = {
                             f: [aois.map(p => {
                                 return {
@@ -1085,43 +1116,17 @@ export class MapContributor extends Contributor {
                                     op: this.geoQueryOperation,
                                     value: p
                                 };
-                            }), [{
-                                field: this.geoQueryField,
-                                op: this.geoQueryOperation,
-                                value: finalExtent[0]
-                            }, {
-                                field: this.geoQueryField,
-                                op: this.geoQueryOperation,
-                                value: finalExtent[1]
-                            }
-                            ]]
+                            }), queryExpressions]
                         };
                 }
             } else {
                 filter = {
-                    f: [[{
-                        field: this.defaultCentroidField,
-                        op: Expression.OpEnum.Within,
-                        value: finalExtent[0]
-                    }, {
-                        field: this.defaultCentroidField,
-                        op: Expression.OpEnum.Within,
-                        value: finalExtent[1]
-                    }]]
+                    f: [defaultQueryExpressions]
                 };
             }
         } else {
             filter = {
-                f: [[{
-                    field: this.defaultCentroidField,
-                    op: Expression.OpEnum.Within,
-                    value: finalExtent[0]
-                }, {
-                    field: this.defaultCentroidField,
-                    op: Expression.OpEnum.Within,
-                    value: finalExtent[1]
-                }
-                ]]
+                f: [defaultQueryExpressions]
             };
         }
         return filter;
@@ -1240,11 +1245,11 @@ export class MapContributor extends Contributor {
         // string to int
         let hash = 0;
         for (let i = 0; i < text.length; i++) {
-          hash = text.charCodeAt(i) + ((hash << 5) - hash);
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
         }
         // int to rgb
         let hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-        hex =  '00000'.substring(0, 6 - hex.length) + hex;
+        hex = '00000'.substring(0, 6 - hex.length) + hex;
         const color = mix(hex, hex);
         color.saturate(color.toHsv().s * saturationWeight + ((1 - saturationWeight) * 100));
         return color.toHexString();
