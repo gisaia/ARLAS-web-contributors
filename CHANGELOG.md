@@ -1,5 +1,21 @@
 # Change Log
 
+## [v12.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.0.0) (2019-11-20)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.1...v12.0.0)
+
+**Breaking changes:**
+
+- Remove \[Powerbars\] & \[Donut\] contributors. They're replaced by \[Tree\] Contributor  [\#228](https://github.com/gisaia/ARLAS-web-contributors/issues/228)
+- \[MAP\] & \[TOPOMAP\] remove redrawTile attribute from constructor params [\#225](https://github.com/gisaia/ARLAS-web-contributors/issues/225)
+
+**New stuff:**
+
+- \[MAP\] Generate a  color code based on the value of a field set in config [\#222](https://github.com/gisaia/ARLAS-web-contributors/issues/222)
+- \[Map\] & \[TopoMap\] add optional filter in fetchData request [\#221](https://github.com/gisaia/ARLAS-web-contributors/issues/221)
+- \[Map\] Update to arlas v12 and add multigéometry [\#214](https://github.com/gisaia/ARLAS-web-contributors/issues/214)
+- Add metric contributor [\#157](https://github.com/gisaia/ARLAS-web-contributors/issues/157)
+
 ## [v11.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.4.1) (2019-10-23)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.0...v11.4.1)
