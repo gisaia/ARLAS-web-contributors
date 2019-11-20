@@ -1234,7 +1234,8 @@ export class MapContributor extends Contributor {
     private setFeatureColor(feature: Feature): Feature {
         if (this.includeFeaturesFields && this.generateFeaturesColors) {
             this.includeFeaturesFields.forEach((field: string) => {
-                feature.properties[field + '_color'] = this.getHexColor(feature.properties[field], 0.5);
+                const featureField = this.isFlat ? field.replace(/\./g, this.FLAT_CHAR) : field;
+                feature.properties[featureField + '_color'] = this.getHexColor(feature.properties[featureField], 0.5);
             });
         }
         return feature;
