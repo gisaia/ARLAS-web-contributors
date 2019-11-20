@@ -17,30 +17,22 @@
  * under the License.
  */
 
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
+import { Observable, from } from 'rxjs';
 
 import {
-    CollaborativesearchService, Contributor,
-    ConfigService, Collaboration, OperationEnum,
-    projType, GeohashAggregation, TiledSearch, CollaborationEvent
+    CollaborativesearchService,
+    ConfigService,
+    projType, GeohashAggregation, CollaborationEvent
 } from 'arlas-web-core';
 import {
-    Search, Expression, Hits,
-    AggregationResponse, Aggregation, Projection,
+    Expression, Aggregation,
     Filter, FeatureCollection, Metric, Feature
 } from 'arlas-api';
-import { Action, OnMoveResult, ElementIdentifier, triggerType } from '../models/models';
-import { getElementFromJsonObject } from '../utils/utils';
-import { decode_bbox, bboxes } from 'ngeohash';
+import { OnMoveResult } from '../models/models';
 import * as jsonSchema from '../jsonSchemas/topomapContributorConf.schema.json';
-import { polygon, feature } from '@turf/helpers';
-import bbox from '@turf/bbox';
-import bboxPolygon from '@turf/bbox-polygon';
-import booleanContains from '@turf/boolean-contains';
 import { MapContributor, fetchType } from './MapContributor';
 import { flatMap, mergeAll, map, finalize } from 'rxjs/operators';
-import { from } from 'rxjs/observable/from';
+
 
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
@@ -65,12 +57,9 @@ export class TopoMapContributor extends MapContributor {
     */
     constructor(
         public identifier,
-        public redrawTile: Subject<boolean>,
         public collaborativeSearcheService: CollaborativesearchService,
-        public configService: ConfigService,
-        gIntersect?: boolean
-    ) {
-        super(identifier, redrawTile, collaborativeSearcheService, configService, gIntersect);
+        public configService: ConfigService) {
+        super(identifier, collaborativeSearcheService, configService);
     }
 
     public getPackageName(): string {
@@ -90,7 +79,9 @@ export class TopoMapContributor extends MapContributor {
         } else if (this.zoom >= this.zoomLevelForTestCount) {
             const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
             // test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
-            const newCount = this.getTopoCardinality(this.field_cardinality, this.field_geometry, this.getFilterForCount(pwithin));
+            const countFilter = this.getFilterForCount(pwithin);
+            this.addFilter(countFilter, this.additionalFilter);
+            const newCount = this.getTopoCardinality(this.field_cardinality, this.field_geometry, countFilter);
             if (newCount) {
                 return newCount.pipe(flatMap(
                     feat => {
@@ -101,7 +92,15 @@ export class TopoMapContributor extends MapContributor {
                             // AGG TOPO
                             this.geojsondata.features = [];
                             this.aggregation = this.topoAggregation;
-                            return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, {pwithin: [[pwithin]]});
+                            const topoGeohashGeoFilter: Filter = {
+                                f: [[{
+                                    field: this.aggregationField,
+                                    op: Expression.OpEnum.Within,
+                                    value: pwithin.trim()
+                                }]]
+                            };
+                            this.addFilter(topoGeohashGeoFilter, this.additionalFilter);
+                            return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, topoGeohashGeoFilter);
                         } else {
                             // Classique AGG geohash
                             this.geojsondata.features = [];
@@ -121,7 +120,7 @@ export class TopoMapContributor extends MapContributor {
     }
 
     public fetchDataGeohashGeoaggregate(geohashList: Array<string>): Observable<FeatureCollection> {
-        return this.fetchTopoDataGeohashGeoaggregate(geohashList, null);
+        return this.fetchTopoDataGeohashGeoaggregate(geohashList, this.additionalFilter);
     }
 
     public fetchTopoDataGeohashGeoaggregate(geohashList: Array<string>, filter: Filter): Observable<FeatureCollection> {
@@ -189,7 +188,9 @@ export class TopoMapContributor extends MapContributor {
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
             // Test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
-            const count = this.getTopoCardinality(this.field_cardinality, this.field_geometry, this.getFilterForCount(pwithin));
+            const countFilter = this.getFilterForCount(pwithin);
+            this.addFilter(countFilter, this.additionalFilter);
+            const count = this.getTopoCardinality(this.field_cardinality, this.field_geometry, countFilter);
             if (count) {
                 count
                     .subscribe(feat => {
@@ -216,7 +217,15 @@ export class TopoMapContributor extends MapContributor {
                                 || newMove.extendForLoad[3] > this.mapExtend[3]
                                 || this.isGeoaggregateCluster
                             ) {
-                                this.drawTopoGeoaggregateGeohash(newGeohashList, {pwithin: [[pwithin]]});
+                                const topoGeoaggregateGeohashFilter: Filter = {
+                                    f: [[{
+                                        field: this.aggregationField,
+                                        op: Expression.OpEnum.Within,
+                                        value: pwithin.trim()
+                                    }]]
+                                };
+                                this.addFilter(topoGeoaggregateGeohashFilter, this.additionalFilter);
+                                this.drawTopoGeoaggregateGeohash(newGeohashList, topoGeoaggregateGeohashFilter);
                             }
                         } else {
                             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
@@ -273,7 +282,6 @@ export class TopoMapContributor extends MapContributor {
                     this.maxValueGeoHash = f.properties.count;
                 }
             });
-            const allfeatures: Array<any> = [];
             featureCollection.features.forEach(f => {
                 f.properties['point_count_normalize'] = f.properties.count / this.maxValueGeoHash * 100;
                 f.properties['point_count'] = f.properties.count;
@@ -289,7 +297,7 @@ export class TopoMapContributor extends MapContributor {
         return features;
     }
 
-    private getTopoCardinality(collectField: string, geometryField: string, filter): Observable<Feature[]> {
+    private getTopoCardinality(collectField: string, geometryField: string, filter: Filter): Observable<Feature[]> {
         const aggregationsMetrics = new Array<Aggregation>();
         const metrics = new Array<Metric>();
         const metric: Metric = {

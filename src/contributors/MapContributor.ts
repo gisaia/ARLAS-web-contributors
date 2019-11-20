@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, Subject, generate } from 'rxjs';
+import { Observable, Subject, generate, from } from 'rxjs';
 import { map, finalize, flatMap, mergeAll } from 'rxjs/operators';
 
 import {
@@ -28,20 +28,21 @@ import {
 import {
     Search, Expression, Hits,
     Aggregation, Projection,
-    Filter, Page, FeatureCollection
+    Filter, FeatureCollection, Feature
 } from 'arlas-api';
-import { OnMoveResult, ElementIdentifier, triggerType, PageEnum } from '../models/models';
+import { OnMoveResult, ElementIdentifier, PageEnum } from '../models/models';
 import { appendIdToSort, removePageFromIndex, ASC } from '../utils/utils';
 import { bboxes } from 'ngeohash';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
-import bbox from '@turf/bbox';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import { getBounds, tileToString, truncate, isClockwise } from './../utils/mapUtils';
-import { from } from 'rxjs/observable/from';
+
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
+import { mix } from 'tinycolor2';
+
 
 export enum geomStrategyEnum {
     bbox,
@@ -84,7 +85,11 @@ export class MapContributor extends Contributor {
         'type': 'FeatureCollection',
         'features': []
     };
+
+    /** Additional Arlas filter to add the BBOX and filter comming from Collaborations*/
+    protected additionalFilter: Filter;
     public includeFeaturesFields: Array<string> = this.getConfigValue('includeFeaturesFields');
+    public generateFeaturesColors: boolean = this.getConfigValue('generateFeatureColors');
     public isGeoaggregateCluster = true;
     public fetchType: fetchType = fetchType.geohash;
     public zoomToPrecisionCluster: Array<Array<number>> = this.getConfigValue('zoomToPrecisionCluster');
@@ -105,10 +110,16 @@ export class MapContributor extends Contributor {
     public isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
     public drawPrecision = this.getConfigValue('drawPrecision') !== undefined ? this.getConfigValue('drawPrecision') : 6;
 
-    public isGIntersect = false;
+    public geoQueryOperation: Expression.OpEnum = Expression.OpEnum.Within;
+    public geoQueryField: string;
+    public returned_geometries = '';
+
+    public geoPointFields = new Array<string>();
+    public geoShapeFields = new Array<string>();
     public strategyEnum = geomStrategyEnum;
 
     public countExtendBus = new Subject<{ count: number, threshold: number }>();
+    public saturationWeight = 0.5;
     /**
      * By default the contributor computes the data in a dynamic way (`Dynamic mode`): it switches between
      * `clusters` and `features` mode according to the zoom level and the number of features.
@@ -134,6 +145,11 @@ export class MapContributor extends Contributor {
     public aggregation: Array<Aggregation> = this.getConfigValue('aggregationmodels');
     public precision;
 
+    public defaultCentroidField: string;
+    public aggregationField: string;
+
+    public redrawTile: Subject<boolean> = new Subject<boolean>();
+
     /** CONSTANTS */
     private NEXT_AFTER = '_nextAfter';
     private PREVIOUS_AFTER = '_previousAfter';
@@ -148,22 +164,40 @@ export class MapContributor extends Contributor {
     */
     constructor(
         public identifier,
-        public redrawTile: Subject<boolean>,
         public collaborativeSearcheService: CollaborativesearchService,
-        public configService: ConfigService,
-        gIntersect?: boolean
+        public configService: ConfigService
     ) {
         super(identifier, configService, collaborativeSearcheService);
-        if (this.aggregation !== undefined) {
-            this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.precision = a.interval.value);
-        }
-        this.isGIntersect = gIntersect;
+
+        this.collaborativeSearcheService.describe(collaborativeSearcheService.collection)
+            .subscribe(collection => {
+                const fields = collection.properties;
+                Object.keys(fields).forEach(fieldName => {
+                    this.getFieldProperties(fields, fieldName);
+                });
+                this.geoQueryField = collection.params.centroid_path;
+                this.defaultCentroidField = collection.params.centroid_path;
+                this.returned_geometries = collection.params.geometry_path;
+                if (this.aggregation !== undefined) {
+                    this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.precision = a.interval.value);
+                    this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.aggregationField = a.field);
+                } else {
+                    this.aggregationField = collection.params.centroid_path;
+                }
+            });
     }
     public static getJsonSchema(): Object {
         return jsonSchema;
     }
 
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
+    public getAdditionalFilter(): Filter {
+        return this.additionalFilter;
+    }
+    public setAdditionalFilter(value: Filter) {
+        this.additionalFilter = value;
+    }
+
+    public fetchData(collaborationEvent?: CollaborationEvent): Observable<any> {
         switch (this.dataMode) {
             case dataMode.simple: {
                 return this.fetchDataSimpleMode(collaborationEvent);
@@ -189,9 +223,11 @@ export class MapContributor extends Contributor {
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
             const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
+            const countFilter = this.getFilterForCount(pwithin);
+            this.addFilter(countFilter, this.additionalFilter);
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                    this.identifier, this.getFilterForCount(pwithin));
+                    this.identifier, countFilter);
             if (count) {
                 return count.pipe(flatMap(c => {
                     this.countExtendBus.next({
@@ -227,11 +263,125 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public setGIntersect(active: boolean) {
-        this.isGIntersect = active;
+    /**
+     * Sets the query operation to apply (`within`, `intersects`, `notintersects`, `notwithin`)
+     * @param geoQueryOperation
+     */
+    public setGeoQueryOperation(geoQueryOperation: string) {
+        switch (geoQueryOperation.toLowerCase()) {
+            case 'within':
+                this.geoQueryOperation = Expression.OpEnum.Within;
+                break;
+            case 'intersects':
+                this.geoQueryOperation = Expression.OpEnum.Intersects;
+                break;
+            case 'notwithin':
+                this.geoQueryOperation = Expression.OpEnum.Notwithin;
+                break;
+            case 'notintersects':
+                this.geoQueryOperation = Expression.OpEnum.Notintersects;
+                break;
+        }
     }
-    public setGeomStrategy(geomStrategy: string) {
-        this.geomStrategy = this.strategyEnum[geomStrategy];
+
+    /**
+     * Sets the geometry/point field to query
+     * @param geoQueryField
+     */
+    public setGeoQueryField(geoQueryField: string) {
+        this.geoQueryField = geoQueryField;
+    }
+
+    /**
+     * Sets the geometries to render on the map
+     * @param returned_geometries comma separated geometry/point fields paths
+     */
+    public setReturnedGeometries(returned_geometries: string) {
+        this.returned_geometries = returned_geometries;
+    }
+
+    /**
+     * Sets the point field on which geoaggregation is applied
+     * @param geoAggregateField
+     */
+    public setGeoAggregateGeomField(geoAggregateField: string) {
+        const aggregations = this.aggregation;
+        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.field = geoAggregateField);
+        this.aggregation = aggregations;
+        this.aggregationField = geoAggregateField;
+    }
+
+    /**
+     * Sets the strategy of geoaggregation (`bbox`, `centroid`, `first`, `last`, `byDefault`, `geohash`)
+     * @param geomStrategy
+     */
+    public setGeomStrategy(geomStrategy: geomStrategyEnum) {
+        this.geomStrategy = geomStrategy;
+    }
+
+    /**
+     * fetches the data, sets it and sets the selection after changing the geometry/path to query
+     */
+    public onChangeGeometries() {
+        this.geojsondata = {
+            'type': 'FeatureCollection',
+            'features': []
+        };
+        this.updateFromCollaboration(null);
+    }
+
+    /**
+     * Applies the geoQueryOperation
+     */
+    public onChangeGeoQuery() {
+        const collaboration: Collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
+        if (collaboration !== null) {
+            switch (this.geoQueryOperation) {
+                case Expression.OpEnum.Notintersects:
+                case Expression.OpEnum.Notwithin:
+                    const andFilter: Expression[][] = [];
+                    collaboration.filter.f.forEach((expressions: Expression[]) => {
+                        expressions.forEach((exp: Expression) => {
+                            exp.field = this.geoQueryField;
+                            exp.op = this.geoQueryOperation;
+                            andFilter.push([exp]);
+                        });
+                    });
+                    const andCollaboration: Collaboration = {
+                        filter: {
+                            f: andFilter
+                        },
+                        enabled: collaboration.enabled
+                    };
+                    this.collaborativeSearcheService.setFilter(this.identifier, andCollaboration);
+                    break;
+                case Expression.OpEnum.Intersects:
+                case Expression.OpEnum.Within:
+                    const orFilter: Expression[][] = [];
+                    const multiExpressions: Expression[] = [];
+                    collaboration.filter.f.forEach((expressions: Expression[]) => {
+                        expressions.forEach((exp: Expression) => {
+                            exp.field = this.geoQueryField;
+                            exp.op = this.geoQueryOperation;
+                            multiExpressions.push(exp);
+                        });
+                    });
+                    orFilter.push(multiExpressions);
+                    const orCollaboration: Collaboration = {
+                        filter: {
+                            f: orFilter
+                        },
+                        enabled: collaboration.enabled
+                    };
+                    this.collaborativeSearcheService.setFilter(this.identifier, orCollaboration);
+                    break;
+            }
+        }
+    }
+
+    public getReturnedGeometries(returnedGeometries: string): Set<string> {
+        const returnedGeometriesSet = new Set<string>(returnedGeometries.split(','));
+        return returnedGeometriesSet;
     }
 
     public setData(data: any) {
@@ -253,14 +403,22 @@ export class MapContributor extends Contributor {
         }
         this.redrawTile.next(true);
         if (collaboration !== null) {
-            const polygonGeojsons = [];
-            let aois: string[];
-            if (this.isGIntersect) {
-                aois = collaboration.filter.gintersect[0];
-            } else {
-                aois = collaboration.filter.pwithin[0];
+            if (collaboration.filter && collaboration.filter.f) {
+                const operation = collaboration.filter.f[0][0].op;
+                const field = collaboration.filter.f[0][0].field;
+                this.setGeoQueryField(field);
+                this.setGeoQueryOperation(operation.toString());
             }
-            if (aois) {
+            const polygonGeojsons = [];
+            const aois: string[] = [];
+            collaboration.filter.f.forEach(exprs => {
+                exprs.forEach(expr => {
+                    if (expr.op === this.geoQueryOperation) {
+                        aois.push(expr.value);
+                    }
+                });
+            });
+            if (aois.length > 0) {
                 let index = 1;
                 aois.forEach(aoi => {
                     if (aoi.indexOf('POLYGON') < 0) {
@@ -340,6 +498,7 @@ export class MapContributor extends Contributor {
             this.geomStrategy = style.geomStrategy;
             if (this.isGeoaggregateCluster) {
                 this.geojsondata.features = [];
+                this.fetchType = fetchType.geohash;
                 this.drawGeoaggregateGeohash(this.currentGeohashList);
             }
         }
@@ -410,14 +569,35 @@ export class MapContributor extends Contributor {
                 }
             });
             features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
-            if (this.isGIntersect) {
-                filters = {
-                    gintersect: [geoFilter],
-                };
-            } else {
-                filters = {
-                    pwithin: [geoFilter],
-                };
+            switch (this.geoQueryOperation) {
+                case Expression.OpEnum.Notintersects:
+                case Expression.OpEnum.Notwithin:
+                    const andFilter = [];
+                    geoFilter.map(p => {
+                        return {
+                            field: this.geoQueryField,
+                            op: this.geoQueryOperation,
+                            value: p
+                        };
+                    }).forEach(exp => {
+                        andFilter.push([exp]);
+                    });
+                    filters = {
+                        f: andFilter
+                    };
+                    break;
+                case Expression.OpEnum.Intersects:
+                case Expression.OpEnum.Within:
+                    filters = {
+                        f: [geoFilter.map(p => {
+                            return {
+                                field: this.geoQueryField,
+                                op: this.geoQueryOperation,
+                                value: p
+                            };
+                        })]
+                    };
+                    break;
             }
             const data: Collaboration = {
                 filter: filters,
@@ -493,9 +673,11 @@ export class MapContributor extends Contributor {
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
+            const countFilter = this.getFilterForCount(pwithin);
+            this.addFilter(countFilter, this.additionalFilter);
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                    this.identifier, this.getFilterForCount(pwithin));
+                    this.identifier, countFilter);
             if (count) {
                 count.subscribe(value => {
                     this.countExtendBus.next({
@@ -615,6 +797,7 @@ export class MapContributor extends Contributor {
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetch_geometry.strategy = this.geomStrategy);
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.fetch_geometry.strategy = this.geomStrategy);
+
         const geohashSet = new Set(geohashList);
         geohashSet.forEach(geohash => {
             if (this.currentGeohashList.indexOf(geohash) < 0) {
@@ -625,7 +808,8 @@ export class MapContributor extends Contributor {
                 aggregations: aggregations
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations, this.isFlat);
+                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
+                this.isFlat, null, this.additionalFilter);
             tabOfGeohash.push(geoAggregateData);
         });
         return from(tabOfGeohash).pipe(mergeAll());
@@ -652,7 +836,6 @@ export class MapContributor extends Contributor {
         features.forEach(f => this.geojsondata.features.push(f));
         this.isGeoaggregateCluster = true;
         return features;
-
     }
     /**
      * Get the previous/following set of data.
@@ -704,8 +887,9 @@ export class MapContributor extends Contributor {
             + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
         const filter: Filter = this.getFilterForCount(pwithin);
         if (this.expressionFilter !== undefined) {
-            filter.f = [[this.expressionFilter]];
+            filter.f.push([this.expressionFilter]);
         }
+        this.addFilter(filter, this.additionalFilter);
         const search: Search = { page: { size: this.searchSize, sort: sort }, form: { flat: this.isFlat } };
         if (afterParam) {
             if (whichPage === PageEnum.next) {
@@ -732,6 +916,8 @@ export class MapContributor extends Contributor {
         }
         projection.includes = this.idFieldName + ',' + includes;
         search.projection = projection;
+        separator = '';
+        search.returned_geometries = this.returned_geometries;
         return this.collaborativeSearcheService.resolveButNotFeatureCollection(
             [projType.geosearch, search], this.collaborativeSearcheService.collaborations, this.isFlat,
             null, filter);
@@ -746,6 +932,7 @@ export class MapContributor extends Contributor {
                 f: [[this.expressionFilter]]
             };
         }
+        this.addFilter(filter, this.additionalFilter);
         const search: Search = { page: { size: this.nbMaxFeatureForCluster }, form: { flat: this.isFlat } };
         const projection: Projection = {};
         let includes = '';
@@ -760,6 +947,8 @@ export class MapContributor extends Contributor {
         }
         projection.includes = this.idFieldName + ',' + includes;
         search.projection = projection;
+        separator = '';
+        search.returned_geometries = this.returned_geometries;
         tiles.forEach(tile => {
             const tiledSearch: TiledSearch = {
                 search: search,
@@ -779,12 +968,13 @@ export class MapContributor extends Contributor {
         const idProperty = this.isFlat ? this.idFieldName.replace(/\./g, this.FLAT_CHAR) : this.idFieldName;
         const dataSet = new Set(this.geojsondata.features.map(f => {
             if (f.properties !== undefined) {
-                return f.properties[idProperty];
+                return f.properties[idProperty].concat('_').concat(f.properties['geometry_path']);
             }
         }));
         if (featureCollection.features !== undefined) {
             return featureCollection.features
-                .map(f => [f.properties[idProperty], f])
+                .map(f => this.setFeatureColor(f))
+                .map(f => [f.properties[idProperty].concat('_').concat(f.properties['geometry_path']), f])
                 .filter(f => dataSet.has(f[0]) === false)
                 .map(f => f[1]);
         } else {
@@ -827,46 +1017,145 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public getFilterForCount(extent: string) {
+    public getFilterForCount(extent: string): Filter {
         // west, south, east, north
         const extentTab = extent.trim().split(',');
         const west = extentTab[0];
         const east = extentTab[2];
-        let finalExtent = [extent.trim()];
+        let finalExtend = [extent.trim()];
         if (parseFloat(west) > parseFloat(east)) {
-            finalExtent = [];
+            finalExtend = [];
             const firstExtent = extentTab[0] + ',' + extentTab[1] + ',' + '180' + ',' + extentTab[3];
             const secondExtent = '-180' + ',' + extentTab[1] + ',' + extentTab[2] + ',' + extentTab[3];
-            finalExtent.push(firstExtent.trim());
-            finalExtent.push(secondExtent.trim());
+            finalExtend.push(firstExtent.trim());
+            finalExtend.push(secondExtent.trim());
         }
-        let filter = {};
+        let filter: Filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
+        const defaultQueryExpressions: Array<Expression> = [];
+        defaultQueryExpressions.push({
+            field: this.defaultCentroidField,
+            op: Expression.OpEnum.Within,
+            value: finalExtend[0]
+        });
+        if (finalExtend[1]) {
+            defaultQueryExpressions.push({
+                field: this.defaultCentroidField,
+                op: Expression.OpEnum.Within,
+                value: finalExtend[1]
+            });
+        }
         if (collaboration !== null && collaboration !== undefined) {
             if (collaboration.enabled) {
-                let aois = [];
-                if (this.isGIntersect) {
-                    aois = collaboration.filter.gintersect[0];
-                    filter = {
-                        gintersect: [finalExtent, aois]
-                    };
-                } else {
-                    aois = collaboration.filter.pwithin[0];
-                    filter = {
-                        pwithin: [finalExtent, aois]
-                    };
+                const aois: string[] = [];
+                collaboration.filter.f.forEach(exprs => {
+                    exprs.forEach(expr => {
+                        if (expr.op === this.geoQueryOperation) {
+                            aois.push(expr.value);
+                        }
+                    });
+                });
+                let geoQueryOperationForCount;
+                switch (this.geoQueryOperation) {
+                    case Expression.OpEnum.Notintersects:
+                    case Expression.OpEnum.Notwithin:
+                        if (this.geoQueryOperation === Expression.OpEnum.Intersects
+                            || this.geoQueryOperation === Expression.OpEnum.Notintersects) {
+                            geoQueryOperationForCount = Expression.OpEnum.Intersects;
+                        }
+                        if (this.geoQueryOperation === Expression.OpEnum.Within || this.geoQueryOperation === Expression.OpEnum.Notwithin) {
+                            geoQueryOperationForCount = Expression.OpEnum.Within;
+                        }
+                        const andFilter: Array<Array<Expression>> = [];
+                        aois.map(p => {
+                            return {
+                                field: this.geoQueryField,
+                                op: this.geoQueryOperation,
+                                value: p
+                            };
+                        }).forEach(exp => {
+                            andFilter.push([exp]);
+                        });
+                        const extendForCountExpressions: Array<Expression> = [];
+                        extendForCountExpressions.push({
+                            field: this.geoQueryField,
+                            op: geoQueryOperationForCount,
+                            value: finalExtend[0]
+                        });
+                        if (finalExtend[1]) {
+                            extendForCountExpressions.push({
+                                field: this.geoQueryField,
+                                op: geoQueryOperationForCount,
+                                value: finalExtend[1]
+                            });
+                        }
+                        andFilter.push(extendForCountExpressions);
+                        filter = {
+                            f: andFilter
+                        };
+                        break;
+                    case Expression.OpEnum.Intersects:
+                    case Expression.OpEnum.Within:
+                        const queryExpressions: Array<Expression> = [];
+                        queryExpressions.push({
+                            field: this.geoQueryField,
+                            op: this.geoQueryOperation,
+                            value: finalExtend[0]
+                        });
+                        if (finalExtend[1]) {
+                            queryExpressions.push({
+                                field: this.geoQueryField,
+                                op: this.geoQueryOperation,
+                                value: finalExtend[1]
+                            });
+                        }
+                        filter = {
+                            f: [aois.map(p => {
+                                return {
+                                    field: this.geoQueryField,
+                                    op: this.geoQueryOperation,
+                                    value: p
+                                };
+                            }), queryExpressions]
+                        };
                 }
             } else {
                 filter = {
-                    pwithin: [finalExtent],
+                    f: [defaultQueryExpressions]
                 };
             }
         } else {
             filter = {
-                pwithin: [finalExtent],
+                f: [defaultQueryExpressions]
             };
         }
         return filter;
+    }
+
+    /**
+     * adds the second filter to the first filter
+     * @param filter filter to enrich
+     * @param additionalFilter filter to add to the first filter
+     */
+    protected addFilter(filter: Filter, additionalFilter: Filter): void {
+        if (additionalFilter) {
+            if (additionalFilter.f) {
+                if (!filter.f) {
+                    filter.f = [];
+                }
+                additionalFilter.f.forEach(additionalF => {
+                    filter.f.push(additionalF);
+                });
+            }
+            if (additionalFilter.q) {
+                if (!filter.q) {
+                    filter.q = [];
+                }
+                additionalFilter.q.forEach(additionalQ => {
+                    filter.q.push(additionalQ);
+                });
+            }
+        }
     }
 
     private getBboxsForQuery(newBbox: Array<Object>) {
@@ -922,6 +1211,48 @@ export class MapContributor extends Contributor {
             newValue = shortNum + suffixes[suffixNum];
         }
         return newValue.toString();
+    }
+
+    private getFieldProperties(fieldList: any, fieldName: string, parentPrefix?: string) {
+        if (fieldList[fieldName].type === 'OBJECT') {
+            const subFields = fieldList[fieldName].properties;
+            if (subFields) {
+                Object.keys(subFields).forEach(subFieldName => {
+                    this.getFieldProperties(subFields, subFieldName, (parentPrefix ? parentPrefix : '') + fieldName + '.');
+                });
+            }
+        } else {
+            if (fieldList[fieldName].type === 'GEO_POINT') {
+                this.geoPointFields.push((parentPrefix ? parentPrefix : '') + fieldName);
+            }
+            if (fieldList[fieldName].type === 'GEO_SHAPE') {
+                this.geoShapeFields.push((parentPrefix ? parentPrefix : '') + fieldName);
+            }
+        }
+    }
+
+    private setFeatureColor(feature: Feature): Feature {
+        if (this.includeFeaturesFields && this.generateFeaturesColors) {
+            this.includeFeaturesFields.forEach((field: string) => {
+                feature.properties[field + '_color'] = this.getHexColor(feature.properties[field], 0.5);
+            });
+        }
+        return feature;
+    }
+
+    private getHexColor(key: string, saturationWeight: number): string {
+        const text = key + ':' + key;
+        // string to int
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        // int to rgb
+        let hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+        hex = '00000'.substring(0, 6 - hex.length) + hex;
+        const color = mix(hex, hex);
+        color.saturate(color.toHsv().s * saturationWeight + ((1 - saturationWeight) * 100));
+        return color.toHexString();
     }
 }
 

@@ -10,14 +10,13 @@
                 "analytics",
                 "chipssearch",
                 "detailedhistogram",
-                "donut",
                 "histogram",
-                "powerbars",
                 "map",
                 "resultlist",
                 "swimlane",
                 "topomap",
-                "tree"
+                "tree",
+                "metric"
             ]
         },
         "identifier": {
