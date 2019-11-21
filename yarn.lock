@@ -190,9 +190,9 @@ arlas-api@12.0.0:
     url "0.11.0"
 
 arlas-web-core@12.0.*:
-  version "12.0.0"
-  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-12.0.0.tgz#cbd0367f5cd69f8fc5b141d32207673c5e092da2"
-  integrity sha512-GTNAFvzEbe+BQV3D8ziV1P+iG39VM3Y+gfka/IiCA5tdaD9+rsAv2HvFM0d4JQFBSRR4eQQwMyJ9Y2pz6Qy4VQ==
+  version "12.0.1"
+  resolved "https://registry.yarnpkg.com/arlas-web-core/-/arlas-web-core-12.0.1.tgz#e01cc40e8d941d95cb20fae8798aa278ed3ec960"
+  integrity sha512-Qt83EsM10i08DndDa4F6uC4QmcMR9WgxXaJKsInovYXKco3Ytj0kk23KBXSxDXPP/tL70KPGq36++ZkNH+J48w==
   dependencies:
     arlas-api "12.0.0"
     rxjs "~6.5.3"
