@@ -1,5 +1,13 @@
 # Change Log
 
+## [v12.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.0.1) (2019-11-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.0.0...v12.0.1)
+
+**New stuff:**
+
+- Update build target to `es6` [\#235](https://github.com/gisaia/ARLAS-web-contributors/issues/235)
+
 ## [v12.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.0.0) (2019-11-20)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.1...v12.0.0)
