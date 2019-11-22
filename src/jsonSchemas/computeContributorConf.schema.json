@@ -24,6 +24,10 @@
                 "spanning",
                 "sum"
             ]
+        },
+        "process": {
+            "description": "Process transformation to apply on a variable named `result` (ex : result / 1000)",
+            "type": "string"
         }
     },
     "required": [
