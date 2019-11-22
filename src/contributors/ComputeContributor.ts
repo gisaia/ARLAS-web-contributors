@@ -35,6 +35,8 @@ export class ComputeContributor extends Contributor {
     public metric: string = this.getConfigValue('metric');
     /** Title of the contributor*/
     public title: string = this.getConfigValue('title');
+    /** A process to apply on `this.metricValue`*/
+    public process: string = this.getConfigValue('process');
 
     public metricValue: number;
     /**
@@ -69,10 +71,15 @@ export class ComputeContributor extends Contributor {
     }
 
     public setData(data: ComputationResponse): any {
-        this.metricValue = data.value;
+        const result = data.value;
+        let resultValue = result;
+        if (this.process && this.process.trim().length > 0) {
+            resultValue = eval(this.process);
+        }
+        this.metricValue = resultValue;
         return from([]);
-
     }
+
     public setSelection(collaboration: Collaboration): any {
         return from([]);
     }
