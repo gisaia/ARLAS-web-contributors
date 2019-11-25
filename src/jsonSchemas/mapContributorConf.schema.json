@@ -117,6 +117,27 @@
         "drawPrecision": {
             "description": "Number of  digits after the decimal point for coordinates in geosjon used for filter",
             "type": "number"
+        },
+        "dataMode": {
+            "description": "Initial mode of the contributor : dynamic is the classic cluster/feature mode, simple si always feature mode",
+            "enum": [
+                "simple",
+                "dynamic"
+            ]        },
+        "fetchType": {
+            "description": "Type of initial mode of fetching data",
+            "enum": [
+                "tile",
+                "geohash"
+            ]
+        },
+        "searchSort": {
+            "description": "Separated comma field to defined the order of te search",
+            "type": "string"
+        },
+        "searchSize": {
+            "description": "Number of  features return by a geosearch",
+            "type": "number"
         }
     },
     "required": [
