@@ -90,8 +90,8 @@ export class MapContributor extends Contributor {
     protected additionalFilter: Filter;
     public includeFeaturesFields: Array<string> = this.getConfigValue('includeFeaturesFields');
     public generateFeaturesColors: boolean = this.getConfigValue('generateFeatureColors');
-    public isGeoaggregateCluster = true;
-    public fetchType: fetchType = fetchType.geohash;
+    public isGeoaggregateCluster: boolean;
+    public fetchType: fetchType;
     public zoomToPrecisionCluster: Array<Array<number>> = this.getConfigValue('zoomToPrecisionCluster');
     public maxPrecision: Array<number> = this.getConfigValue('maxPrecision');
 
@@ -125,7 +125,7 @@ export class MapContributor extends Contributor {
      * `clusters` and `features` mode according to the zoom level and the number of features.
      * In the `Simple mode` the contributor returns just the features (with a given sort and size and an optional filter)
      */
-    public dataMode: dataMode = dataMode.dynamic;
+    public dataMode: dataMode;
     /**
      * A filter that is taken into account when fetching features and that is not included in the global collaboration.
      * It's used in `Simple mode` only.
@@ -134,11 +134,11 @@ export class MapContributor extends Contributor {
     /**
      * Number of features fetched in a geosearch request. It's used in `Simple mode` only. Default to 100.
      */
-    public searchSize = 100;
+    public searchSize = this.getConfigValue('searchSize') !== undefined ? this.getConfigValue('searchSize') : 100;
     /**
      * comma seperated field names that sort the features. Order matters. It's used in `Simple mode` only.
     */
-    public searchSort = '';
+    public searchSort = this.getConfigValue('searchSort') !== undefined ? this.getConfigValue('searchSort') : '';
     /**
      * ARLAS Server Aggregation used to aggregate features and display them in `clusters` mode. Defined in configuration
      */
@@ -168,7 +168,23 @@ export class MapContributor extends Contributor {
         public configService: ConfigService
     ) {
         super(identifier, configService, collaborativeSearcheService);
+        if (this.getConfigValue('dataMode') !== undefined
+            && dataMode[this.getConfigValue('dataMode')].toString() === dataMode.simple.toString()) {
+            this.dataMode = dataMode.simple;
+            this.isGeoaggregateCluster = false;
+        } else {
+            this.dataMode = dataMode.dynamic;
+            this.isGeoaggregateCluster = true;
+        }
 
+        if (this.getConfigValue('fetchType') !== undefined
+            && fetchType[this.getConfigValue('fetchType')].toString() === fetchType.tile.toString()) {
+            this.fetchType = fetchType.tile;
+            this.isGeoaggregateCluster = false;
+        } else {
+            this.fetchType = fetchType.geohash;
+            this.isGeoaggregateCluster = true;
+        }
         this.collaborativeSearcheService.describe(collaborativeSearcheService.collection)
             .subscribe(collection => {
                 const fields = collection.properties;
