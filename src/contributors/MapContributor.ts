@@ -110,7 +110,7 @@ export class MapContributor extends Contributor {
     public isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
     public drawPrecision = this.getConfigValue('drawPrecision') !== undefined ? this.getConfigValue('drawPrecision') : 6;
 
-    public geoQueryOperation: Expression.OpEnum = Expression.OpEnum.Within;
+    public geoQueryOperation: Expression.OpEnum;
     public geoQueryField: string;
     public returned_geometries = '';
 
@@ -185,13 +185,28 @@ export class MapContributor extends Contributor {
             this.fetchType = fetchType.geohash;
             this.isGeoaggregateCluster = true;
         }
+
+        if (this.getConfigValue('geoQueryOp') !== undefined) {
+            if (Expression.OpEnum[this.getConfigValue('geoQueryOp')].toString() === Expression.OpEnum.Within.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Within;
+            } else if (Expression.OpEnum[this.getConfigValue('geoQueryOp')].toString() === Expression.OpEnum.Notwithin.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Notwithin;
+            } else if (Expression.OpEnum[this.getConfigValue('geoQueryOp')].toString() === Expression.OpEnum.Intersects.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Intersects;
+            } else if (Expression.OpEnum[this.getConfigValue('geoQueryOp')].toString() === Expression.OpEnum.Notwithin.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Notwithin;
+            }
+        } else {
+            this.geoQueryOperation = Expression.OpEnum.Within;
+        }
         this.collaborativeSearcheService.describe(collaborativeSearcheService.collection)
             .subscribe(collection => {
                 const fields = collection.properties;
                 Object.keys(fields).forEach(fieldName => {
                     this.getFieldProperties(fields, fieldName);
                 });
-                this.geoQueryField = collection.params.centroid_path;
+                const geoQueryFieldConf = this.getConfigValue('geoQueryField');
+                this.geoQueryField = geoQueryFieldConf !== undefined ? geoQueryFieldConf : collection.params.centroid_path;
                 this.defaultCentroidField = collection.params.centroid_path;
                 this.returned_geometries = collection.params.geometry_path;
                 if (this.aggregation !== undefined) {

@@ -26,9 +26,18 @@
             "description": "Initial zoom of  Map",
             "type": "number"
         },
-        "geometry": {
-            "description": "Geometry field of index",
+        "geoQueryField": {
+            "description": "Geometry field use for geo query",
             "type": "string"
+        },
+        "geoQueryOp": {
+            "description": "Operator  use for geo query",
+            "enum": [
+                "Within",
+                "NotWithin",
+                "Intersects",
+                "NotIntersects"
+            ]
         },
         "geomStrategy": {
             "description": "Geometry method of representation for aggregate data",
@@ -123,7 +132,8 @@
             "enum": [
                 "simple",
                 "dynamic"
-            ]        },
+            ]
+        },
         "fetchType": {
             "description": "Type of initial mode of fetching data",
             "enum": [
@@ -143,7 +153,6 @@
     "required": [
         "idFieldName",
         "initZoom",
-        "geometry",
         "geomStrategy",
         "zoomLevelFullData",
         "zoomLevelForTestCount",
