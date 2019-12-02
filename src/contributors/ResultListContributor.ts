@@ -598,6 +598,12 @@ export class ResultListContributor extends Contributor {
                 if (previous) {
                     fieldValueMap.set(this.PREVIOUS_AFTER, previousAfter);
                 }
+                if (this.includeMetadata) {
+                    this.includeMetadata.forEach(md => {
+                        const resultValue: string = getElementFromJsonObject(h.data, md);
+                        fieldValueMap.set(md, resultValue);
+                    });
+                }
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
                     const process: string = this.columnsProcess[element.columnName];
