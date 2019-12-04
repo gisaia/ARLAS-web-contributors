@@ -1,8 +1,26 @@
 # Change Log
 
+## [v12.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.1.0) (2019-12-04)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.0.2...v12.1.0)
+
+**New stuff:**
+
+- Set default query geom & default query operateur from conf [\#240](https://github.com/gisaia/ARLAS-web-contributors/issues/240)
+- \[Map\] Add options in configuration to set the initial state of the contributor [\#238](https://github.com/gisaia/ARLAS-web-contributors/issues/238)
+- \[MAP\] Add a method to set/get geo request method [\#186](https://github.com/gisaia/ARLAS-web-contributors/issues/186)
+
+**Fixed bugs:**
+
+- RESULTLIST : fields declared in 'includeMetadata' list are not added to data that populatee the component [\#242](https://github.com/gisaia/ARLAS-web-contributors/issues/242)
+
 ## [v12.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.0.2) (2019-11-22)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.0.1...v12.0.2)
+
+**New stuff:**
+
+- \[ComputeContributor\] Add a process function to be applied to metricValue [\#237](https://github.com/gisaia/ARLAS-web-contributors/issues/237)
 
 ## [v12.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.0.1) (2019-11-21)
 
