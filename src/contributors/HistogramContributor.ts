@@ -255,7 +255,7 @@ export class HistogramContributor extends Contributor {
         this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (this.nbBuckets) {
             const agg = this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-            <RangeRequest>{ filter: null, field: this.field }], collaborations, identifier, additionalFilter)
+            <RangeRequest>{ filter: null, field: this.field }], collaborations, identifier, additionalFilter, false, this.cacheDuration)
                 .pipe(
                     map((rangeResponse: RangeResponse) => {
                         const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
@@ -273,7 +273,7 @@ export class HistogramContributor extends Contributor {
                         this.aggregations[0].interval = r.aggregationPrecision;
                         return this.collaborativeSearcheService.resolveButNotAggregation(
                             [projType.aggregate, this.aggregations], collaborations,
-                            identifier, additionalFilter);
+                            identifier, additionalFilter, false, this.cacheDuration);
                     }
                     )),
                     flatMap(a => a)
@@ -284,7 +284,7 @@ export class HistogramContributor extends Contributor {
         } else {
             return this.collaborativeSearcheService.resolveButNotAggregation(
                 [projType.aggregate, this.aggregations], collaborations,
-                identifier, additionalFilter);
+                identifier, additionalFilter, false, this.cacheDuration);
         }
     }
 }

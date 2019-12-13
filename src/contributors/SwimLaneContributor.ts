@@ -133,7 +133,7 @@ export class SwimLaneContributor extends Contributor {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
                 return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                <RangeRequest>{ filter: null, field: this.xAxisField }], collaborations, this.identifier)
+                <RangeRequest>{ filter: null, field: this.xAxisField }], collaborations, this.identifier, {}, false, this.cacheDuration)
                     .pipe(
                         map((rangeResponse: RangeResponse) => {
                             const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
@@ -142,16 +142,16 @@ export class SwimLaneContributor extends Contributor {
                             this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
                         }),
                         flatMap(() =>
-                        this.collaborativeSearcheService.resolveButNotAggregation(
-                            [projType.aggregate, this.aggregations], collaborations,
-                            this.identifier)
+                            this.collaborativeSearcheService.resolveButNotAggregation(
+                                [projType.aggregate, this.aggregations], collaborations,
+                                this.identifier, {}, false, this.cacheDuration)
                         )
                     )
                 );
             } else {
                 return this.collaborativeSearcheService.resolveButNotAggregation(
                     [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-                    this.identifier);
+                    this.identifier, {}, false, this.cacheDuration);
             }
         } else {
             return from([]);

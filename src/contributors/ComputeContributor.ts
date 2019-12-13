@@ -56,8 +56,8 @@ export class ComputeContributor extends Contributor {
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<ComputationResponse> {
         const computationResponse = this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-            <ComputationRequest>{field: this.field, metric: ComputationRequest.MetricEnum[this.metric.toUpperCase()]}],
-             this.collaborativeSearcheService.collaborations, this.identifier );
+        <ComputationRequest>{ field: this.field, metric: ComputationRequest.MetricEnum[this.metric.toUpperCase()] }],
+            this.collaborativeSearcheService.collaborations, this.identifier, {}, false, this.cacheDuration);
 
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return computationResponse;

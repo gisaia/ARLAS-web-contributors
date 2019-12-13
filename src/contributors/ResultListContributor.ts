@@ -89,7 +89,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         };
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
-            this.contributor.identifier, filterExpression);
+            this.contributor.identifier, filterExpression, false, this.contributor.cacheDuration);
         const obs: Observable<AdditionalInfo> = searchResult.pipe(map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details: Array<Detail> = this.contributor.getConfigValue('details');
@@ -235,6 +235,9 @@ export class ResultListContributor extends Contributor {
      * geoSort parameter of the list.
     */
     public geoOrderSort = '';
+
+    public cacheDuration = this.cacheDuration;
+
     private includesvalues = new Array<string>();
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
@@ -341,7 +344,8 @@ export class ResultListContributor extends Contributor {
             f: [[expression]]
         };
         searchResult = this.collaborativeSearcheService
-            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, filterExpression);
+            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations,
+                null, filterExpression, false, this.cacheDuration);
         searchResult.pipe(map(data => JSON.stringify(data))).subscribe(
             data => {
                 download(data.toString(), elementidentifier.idValue + '.json', 'text/json');
@@ -731,7 +735,9 @@ export class ResultListContributor extends Contributor {
         search.projection = projection;
         projection.includes = includesvalues.join(',');
         const searchResult = this.collaborativeSearcheService
-            .resolveButNotHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, this.filter)
+            .resolveButNotHits([projType.search, search],
+                this.collaborativeSearcheService.collaborations,
+                null, this.filter, false, this.cacheDuration)
             .pipe(
                 finalize(() => this.collaborativeSearcheService.contribFilterBus.next(this))
             );

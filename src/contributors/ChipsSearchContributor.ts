@@ -92,7 +92,7 @@ export class ChipsSearchContributor extends Contributor {
                         const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
                             [projType.count, {}], this.collaborativeSearcheService.collaborations,
                             this.identifier,
-                            filter
+                            filter, false, this.cacheDuration
                         );
                         tabOfCount.push(
                             countData.pipe(
@@ -160,7 +160,7 @@ export class ChipsSearchContributor extends Contributor {
                 const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
                     [projType.count, {}], this.collaborativeSearcheService.collaborations,
                     this.identifier,
-                    filter
+                    filter, false, this.cacheDuration
                 );
                 countData.subscribe(
                     count => {

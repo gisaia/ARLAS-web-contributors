@@ -93,6 +93,10 @@
                     "field"
                 ]
             }
+        },
+        "cache_duration":{
+            "description": "Duration of browser cache.",
+            "type": "number"
         }
     },
     "properties": {

@@ -140,7 +140,7 @@ export class TopoMapContributor extends MapContributor {
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
                 [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
-                this.isFlat, null, filter);
+                this.isFlat, null, filter, this.cacheDuration);
             tabOfGeohash.push(geoAggregateData);
         });
         return from(tabOfGeohash).pipe(mergeAll());
@@ -317,7 +317,7 @@ export class TopoMapContributor extends MapContributor {
         const features: Observable<Feature[]> = this.collaborativeSearcheService
             .resolveButNotFeatureCollection([projType.geoaggregate, aggregationsMetrics],
                 this.collaborativeSearcheService.collaborations, true, '',
-                filter)
+                filter, this.cacheDuration)
             .pipe(map(data => data.features));
         return features;
     }
