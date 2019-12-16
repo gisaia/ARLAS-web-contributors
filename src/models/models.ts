@@ -421,3 +421,23 @@ export interface AttachmentConfig {
     attachmentDescriptionField?: string;
     attachmentIcon?: string;
 }
+
+export interface Normalization {
+    on: string;
+    per?: string;
+    scope: NormalizationScope;
+}
+
+export class FeaturesNormalization implements Normalization {
+    public on: string;
+    public per?: string;
+    public scope: NormalizationScope;
+
+    public minMaxPerKey = new Map<string, [number, number]>();
+    public minMax: [number, number];
+}
+
+export enum NormalizationScope {
+    global = 'global',
+    local = 'local'
+}
