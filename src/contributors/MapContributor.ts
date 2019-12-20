@@ -17,8 +17,8 @@
  * under the License.
  */
 
-import { Observable, Subject, generate, from } from 'rxjs';
-import { map, finalize, flatMap, mergeAll } from 'rxjs/operators';
+import { Observable, Subject, generate, from, concat } from 'rxjs';
+import { map, finalize, flatMap, mergeAll, concatAll } from 'rxjs/operators';
 
 import {
     CollaborativesearchService, Contributor,
@@ -28,7 +28,7 @@ import {
 import {
     Search, Expression, Hits,
     Aggregation, Projection,
-    Filter, FeatureCollection, Feature
+    Filter, FeatureCollection, Feature, Metric, AggregationResponse
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization, NormalizationScope } from '../models/models';
 import { appendIdToSort, removePageFromIndex, ASC } from '../utils/utils';
@@ -159,8 +159,10 @@ export class MapContributor extends Contributor {
 
     private allIncludedFeatures: Set<string>;
     private includeFeaturesFieldsSet: Set<string> = this.getConfigValue('includeFeaturesFields');
-    private dateFields: Map<string, string> = new Map<string, string>();
+    /** <date field - date format> map */
+    private dateFieldFormatMap: Map<string, string> = new Map<string, string>();
     private collectionParams: Set<string> = new Set<string>();
+    private globalNormalisation: Array<FeaturesNormalization> = new Array();
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -457,12 +459,10 @@ export class MapContributor extends Contributor {
             this.geojsondata.features.forEach(f => {
                 f.properties['point_count_normalize'] = f.properties.point_count / this.maxValueGeoHash * 100;
             });
+            this.redrawTile.next(true);
         } else {
-            if (this.normalizationFields) {
-                this.normalizeFeaturesLocally();
-            }
+            this.normalizeFeatures();
         }
-        this.redrawTile.next(true);
         if (collaboration !== null) {
             if (collaboration.filter && collaboration.filter.f) {
                 const operation = collaboration.filter.f[0][0].op;
@@ -811,10 +811,7 @@ export class MapContributor extends Contributor {
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
                 finalize(() => {
-                    if (this.normalizationFields) {
-                        this.normalizeFeaturesLocally();
-                    }
-                    this.redrawTile.next(true);
+                    this.normalizeFeatures();
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
             )
@@ -828,9 +825,7 @@ export class MapContributor extends Contributor {
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
                 finalize(() => {
-                    if (this.normalizationFields) {
-                        this.normalizeFeaturesLocally();
-                    }
+                    this.normalizeFeatures();
                     if (tiles.length > 0) {
                         this.redrawTile.next(true);
                     }
@@ -1226,6 +1221,67 @@ export class MapContributor extends Contributor {
         }
     }
 
+    /**
+     * Normalizes the values of the configured features fields
+     * Emits a redrawTile event
+     */
+    private normalizeFeatures(): void {
+        if (this.normalizationFields) {
+            this.normalizeFeaturesLocally();
+        }
+        const nbGlobalNormalizationPerKey = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).length;
+        if (nbGlobalNormalizationPerKey > 0) {
+
+            this.globalNormalisation = new Array();
+            const tabOfTermAggregations = new Array<Observable<AggregationResponse>>();
+            const tabOfFeaturesNormalizations = new Array<FeaturesNormalization>();
+            this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).forEach(f => {
+                tabOfFeaturesNormalizations.push(f);
+                const termAggregation: Aggregation = {
+                    type: Aggregation.TypeEnum.Term,
+                    field: f.per,
+                    metrics: [
+                        {
+                            collect_fct: Metric.CollectFctEnum.MIN,
+                            collect_field: f.on
+                        },
+                        {
+                            collect_fct: Metric.CollectFctEnum.MAX,
+                            collect_field: f.on
+                        }
+                    ],
+                    size: '10000'
+                };
+                const t = this.collaborativeSearcheService.resolveButNotAggregation(
+                    [projType.aggregate, [termAggregation]], this.collaborativeSearcheService.collaborations,
+                        null, this.additionalFilter);
+                tabOfTermAggregations.push(t);
+            });
+            let i = 0;
+            from(tabOfTermAggregations).pipe(
+                concatAll(),
+                finalize(() => {
+                    this.normalizeFeaturesGlobally();
+                    this.redrawTile.next(true);
+                })).subscribe(agg => {
+                    const n: FeaturesNormalization = tabOfFeaturesNormalizations[i];
+                    i++;
+                    n.minMaxPerKey = new Map();
+                    if (agg && agg.elements) {
+                        agg.elements.forEach(e => {
+                            const key = e.key;
+                            const minMax: [number, number] =
+                            [e.metrics.filter(m => m.type === Metric.CollectFctEnum.MIN.toString().toLowerCase())[0].value,
+                                e.metrics.filter(m => m.type === Metric.CollectFctEnum.MAX.toString().toLowerCase())[0].value];
+                                n.minMaxPerKey.set(key, minMax);
+                        });
+                    }
+                    this.globalNormalisation.push(n);
+            });
+        } else {
+            this.redrawTile.next(true);
+        }
+    }
     private normalizeFeaturesLocally() {
         this.normalizationFields.forEach((n) => { n.minMaxPerKey = new Map(); n.minMax = [Number.MAX_VALUE, Number.MIN_VALUE]; });
         this.geojsondata.features.forEach(f => {
@@ -1278,11 +1334,45 @@ export class MapContributor extends Contributor {
                     const max = minMax[1];
                     f.properties[normalizeField + '_locally_normalized'] = (value - min) / (max - min);
                 }
-                if (n.on && !this.includeFeaturesFieldsSet.has(n.on) && !this.collectionParams.has(n.on)) {
-                    delete f.properties[normalizeField];
+                /** DELETING PROPERTIES THAT WERE NOT INCLUDED IN includeFeaturesFields */
+            });
+        });
+    }
+
+    private normalizeFeaturesGlobally() {
+        this.geojsondata.features.forEach(f => {
+            const fieldsToCleanSet = new Set();
+            this.globalNormalisation.filter(n => n.scope === NormalizationScope.global).forEach((n) => {
+                const normalizeField = (this.isFlat && n.on) ? n.on.replace(/\./g, this.FLAT_CHAR) : n.on;
+                const perField = (this.isFlat && n.per) ? n.per.replace(/\./g, this.FLAT_CHAR) : n.per;
+                if (perField) {
+                    if (f.properties[perField] && f.properties[normalizeField]) {
+                        const minMax = n.minMaxPerKey.get(f.properties[perField]);
+                        const value = this.getValueFromFeature(f, n.on, normalizeField);
+                        const min = minMax[0];
+                        const max = minMax[1];
+                        f.properties[normalizeField + '_globally_normalized_per_' + perField] = (value - min) / (max - min);
+                    }
+                } else {
+                    if (f.properties[normalizeField]) {
+                        const minMax = n.minMax;
+                        const value = this.getValueFromFeature(f, n.on, normalizeField);
+                        const min = minMax[0];
+                        const max = minMax[1];
+                        f.properties[normalizeField + '_globally_normalized'] = (value - min) / (max - min);
+                    }
                 }
-                if (n.per && !this.includeFeaturesFieldsSet.has(n.per) && !this.collectionParams.has(n.per)) {
-                    delete f.properties[perField];
+                if (n.on) {
+                    fieldsToCleanSet.add(n.on);
+                }
+                if (n.per) {
+                    fieldsToCleanSet.add(n.per);
+                }
+
+            });
+            fieldsToCleanSet.forEach((field: string) => {
+                if (field && !this.includeFeaturesFieldsSet.has(field) && !this.collectionParams.has(field)) {
+                    delete f.properties[(this.isFlat && field) ? field.replace(/\./g, this.FLAT_CHAR) : field];
                 }
             });
         });
@@ -1290,8 +1380,12 @@ export class MapContributor extends Contributor {
     private getValueFromFeature(f: Feature, field: string, flattenedField): number {
         let value = +f.properties[flattenedField];
         if (isNaN(value)) {
-            if (this.dateFields.has(field)) {
-                value = +moment(f.properties[flattenedField], this.dateFields.get(field));
+            if (this.dateFieldFormatMap.has(field)) {
+                /** Moment Format character for days is `D` while the one given by ARLAS-server is `d`
+                 * Thus, we replace the `d` with `D` to adapt to Moment library.
+                */
+                const dateFormat = this.dateFieldFormatMap.get(field).replace('dd', 'DD');
+                value = moment.utc(f.properties[flattenedField], dateFormat).valueOf();
             }
         }
         return value;
@@ -1365,7 +1459,7 @@ export class MapContributor extends Contributor {
             } else if (fieldList[fieldName].type === 'GEO_SHAPE') {
                 this.geoShapeFields.push((parentPrefix ? parentPrefix : '') + fieldName);
             } else if (fieldList[fieldName].type === 'DATE') {
-                this.dateFields.set((parentPrefix ? parentPrefix : '') + fieldName, fieldList[fieldName].format);
+                this.dateFieldFormatMap.set((parentPrefix ? parentPrefix : '') + fieldName, fieldList[fieldName].format);
             }
         }
     }
