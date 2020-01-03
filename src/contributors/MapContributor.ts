@@ -106,7 +106,7 @@ export class MapContributor extends Contributor {
      * - A property `{field}_globally_normalized_per_{key}` will be included in features mode as geojson properties
      */
     public normalizationFields: Array<FeaturesNormalization> = this.getConfigValue('normalizationFields');
-    public generateFeaturesColors: boolean = this.getConfigValue('generateFeatureColors');
+    public colorGenerationFields: Array<string> = this.getConfigValue('colorGenerationFields');
     public isGeoaggregateCluster: boolean;
     public fetchType: fetchType;
     public zoomToPrecisionCluster: Array<Array<number>> = this.getConfigValue('zoomToPrecisionCluster');
@@ -251,6 +251,9 @@ export class MapContributor extends Contributor {
             if (this.normalizationFields) {
                 allIncludedFeaturesList.push(this.normalizationFields.filter(f => f.on).map(f => f.on));
                 allIncludedFeaturesList.push(this.normalizationFields.filter(f => f.per).map(f => f.per));
+            }
+            if (this.colorGenerationFields) {
+                allIncludedFeaturesList.push(this.colorGenerationFields);
             }
             this.allIncludedFeatures = new Set(allIncludedFeaturesList);
         }
@@ -1407,6 +1410,14 @@ export class MapContributor extends Contributor {
                     delete f.properties[(this.isFlat && field) ? field.replace(/\./g, this.FLAT_CHAR) : field];
                 }
             });
+            /** clean the fields used for color generation but not included in includeFeaturesFields */
+            if (this.colorGenerationFields) {
+                this.colorGenerationFields.forEach(cf => {
+                    if (cf && !this.includeFeaturesFieldsSet.has(cf) && !this.collectionParams.has(cf)) {
+                        delete f.properties[this.isFlat ? cf.replace(/\./g, this.FLAT_CHAR) : cf];
+                    }
+                });
+            }
         });
     }
     private getValueFromFeature(f: Feature, field: string, flattenedField): number {
@@ -1497,8 +1508,8 @@ export class MapContributor extends Contributor {
     }
 
     private setFeatureColor(feature: Feature): Feature {
-        if (this.allIncludedFeatures && this.generateFeaturesColors) {
-            this.allIncludedFeatures.forEach((field: string) => {
+        if (this.colorGenerationFields) {
+            this.colorGenerationFields.forEach((field: string) => {
                 const featureField = this.isFlat ? field.replace(/\./g, this.FLAT_CHAR) : field;
                 feature.properties[featureField + '_color'] = this.getHexColor(feature.properties[featureField], 0.5);
             });
