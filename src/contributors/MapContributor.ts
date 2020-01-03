@@ -89,7 +89,22 @@ export class MapContributor extends Contributor {
 
     /** Additional Arlas filter to add the BBOX and filter comming from Collaborations*/
     protected additionalFilter: Filter;
+    /**
+     * List of fields pattern or names that will be included in features mode as geojson properties.
+     */
     public includeFeaturesFields: Array<string> = this.getConfigValue('includeFeaturesFields');
+    /**
+     * List of numeric or date fields patterns or names which values are normalized.
+     * The fields values can be normalized globally considering all the data
+     * Or locally considering the data on the current map extent only.
+     * Also you can normalize fields values (locally or globally) per a given key:
+     * > For instance I want to normalize the speed of boats by boat id.
+     * **Note** : Global normalization is only possible per a given key.
+     * Depending on the given options in `FeaturesNormalization` :
+     * - A property `{field}_locally_normalized` will be included in features mode as geojson properties
+     * - A property `{field}_locally_normalized_per_{key}` will be included in features mode as geojson properties
+     * - A property `{field}_globally_normalized_per_{key}` will be included in features mode as geojson properties
+     */
     public normalizationFields: Array<FeaturesNormalization> = this.getConfigValue('normalizationFields');
     public generateFeaturesColors: boolean = this.getConfigValue('generateFeatureColors');
     public isGeoaggregateCluster: boolean;
@@ -1230,6 +1245,7 @@ export class MapContributor extends Contributor {
             this.normalizeFeaturesLocally();
         }
         const nbGlobalNormalizationPerKey = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).length;
+        const nbGlobalNormalization = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).length;
         if (nbGlobalNormalizationPerKey > 0) {
 
             this.globalNormalisation = new Array();
@@ -1279,6 +1295,12 @@ export class MapContributor extends Contributor {
                     this.globalNormalisation.push(n);
             });
         } else {
+            if (nbGlobalNormalization > 0) {
+                console.warn(' #### Global normalization without a `per` field is not supported yet. ####');
+                this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).forEach(element => {
+                    console.warn(element.on + ' field global normalization is not supported yet. Please specify a `per` field.' );
+                });
+            }
             this.redrawTile.next(true);
         }
     }
@@ -1354,13 +1376,7 @@ export class MapContributor extends Contributor {
                         f.properties[normalizeField + '_globally_normalized_per_' + perField] = (value - min) / (max - min);
                     }
                 } else {
-                    if (f.properties[normalizeField]) {
-                        const minMax = n.minMax;
-                        const value = this.getValueFromFeature(f, n.on, normalizeField);
-                        const min = minMax[0];
-                        const max = minMax[1];
-                        f.properties[normalizeField + '_globally_normalized'] = (value - min) / (max - min);
-                    }
+                    // TODO : Support global normalization
                 }
                 if (n.on) {
                     fieldsToCleanSet.add(n.on);
