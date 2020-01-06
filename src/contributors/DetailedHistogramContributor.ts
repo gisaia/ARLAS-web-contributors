@@ -17,7 +17,7 @@
  * under the License.
  */
 
- import { HistogramContributor } from './HistogramContributor';
+import { HistogramContributor } from './HistogramContributor';
 import { CollaborationEvent, OperationEnum, Collaboration } from 'arlas-web-core';
 import { AggregationResponse, Filter } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json';
@@ -69,7 +69,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
                 if (additionalFilter && additionalFilter.f && additionalFilter.f.length === 1) {
                     // IN HISTOGRAM CONTRIBUTOR, THERE IS ONLY ONE F FILTER
                     // FOR THIS F, THERE IS ONE EXPRESSION
-                    const expression  = additionalFilter.f[0][0];
+                    const expression = additionalFilter.f[0][0];
                     // THE EXPRESSION VALUE CONTAINS COMMA SEPARATED RANGES '[MIN1<MAX1],[MIN2<MAX2]'
                     const valuesList = expression.value.split(',');
                     const lastValue: string = valuesList[valuesList.length - 1];
@@ -90,7 +90,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
                     expression.value = '[' + minOffset + '<' + maxOffset + ']';
                     // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
                     additionalFilter.f = [additionalFilter.f[0]];
-                    this.currentSelectedInterval = {startvalue: min, endvalue: max};
+                    this.currentSelectedInterval = { startvalue: min, endvalue: max };
                 }
             }
             return this.fetchDataGivenFilter(this.annexedContributorId, additionalFilter);
@@ -107,7 +107,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
             temporaryF.forEach(f => {
                 const expressionsList = [];
                 f.forEach(expression => {
-                    expressionsList.push({field: expression.field, op: expression.op, value: expression.value});
+                    expressionsList.push({ field: expression.field, op: expression.op, value: expression.value });
                 });
                 filter.f.push(expressionsList);
             });

@@ -299,7 +299,7 @@ export class MapContributor extends Contributor {
             this.addFilter(countFilter, this.additionalFilter);
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                    this.identifier, countFilter);
+                    this.identifier, countFilter, true, this.cacheDuration);
             if (count) {
                 return count.pipe(flatMap(c => {
                     this.countExtendBus.next({
@@ -752,7 +752,7 @@ export class MapContributor extends Contributor {
             this.addFilter(countFilter, this.additionalFilter);
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                    this.identifier, countFilter);
+                    this.identifier, countFilter, false, this.cacheDuration);
             if (count) {
                 count.subscribe(value => {
                     this.countExtendBus.next({
@@ -887,7 +887,7 @@ export class MapContributor extends Contributor {
             };
             const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
                 [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
-                this.isFlat, null, this.additionalFilter);
+                this.isFlat, null, this.additionalFilter, this.cacheDuration);
             tabOfGeohash.push(geoAggregateData);
         });
         return from(tabOfGeohash).pipe(mergeAll());
@@ -998,7 +998,7 @@ export class MapContributor extends Contributor {
         search.returned_geometries = this.returned_geometries;
         return this.collaborativeSearcheService.resolveButNotFeatureCollection(
             [projType.geosearch, search], this.collaborativeSearcheService.collaborations, this.isFlat,
-            null, filter);
+            null, filter, this.cacheDuration);
 
     }
 
@@ -1036,7 +1036,7 @@ export class MapContributor extends Contributor {
             };
             const searchResult: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
                 [projType.tiledgeosearch, tiledSearch], this.collaborativeSearcheService.collaborations, this.isFlat,
-                null, filter);
+                null, filter, this.cacheDuration);
             tabOfTile.push(searchResult);
         });
         return from(tabOfTile).pipe(mergeAll(), );

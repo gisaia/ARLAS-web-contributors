@@ -36,51 +36,59 @@
                     "type": "string"
                 },
                 "titleFieldNames": {
-                    "description": "Fields elements to draw title of a grid element",
+                    "description": " List of fields which values are used as titles in the resultlist. Values are joined with a space ' '",
                     "type": "array",
                     "items": {
                         "description": "Fields",
                         "type": "object",
                         "properties": {
                             "fieldPath": {
-                                "description": "Path of field",
+                                "description": "Field name/path",
                                 "type": "string"
                             },
                             "process": {
-                                "description": "Process transformation to display (ex : result.trim())",
+                                "description": "A javascript process applied to the field value. The field value is stored in `result` variable. (ex : result.trim())",
                                 "type": "string"
                             }
                         }
                     }
                 },
                 "tooltipFieldNames": {
-                    "description": "Fields elements to draw tooltip  of a grid element",
+                    "description": "List of fields which values are used as tooltips in the resultlist. Values are joined with a space ' '",
                     "type": "array",
                     "items": {
                         "description": "Fields",
                         "type": "object",
                         "properties": {
                             "fieldPath": {
-                                "description": "Path of field",
+                                "description": "Field name/path",
                                 "type": "string"
                             },
                             "process": {
-                                "description": "Process transformation to display (ex : result.trim())",
+                                "description": "A javascript process applied to the field value. The field value is stored in `result` variable. (ex : result.trim())",
                                 "type": "string"
                             }
                         }
                     }
                 },
+                "imageFieldName": {
+                    "description": "Field which value indicates whether there is a image for a row (tile) or not",
+                    "type": "string"
+                },
+                "thumbnailFieldName": {
+                    "description": "Field which value indicates whether there is a thumbnail image for a row (tile) or not",
+                    "type": "string"
+                },  
                 "icon": {
                     "description": "Material icon value",
                     "type": "string"
                 },
                 "iconCssClass": {
-                    "description": "Field path of field to customize css",
+                    "description": "Field which value is used as a css class name => allows data driven styling of the resultlist rows/tiles",
                     "type": "string"
                 },
                 "iconColorFieldName": {
-                    "description": "Field path of field to use in arlas color service for icon color",
+                    "description": "Field which value is transformed to a hex color (using an ArlasColorService) and associated to the icon color",
                     "type": "string"
                 }
             }

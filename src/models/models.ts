@@ -81,16 +81,26 @@ export interface OnMoveResult {
 }
 
 export interface FieldsConfiguration {
+    /** Id field name */
     idFieldName: string;
+    /** Url template of image */
     urlImageTemplate?: string;
+    /** Url template of thumbnail */
     urlThumbnailTemplate?: string;
+    /** List of fields which values are used as titles in the resultlist. Values are joined with a space ' ' */
     titleFieldNames?: Array<Field>;
+    /** List of fields which values are used as tooltips in the resultlist. Values are joined with a space ' ' */
     tooltipFieldNames?: Array<Field>;
-    imageEnabled?: boolean;
-    thumbnailEnabled?: boolean;
+    /** Field which value indicates whether there is a image for a row (tile) or not */
+    imageFieldName?: string;
+    /** Field which value indicates whether there is a thumbnail image for a row (tile) or not */
+    thumbnailFieldName?: string;
+    /** Name of a Material icon */
     icon?: string;
+    /** Field which value is used as a css class name => allows data driven styling of the resultlist rows/tiles */
     iconCssClass?: string;
-
+    /** Field which value is transformed to a hex color (using an ArlasColorService) and associated to the icon color */
+    iconColorFieldName?: string;
 }
 
 export interface Column {

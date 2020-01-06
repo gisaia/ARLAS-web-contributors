@@ -89,7 +89,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         };
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
-            this.contributor.identifier, filterExpression);
+            this.contributor.identifier, filterExpression, false, this.contributor.cacheDuration);
         const obs: Observable<AdditionalInfo> = searchResult.pipe(map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details: Array<Detail> = this.contributor.getConfigValue('details');
@@ -205,7 +205,7 @@ export class ResultListContributor extends Contributor {
     /**
      * A configuration object that allows to set id field, title field, fields used in tooltip/icons and urls to images & thumbnails
      */
-    public fieldsConfiguration = this.getConfigValue('fieldsConfiguration');
+    public fieldsConfiguration: FieldsConfiguration = this.getConfigValue('fieldsConfiguration');
 
     /**
      * List of metadata fields to include in the search query
@@ -235,6 +235,9 @@ export class ResultListContributor extends Contributor {
      * geoSort parameter of the list.
     */
     public geoOrderSort = '';
+
+    public cacheDuration = this.cacheDuration;
+
     private includesvalues = new Array<string>();
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
@@ -281,11 +284,11 @@ export class ResultListContributor extends Contributor {
         if (this.fieldsConfiguration.urlThumbnailTemplate) {
             this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate));
         }
-        if (this.fieldsConfiguration.imageEnabled) {
-            this.includesvalues.push(this.fieldsConfiguration.imageEnabled);
+        if (this.fieldsConfiguration.imageFieldName) {
+            this.includesvalues.push(this.fieldsConfiguration.imageFieldName);
         }
-        if (this.fieldsConfiguration.thumbnailEnabled) {
-            this.includesvalues.push(this.fieldsConfiguration.thumbnailEnabled);
+        if (this.fieldsConfiguration.thumbnailFieldName) {
+            this.includesvalues.push(this.fieldsConfiguration.thumbnailFieldName);
         }
         if (this.fieldsConfiguration.iconCssClass) {
             this.includesvalues.push(this.fieldsConfiguration.iconCssClass);
@@ -341,7 +344,8 @@ export class ResultListContributor extends Contributor {
             f: [[expression]]
         };
         searchResult = this.collaborativeSearcheService
-            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, filterExpression);
+            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations,
+                null, filterExpression, false, this.cacheDuration);
         searchResult.pipe(map(data => JSON.stringify(data))).subscribe(
             data => {
                 download(data.toString(), elementidentifier.idValue + '.json', 'text/json');
@@ -643,16 +647,16 @@ export class ResultListContributor extends Contributor {
                 if (this.fieldsConfiguration.urlThumbnailTemplate) {
                     this.setUrlField('urlThumbnailTemplate', h, fieldValueMap);
                 }
-                if (this.fieldsConfiguration.imageEnabled) {
-                    const imageEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.imageEnabled);
+                if (this.fieldsConfiguration.imageFieldName) {
+                    const imageEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.imageFieldName);
                     if (imageEnabled != null) {
                         fieldValueMap.set('imageEnabled', imageEnabled.toString());
                     } else {
                         fieldValueMap.set('imageEnabled', '');
                     }
                 }
-                if (this.fieldsConfiguration.thumbnailEnabled) {
-                    const thumbnailEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.thumbnailEnabled);
+                if (this.fieldsConfiguration.thumbnailFieldName) {
+                    const thumbnailEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.thumbnailFieldName);
                     if (thumbnailEnabled != null) {
                         fieldValueMap.set('thumbnailEnabled', thumbnailEnabled.toString());
                     } else {
@@ -731,7 +735,9 @@ export class ResultListContributor extends Contributor {
         search.projection = projection;
         projection.includes = includesvalues.join(',');
         const searchResult = this.collaborativeSearcheService
-            .resolveButNotHits([projType.search, search], this.collaborativeSearcheService.collaborations, null, this.filter)
+            .resolveButNotHits([projType.search, search],
+                this.collaborativeSearcheService.collaborations,
+                null, this.filter, false, this.cacheDuration)
             .pipe(
                 finalize(() => this.collaborativeSearcheService.contribFilterBus.next(this))
             );

@@ -85,7 +85,7 @@ export class AnalyticsContributor extends Contributor {
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier
+            this.identifier, {}, false, this.cacheDuration
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
