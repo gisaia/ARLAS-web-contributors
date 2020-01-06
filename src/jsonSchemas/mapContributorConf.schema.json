@@ -48,6 +48,14 @@
                 }
             }
         },
+        "colorGenerationFields": {
+            "description": "List of fields patterns or names which values are used to generate a hex color. A property `{field}_color` containing this color will be included in features mode as geojson properties.",
+            "type": "array",
+            "items": {
+                "description": "Field pattern or name",
+                "type": "string"
+            }
+        },
         "initZoom": {
             "description": "Initial zoom of  Map",
             "type": "number"
