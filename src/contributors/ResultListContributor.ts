@@ -284,11 +284,11 @@ export class ResultListContributor extends Contributor {
         if (this.fieldsConfiguration.urlThumbnailTemplate) {
             this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate));
         }
-        if (this.fieldsConfiguration.imageFieldEnabled) {
-            this.includesvalues.push(this.fieldsConfiguration.imageFieldEnabled);
+        if (this.fieldsConfiguration.imageFieldName) {
+            this.includesvalues.push(this.fieldsConfiguration.imageFieldName);
         }
-        if (this.fieldsConfiguration.thumbnailFieldEnabled) {
-            this.includesvalues.push(this.fieldsConfiguration.thumbnailFieldEnabled);
+        if (this.fieldsConfiguration.thumbnailFieldName) {
+            this.includesvalues.push(this.fieldsConfiguration.thumbnailFieldName);
         }
         if (this.fieldsConfiguration.iconCssClass) {
             this.includesvalues.push(this.fieldsConfiguration.iconCssClass);
@@ -647,16 +647,16 @@ export class ResultListContributor extends Contributor {
                 if (this.fieldsConfiguration.urlThumbnailTemplate) {
                     this.setUrlField('urlThumbnailTemplate', h, fieldValueMap);
                 }
-                if (this.fieldsConfiguration.imageFieldEnabled) {
-                    const imageEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.imageFieldEnabled);
+                if (this.fieldsConfiguration.imageFieldName) {
+                    const imageEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.imageFieldName);
                     if (imageEnabled != null) {
                         fieldValueMap.set('imageEnabled', imageEnabled.toString());
                     } else {
                         fieldValueMap.set('imageEnabled', '');
                     }
                 }
-                if (this.fieldsConfiguration.thumbnailFieldEnabled) {
-                    const thumbnailEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.thumbnailFieldEnabled);
+                if (this.fieldsConfiguration.thumbnailFieldName) {
+                    const thumbnailEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.thumbnailFieldName);
                     if (thumbnailEnabled != null) {
                         fieldValueMap.set('thumbnailEnabled', thumbnailEnabled.toString());
                     } else {
