@@ -1,5 +1,17 @@
 # Change Log
 
+## [v12.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.2.0) (2020-01-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.1.0...v12.2.0)
+
+**Breaking changes:**
+
+- MAP : specify which fields are concerned by color generation [\#245](https://github.com/gisaia/ARLAS-web-contributors/issues/245)
+
+**New stuff:**
+
+- MAP: normalize numeric and date values [\#251](https://github.com/gisaia/ARLAS-web-contributors/issues/251)
+
 ## [v12.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.1.0) (2019-12-04)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.0.2...v12.1.0)
