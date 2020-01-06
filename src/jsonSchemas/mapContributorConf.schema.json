@@ -30,7 +30,7 @@
                 "type": "object",
                 "properties": {
                     "on": {
-                        "description": "The field which values are normalized",
+                        "description": "The **date** of **numeric** field which values are normalized",
                         "type": "string"
                     },
                     "scope": {
@@ -38,8 +38,12 @@
                         "type": "string"
                     },
                     "per": {
-                        "description": "Optional. It's a field path/name that allows to normalize independently the `on` field values that have the same `per` field values. It's normalizing a value given a key.",
+                        "description": "Optional. **keyword** field that allows to normalize the `on` field values per keyword. A keyword being a value of the '`per`' field.",
                         "type": "string"
+                    },
+                    "keysSize": {
+                        "description": "Optional, works in combination with `per`. Number of `per` keywords to use. Defaults to 100. Maximum is 10000.",
+                        "type": "number"
                     }
                 }
             }

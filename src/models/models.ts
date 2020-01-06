@@ -422,15 +422,36 @@ export interface AttachmentConfig {
     attachmentIcon?: string;
 }
 
+/**
+ * This interface defines how to apply normalization on the values of a field.
+ * 1. `on` : Choose the **date** or **numeric** field which values are normalized.
+ * 2. `scope`: (`global` | `local`) Choose the normalization scope :
+ *  - `global`, considering all the data
+ *  - `local`, considering the data on the current map extent only
+ * 3. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
+ * 4. `keysSize`: (Optional, works in combination with `per`) Choose how many `"per"` keywords to use. Defaults to 100. Maximum is 10000.
+ */
 export interface Normalization {
     on: string;
     per?: string;
+    keysSize?: number;
     scope: NormalizationScope;
 }
 
+/**
+ * This class defines how to apply normalization on the values of a field.
+ * 1. `on` : Choose the **date** or **numeric** field which values are normalized.
+ * 2. `scope`: (`global` | `local`) Choose the normalization scope :
+ *  - `global`, considering all the data
+ *  - `local`, considering the data on the current map extent only
+ * 3. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
+ * 4. `keysSize`: (Optional, works in combination with `per`) Choose how many `"per"` keywords to use. Defaults to 100. Maximum is 10000.
+ * An object of this class stores the **min** and **max** values of the `"on"` field (given the `"scope"` and the `"per"` field)
+ */
 export class FeaturesNormalization implements Normalization {
     public on: string;
     public per?: string;
+    public keysSize = 100;
     public scope: NormalizationScope;
 
     public minMaxPerKey = new Map<string, [number, number]>();

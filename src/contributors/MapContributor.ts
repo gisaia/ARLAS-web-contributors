@@ -245,19 +245,14 @@ export class MapContributor extends Contributor {
             });
 
         if (this.includeFeaturesFields) {
-            this.allIncludedFeatures = new Set();
-            this.includeFeaturesFields.forEach(f => this.allIncludedFeatures.add(f));
             this.includeFeaturesFieldsSet = new Set(this.includeFeaturesFields);
+            const allIncludedFeaturesList = [];
+            allIncludedFeaturesList.push(this.includeFeaturesFields);
             if (this.normalizationFields) {
-                this.normalizationFields.forEach(f => {
-                    if (f.on) {
-                        this.allIncludedFeatures.add(f.on);
-                    }
-                    if (f.per) {
-                        this.allIncludedFeatures.add(f.per);
-                    }
-                });
+                allIncludedFeaturesList.push(this.normalizationFields.filter(f => f.on).map(f => f.on));
+                allIncludedFeaturesList.push(this.normalizationFields.filter(f => f.per).map(f => f.per));
             }
+            this.allIncludedFeatures = new Set(allIncludedFeaturesList);
         }
     }
     public static getJsonSchema(): Object {
@@ -1266,7 +1261,7 @@ export class MapContributor extends Contributor {
                             collect_field: f.on
                         }
                     ],
-                    size: '10000'
+                    size: '' + f.keysSize
                 };
                 const t = this.collaborativeSearcheService.resolveButNotAggregation(
                     [projType.aggregate, [termAggregation]], this.collaborativeSearcheService.collaborations,
@@ -1295,13 +1290,14 @@ export class MapContributor extends Contributor {
                     this.globalNormalisation.push(n);
             });
         } else {
-            if (nbGlobalNormalization > 0) {
-                console.warn(' #### Global normalization without a `per` field is not supported yet. ####');
-                this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).forEach(element => {
-                    console.warn(element.on + ' field global normalization is not supported yet. Please specify a `per` field.' );
-                });
-            }
             this.redrawTile.next(true);
+        }
+
+        if (nbGlobalNormalization > 0) {
+            console.warn(' #### Global normalization without a `per` field is not supported yet. ####');
+            this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).forEach(element => {
+                console.warn(element.on + ' field global normalization is not supported yet. Please specify a `per` field.' );
+            });
         }
     }
     private normalizeFeaturesLocally() {
@@ -1348,13 +1344,25 @@ export class MapContributor extends Contributor {
                     const value = this.getValueFromFeature(f, n.on, normalizeField);
                     const min = minMax[0];
                     const max = minMax[1];
-                    f.properties[normalizeField + '_locally_normalized_per_' + perField] = (value - min) / (max - min);
+                    let normalizedValue;
+                    if (min === max) {
+                        normalizedValue = 1;
+                    } else {
+                        normalizedValue = (value - min) / (max - min);
+                    }
+                    f.properties[normalizeField + '_locally_normalized_per_' + perField] = normalizedValue;
                 } else {
                     const minMax = n.minMax;
                     const value = this.getValueFromFeature(f, n.on, normalizeField);
                     const min = minMax[0];
                     const max = minMax[1];
-                    f.properties[normalizeField + '_locally_normalized'] = (value - min) / (max - min);
+                    let normalizedValue;
+                    if (min === max) {
+                        normalizedValue = 1;
+                    } else {
+                        normalizedValue = (value - min) / (max - min);
+                    }
+                    f.properties[normalizeField + '_locally_normalized'] = normalizedValue;
                 }
                 /** DELETING PROPERTIES THAT WERE NOT INCLUDED IN includeFeaturesFields */
             });
@@ -1373,7 +1381,13 @@ export class MapContributor extends Contributor {
                         const value = this.getValueFromFeature(f, n.on, normalizeField);
                         const min = minMax[0];
                         const max = minMax[1];
-                        f.properties[normalizeField + '_globally_normalized_per_' + perField] = (value - min) / (max - min);
+                        let normalizedValue;
+                        if (min === max) {
+                            normalizedValue = 1;
+                        } else {
+                            normalizedValue = (value - min) / (max - min);
+                        }
+                        f.properties[normalizeField + '_globally_normalized_per_' + perField] = normalizedValue;
                     }
                 } else {
                     // TODO : Support global normalization
