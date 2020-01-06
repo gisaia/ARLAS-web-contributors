@@ -22,6 +22,32 @@
                 "type": "string"
             }
         },
+        "normalizationFields": {
+            "description": "List of numeric or date fields patterns or names which values are normalized. The fields values can be normalized locally on the current extent OR globally considering the current filters. Also you can normalize fields values (locally or globally) per a given key : For instance I want to normalize the speed of boats for each boat id. **Note** : Global normalization is only possible per a given key.",
+            "type": "array",
+            "items": {
+                "description": "Field pattern or name",
+                "type": "object",
+                "properties": {
+                    "on": {
+                        "description": "The **date** of **numeric** field which values are normalized",
+                        "type": "string"
+                    },
+                    "scope": {
+                        "description": "`global` or `local`. `global` scope means a normalization considering all the data. `local` scope means a normalization considering the data on the current map extent only.",
+                        "type": "string"
+                    },
+                    "per": {
+                        "description": "Optional. **keyword** field that allows to normalize the `on` field values per keyword. A keyword being a value of the '`per`' field.",
+                        "type": "string"
+                    },
+                    "keysSize": {
+                        "description": "Optional, works in combination with `per`. Number of `per` keywords to use. Defaults to 100. Maximum is 10000.",
+                        "type": "number"
+                    }
+                }
+            }
+        },
         "initZoom": {
             "description": "Initial zoom of  Map",
             "type": "number"

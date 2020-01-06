@@ -17,8 +17,8 @@
  * under the License.
  */
 
-import { Observable, Subject, generate, from } from 'rxjs';
-import { map, finalize, flatMap, mergeAll } from 'rxjs/operators';
+import { Observable, Subject, generate, from, concat } from 'rxjs';
+import { map, finalize, flatMap, mergeAll, concatAll } from 'rxjs/operators';
 
 import {
     CollaborativesearchService, Contributor,
@@ -28,9 +28,9 @@ import {
 import {
     Search, Expression, Hits,
     Aggregation, Projection,
-    Filter, FeatureCollection, Feature
+    Filter, FeatureCollection, Feature, Metric, AggregationResponse
 } from 'arlas-api';
-import { OnMoveResult, ElementIdentifier, PageEnum } from '../models/models';
+import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization, NormalizationScope } from '../models/models';
 import { appendIdToSort, removePageFromIndex, ASC } from '../utils/utils';
 import { bboxes } from 'ngeohash';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
@@ -42,6 +42,7 @@ import { getBounds, tileToString, truncate, isClockwise } from './../utils/mapUt
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import { mix } from 'tinycolor2';
+import moment from 'moment';
 
 
 export enum geomStrategyEnum {
@@ -88,7 +89,23 @@ export class MapContributor extends Contributor {
 
     /** Additional Arlas filter to add the BBOX and filter comming from Collaborations*/
     protected additionalFilter: Filter;
+    /**
+     * List of fields pattern or names that will be included in features mode as geojson properties.
+     */
     public includeFeaturesFields: Array<string> = this.getConfigValue('includeFeaturesFields');
+    /**
+     * List of numeric or date fields patterns or names which values are normalized.
+     * The fields values can be normalized globally considering all the data
+     * Or locally considering the data on the current map extent only.
+     * Also you can normalize fields values (locally or globally) per a given key:
+     * > For instance I want to normalize the speed of boats by boat id.
+     * **Note** : Global normalization is only possible per a given key.
+     * Depending on the given options in `FeaturesNormalization` :
+     * - A property `{field}_locally_normalized` will be included in features mode as geojson properties
+     * - A property `{field}_locally_normalized_per_{key}` will be included in features mode as geojson properties
+     * - A property `{field}_globally_normalized_per_{key}` will be included in features mode as geojson properties
+     */
+    public normalizationFields: Array<FeaturesNormalization> = this.getConfigValue('normalizationFields');
     public generateFeaturesColors: boolean = this.getConfigValue('generateFeatureColors');
     public isGeoaggregateCluster: boolean;
     public fetchType: fetchType;
@@ -155,6 +172,12 @@ export class MapContributor extends Contributor {
     private PREVIOUS_AFTER = '_previousAfter';
     private FLAT_CHAR = '_';
 
+    private allIncludedFeatures: Set<string>;
+    private includeFeaturesFieldsSet: Set<string> = this.getConfigValue('includeFeaturesFields');
+    /** <date field - date format> map */
+    private dateFieldFormatMap: Map<string, string> = new Map<string, string>();
+    private collectionParams: Set<string> = new Set<string>();
+    private globalNormalisation: Array<FeaturesNormalization> = new Array();
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -205,6 +228,10 @@ export class MapContributor extends Contributor {
                 Object.keys(fields).forEach(fieldName => {
                     this.getFieldProperties(fields, fieldName);
                 });
+                this.collectionParams.add(collection.params.centroid_path);
+                this.collectionParams.add(collection.params.geometry_path);
+                this.collectionParams.add(collection.params.id_path);
+                this.collectionParams.add(collection.params.timestamp_path);
                 const geoQueryFieldConf = this.getConfigValue('geoQueryField');
                 this.geoQueryField = geoQueryFieldConf !== undefined ? geoQueryFieldConf : collection.params.centroid_path;
                 this.defaultCentroidField = collection.params.centroid_path;
@@ -216,6 +243,17 @@ export class MapContributor extends Contributor {
                     this.aggregationField = collection.params.centroid_path;
                 }
             });
+
+        if (this.includeFeaturesFields) {
+            this.includeFeaturesFieldsSet = new Set(this.includeFeaturesFields);
+            const allIncludedFeaturesList = [];
+            allIncludedFeaturesList.push(this.includeFeaturesFields);
+            if (this.normalizationFields) {
+                allIncludedFeaturesList.push(this.normalizationFields.filter(f => f.on).map(f => f.on));
+                allIncludedFeaturesList.push(this.normalizationFields.filter(f => f.per).map(f => f.per));
+            }
+            this.allIncludedFeatures = new Set(allIncludedFeaturesList);
+        }
     }
     public static getJsonSchema(): Object {
         return jsonSchema;
@@ -241,7 +279,7 @@ export class MapContributor extends Contributor {
 
     public fetchDataSimpleMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         this.geojsondata.features = [];
-        return this.fetchDataGeoSearch(this.includeFeaturesFields, this.searchSort);
+        return this.fetchDataGeoSearch(this.allIncludedFeatures, this.searchSort);
     }
 
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
@@ -431,8 +469,11 @@ export class MapContributor extends Contributor {
             this.geojsondata.features.forEach(f => {
                 f.properties['point_count_normalize'] = f.properties.point_count / this.maxValueGeoHash * 100;
             });
+            this.redrawTile.next(true);
+        } else {
+            /** redrawTile event is emitted whether there is normalization or not */
+            this.normalizeFeatures();
         }
-        this.redrawTile.next(true);
         if (collaboration !== null) {
             if (collaboration.filter && collaboration.filter.f) {
                 const operation = collaboration.filter.f[0][0].op;
@@ -776,12 +817,13 @@ export class MapContributor extends Contributor {
     public drawGeoSearch(fromParam?: number, appendId?: boolean) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         const sort = appendId ? appendIdToSort(this.searchSort, ASC, this.idFieldName) : this.searchSort;
-        this.fetchDataGeoSearch(this.includeFeaturesFields, sort, null, null, fromParam)
+        this.fetchDataGeoSearch(this.allIncludedFeatures, sort, null, null, fromParam)
             .pipe(
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
                 finalize(() => {
-                    this.redrawTile.next(true);
+                    /** redrawTile event is emitted whether there is normalization or not */
+                    this.normalizeFeatures();
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
             )
@@ -796,13 +838,15 @@ export class MapContributor extends Contributor {
                 map(f => this.setDataTileSearch(f)),
                 finalize(() => {
                     if (tiles.length > 0) {
-                        this.redrawTile.next(true);
+                        /** redrawTile event is emitted whether there is normalization or not */
+                        this.normalizeFeatures();
                     }
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
             )
             .subscribe(data => data);
     }
+
     public drawGeoaggregateGeohash(geohashList: Array<string>) {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataGeohashGeoaggregate(geohashList)
@@ -884,7 +928,7 @@ export class MapContributor extends Contributor {
         }
         const sortWithId = appendIdToSort(sort, ASC, this.idFieldName);
         if (after !== undefined) {
-            this.fetchDataGeoSearch(this.includeFeaturesFields, sortWithId, after, whichPage)
+            this.fetchDataGeoSearch(this.allIncludedFeatures, sortWithId, after, whichPage)
                 .pipe(
                     map(f => (f && f.features) ? f.features : []),
                     map(f => {
@@ -912,7 +956,7 @@ export class MapContributor extends Contributor {
      * @param whichPage Whether to fetch next or previous set.
      * @param fromParam (page.from in arlas api) an offset from which fetching hits starts. It's ignored if `afterParam` is set.
      */
-    public fetchDataGeoSearch(includeFeaturesFields: Array<string>, sort: string,
+    public fetchDataGeoSearch(includeFeaturesFields: Set<string>, sort: string,
         afterParam?: string, whichPage?: PageEnum, fromParam?): Observable<FeatureCollection> {
         const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2]
             + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
@@ -968,8 +1012,8 @@ export class MapContributor extends Contributor {
         const projection: Projection = {};
         let includes = '';
         let separator = '';
-        if (this.includeFeaturesFields !== undefined) {
-            this.includeFeaturesFields.forEach(field => {
+        if (this.allIncludedFeatures !== undefined) {
+            this.allIncludedFeatures.forEach(field => {
                 if (field !== this.idFieldName) {
                     includes += separator + field;
                     separator = ',';
@@ -992,7 +1036,7 @@ export class MapContributor extends Contributor {
                 null, filter);
             tabOfTile.push(searchResult);
         });
-        return from(tabOfTile).pipe(mergeAll());
+        return from(tabOfTile).pipe(mergeAll(), );
     }
 
     public computeDataTileSearch(featureCollection: FeatureCollection): Array<any> {
@@ -1189,6 +1233,195 @@ export class MapContributor extends Contributor {
         }
     }
 
+    /**
+     * Normalizes the values of the configured features fields
+     * Emits a redrawTile event
+     */
+    private normalizeFeatures(): void {
+        if (this.normalizationFields) {
+            this.normalizeFeaturesLocally();
+            const nbGlobalNormalizationPerKey = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).length;
+            const nbGlobalNormalization = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).length;
+            if (nbGlobalNormalizationPerKey > 0) {
+                this.globalNormalisation = new Array();
+                const tabOfTermAggregations = new Array<Observable<AggregationResponse>>();
+                const tabOfFeaturesNormalizations = new Array<FeaturesNormalization>();
+                this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).forEach(f => {
+                    tabOfFeaturesNormalizations.push(f);
+                    const termAggregation: Aggregation = {
+                        type: Aggregation.TypeEnum.Term,
+                        field: f.per,
+                        metrics: [
+                            {
+                                collect_fct: Metric.CollectFctEnum.MIN,
+                                collect_field: f.on
+                            },
+                            {
+                                collect_fct: Metric.CollectFctEnum.MAX,
+                                collect_field: f.on
+                            }
+                        ],
+                        size: '' + f.keysSize
+                    };
+                    const t = this.collaborativeSearcheService.resolveButNotAggregation(
+                        [projType.aggregate, [termAggregation]], this.collaborativeSearcheService.collaborations,
+                            null, this.additionalFilter);
+                    tabOfTermAggregations.push(t);
+                });
+                let i = 0;
+                from(tabOfTermAggregations).pipe(
+                    concatAll(),
+                    finalize(() => {
+                        this.normalizeFeaturesGlobally();
+                        this.redrawTile.next(true);
+                    })).subscribe(agg => {
+                        const n: FeaturesNormalization = tabOfFeaturesNormalizations[i];
+                        i++;
+                        n.minMaxPerKey = new Map();
+                        if (agg && agg.elements) {
+                            agg.elements.forEach(e => {
+                                const key = e.key;
+                                const minMax: [number, number] =
+                                [e.metrics.filter(m => m.type === Metric.CollectFctEnum.MIN.toString().toLowerCase())[0].value,
+                                    e.metrics.filter(m => m.type === Metric.CollectFctEnum.MAX.toString().toLowerCase())[0].value];
+                                    n.minMaxPerKey.set(key, minMax);
+                            });
+                        }
+                        this.globalNormalisation.push(n);
+                });
+            } else {
+                this.redrawTile.next(true);
+            }
+            if (nbGlobalNormalization > 0) {
+                console.warn(' #### Global normalization without a `per` field is not supported yet. ####');
+                this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).forEach(element => {
+                    console.warn(element.on + ' field global normalization is not supported yet. Please specify a `per` field.' );
+                });
+            }
+        } else {
+            this.redrawTile.next(true);
+        }
+    }
+    private normalizeFeaturesLocally() {
+        this.normalizationFields.forEach((n) => { n.minMaxPerKey = new Map(); n.minMax = [Number.MAX_VALUE, Number.MIN_VALUE]; });
+        this.geojsondata.features.forEach(f => {
+            this.normalizationFields.filter(n => n.scope === NormalizationScope.local).forEach((n) => {
+                const normalizeField = (this.isFlat && n.on) ? n.on.replace(/\./g, this.FLAT_CHAR) : n.on;
+                const perField = (this.isFlat && n.per) ? n.per.replace(/\./g, this.FLAT_CHAR) : n.per;
+                if (perField) {
+                    if (!n.minMaxPerKey.get(f.properties[perField])) {
+                        n.minMaxPerKey.set(f.properties[perField], [Number.MAX_VALUE, Number.MIN_VALUE]);
+                    }
+                    const minMax = n.minMaxPerKey.get(f.properties[perField]);
+                    const value = this.getValueFromFeature(f, n.on, normalizeField);
+                    if (minMax[0] > value) {
+                        minMax[0] = value;
+                    }
+                    if (minMax[1] < value) {
+                        minMax[1] = value;
+                    }
+                    n.minMaxPerKey.set(f.properties[perField], minMax);
+                } else {
+                    if (!n.minMax) {
+                        n.minMax = [Number.MAX_VALUE, Number.MIN_VALUE];
+                    }
+                    const minMax = n.minMax;
+                    const value = this.getValueFromFeature(f, n.on, normalizeField);
+                    if (minMax[0] > value) {
+                        minMax[0] = value;
+                    }
+                    if (minMax[1] < value) {
+                        minMax[1] = value;
+                    }
+                }
+            });
+        });
+
+        this.geojsondata.features.forEach(f => {
+            this.normalizationFields.filter(n => n.scope === NormalizationScope.local).forEach((n) => {
+                const normalizeField = (this.isFlat && n.on) ? n.on.replace(/\./g, this.FLAT_CHAR) : n.on;
+                const perField = (this.isFlat && n.per) ? n.per.replace(/\./g, this.FLAT_CHAR) : n.per;
+                if (perField) {
+                    const minMax = n.minMaxPerKey.get(f.properties[perField]);
+                    const value = this.getValueFromFeature(f, n.on, normalizeField);
+                    const min = minMax[0];
+                    const max = minMax[1];
+                    let normalizedValue;
+                    if (min === max) {
+                        normalizedValue = 1;
+                    } else {
+                        normalizedValue = (value - min) / (max - min);
+                    }
+                    f.properties[normalizeField + '_locally_normalized_per_' + perField] = normalizedValue;
+                } else {
+                    const minMax = n.minMax;
+                    const value = this.getValueFromFeature(f, n.on, normalizeField);
+                    const min = minMax[0];
+                    const max = minMax[1];
+                    let normalizedValue;
+                    if (min === max) {
+                        normalizedValue = 1;
+                    } else {
+                        normalizedValue = (value - min) / (max - min);
+                    }
+                    f.properties[normalizeField + '_locally_normalized'] = normalizedValue;
+                }
+                /** DELETING PROPERTIES THAT WERE NOT INCLUDED IN includeFeaturesFields */
+            });
+        });
+    }
+
+    private normalizeFeaturesGlobally() {
+        this.geojsondata.features.forEach(f => {
+            const fieldsToCleanSet = new Set();
+            this.globalNormalisation.filter(n => n.scope === NormalizationScope.global).forEach((n) => {
+                const normalizeField = (this.isFlat && n.on) ? n.on.replace(/\./g, this.FLAT_CHAR) : n.on;
+                const perField = (this.isFlat && n.per) ? n.per.replace(/\./g, this.FLAT_CHAR) : n.per;
+                if (perField) {
+                    if (f.properties[perField] && f.properties[normalizeField]) {
+                        const minMax = n.minMaxPerKey.get(f.properties[perField]);
+                        const value = this.getValueFromFeature(f, n.on, normalizeField);
+                        const min = minMax[0];
+                        const max = minMax[1];
+                        let normalizedValue;
+                        if (min === max) {
+                            normalizedValue = 1;
+                        } else {
+                            normalizedValue = (value - min) / (max - min);
+                        }
+                        f.properties[normalizeField + '_globally_normalized_per_' + perField] = normalizedValue;
+                    }
+                } else {
+                    // TODO : Support global normalization
+                }
+                if (n.on) {
+                    fieldsToCleanSet.add(n.on);
+                }
+                if (n.per) {
+                    fieldsToCleanSet.add(n.per);
+                }
+
+            });
+            fieldsToCleanSet.forEach((field: string) => {
+                if (field && !this.includeFeaturesFieldsSet.has(field) && !this.collectionParams.has(field)) {
+                    delete f.properties[(this.isFlat && field) ? field.replace(/\./g, this.FLAT_CHAR) : field];
+                }
+            });
+        });
+    }
+    private getValueFromFeature(f: Feature, field: string, flattenedField): number {
+        let value = +f.properties[flattenedField];
+        if (isNaN(value)) {
+            if (this.dateFieldFormatMap.has(field)) {
+                /** Moment Format character for days is `D` while the one given by ARLAS-server is `d`
+                 * Thus, we replace the `d` with `D` to adapt to Moment library.
+                */
+                const dateFormat = this.dateFieldFormatMap.get(field).replace('dd', 'DD');
+                value = moment.utc(f.properties[flattenedField], dateFormat).valueOf();
+            }
+        }
+        return value;
+    }
     private getBboxsForQuery(newBbox: Array<Object>) {
         const bboxArray: Array<string> = [];
         const numberOfBbox = newBbox.length;
@@ -1255,16 +1488,17 @@ export class MapContributor extends Contributor {
         } else {
             if (fieldList[fieldName].type === 'GEO_POINT') {
                 this.geoPointFields.push((parentPrefix ? parentPrefix : '') + fieldName);
-            }
-            if (fieldList[fieldName].type === 'GEO_SHAPE') {
+            } else if (fieldList[fieldName].type === 'GEO_SHAPE') {
                 this.geoShapeFields.push((parentPrefix ? parentPrefix : '') + fieldName);
+            } else if (fieldList[fieldName].type === 'DATE') {
+                this.dateFieldFormatMap.set((parentPrefix ? parentPrefix : '') + fieldName, fieldList[fieldName].format);
             }
         }
     }
 
     private setFeatureColor(feature: Feature): Feature {
-        if (this.includeFeaturesFields && this.generateFeaturesColors) {
-            this.includeFeaturesFields.forEach((field: string) => {
+        if (this.allIncludedFeatures && this.generateFeaturesColors) {
+            this.allIncludedFeatures.forEach((field: string) => {
                 const featureField = this.isFlat ? field.replace(/\./g, this.FLAT_CHAR) : field;
                 feature.properties[featureField + '_color'] = this.getHexColor(feature.properties[featureField], 0.5);
             });
