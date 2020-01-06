@@ -471,6 +471,7 @@ export class MapContributor extends Contributor {
             });
             this.redrawTile.next(true);
         } else {
+            /** redrawTile event is emitted whether there is normalization or not */
             this.normalizeFeatures();
         }
         if (collaboration !== null) {
@@ -821,6 +822,7 @@ export class MapContributor extends Contributor {
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
                 finalize(() => {
+                    /** redrawTile event is emitted whether there is normalization or not */
                     this.normalizeFeatures();
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
@@ -835,9 +837,9 @@ export class MapContributor extends Contributor {
                 map(f => this.computeDataTileSearch(f)),
                 map(f => this.setDataTileSearch(f)),
                 finalize(() => {
-                    this.normalizeFeatures();
                     if (tiles.length > 0) {
-                        this.redrawTile.next(true);
+                        /** redrawTile event is emitted whether there is normalization or not */
+                        this.normalizeFeatures();
                     }
                     this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 })
@@ -1238,66 +1240,66 @@ export class MapContributor extends Contributor {
     private normalizeFeatures(): void {
         if (this.normalizationFields) {
             this.normalizeFeaturesLocally();
-        }
-        const nbGlobalNormalizationPerKey = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).length;
-        const nbGlobalNormalization = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).length;
-        if (nbGlobalNormalizationPerKey > 0) {
-
-            this.globalNormalisation = new Array();
-            const tabOfTermAggregations = new Array<Observable<AggregationResponse>>();
-            const tabOfFeaturesNormalizations = new Array<FeaturesNormalization>();
-            this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).forEach(f => {
-                tabOfFeaturesNormalizations.push(f);
-                const termAggregation: Aggregation = {
-                    type: Aggregation.TypeEnum.Term,
-                    field: f.per,
-                    metrics: [
-                        {
-                            collect_fct: Metric.CollectFctEnum.MIN,
-                            collect_field: f.on
-                        },
-                        {
-                            collect_fct: Metric.CollectFctEnum.MAX,
-                            collect_field: f.on
+            const nbGlobalNormalizationPerKey = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).length;
+            const nbGlobalNormalization = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).length;
+            if (nbGlobalNormalizationPerKey > 0) {
+                this.globalNormalisation = new Array();
+                const tabOfTermAggregations = new Array<Observable<AggregationResponse>>();
+                const tabOfFeaturesNormalizations = new Array<FeaturesNormalization>();
+                this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).forEach(f => {
+                    tabOfFeaturesNormalizations.push(f);
+                    const termAggregation: Aggregation = {
+                        type: Aggregation.TypeEnum.Term,
+                        field: f.per,
+                        metrics: [
+                            {
+                                collect_fct: Metric.CollectFctEnum.MIN,
+                                collect_field: f.on
+                            },
+                            {
+                                collect_fct: Metric.CollectFctEnum.MAX,
+                                collect_field: f.on
+                            }
+                        ],
+                        size: '' + f.keysSize
+                    };
+                    const t = this.collaborativeSearcheService.resolveButNotAggregation(
+                        [projType.aggregate, [termAggregation]], this.collaborativeSearcheService.collaborations,
+                            null, this.additionalFilter);
+                    tabOfTermAggregations.push(t);
+                });
+                let i = 0;
+                from(tabOfTermAggregations).pipe(
+                    concatAll(),
+                    finalize(() => {
+                        this.normalizeFeaturesGlobally();
+                        this.redrawTile.next(true);
+                    })).subscribe(agg => {
+                        const n: FeaturesNormalization = tabOfFeaturesNormalizations[i];
+                        i++;
+                        n.minMaxPerKey = new Map();
+                        if (agg && agg.elements) {
+                            agg.elements.forEach(e => {
+                                const key = e.key;
+                                const minMax: [number, number] =
+                                [e.metrics.filter(m => m.type === Metric.CollectFctEnum.MIN.toString().toLowerCase())[0].value,
+                                    e.metrics.filter(m => m.type === Metric.CollectFctEnum.MAX.toString().toLowerCase())[0].value];
+                                    n.minMaxPerKey.set(key, minMax);
+                            });
                         }
-                    ],
-                    size: '' + f.keysSize
-                };
-                const t = this.collaborativeSearcheService.resolveButNotAggregation(
-                    [projType.aggregate, [termAggregation]], this.collaborativeSearcheService.collaborations,
-                        null, this.additionalFilter);
-                tabOfTermAggregations.push(t);
-            });
-            let i = 0;
-            from(tabOfTermAggregations).pipe(
-                concatAll(),
-                finalize(() => {
-                    this.normalizeFeaturesGlobally();
-                    this.redrawTile.next(true);
-                })).subscribe(agg => {
-                    const n: FeaturesNormalization = tabOfFeaturesNormalizations[i];
-                    i++;
-                    n.minMaxPerKey = new Map();
-                    if (agg && agg.elements) {
-                        agg.elements.forEach(e => {
-                            const key = e.key;
-                            const minMax: [number, number] =
-                            [e.metrics.filter(m => m.type === Metric.CollectFctEnum.MIN.toString().toLowerCase())[0].value,
-                                e.metrics.filter(m => m.type === Metric.CollectFctEnum.MAX.toString().toLowerCase())[0].value];
-                                n.minMaxPerKey.set(key, minMax);
-                        });
-                    }
-                    this.globalNormalisation.push(n);
-            });
+                        this.globalNormalisation.push(n);
+                });
+            } else {
+                this.redrawTile.next(true);
+            }
+            if (nbGlobalNormalization > 0) {
+                console.warn(' #### Global normalization without a `per` field is not supported yet. ####');
+                this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).forEach(element => {
+                    console.warn(element.on + ' field global normalization is not supported yet. Please specify a `per` field.' );
+                });
+            }
         } else {
             this.redrawTile.next(true);
-        }
-
-        if (nbGlobalNormalization > 0) {
-            console.warn(' #### Global normalization without a `per` field is not supported yet. ####');
-            this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).forEach(element => {
-                console.warn(element.on + ' field global normalization is not supported yet. Please specify a `per` field.' );
-            });
         }
     }
     private normalizeFeaturesLocally() {
