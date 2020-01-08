@@ -56,7 +56,7 @@ export class SwimLaneContributor extends Contributor {
     /**
      * List of aggregation models used to fetch data
      */
-    public aggregations: Aggregation[] = this.getConfigValue('swimlanes')[0]['aggregationmodels'];
+    public aggregations: Aggregation[] = this.getSwimlaneAggregations();
 
     /**
     * Json path to explore element aggregation, count by default
@@ -67,7 +67,8 @@ export class SwimLaneContributor extends Contributor {
     */
     private nbBuckets: number = this.getConfigValue('numberOfBuckets');
 
-    private INVALID_AGGREGATION_MESSAGE = '`aggregationmodels` should contain 2 bucket aggregations. The first one should be a `term` aggregation. The second one should be a `histogram` OR `datehistogram` aggregation.';
+    private INVALID_AGGREGATIONS_MESSAGE = '`aggregationmodels` should contain 2 bucket aggregations. The first one should be a `term` aggregation. The second one should be a `histogram` OR `datehistogram` aggregation.';
+    private INVALID_SWIMLANES_MESSAGE = '`swimlanes` property is mandatory and should contain at least one item.';
 
     /**
     * Build a new contributor.
@@ -204,17 +205,28 @@ export class SwimLaneContributor extends Contributor {
         return displayName ? displayName : 'Swimlane';
     }
 
+    /** Checks whether the aggregationmodels contains the needed information to fetch swimlane data */
     private checkAggregations(): void {
         if (!this.aggregations || this.aggregations.length < 2) {
-            console.error(this.INVALID_AGGREGATION_MESSAGE);
-            throw new Error(this.INVALID_AGGREGATION_MESSAGE);
+            console.error(this.INVALID_AGGREGATIONS_MESSAGE);
+            throw new Error(this.INVALID_AGGREGATIONS_MESSAGE);
         } else {
             if (this.aggregations[0].type !== Aggregation.TypeEnum.Term ||
                 (this.aggregations[1].type !== Aggregation.TypeEnum.Datehistogram &&
                      this.aggregations[1].type !== Aggregation.TypeEnum.Histogram) ) {
-                        console.error(this.INVALID_AGGREGATION_MESSAGE);
-                        throw new Error(this.INVALID_AGGREGATION_MESSAGE);
+                        console.error(this.INVALID_AGGREGATIONS_MESSAGE);
+                        throw new Error(this.INVALID_AGGREGATIONS_MESSAGE);
             }
+        }
+    }
+
+    private getSwimlaneAggregations(): any {
+        const swimlanes = this.getConfigValue('swimlanes');
+        if (swimlanes && swimlanes.length > 0) {
+            return swimlanes[0]['aggregationmodels'];
+        } else {
+            console.error(this.INVALID_SWIMLANES_MESSAGE);
+            throw new Error(this.INVALID_SWIMLANES_MESSAGE);
         }
     }
 
