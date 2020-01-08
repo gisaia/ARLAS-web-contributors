@@ -22,14 +22,6 @@
                 "properties": {
                     "id": {},
                     "name": {},
-                    "xAxisField": {
-                        "description": "Numeric/temporal field represented on the x axis of the swimlane",
-                        "type": "string"
-                    },
-                    "termField": {
-                        "description": "The term field that separates the swimlane to lanes",
-                        "type": "string"
-                    },
                     "aggregationmodels": {
                         "$ref": "rootContributorConf.schema.json#/definitions/aggregationmodels"
                     },
@@ -41,8 +33,6 @@
                 "required": [
                     "id",
                     "name",
-                    "xAxisField",
-                    "termField",
                     "aggregationmodels"
                 ]
             }

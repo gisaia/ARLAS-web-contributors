@@ -59,16 +59,6 @@ export class SwimLaneContributor extends Contributor {
     public aggregations: Aggregation[] = this.getConfigValue('swimlanes')[0]['aggregationmodels'];
 
     /**
-     * Numeric/temporal field represented on the x axis of the swimlane.
-     */
-    public xAxisField: string = this.getConfigValue('swimlanes')[0]['xAxisField'];
-
-    /**
-     * The term field that separates the swimlane to lanes.
-     */
-    public termField: string = this.getConfigValue('swimlanes')[0]['termField'];
-
-    /**
     * Json path to explore element aggregation, count by default
     */
     public json_path: string;
@@ -76,6 +66,8 @@ export class SwimLaneContributor extends Contributor {
     * Number of buckets in the swimlane. If not specified, the interval in the aggregagtion model is used instead.
     */
     private nbBuckets: number = this.getConfigValue('numberOfBuckets');
+
+    private INVALID_AGGREGATION_MESSAGE = '`aggregationmodels` should contain 2 bucket aggregations. The first one should be a `term` aggregation. The second one should be a `histogram` OR `datehistogram` aggregation.';
 
     /**
     * Build a new contributor.
@@ -100,13 +92,13 @@ export class SwimLaneContributor extends Contributor {
     }
 
     /**
-* Set filter on value change, use in output of component
-* @param value DateType.millisecond | DateType.second
-*/
+     * Set filter on value change, used in output of component
+     * @param selectedSwimlanes List of selected lanes of the swimlane
+     */
     public valueChanged(selectedSwimlanes: Set<string>) {
         const filterValue: Filter = { f: [] };
         const equalExpression: Expression = {
-            field: this.termField,
+            field: this.getTermField(),
             op: Expression.OpEnum.Eq,
             value: ''
         };
@@ -128,12 +120,13 @@ export class SwimLaneContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
+        this.checkAggregations();
         const collaborations = new Map<string, Collaboration>();
         this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
                 return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                <RangeRequest>{ filter: null, field: this.xAxisField }], collaborations, this.identifier)
+                <RangeRequest>{ filter: null, field: this.getXAxisField() }], collaborations, this.identifier)
                     .pipe(
                         map((rangeResponse: RangeResponse) => {
                             const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
@@ -210,4 +203,33 @@ export class SwimLaneContributor extends Contributor {
         const displayName = this.getConfigValue('name');
         return displayName ? displayName : 'Swimlane';
     }
+
+    private checkAggregations(): void {
+        if (!this.aggregations || this.aggregations.length < 2) {
+            console.error(this.INVALID_AGGREGATION_MESSAGE);
+            throw new Error(this.INVALID_AGGREGATION_MESSAGE);
+        } else {
+            if (this.aggregations[0].type !== Aggregation.TypeEnum.Term ||
+                (this.aggregations[1].type !== Aggregation.TypeEnum.Datehistogram &&
+                     this.aggregations[1].type !== Aggregation.TypeEnum.Histogram) ) {
+                        console.error(this.INVALID_AGGREGATION_MESSAGE);
+                        throw new Error(this.INVALID_AGGREGATION_MESSAGE);
+            }
+        }
+    }
+
+    private getTermField(): string {
+        if (this.aggregations && this.aggregations.length > 1) {
+            return this.aggregations[0].field;
+        }
+        return '';
+    }
+
+    private getXAxisField(): string {
+        if (this.aggregations && this.aggregations.length > 1) {
+             return this.aggregations[1].field;
+        }
+        return '';
+    }
+
 }
