@@ -1,16 +1,29 @@
-{
+    {
     "$schema": "http://json-schema.org/draft-06/schema#",
     "title": "Chipsearch Contributor Configuration",
     "description": "The Configuration of ChipSearch Contributor",
     "type": "object",
     "$id": "chipssearchContributorConf.schema.json",
     "properties": {
-        "identifier":{
+        "identifier": {
             "description": "The unique identifier for a Contributor",
             "type": "string"
+        },
+        "search_field": {
+            "description": "Keyword field on which the full text search is applied.",
+            "type": "string"
+        },
+        "autocomplete_field": {
+            "description": "Keyword field on which the autocompletion is performed.",
+            "type": "string"
+        },
+        "autocomplete_size": {
+            "description": "Number of suggested keywords by the autocompletion.",
+            "type": "number"
         }
     },
     "required": [
-        "identifier"
+        "identifier",
+        "search_field"
     ]
 }
