@@ -379,35 +379,45 @@ export class ResultListContributor extends Contributor {
             this.actionToTriggerOnClick.splice(indexOnClick, 1);
         }
     }
+
     /**
-    * Method called when emit the output sortColumnEvent
-    * @param sortOutput sort param
-    * @param sortById whether to add a sort by id to the sorted column
+    * Sorts the list according to the given sort parameters. If `sortParams` is not defined, and `sortById=true` then the list is sorted by
+    * id (`fieldsConfiguration.idFieldName`)
+    * @param sortParams sort parameters. They include on which field (column) to sort and in which direction (ascending, descending)
+    * @param sortById whether to add a sort by id (`fieldsConfiguration.idFieldName`) to the sorted column
     */
-    public sortColumn(sortOutput: { fieldName: string, sortDirection: SortEnum }, sortById?: boolean) {
-        let prefix = null;
-        if (sortOutput.sortDirection.toString() === '0') {
-            prefix = '';
-        } else if (sortOutput.sortDirection.toString() === '1') {
-            prefix = '-';
-        }
-        let sort = '';
-        if (prefix !== null) {
-            sort = prefix + sortOutput.fieldName;
-        }
-        if (sortById) {
-            this.sort = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
-        } else {
-            this.sort = sort;
-        }
+    public sortColumn(sortParams: { fieldName: string, sortDirection: SortEnum }, sortById?: boolean) {
         this.geoOrderSort = '';
-        this.getHitsObservable(this.includesvalues, this.sort)
-            .pipe(
-                map(f => this.computeData(f)),
-                map(f => this.setData(f)),
-                map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
-            )
-            .subscribe(data => data);
+        let sort = '';
+        if (sortParams && sortParams.fieldName && sortParams.sortDirection) {
+            let prefix = null;
+            if (sortParams.sortDirection.toString() === '0') {
+                prefix = '';
+            } else if (sortParams.sortDirection.toString() === '1') {
+                prefix = '-';
+            }
+            if (prefix !== null) {
+                sort = prefix + sortParams.fieldName;
+            }
+            if (sortById) {
+                this.sort = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
+            } else {
+                this.sort = sort;
+            }
+        } else {
+            if (sortById) {
+                this.sort = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
+            }
+        }
+        if (this.sort && this.sort !== '') {
+            this.getHitsObservable(this.includesvalues, this.sort)
+                    .pipe(
+                        map(f => this.computeData(f)),
+                        map(f => this.setData(f)),
+                        map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
+                    )
+                    .subscribe(data => data);
+        }
     }
     /**
     * Method sorts by geo-distance to a given geo-point
