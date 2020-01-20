@@ -40,12 +40,27 @@ import jsonSchema from '../jsonSchemas/chipssearchContributorConf.schema.json';
 export class ChipsSearchContributor extends Contributor {
 
     /**
-    * Global query based on all concatenate chips word
-    */
+     * Keyword field on which the full text search is applied
+     */
+    public search_field: string = this.getConfigValue('search_field');
+
+    /**
+     * Keyword field on which the autocompletion is performed
+     */
+    public autocomplete_field: string = this.getConfigValue('autocomplete_field');
+
+    /**
+     * Number of suggested keywords by the autocompletion
+     */
+    public autocomplete_size: number = this.getAutocompleteSize();
+
+    /**
+     * Global query based on all concatenate chips word
+     */
     public query: string;
     /**
-    * Map of string/number, label/count of all chips, use in input of component
-    */
+     * Map of string/number, label/count of all chips, use in input of component
+     */
     public chipMapData: Map<string, number> = new Map<string, number>();
 
     public lastBackspaceBus: Subject<boolean>;
@@ -171,9 +186,9 @@ export class ChipsSearchContributor extends Contributor {
         }
     }
     /**
-    * Remove a chip , set filter.
-    * @param value  Label of the chip.
-    */
+     * Remove a chip , set filter.
+     * @param value  Label of the chip.
+     */
     public removeWord(word: string) {
         this.chipMapData.delete(word);
         if (this.chipMapData.size === 0) {
@@ -194,8 +209,8 @@ export class ChipsSearchContributor extends Contributor {
     }
 
     /**
-    * Remove last chip , set filter.
-    */
+     * Remove last chip , set filter.
+     */
     private removeLastWord() {
         const chipAsArray = Array.from(this.chipMapData.keys());
         const lastLabel = chipAsArray[chipAsArray.length - 1];
@@ -204,8 +219,8 @@ export class ChipsSearchContributor extends Contributor {
         }
     }
     /**
-    * Set Filter for collaborative search service from wordToCount map.
-    */
+     * Set Filter for collaborative search service from wordToCount map.
+     */
     private setFilterFromMap() {
         let strquery = '';
         const tabquery = [];
@@ -227,5 +242,10 @@ export class ChipsSearchContributor extends Contributor {
             };
             this.collaborativeSearcheService.setFilter(this.identifier, data);
         }
+    }
+
+    private getAutocompleteSize(): number {
+        const autocompleteSize = this.getConfigValue('autocomplete_size');
+        return (autocompleteSize !== undefined) ? autocompleteSize : 20;
     }
 }
