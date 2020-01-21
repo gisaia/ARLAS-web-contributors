@@ -261,7 +261,6 @@ export class MapContributor extends Contributor {
                 aois = collaboration.filter.pwithin[0];
             }
             if (aois) {
-                let index = 1;
                 aois.forEach(aoi => {
                     if (aoi.indexOf('POLYGON') < 0) {
                         /** BBOX mode */
@@ -287,8 +286,7 @@ export class MapContributor extends Contributor {
                         const polygonGeojson = {
                             type: 'Feature',
                             properties: {
-                                source: 'bbox',
-                                arlas_id: index
+                                source: 'bbox'
                             },
                             geometry: {
                                 type: 'Polygon',
@@ -303,18 +301,25 @@ export class MapContributor extends Contributor {
                             type: 'Feature',
                             geometry: geojsonWKT,
                             properties: {
-                                source: 'wkt',
-                                arlas_id: index
+                                source: 'wkt'
                             }
                         };
                         polygonGeojsons.push(feature);
                     }
-                    index = index + 1;
                 });
-                this.geojsondraw = {
-                    'type': 'FeatureCollection',
-                    'features': polygonGeojsons
-                };
+                if (this.geojsondraw.features.length > 0) {
+                    const allFeatures = this.geojsondraw
+                        .features.concat(polygonGeojsons).map((f, i) => { f.properties.arlas_id = i; return f; });
+                    this.geojsondraw = {
+                        'type': 'FeatureCollection',
+                        'features': allFeatures
+                    };
+                } else {
+                    this.geojsondraw = {
+                        'type': 'FeatureCollection',
+                        'features': polygonGeojsons.map((f, i) => { f.properties.arlas_id = i; return f; })
+                    };
+                }
             } else {
                 this.geojsondraw = {
                     'type': 'FeatureCollection',
@@ -386,7 +391,7 @@ export class MapContributor extends Contributor {
      * @beta This method is being tested. It will replace `onChangeBbox` and `onRemoveBbox`
      * @param fc FeatureCollection object
      */
-    public onChangeAoi(fc: helpers.FeatureCollection) {
+    public onChangeAoi(fc: helpers.FeatureCollection, filterWithAoi = true) {
         let filters: Filter;
         const geoFilter: Array<string> = new Array();
         fc = truncate(fc, { precision: this.drawPrecision });
@@ -397,19 +402,26 @@ export class MapContributor extends Contributor {
                 bboxs.forEach(f => geoFilter.push(f));
             }
             const features = new Array<any>();
-            fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
-                if (isClockwise((<any>(f.geometry)).coordinates[0])) {
-                    features.push(f);
-                } else {
-                    const list = [];
-                    (<any>(f.geometry)).coordinates[0]
-                        .forEach((c) => list.push(c));
-                    const reverseList = list.reverse();
-                    (<any>(f.geometry)).coordinates[0] = reverseList;
-                    features.push(f);
-                }
-            });
-            features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
+            if (filterWithAoi) {
+                fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
+                    if (isClockwise((<any>(f.geometry)).coordinates[0])) {
+                        features.push(f);
+                    } else {
+                        const list = [];
+                        (<any>(f.geometry)).coordinates[0]
+                            .forEach((c) => list.push(c));
+                        const reverseList = list.reverse();
+                        (<any>(f.geometry)).coordinates[0] = reverseList;
+                        features.push(f);
+                    }
+                });
+                features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
+            } else {
+                this.geojsondraw = {
+                    'type': 'FeatureCollection',
+                    'features': features.map((f, i) => { f.properties.arlas_id = i; return f; })
+                };
+            }
             if (this.isGIntersect) {
                 filters = {
                     gintersect: [geoFilter],
