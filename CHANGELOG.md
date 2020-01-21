@@ -1,5 +1,13 @@
 # Change Log
 
+## [v11.5.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.2) (2020-01-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.1...v11.5.2)
+
+**Fixed bugs:**
+
+- Fix bug filter aoi wkt [\#271](https://github.com/gisaia/ARLAS-web-contributors/pull/271)
+
 ## [v11.5.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.1) (2020-01-21)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.0...v11.5.1)
