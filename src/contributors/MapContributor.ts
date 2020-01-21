@@ -315,9 +315,10 @@ export class MapContributor extends Contributor {
                         'features': allFeatures
                     };
                 } else {
+                    const allFeatures = polygonGeojsons.map((f, i) => { f.properties.arlas_id = i; return f; });
                     this.geojsondraw = {
                         'type': 'FeatureCollection',
-                        'features': polygonGeojsons.map((f, i) => { f.properties.arlas_id = i; return f; })
+                        'features': allFeatures
                     };
                 }
             } else {
@@ -402,19 +403,19 @@ export class MapContributor extends Contributor {
                 bboxs.forEach(f => geoFilter.push(f));
             }
             const features = new Array<any>();
+            fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
+                if (isClockwise((<any>(f.geometry)).coordinates[0])) {
+                    features.push(f);
+                } else {
+                    const list = [];
+                    (<any>(f.geometry)).coordinates[0]
+                        .forEach((c) => list.push(c));
+                    const reverseList = list.reverse();
+                    (<any>(f.geometry)).coordinates[0] = reverseList;
+                    features.push(f);
+                }
+            });
             if (filterWithAoi) {
-                fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
-                    if (isClockwise((<any>(f.geometry)).coordinates[0])) {
-                        features.push(f);
-                    } else {
-                        const list = [];
-                        (<any>(f.geometry)).coordinates[0]
-                            .forEach((c) => list.push(c));
-                        const reverseList = list.reverse();
-                        (<any>(f.geometry)).coordinates[0] = reverseList;
-                        features.push(f);
-                    }
-                });
                 features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
             } else {
                 this.geojsondraw = {
@@ -435,8 +436,9 @@ export class MapContributor extends Contributor {
                 filter: filters,
                 enabled: true
             };
-            this.collaborativeSearcheService.setFilter(this.identifier, data);
-
+            if (geoFilter.length > 0) {
+                this.collaborativeSearcheService.setFilter(this.identifier, data);
+            }
         } else {
             if (this.collaborativeSearcheService.getCollaboration(this.identifier) !== null) {
                 this.collaborativeSearcheService.removeFilter(this.identifier);
