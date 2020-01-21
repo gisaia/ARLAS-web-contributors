@@ -1,6 +1,6 @@
 {
-  "name": "***update during release***/arlas-web-contributors",
-  "version": "***update during release***",
+  "name": "arlas-web-contributors",
+  "version": "11.5.1",
   "description": "Contributors Library for ARLAS Components",
   "main": "./index.js",
   "typings": "./index.d.ts",
