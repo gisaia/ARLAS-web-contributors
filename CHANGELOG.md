@@ -1,5 +1,13 @@
 # Change Log
 
+## [v11.5.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.1) (2020-01-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.0...v11.5.1)
+
+**New stuff:**
+
+- Make filtering data with a WKT optional [\#270](https://github.com/gisaia/ARLAS-web-contributors/issues/270)
+
 ## [v11.5.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.0) (2020-01-17)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.0...v11.5.0)
