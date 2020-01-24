@@ -85,6 +85,10 @@ export class TreeContributor extends Contributor {
         return this.aggregations;
     }
 
+    public setAggregations(aggregations: Array<Aggregation>) {
+        this.aggregations = aggregations;
+    }
+
     /**
     * @returns Package name for the configuration service.
     */
