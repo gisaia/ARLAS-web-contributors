@@ -752,7 +752,7 @@ export class ResultListContributor extends Contributor {
             );
         return searchResult;
     }
-    private fieldsFromUrlTemplate(urlTemplate: string): string {
+    private fieldsFromUrlTemplate(urlTemplate: string): Array<string> {
         return urlTemplate
             .split('/')
             .filter(f => f.indexOf('{') >= 0)
@@ -765,7 +765,7 @@ export class ResultListContributor extends Contributor {
                     t = m;
                 }
                 return t;
-            }).join(',');
+            });
     }
     private setUrlField(urlField: string, h: Hit, fieldValueMap: Map<string, string | number | Date>) {
         this.fieldsConfiguration[urlField]
