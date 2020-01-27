@@ -1,5 +1,61 @@
 # Change Log
 
+## [v12.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.3.0) (2020-01-27)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.2...v12.3.0)
+
+**New stuff:**
+
+- Add setter for Aggregations in TreeContributor [\#272](https://github.com/gisaia/ARLAS-web-contributors/issues/272)
+
+**Fixed bugs:**
+
+- Resultlist : urlThumbnailTemplate & urlImageTemplate fields are not included in search result [\#260](https://github.com/gisaia/ARLAS-web-contributors/issues/260)
+
+## [v11.5.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.2) (2020-01-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.1...v11.5.2)
+
+**Fixed bugs:**
+
+- Fix bug filter aoi wkt [\#271](https://github.com/gisaia/ARLAS-web-contributors/pull/271) ([mbarbet](https://github.com/mbarbet))
+
+## [v11.5.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.1) (2020-01-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.0...v11.5.1)
+
+**Breaking changes:**
+
+- Centralize all the fields configuration \(for search\) in ChipsSearchContributor [\#262](https://github.com/gisaia/ARLAS-web-contributors/issues/262)
+- ResultList: fieldsConfiguration interface is different from the one used in ARLAS-web-components [\#136](https://github.com/gisaia/ARLAS-web-contributors/issues/136)
+
+**New stuff:**
+
+- Make filtering data with a WKT optional [\#270](https://github.com/gisaia/ARLAS-web-contributors/issues/270)
+- Remove redundant configurable fields in Swimlane [\#264](https://github.com/gisaia/ARLAS-web-contributors/issues/264)
+
+**Miscellaneous:**
+
+- Check validity of aggregationsmodel in swimlanes  [\#263](https://github.com/gisaia/ARLAS-web-contributors/issues/263)
+- Resultlist : Check if sortOutput is defined before applying sort [\#261](https://github.com/gisaia/ARLAS-web-contributors/issues/261)
+
+## [v11.5.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.0) (2020-01-17)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.2.0...v11.5.0)
+
+**Breaking changes:**
+
+- Centralize all the fields configuration \(for search\) in ChipsSearchContributor [\#257](https://github.com/gisaia/ARLAS-web-contributors/issues/257)
+
+**New stuff:**
+
+- Remove redundant configurable fields in Swimlane [\#253](https://github.com/gisaia/ARLAS-web-contributors/issues/253)
+
+**Miscellaneous:**
+
+- Resultlist : Check if sortOutput is defined before applying sort [\#259](https://github.com/gisaia/ARLAS-web-contributors/issues/259)
+- Check validity of aggregationsmodel in swimlanes [\#255](https://github.com/gisaia/ARLAS-web-contributors/issues/255)
+
 ## [v12.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.2.0) (2020-01-06)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.1.0...v12.2.0)
@@ -11,6 +67,11 @@
 **New stuff:**
 
 - MAP: normalize numeric and date values [\#251](https://github.com/gisaia/ARLAS-web-contributors/issues/251)
+- \[CONTRIBUTOR\] disable cache by configuration [\#224](https://github.com/gisaia/ARLAS-web-contributors/issues/224)
+
+**Miscellaneous:**
+
+- Remove yarn.lock [\#247](https://github.com/gisaia/ARLAS-web-contributors/issues/247)
 
 ## [v12.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.1.0) (2019-12-04)
 
