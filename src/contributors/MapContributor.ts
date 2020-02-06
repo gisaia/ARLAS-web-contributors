@@ -199,7 +199,6 @@ export class MapContributor extends Contributor {
         public configService: ConfigService
     ) {
         super(identifier, configService, collaborativeSearcheService);
-        this.updateData = false;
         if (this.getConfigValue('dataMode') !== undefined
             && dataMode[this.getConfigValue('dataMode')].toString() === dataMode.simple.toString()) {
             this.dataMode = dataMode.simple;
