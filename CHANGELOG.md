@@ -1,5 +1,14 @@
 # Change Log
 
+## [v12.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.4.0) (2020-02-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.3.0...v12.4.0)
+
+**New stuff:**
+
+- Make filtering data with a WKT optiona [\#276](https://github.com/gisaia/ARLAS-web-contributors/issues/276)
+- \[MAP\] Enhance tiled geoaggregation rendering [\#274](https://github.com/gisaia/ARLAS-web-contributors/issues/274)
+
 ## [v12.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.3.0) (2020-01-27)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.2...v12.3.0)
