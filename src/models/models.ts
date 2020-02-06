@@ -76,6 +76,7 @@ export interface OnMoveResult {
     extendForTest: Array<number>;
     tiles: Array<{ x: number, y: number, z: number }>;
     geohash: Array<string>;
+    geohashForLoad: Array<string>;
 
 
 }
