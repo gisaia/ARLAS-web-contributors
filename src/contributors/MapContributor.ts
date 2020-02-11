@@ -488,6 +488,12 @@ export class MapContributor extends Contributor {
             /** redrawTile event is emitted whether there is normalization or not */
             this.normalizeFeatures();
         }
+        this.setDrawings(collaboration);
+        return from([]);
+    }
+
+
+    public setDrawings(collaboration: Collaboration): void {
         if (collaboration !== null) {
             if (collaboration.filter && collaboration.filter.f) {
                 const operation = collaboration.filter.f[0][0].op;
@@ -571,9 +577,7 @@ export class MapContributor extends Contributor {
                 'features': []
             };
         }
-        return from([]);
     }
-
     public getBoundsToFit(elementidentifier: ElementIdentifier): Observable<Array<Array<number>>> {
         const bounddsToFit = getBounds(elementidentifier, this.collaborativeSearcheService);
         return bounddsToFit;
@@ -588,6 +592,8 @@ export class MapContributor extends Contributor {
                 this.fetchType = fetchType.geohash;
                 this.maxValueGeoHash = 0;
                 this.drawGeoaggregateGeohash(this.geohashList, 'SWITCHER');
+                const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
+                this.setDrawings(collaboration);
             }
         }
     }
