@@ -9,30 +9,39 @@
             "description": "Title of the contributor",
             "type": "string"
         },
-        "field": {
-            "description": "The field on which the metric is computed",
-            "type": "string"
+        "metrics":{
+            "type":"array",
+            "items": {
+                "description": "Field pattern or name",
+                "minItems": 1,
+                "type": "object",
+                "properties": {
+                    "field": {
+                        "description": "The field on which the metric is computed",
+                        "type": "string"
+                    },
+                    "metric": {
+                        "description": "The metric to compute",
+                        "type": "string",
+                        "enum": [
+                            "avg",
+                            "cardinality",
+                            "max",
+                            "min",
+                            "spanning",
+                            "sum"
+                        ]
+                    }
+                }
+            }
         },
-        "metric": {
-            "description": "The metric to compute",
-            "type": "string",
-            "enum": [
-                "avg",
-                "cardinality",
-                "max",
-                "min",
-                "spanning",
-                "sum"
-            ]
-        },
-        "process": {
-            "description": "Process transformation to apply on a variable named `result` (ex : result / 1000)",
+        "function": {
+            "description": "Function to apply with metrics result as parameter, exemple (m[0] + m[1]) / m[2]), where m[0] is the result of the first metric. To do a simple metric, put one element in metrics and set function to m[0].",
             "type": "string"
         }
     },
     "required": [
-        "title",
-        "field",
-        "metric"
+        "metrics",
+        "function"
     ]
 }
