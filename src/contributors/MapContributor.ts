@@ -55,7 +55,8 @@ export enum geomStrategyEnum {
 }
 export enum fetchType {
     tile,
-    geohash
+    geohash,
+    topology
 }
 export interface Style {
     id: string;

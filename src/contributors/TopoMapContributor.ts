@@ -74,6 +74,7 @@ export class TopoMapContributor extends MapContributor {
         this.maxValueGeoHash = 0;
         if (this.zoom < this.zoomLevelForTestCount) {
             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
+            this.fetchType = fetchType.geohash;
             this.geojsondata.features = [];
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
@@ -92,6 +93,7 @@ export class TopoMapContributor extends MapContributor {
                             // AGG TOPO
                             this.geojsondata.features = [];
                             this.aggregation = this.topoAggregation;
+                            this.fetchType = fetchType.topology;
                             const topoGeohashGeoFilter: Filter = {
                                 f: [[{
                                     field: this.aggregationField,
@@ -105,6 +107,7 @@ export class TopoMapContributor extends MapContributor {
                             // Classique AGG geohash
                             this.geojsondata.features = [];
                             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
+                            this.fetchType = fetchType.geohash;
                             return this.fetchDataGeohashGeoaggregate(this.geohashList);
                         }
                     }));
@@ -165,6 +168,7 @@ export class TopoMapContributor extends MapContributor {
         }
         if (newMove.zoom < this.zoomLevelForTestCount) {
             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
+            this.fetchType = fetchType.geohash;
             if (!this.isGeoaggregateCluster) {
                 this.geojsondata.features = [];
                 this.currentGeohashList = [];
@@ -199,6 +203,7 @@ export class TopoMapContributor extends MapContributor {
                             .reduce((a, b) => a + b, 0);
                         if (this.size <= this.nbMaxFeatureForCluster) {
                             this.aggregation = this.topoAggregation;
+                            this.fetchType = fetchType.topology;
                             this.currentGeohashList = [];
                             if (this.isGeoaggregateCluster) {
                                 this.geojsondata.features = [];
@@ -229,6 +234,7 @@ export class TopoMapContributor extends MapContributor {
                             }
                         } else {
                             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
+                            this.fetchType = fetchType.geohash;
                             if (!this.isGeoaggregateCluster) {
                                 this.geojsondata.features = [];
                                 this.currentGeohashList = [];
