@@ -172,7 +172,8 @@
             "description": "Type of initial mode of fetching data",
             "enum": [
                 "tile",
-                "geohash"
+                "geohash",
+                "topology"
             ]
         },
         "searchSort": {
