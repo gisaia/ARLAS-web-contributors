@@ -882,6 +882,7 @@ export class MapContributor extends Contributor {
         }
     }
     public drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
+        this.updateData = true;
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataTileSearch(tiles)
             .pipe(
