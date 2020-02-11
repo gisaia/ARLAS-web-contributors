@@ -260,6 +260,7 @@ export class MapContributor extends Contributor {
             } else {
                 aois = collaboration.filter.pwithin[0];
             }
+            let hasWktFilter = false;
             if (aois) {
                 aois.forEach(aoi => {
                     if (aoi.indexOf('POLYGON') < 0) {
@@ -304,12 +305,16 @@ export class MapContributor extends Contributor {
                                 source: 'wkt'
                             }
                         };
+                        if (!hasWktFilter) {
+                            hasWktFilter = true;
+                        }
                         polygonGeojsons.push(feature);
                     }
                 });
-                if (this.geojsondraw.features.length > 0) {
+                if (!hasWktFilter && this.geojsondraw.features.length > 0) {
                     const allFeatures = this.geojsondraw
-                        .features.concat(polygonGeojsons).map((f, i) => { f.properties.arlas_id = i; return f; });
+                        .features.filter(f => f.properties.source === 'wkt')
+                        .concat(polygonGeojsons).map((f, i) => { f.properties.arlas_id = i; return f; });
                     this.geojsondraw = {
                         'type': 'FeatureCollection',
                         'features': allFeatures
@@ -404,6 +409,7 @@ export class MapContributor extends Contributor {
             }
             const features = new Array<any>();
             fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
+                f.properties.source = 'wkt';
                 if (isClockwise((<any>(f.geometry)).coordinates[0])) {
                     features.push(f);
                 } else {
@@ -417,12 +423,11 @@ export class MapContributor extends Contributor {
             });
             if (filterWithAoi) {
                 features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
-            } else {
-                this.geojsondraw = {
-                    'type': 'FeatureCollection',
-                    'features': features.map((f, i) => { f.properties.arlas_id = i; return f; })
-                };
             }
+            this.geojsondraw = {
+                'type': 'FeatureCollection',
+                'features': fc.features.map((f, i) => { f.properties.arlas_id = i; return f; })
+            };
             if (this.isGIntersect) {
                 filters = {
                     gintersect: [geoFilter],
