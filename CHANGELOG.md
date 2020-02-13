@@ -1,12 +1,27 @@
 # Change Log
 
+## [v12.5.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.0) (2020-02-13)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.4.0...v12.5.0)
+
+**New stuff:**
+
+- Compute : Add the possibility to apply a math formula on several metrics [\#287](https://github.com/gisaia/ARLAS-web-contributors/issues/287)
+- Map : Remove option of filtering with WKT [\#284](https://github.com/gisaia/ARLAS-web-contributors/issues/284)
+
+**Fixed bugs:**
+
+- Map : set selection after first layer switch [\#286](https://github.com/gisaia/ARLAS-web-contributors/issues/286)
+- Map : activate fetching data systematically in feature mode [\#285](https://github.com/gisaia/ARLAS-web-contributors/issues/285)
+- TOPOMAP: rendered data on the map disappears each time a filter is applied [\#279](https://github.com/gisaia/ARLAS-web-contributors/issues/279)
+
 ## [v12.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.4.0) (2020-02-06)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.3.0...v12.4.0)
 
 **New stuff:**
 
-- Make filtering data with a WKT optiona [\#276](https://github.com/gisaia/ARLAS-web-contributors/issues/276)
+- Make filtering data with a WKT optional [\#276](https://github.com/gisaia/ARLAS-web-contributors/issues/276)
 - \[MAP\] Enhance tiled geoaggregation rendering [\#274](https://github.com/gisaia/ARLAS-web-contributors/issues/274)
 
 ## [v12.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.3.0) (2020-01-27)
