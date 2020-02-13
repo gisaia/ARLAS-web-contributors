@@ -488,6 +488,12 @@ export class MapContributor extends Contributor {
             /** redrawTile event is emitted whether there is normalization or not */
             this.normalizeFeatures();
         }
+        this.setDrawings(collaboration);
+        return from([]);
+    }
+
+
+    public setDrawings(collaboration: Collaboration): void {
         if (collaboration !== null) {
             if (collaboration.filter && collaboration.filter.f) {
                 const operation = collaboration.filter.f[0][0].op;
@@ -531,7 +537,8 @@ export class MapContributor extends Contributor {
                         const polygonGeojson = {
                             type: 'Feature',
                             properties: {
-                                source: 'bbox'
+                                source: 'bbox',
+                                arlas_id: index
                             },
                             geometry: {
                                 type: 'Polygon',
@@ -546,27 +553,18 @@ export class MapContributor extends Contributor {
                             type: 'Feature',
                             geometry: geojsonWKT,
                             properties: {
-                                source: 'wkt'
+                                source: 'wkt',
+                                arlas_id: index
                             }
                         };
                         polygonGeojsons.push(feature);
                     }
                     index = index + 1;
                 });
-                if (this.geojsondraw.features.length > 0) {
-                    const allFeatures = this.geojsondraw
-                        .features.concat(polygonGeojsons).map((f, i) => { f.properties.arlas_id = i; return f; });
-                    this.geojsondraw = {
-                        'type': 'FeatureCollection',
-                        'features': allFeatures
-                    };
-                } else {
-                    const allFeatures = polygonGeojsons.map((f, i) => { f.properties.arlas_id = i; return f; });
-                    this.geojsondraw = {
-                        'type': 'FeatureCollection',
-                        'features': allFeatures
-                    };
-                }
+                this.geojsondraw = {
+                    'type': 'FeatureCollection',
+                    'features': polygonGeojsons
+                };
             } else {
                 this.geojsondraw = {
                     'type': 'FeatureCollection',
@@ -579,9 +577,7 @@ export class MapContributor extends Contributor {
                 'features': []
             };
         }
-        return from([]);
     }
-
     public getBoundsToFit(elementidentifier: ElementIdentifier): Observable<Array<Array<number>>> {
         const bounddsToFit = getBounds(elementidentifier, this.collaborativeSearcheService);
         return bounddsToFit;
@@ -596,6 +592,8 @@ export class MapContributor extends Contributor {
                 this.fetchType = fetchType.geohash;
                 this.maxValueGeoHash = 0;
                 this.drawGeoaggregateGeohash(this.geohashList, 'SWITCHER');
+                const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
+                this.setDrawings(collaboration);
             }
         }
     }
@@ -641,7 +639,7 @@ export class MapContributor extends Contributor {
      * @beta This method is being tested. It will replace `onChangeBbox` and `onRemoveBbox`
      * @param fc FeatureCollection object
      */
-    public onChangeAoi(fc: helpers.FeatureCollection, filterWithAoi = true) {
+    public onChangeAoi(fc: helpers.FeatureCollection) {
         let filters: Filter;
         const geoFilter: Array<string> = new Array();
         fc = truncate(fc, { precision: this.drawPrecision });
@@ -664,14 +662,7 @@ export class MapContributor extends Contributor {
                     features.push(f);
                 }
             });
-            if (filterWithAoi) {
-                features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
-            } else {
-                this.geojsondraw = {
-                    'type': 'FeatureCollection',
-                    'features': features.map((f, i) => { f.properties.arlas_id = i; return f; })
-                };
-            }
+            features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
             switch (this.geoQueryOperation) {
                 case Expression.OpEnum.Notintersects:
                 case Expression.OpEnum.Notwithin:
@@ -706,10 +697,7 @@ export class MapContributor extends Contributor {
                 filter: filters,
                 enabled: true
             };
-            if (geoFilter.length > 0) {
-                this.collaborativeSearcheService.setFilter(this.identifier, data);
-            }
-
+            this.collaborativeSearcheService.setFilter(this.identifier, data);
         } else {
             if (this.collaborativeSearcheService.getCollaboration(this.identifier) !== null) {
                 this.collaborativeSearcheService.removeFilter(this.identifier);
@@ -900,6 +888,7 @@ export class MapContributor extends Contributor {
         }
     }
     public drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
+        this.updateData = true;
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchDataTileSearch(tiles)
             .pipe(
