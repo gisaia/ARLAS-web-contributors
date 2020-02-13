@@ -18,25 +18,22 @@
  */
 
 
-
-
 import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json';
 import { Contributor, CollaborativesearchService, ConfigService, CollaborationEvent, projType, OperationEnum, Collaboration } from 'arlas-web-core';
-import { Observable, from } from 'rxjs';
+import { Observable, from, forkJoin } from 'rxjs';
 import { ComputationRequest, ComputationResponse } from 'arlas-api';
 /**
  * This contributor computes a metric on the given field, given the filters
  */
 export class ComputeContributor extends Contributor {
 
-    /** Field on which the metric will be computed*/
-    public field: string = this.getConfigValue('field');
-    /** Field on which the metric will be computed*/
-    public metric: string = this.getConfigValue('metric');
+    /** Array of which metrics will be computed*/
+    public metrics: Array<{ field: string, metric: string }> = this.getConfigValue('metrics');
+    /** Function to apply to the results of computation metrics*/
+    public function: string = this.getConfigValue('function');
     /** Title of the contributor*/
     public title: string = this.getConfigValue('title');
-    /** A process to apply on `this.metricValue`*/
-    public process: string = this.getConfigValue('process');
+
 
     public metricValue: number;
     /**
@@ -54,28 +51,29 @@ export class ComputeContributor extends Contributor {
         return jsonSchema;
     }
 
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<ComputationResponse> {
-        const computationResponse = this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-        <ComputationRequest>{ field: this.field, metric: ComputationRequest.MetricEnum[this.metric.toUpperCase()] }],
-            this.collaborativeSearcheService.collaborations, this.identifier, {}, false, this.cacheDuration);
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<ComputationResponse>> {
+
+        const computationResponse: Observable<Array<ComputationResponse>> = forkJoin(this.metrics.map(m => {
+            return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+            <ComputationRequest>{ field: m.field, metric: ComputationRequest.MetricEnum[m.metric.toUpperCase()] }],
+                this.collaborativeSearcheService.collaborations, this.identifier, {}, false, this.cacheDuration);
+        }));
 
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return computationResponse;
         } else {
             return from([]);
         }
+
     }
 
-    public computeData(data: ComputationResponse): ComputationResponse {
+    public computeData(data: Array<ComputationResponse>): Array<ComputationResponse> {
         return data;
     }
 
-    public setData(data: ComputationResponse): any {
-        const result = data.value;
-        let resultValue = result;
-        if (this.process && this.process.trim().length > 0) {
-            resultValue = eval(this.process);
-        }
+    public setData(data: Array<ComputationResponse>): any {
+        const m = data.map(d => d.value);
+        const resultValue = eval(this.function);
         this.metricValue = resultValue;
         return from([]);
     }
@@ -88,7 +86,7 @@ export class ComputeContributor extends Contributor {
     * @returns Pretty name of contributor based on query propoerty.
     */
     public getFilterDisplayName(): string {
-        return 'Computed ' + this.metric + ' on ' + this.field;
+        return this.title;
     }
     /**
     * @returns Package name for the configuration service.
