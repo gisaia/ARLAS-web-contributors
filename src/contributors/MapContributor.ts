@@ -142,8 +142,8 @@ export class MapContributor extends Contributor {
 
 
 
-    private geohashesMap: Map<string, Feature> = new Map();
-    private parentGeohashesSet: Set<string> = new Set();
+    protected geohashesMap: Map<string, Feature> = new Map();
+    protected parentGeohashesSet: Set<string> = new Set();
     private fetchAggregationPipe = new Array<string>();
 
     /**
@@ -731,45 +731,16 @@ export class MapContributor extends Contributor {
         this.geohashList = newMove.geohashForLoad;
         this.zoom = newMove.zoom;
         this.currentExtentGeohashSet = new Set(newMove.geohashForLoad);
-        this.nbMaxFeatureForCluster = this.getNbMaxFeatureFromZoom(newMove.zoom);
+        const nbMaxFeatureForCluster = this.getNbMaxFeatureFromZoom(newMove.zoom);
         const precision = this.getPrecisionFromZoom(newMove.zoom);
         let precisionChanged = false;
-        if (precision !== this.precision && this.isGeoaggregateCluster) {
+        if (precision !== this.precision) {
             precisionChanged = true;
             this.precision = precision;
-            this.maxValueGeoHash = 0;
-            this.geojsondata.features = [];
-            this.currentGeohashList = [];
-            this.geohashesMap = new Map();
-            this.parentGeohashesSet = new Set();
         }
-
         if (newMove.zoom < this.zoomLevelForTestCount) {
             this.fetchType = fetchType.geohash;
-            if (!this.isGeoaggregateCluster) {
-                this.geojsondata.features = [];
-                this.currentGeohashList = [];
-                this.geohashesMap = new Map();
-            }
-            if (precisionChanged) {
-                this.drawGeoaggregateGeohash(this.geohashList, 'PRECISION_CHANGED_' + Math.round(Math.random() * 100) / 100);
-            } else {
-                const newGeohashList = new Array<string>();
-                this.geohashList.forEach(geohash => {
-                    if (this.currentGeohashList.indexOf(geohash) < 0) {
-                        newGeohashList.push(geohash);
-                        this.currentGeohashList.push(geohash);
-                    }
-                });
-                if (newGeohashList.length > 0) {
-                    this.geojsondata.features = [];
-                    this.drawGeoaggregateGeohash(newGeohashList, 'NEW_GEOHASHES_' + Math.round(Math.random() * 100) / 100);
-                } else {
-                    this.renderGeohashFeatures();
-                    this.redrawTile.next(true);
-                }
-            }
-            this.mapExtend = newMove.extendForLoad;
+            this.onMoveInClusterMode(precisionChanged, newMove);
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
@@ -782,9 +753,9 @@ export class MapContributor extends Contributor {
                 count.subscribe(value => {
                     this.countExtendBus.next({
                         count: value.totalnb,
-                        threshold: this.nbMaxFeatureForCluster
+                        threshold: nbMaxFeatureForCluster
                     });
-                    if (value.totalnb <= this.nbMaxFeatureForCluster) {
+                    if (value.totalnb <= nbMaxFeatureForCluster) {
                         this.fetchType = fetchType.tile;
                         this.currentGeohashList = [];
                         if (this.isGeoaggregateCluster) {
@@ -810,40 +781,14 @@ export class MapContributor extends Contributor {
                             this.drawSearchTiles(newTilesList);
                         }
                     } else {
-                        this.fetchType = fetchType.geohash;
-                        this.currentStringedTilesList = [];
-                        if (!this.isGeoaggregateCluster) {
-                            this.geojsondata.features = [];
-                            this.currentGeohashList = [];
-                            this.geohashesMap = new Map();
-                            this.maxValueGeoHash = 0;
-                            this.parentGeohashesSet = new Set();
-                        }
-                        if (precisionChanged) {
-                            this.drawGeoaggregateGeohash(this.geohashList, 'PRECISION_CHANGED_' + Math.round(Math.random() * 100) / 100);
-                        } else {
-                            const newGeohashList = new Array<string>();
-                            this.geohashList.forEach(geohash => {
-                                if (this.currentGeohashList.indexOf(geohash) < 0) {
-                                    newGeohashList.push(geohash);
-                                    this.currentGeohashList.push(geohash);
-                                }
-                            });
-                            if (newGeohashList.length > 0) {
-                                this.geojsondata.features = [];
-                                this.drawGeoaggregateGeohash(newGeohashList, 'NEW_GEOHASHES_' + Math.round(Math.random() * 100) / 100);
-                            } else {
-                                this.renderGeohashFeatures();
-                                this.redrawTile.next(true);
-                            }
-                        }
+                        this.onMoveInClusterMode(precisionChanged, newMove);
                     }
                     this.mapExtend = newMove.extendForLoad;
                 });
             } else {
                 this.countExtendBus.next({
                     count: 0,
-                    threshold: this.nbMaxFeatureForCluster
+                    threshold: nbMaxFeatureForCluster
                 });
             }
         }
@@ -1296,6 +1241,41 @@ export class MapContributor extends Contributor {
         return filter;
     }
 
+
+    protected onMoveInClusterMode(precisionChanged: boolean, newMove: OnMoveResult) {
+        this.fetchType = fetchType.geohash;
+        if (!this.isGeoaggregateCluster) {
+            this.geojsondata.features = [];
+            this.currentGeohashList = [];
+            this.geohashesMap = new Map();
+            this.parentGeohashesSet = new Set();
+            this.maxValueGeoHash = 0;
+        }
+        if (precisionChanged) {
+            this.maxValueGeoHash = 0;
+            this.geojsondata.features = [];
+            this.currentGeohashList = [];
+            this.geohashesMap = new Map();
+            this.parentGeohashesSet = new Set();
+            this.drawGeoaggregateGeohash(this.geohashList, 'PRECISION_CHANGED_' + Math.round(Math.random() * 100) / 100);
+        } else {
+            const newGeohashList = new Array<string>();
+            this.geohashList.forEach(geohash => {
+                if (this.currentGeohashList.indexOf(geohash) < 0) {
+                    newGeohashList.push(geohash);
+                    this.currentGeohashList.push(geohash);
+                }
+            });
+            if (newGeohashList.length > 0) {
+                this.geojsondata.features = [];
+                this.drawGeoaggregateGeohash(newGeohashList, 'NEW_GEOHASHES_' + Math.round(Math.random() * 100) / 100);
+            } else {
+                this.renderGeohashFeatures();
+                this.redrawTile.next(true);
+            }
+        }
+        this.mapExtend = newMove.extendForLoad;
+    }
     /**
      * adds the second filter to the first filter
      * @param filter filter to enrich
