@@ -25,7 +25,7 @@ import {
     projType, GeohashAggregation, CollaborationEvent
 } from 'arlas-web-core';
 import {
-    Expression, Aggregation,
+    Aggregation, ComputationRequest, ComputationResponse,
     Filter, FeatureCollection, Metric, Feature
 } from 'arlas-api';
 import { OnMoveResult } from '../models/models';
@@ -43,7 +43,6 @@ export class TopoMapContributor extends MapContributor {
 
     private topoAggregation: Array<Aggregation> = this.getConfigValue('topo_aggregationmodels');
     private field_cardinality: string = this.getConfigValue('field_cardinality');
-    private field_geometry: string = this.getConfigValue('field_geometry');
     private size = 1000;
     private METRICS_FLAT_CHAR = '_';
     private AGGREGATION_MODELS = 'aggregationmodels';
@@ -82,13 +81,11 @@ export class TopoMapContributor extends MapContributor {
             // test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
             const countFilter = this.getFilterForCount(pwithin);
             this.addFilter(countFilter, this.additionalFilter);
-            const newCount = this.getTopoCardinality(this.field_cardinality, this.field_geometry, countFilter);
+            const newCount = this.getTopoCardinality(this.field_cardinality, countFilter);
             if (newCount) {
                 return newCount.pipe(flatMap(
-                    feat => {
-                        const flattenedFieldCardinality = this.field_cardinality.replace('.', this.METRICS_FLAT_CHAR);
-                        this.size = feat.map(f => <number>f.properties[flattenedFieldCardinality + '_cardinality_'])
-                            .reduce((a, b) => a + b, 0);
+                    computationResponse => {
+                        this.size = computationResponse.value;
                         if (this.size <= this.nbMaxFeatureForCluster) {
                             // AGG TOPO
                             this.geojsondata.features = [];
@@ -160,13 +157,11 @@ export class TopoMapContributor extends MapContributor {
             // Test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
             const countFilter = this.getFilterForCount(pwithin);
             this.addFilter(countFilter, this.additionalFilter);
-            const count = this.getTopoCardinality(this.field_cardinality, this.field_geometry, countFilter);
+            const count = this.getTopoCardinality(this.field_cardinality, countFilter);
             if (count) {
                 count
-                    .subscribe(feat => {
-                        const flattenedFieldCardinality = this.field_cardinality.replace('.', this.METRICS_FLAT_CHAR);
-                        this.size = feat.map(f => <number>f.properties[flattenedFieldCardinality + '_cardinality_'])
-                            .reduce((a, b) => a + b, 0);
+                    .subscribe(computationResponse => {
+                        this.size = computationResponse.value;
                         if (this.size <= nbMaxFeatures) {
                             this.aggregation = this.topoAggregation;
                             this.fetchType = fetchType.topology;
@@ -235,28 +230,10 @@ export class TopoMapContributor extends MapContributor {
         return features;
     }
 
-    private getTopoCardinality(collectField: string, geometryField: string, filter: Filter): Observable<Feature[]> {
-        const aggregationsMetrics = new Array<Aggregation>();
-        const metrics = new Array<Metric>();
-        const metric: Metric = {
-            collect_field: collectField,
-            collect_fct: Metric.CollectFctEnum.CARDINALITY
-        };
-        metrics.push(metric);
-        const aggregationMetric: Aggregation = {
-            type: Aggregation.TypeEnum.Geohash,
-            field: geometryField,
-            interval: {
-                value: 1
-            },
-            metrics
-        };
-        aggregationsMetrics.push(aggregationMetric);
-        const features: Observable<Feature[]> = this.collaborativeSearcheService
-            .resolveButNotFeatureCollection([projType.geoaggregate, aggregationsMetrics],
-                this.collaborativeSearcheService.collaborations, true, '',
-                filter, this.cacheDuration)
-            .pipe(map(data => data.features));
-        return features;
+    private getTopoCardinality(collectField: string, filter: Filter): Observable<ComputationResponse> {
+        const computationRequest: ComputationRequest = { field: collectField, metric: ComputationRequest.MetricEnum.CARDINALITY};
+        return this.collaborativeSearcheService.resolveButNotComputation([projType.compute, computationRequest],
+            this.collaborativeSearcheService.collaborations, null, filter, false, this.cacheDuration);
+
     }
 }
