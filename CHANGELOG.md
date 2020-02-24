@@ -1,5 +1,13 @@
 # Change Log
 
+## [v12.5.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.1) (2020-02-24)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.0...v12.5.1)
+
+**Fixed bugs:**
+
+- TOPOMAP: Cluster mode is not fetched properly [\#289](https://github.com/gisaia/ARLAS-web-contributors/issues/289)
+
 ## [v12.5.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.0) (2020-02-13)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.4.0...v12.5.0)
