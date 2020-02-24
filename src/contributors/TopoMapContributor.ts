@@ -186,6 +186,7 @@ export class TopoMapContributor extends MapContributor {
                                 this.drawTopoGeoaggregateGeohash(newGeohashList, this.additionalFilter);
                             }
                         } else {
+                            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
                             this.onMoveInClusterMode(precisionChanged, newMove);
                         }
                         this.mapExtend = newMove.extendForLoad;
