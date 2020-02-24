@@ -80,15 +80,10 @@
         "field_cardinality": {
             "description": "Cardinality field for term aggregation",
             "type": "string"
-        },
-        "field_geometry": {
-            "description": "Geometry field for geohash aggregation",
-            "type": "string"
         }
     },
     "required": [
         "topo_aggregationmodels",
-        "field_cardinality",
-        "field_geometry"
+        "field_cardinality"
     ]
 }
