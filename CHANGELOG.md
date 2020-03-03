@@ -1,5 +1,13 @@
 # Change Log
 
+## [v12.5.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.2) (2020-03-03)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.1...v12.5.2)
+
+**Fixed bugs:**
+
+- set the appropriate geohash agg in cluster mode [\#293](https://github.com/gisaia/ARLAS-web-contributors/issues/293)
+
 ## [v12.5.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.1) (2020-02-24)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.0...v12.5.1)
