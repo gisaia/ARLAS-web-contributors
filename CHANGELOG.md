@@ -1,5 +1,14 @@
 # Change Log
 
+## [v12.5.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.3) (2020-03-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.2...v12.5.3)
+
+**Fixed bugs:**
+
+- TOPOMAP: data in cluster mode is not updated after applying a filter [\#296](https://github.com/gisaia/ARLAS-web-contributors/issues/296)
+- TOPOLOGY : data is duplicated when precision change [\#295](https://github.com/gisaia/ARLAS-web-contributors/issues/295)
+
 ## [v12.5.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.2) (2020-03-03)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.1...v12.5.2)
