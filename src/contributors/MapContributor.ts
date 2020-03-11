@@ -492,6 +492,24 @@ export class MapContributor extends Contributor {
         return from([]);
     }
 
+    /**
+     * Clears all variables storing the data
+     */
+    public clearData() {
+        this.geojsondata.features = [];
+        this.maxValueGeoHash = 0;
+    }
+
+    /**
+     * Clears all the variables storing the visited tiles
+     */
+    public clearTiles() {
+        this.currentGeohashList = [];
+        this.currentExtentGeohashSet = new Set();
+        this.geohashesMap = new Map();
+        this.parentGeohashesSet = new Set();
+        this.currentStringedTilesList = [];
+    }
 
     public setDrawings(collaboration: Collaboration): void {
         if (collaboration !== null) {
@@ -585,12 +603,11 @@ export class MapContributor extends Contributor {
 
     public switchLayerCluster(style: Style) {
         if (this.strategyEnum[style.geomStrategy].toString() !== this.geomStrategy.toString()) {
+            this.updateData = true;
             this.geomStrategy = style.geomStrategy;
             if (this.isGeoaggregateCluster) {
-                this.geojsondata.features = [];
-                this.updateData = true;
                 this.fetchType = fetchType.geohash;
-                this.maxValueGeoHash = 0;
+                this.clearData();
                 this.drawGeoaggregateGeohash(this.geohashList, 'SWITCHER');
                 const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
                 this.setDrawings(collaboration);
@@ -759,9 +776,8 @@ export class MapContributor extends Contributor {
                         this.fetchType = fetchType.tile;
                         this.currentGeohashList = [];
                         if (this.isGeoaggregateCluster) {
-                            this.geojsondata.features = [];
-                            this.currentStringedTilesList = [];
-                            this.geohashesMap = new Map();
+                            this.clearData();
+                            this.clearTiles();
                         }
                         const newTilesList = new Array<any>();
                         newMove.tiles.forEach(tile => {
@@ -824,10 +840,10 @@ export class MapContributor extends Contributor {
                 feature.properties['point_count_normalize'] = feature.properties.point_count / this.maxValueGeoHash * 100;
                 if (geohashTile) {
                     if (this.currentExtentGeohashSet.has(geohash.substring(0, geohashTile.length))) {
-                            this.geojsondata.features.push(feature);
+                        this.geojsondata.features.push(feature);
                     }
                 } else {
-                this.geojsondata.features.push(feature);
+                    this.geojsondata.features.push(feature);
                 }
             });
         }
@@ -901,8 +917,8 @@ export class MapContributor extends Contributor {
                 const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
                     [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
                     this.isFlat, null, this.additionalFilter, this.cacheDuration);
-                    tabOfGeohash.push(geoAggregateData);
-                });
+                tabOfGeohash.push(geoAggregateData);
+            });
         }
         return from(tabOfGeohash).pipe(mergeAll());
     }
@@ -1069,7 +1085,7 @@ export class MapContributor extends Contributor {
                 null, filter, this.cacheDuration);
             tabOfTile.push(searchResult);
         });
-        return from(tabOfTile).pipe(mergeAll(), );
+        return from(tabOfTile).pipe(mergeAll());
     }
 
     public computeDataTileSearch(featureCollection: FeatureCollection): Array<any> {
@@ -1245,18 +1261,12 @@ export class MapContributor extends Contributor {
     protected onMoveInClusterMode(precisionChanged: boolean, newMove: OnMoveResult) {
         this.fetchType = fetchType.geohash;
         if (!this.isGeoaggregateCluster) {
-            this.geojsondata.features = [];
-            this.currentGeohashList = [];
-            this.geohashesMap = new Map();
-            this.parentGeohashesSet = new Set();
-            this.maxValueGeoHash = 0;
+            this.clearData();
+            this.clearTiles();
         }
         if (precisionChanged) {
-            this.maxValueGeoHash = 0;
-            this.geojsondata.features = [];
-            this.currentGeohashList = [];
-            this.geohashesMap = new Map();
-            this.parentGeohashesSet = new Set();
+            this.clearData();
+            this.clearTiles();
             this.drawGeoaggregateGeohash(this.geohashList, 'PRECISION_CHANGED_' + Math.round(Math.random() * 100) / 100);
         } else {
             const newGeohashList = new Array<string>();
@@ -1334,7 +1344,7 @@ export class MapContributor extends Contributor {
                     };
                     const t = this.collaborativeSearcheService.resolveButNotAggregation(
                         [projType.aggregate, [termAggregation]], this.collaborativeSearcheService.collaborations,
-                            null, this.additionalFilter);
+                        null, this.additionalFilter);
                     tabOfTermAggregations.push(t);
                 });
                 let i = 0;
@@ -1351,20 +1361,20 @@ export class MapContributor extends Contributor {
                             agg.elements.forEach(e => {
                                 const key = e.key;
                                 const minMax: [number, number] =
-                                [e.metrics.filter(m => m.type === Metric.CollectFctEnum.MIN.toString().toLowerCase())[0].value,
+                                    [e.metrics.filter(m => m.type === Metric.CollectFctEnum.MIN.toString().toLowerCase())[0].value,
                                     e.metrics.filter(m => m.type === Metric.CollectFctEnum.MAX.toString().toLowerCase())[0].value];
-                                    n.minMaxPerKey.set(key, minMax);
+                                n.minMaxPerKey.set(key, minMax);
                             });
                         }
                         this.globalNormalisation.push(n);
-                });
+                    });
             } else {
                 this.redrawTile.next(true);
             }
             if (nbGlobalNormalization > 0) {
                 console.warn(' #### Global normalization without a `per` field is not supported yet. ####');
                 this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).forEach(element => {
-                    console.warn(element.on + ' field global normalization is not supported yet. Please specify a `per` field.' );
+                    console.warn(element.on + ' field global normalization is not supported yet. Please specify a `per` field.');
                 });
             }
         } else {
