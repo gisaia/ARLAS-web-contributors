@@ -29,22 +29,51 @@ import {
 import { Observable, from } from 'rxjs';
 import { map, flatMap } from 'rxjs/operators';
 
-import { Aggregation, AggregationResponse, RangeResponse, RangeRequest, Filter, Expression } from 'arlas-api';
+import { Aggregation, AggregationResponse, RangeResponse, RangeRequest, Filter, Expression, Interval } from 'arlas-api';
 import { getAggregationPrecision } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
 
+export interface LaneStats {
+    min?: number;
+    max?: number;
+    sum?: number;
+    count?: number;
+}
+
+export interface SwimlaneStats {
+    /** stats for each bucket (column) */
+    columnStats: Map<number, LaneStats>;
+    /** stats for all all the swimlane */
+    globalStats: LaneStats;
+    /** number of terms */
+    nbLanes?: number;
+    /** min value of the bucket key */
+    minBorder?: number;
+    /** max value of the bucket key */
+    maxBorder?: number;
+    /** bucket interval */
+    bucketLength?: number;
+}
+
+export interface SwimlaneData {
+    stats: SwimlaneStats;
+    lanes: Map<string, Array<{ key: number, value: number }>>;
+}
 
 
 export class SwimLaneContributor extends Contributor {
     /**
-    * New data need to be draw in the swimlane (could be set to
-    @Input() data of Swimlane Component
-    */
-    public swimData: Map<string, Array<{ key: number, value: number }>> = new Map<string, Array<{ key: number, value: number }>>();
+     * Swimlane data has
+     * - lanes: a map of
+     *      - The keys represent the lanes keywords.
+     *      - The value of a lane is a histogram represented as an array.
+     * - stats: stats summerizing the swimlane data
+     */
+    public swimData: SwimlaneData;
 
     /**
-     * selectedSwimlanes is the list of selected terms in the swimlane.
+     * selectedSwimlanes is the list of selected terms (lanes) in the swimlane.
      */
     public selectedSwimlanes: Set<string>;
 
@@ -127,7 +156,7 @@ export class SwimLaneContributor extends Contributor {
             if (this.nbBuckets) {
                 return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
                 <RangeRequest>{ filter: null, field: this.getXAxisField() }], collaborations, this.identifier
-                , {}, false, this.cacheDuration)
+                    , {}, false, this.cacheDuration)
                     .pipe(
                         map((rangeResponse: RangeResponse) => {
                             const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
@@ -152,30 +181,53 @@ export class SwimLaneContributor extends Contributor {
         }
     }
 
-    public computeData(aggResponse: AggregationResponse): Map<string, Array<{ key: number, value: number }>> {
+    public computeData(aggResponse: AggregationResponse): SwimlaneData {
         const mapResponse = new Map<string, Array<{ key: number, value: number }>>();
+        const responseStats: SwimlaneStats = {
+            columnStats: new Map<number, LaneStats>(),
+            globalStats: {
+                min: Number.MAX_VALUE,
+                max: Number.MIN_VALUE,
+                sum: 0,
+                count: 0
+            },
+            nbLanes: 0
+        };
         if (aggResponse.elements !== undefined) {
             aggResponse.elements.forEach(element => {
                 const key = element.key;
                 const dataTab = new Array<{ key: number, value: number }>();
+                responseStats.nbLanes++;
                 element.elements.forEach(e => {
                     e.elements.forEach(el => {
                         const value = jp.query(el, this.json_path)[0];
                         dataTab.push({ key: el.key, value: value });
+                        this.updateStats(responseStats, +el.key, value);
                     });
                 });
                 mapResponse.set(key, dataTab);
             });
+            const keys = Array.from(responseStats.columnStats.keys()).sort((a, b) => a - b);
+            responseStats.minBorder = keys[0];
+            responseStats.maxBorder = keys[keys.length - 1];
+            if (keys.length > 1) {
+                responseStats.bucketLength = keys[1] - keys[0];
+            }
+            this.fillBlanks(mapResponse, keys);
         }
-        return mapResponse;
+        const swimlaneData: SwimlaneData = {
+            stats: responseStats,
+            lanes: mapResponse
+        };
+        return swimlaneData;
     }
 
-    public setData(data: any): Map<string, Array<{ key: number, value: number }>> {
+    public setData(data: SwimlaneData): SwimlaneData {
         this.swimData = data;
         return this.swimData;
     }
 
-    public setSelection(data: Map<string, Array<{ key: number, value: number }>>, collaboration: Collaboration): any {
+    public setSelection(data: SwimlaneData, collaboration: Collaboration): any {
         if (collaboration) {
             const f = collaboration.filter;
             if (f === null) {
@@ -212,9 +264,9 @@ export class SwimLaneContributor extends Contributor {
         } else {
             if (this.aggregations[0].type !== Aggregation.TypeEnum.Term ||
                 (this.aggregations[1].type !== Aggregation.TypeEnum.Datehistogram &&
-                     this.aggregations[1].type !== Aggregation.TypeEnum.Histogram) ) {
-                        console.error(this.INVALID_AGGREGATIONS_MESSAGE);
-                        throw new Error(this.INVALID_AGGREGATIONS_MESSAGE);
+                    this.aggregations[1].type !== Aggregation.TypeEnum.Histogram)) {
+                console.error(this.INVALID_AGGREGATIONS_MESSAGE);
+                throw new Error(this.INVALID_AGGREGATIONS_MESSAGE);
             }
         }
     }
@@ -238,8 +290,60 @@ export class SwimLaneContributor extends Contributor {
 
     private getXAxisField(): string {
         if (this.aggregations && this.aggregations.length > 1) {
-             return this.aggregations[1].field;
+            return this.aggregations[1].field;
         }
         return '';
+    }
+
+    private fillBlanks(mapResponse: Map<string, Array<{key: number, value: number}>>, keys: Array<number>): void {
+        mapResponse.forEach((v, k) => {
+            const minV = v[0].key;
+            const maxV = v[v.length - 1].key;
+            if (minV > keys[0]) {
+                const upstreamBlanks = keys.filter(n => n < minV).reverse();
+                upstreamBlanks.forEach(c => {
+                    v.unshift({key: c, value: 0});
+                });
+            }
+            if (maxV < keys[keys.length - 1]) {
+                const downstramBlanks = keys.filter(n => n > maxV);
+                downstramBlanks.forEach(c => {
+                    v.push({key: c, value: 0});
+                });
+            }
+        });
+    }
+
+    private updateStats(stat: SwimlaneStats, key: number, value: number): void {
+        const columnStat = stat.columnStats.get(key);
+        if (!columnStat) {
+            const stats = {
+                max: value,
+                min: value,
+                sum: value
+            };
+            stat.columnStats.set(key, stats);
+        } else {
+            if (value !== undefined) {
+                if (value < columnStat.min) {
+                    columnStat.min = value;
+                }
+                if (value > columnStat.max) {
+                    columnStat.max = value;
+                }
+                columnStat.sum += value;
+            }
+            stat.columnStats.set(key, columnStat);
+        }
+        if (value !== undefined) {
+            if (value < stat.globalStats.min) {
+                stat.globalStats.min = value;
+            }
+            if (value > stat.globalStats.max) {
+                stat.globalStats.max = value;
+            }
+            stat.globalStats.sum += value;
+            stat.globalStats.count++;
+        }
     }
 }
