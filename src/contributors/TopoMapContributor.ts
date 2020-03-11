@@ -44,8 +44,8 @@ export class TopoMapContributor extends MapContributor {
     private topoAggregation: Array<Aggregation> = this.getConfigValue('topo_aggregationmodels');
     private field_cardinality: string = this.getConfigValue('field_cardinality');
     private size = 1000;
-    private METRICS_FLAT_CHAR = '_';
     private AGGREGATION_MODELS = 'aggregationmodels';
+    private geoIds = new Set<string>();
 
     /**
     * Build a new contributor.
@@ -69,12 +69,11 @@ export class TopoMapContributor extends MapContributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
-        this.currentGeohashList = [];
-        this.maxValueGeoHash = 0;
+        this.clearData();
+        this.clearTiles();
         if (this.zoom < this.zoomLevelForTestCount) {
             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
             this.fetchType = fetchType.geohash;
-            this.geojsondata.features = [];
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
             const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
@@ -88,13 +87,11 @@ export class TopoMapContributor extends MapContributor {
                         this.size = computationResponse.value;
                         if (this.size <= this.nbMaxFeatureForCluster) {
                             // AGG TOPO
-                            this.geojsondata.features = [];
                             this.aggregation = this.topoAggregation;
                             this.fetchType = fetchType.topology;
                             return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, this.additionalFilter);
                         } else {
                             // Classique AGG geohash
-                            this.geojsondata.features = [];
                             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
                             this.fetchType = fetchType.geohash;
                             return this.fetchDataGeohashGeoaggregate(this.geohashList);
@@ -104,33 +101,43 @@ export class TopoMapContributor extends MapContributor {
         }
     }
     public computeData(data: any): any[] {
-        return this.computeTopoGeoaggregateData(data);
+        if (this.fetchType === fetchType.topology) {
+            return this.computeTopoGeoaggregateData(data);
+        } else {
+            return this.computeDataGeohashGeoaggregate(data);
+        }
     }
 
     public setData(data: any) {
-        return this.setTopoGeoaggregateData(data);
+        if (this.fetchType === fetchType.topology) {
+            return this.setTopoGeoaggregateData(data);
+        } else {
+            return this.setDataGeohashGeoaggregate(data);
+        }
     }
 
     public fetchTopoDataGeohashGeoaggregate(geohashList: Array<string>, filter: Filter): Observable<FeatureCollection> {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
-        const aggregations = this.aggregation;
-        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
-        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.size = this.nbMaxFeatureForCluster);
-        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetch_geometry.strategy = this.geomStrategy);
-        const geohashSet = new Set(geohashList);
-        geohashSet.forEach(geohash => {
-            if (this.currentGeohashList.indexOf(geohash) < 0) {
-                this.currentGeohashList.push(geohash);
-            }
-            const geohahsAggregation: GeohashAggregation = {
-                geohash: geohash,
-                aggregations: aggregations
-            };
-            const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
-                this.isFlat, null, filter, this.cacheDuration);
-            tabOfGeohash.push(geoAggregateData);
-        });
+        if (this.updateData) {
+            const aggregations = this.aggregation;
+            aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
+            aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.size = this.nbMaxFeatureForCluster);
+            aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetch_geometry.strategy = this.geomStrategy);
+            const geohashSet = new Set(geohashList);
+            geohashSet.forEach(geohash => {
+                if (this.currentGeohashList.indexOf(geohash) < 0) {
+                    this.currentGeohashList.push(geohash);
+                }
+                const geohahsAggregation: GeohashAggregation = {
+                    geohash: geohash,
+                    aggregations: aggregations
+                };
+                const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
+                    [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
+                    this.isFlat, null, filter, this.cacheDuration);
+                tabOfGeohash.push(geoAggregateData);
+            });
+        }
         return from(tabOfGeohash).pipe(mergeAll());
     }
 
@@ -152,6 +159,10 @@ export class TopoMapContributor extends MapContributor {
             this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
             this.onMoveInClusterMode(precisionChanged, newMove);
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
+            if (precisionChanged) {
+                this.clearData();
+                this.clearTiles();
+            }
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
             // Test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
@@ -166,8 +177,8 @@ export class TopoMapContributor extends MapContributor {
                             this.aggregation = this.topoAggregation;
                             this.fetchType = fetchType.topology;
                             if (this.isGeoaggregateCluster) {
-                                this.currentGeohashList = [];
-                                this.geojsondata.features = [];
+                                this.clearData();
+                                this.clearTiles();
                             }
                             const newGeohashList = new Array<string>();
                             this.geohashList.forEach(geohash => {
@@ -193,6 +204,25 @@ export class TopoMapContributor extends MapContributor {
                     });
             }
         }
+    }
+
+    /**
+     * Clears all variables storing the data
+     */
+    public clearData() {
+        this.geojsondata.features = [];
+        this.geoIds = new Set();
+        this.maxValueGeoHash = 0;
+    }
+
+    /**
+     * Clears all the variables storing the visited tiles
+     */
+    public clearTiles() {
+        this.currentGeohashList = [];
+        this.currentExtentGeohashSet = new Set();
+        this.geohashesMap = new Map();
+        this.parentGeohashesSet = new Set();
     }
 
     public drawTopoGeoaggregateGeohash(geohashList: Array<string>, filter: Filter) {
@@ -226,13 +256,18 @@ export class TopoMapContributor extends MapContributor {
         return featuresResults;
     }
     public setTopoGeoaggregateData(features: Array<any>): any {
-        features.forEach(f => this.geojsondata.features.push(f));
+        features.forEach(f => {
+            if (!this.geoIds.has(f.properties.key)) {
+                this.geojsondata.features.push(f);
+                this.geoIds.add(f.properties.key);
+            }
+        });
         this.isGeoaggregateCluster = false;
         return features;
     }
 
     private getTopoCardinality(collectField: string, filter: Filter): Observable<ComputationResponse> {
-        const computationRequest: ComputationRequest = { field: collectField, metric: ComputationRequest.MetricEnum.CARDINALITY};
+        const computationRequest: ComputationRequest = { field: collectField, metric: ComputationRequest.MetricEnum.CARDINALITY };
         return this.collaborativeSearcheService.resolveButNotComputation([projType.compute, computationRequest],
             this.collaborativeSearcheService.collaborations, null, filter, false, this.cacheDuration);
 
