@@ -1,5 +1,13 @@
 # Change Log
 
+## [v12.6.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.6.0) (2020-03-12)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.3...v12.6.0)
+
+**Breaking changes:**
+
+- Swimlane: Refactor data structure fetched for swimlanes  [\#299](https://github.com/gisaia/ARLAS-web-contributors/issues/299)
+
 ## [v12.5.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.3) (2020-03-11)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.2...v12.5.3)
