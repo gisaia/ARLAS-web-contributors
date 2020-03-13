@@ -76,9 +76,10 @@ export class TopoMapContributor extends MapContributor {
             this.fetchType = fetchType.geohash;
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
-            const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
+            const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
+            const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ',' + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+            const countFilter = this.getFilterForCount(rawExtent, wrapExtent);
             // test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
-            const countFilter = this.getFilterForCount(pwithin);
             this.addFilter(countFilter, this.additionalFilter);
             const newCount = this.getTopoCardinality(this.field_cardinality, countFilter);
             if (newCount) {
@@ -163,10 +164,12 @@ export class TopoMapContributor extends MapContributor {
                 this.clearData();
                 this.clearTiles();
             }
-            const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
-                + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
+            const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
+            + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
+            const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
+            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
+            const countFilter = this.getFilterForCount(rawExtent, wrapExtent);
             // Test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
-            const countFilter = this.getFilterForCount(pwithin);
             this.addFilter(countFilter, this.additionalFilter);
             const count = this.getTopoCardinality(this.field_cardinality, countFilter);
             if (count) {
