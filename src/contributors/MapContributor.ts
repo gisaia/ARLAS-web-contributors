@@ -121,6 +121,7 @@ export class MapContributor extends Contributor {
     public currentExtentGeohashSet: Set<string> = new Set<string>();
     public currentStringedTilesList: Array<string> = new Array<string>();
     public mapExtend = [90, -180, -90, 180];
+    public mapRawExtent = [90, -180, -90, 180];
     public zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
     public zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
     public nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
@@ -305,8 +306,9 @@ export class MapContributor extends Contributor {
             this.parentGeohashesSet = new Set();
             return this.fetchDataGeohashGeoaggregate(this.geohashList);
         } else if (this.zoom >= this.zoomLevelForTestCount) {
-            const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
-            const countFilter = this.getFilterForCount(pwithin);
+            const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
+            const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ',' + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+            const countFilter = this.getFilterForCount(rawExtent, wrapExtent);
             this.addFilter(countFilter, this.additionalFilter);
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
@@ -737,6 +739,7 @@ export class MapContributor extends Contributor {
 
     public onMoveSimpleMode(newMove: OnMoveResult) {
         this.mapExtend = newMove.extendForLoad;
+        this.mapRawExtent = newMove.rawExtendForLoad;
         this.drawGeoSearch();
     }
 
@@ -759,9 +762,11 @@ export class MapContributor extends Contributor {
             this.fetchType = fetchType.geohash;
             this.onMoveInClusterMode(precisionChanged, newMove);
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
-            const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
-                + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-            const countFilter = this.getFilterForCount(pwithin);
+            const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
+            + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
+            const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
+            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
+            const countFilter = this.getFilterForCount(rawExtent, wrapExtent);
             this.addFilter(countFilter, this.additionalFilter);
             const count: Observable<Hits> = this.collaborativeSearcheService
                 .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
@@ -800,6 +805,7 @@ export class MapContributor extends Contributor {
                         this.onMoveInClusterMode(precisionChanged, newMove);
                     }
                     this.mapExtend = newMove.extendForLoad;
+                    this.mapRawExtent = newMove.rawExtendForLoad;
                 });
             } else {
                 this.countExtendBus.next({
@@ -1007,9 +1013,9 @@ export class MapContributor extends Contributor {
      */
     public fetchDataGeoSearch(includeFeaturesFields: Set<string>, sort: string,
         afterParam?: string, whichPage?: PageEnum, fromParam?): Observable<FeatureCollection> {
-        const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2]
-            + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const filter: Filter = this.getFilterForCount(pwithin);
+        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
+        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ',' + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const filter: Filter = this.getFilterForCount(rawExtent, wrapExtent);
         if (this.expressionFilter !== undefined) {
             filter.f.push([this.expressionFilter]);
         }
@@ -1142,18 +1148,32 @@ export class MapContributor extends Contributor {
         return nbMaxFeatureForCluster;
     }
 
-    public getFilterForCount(extent: string): Filter {
+    public getFilterForCount(rawExtend: string, wrapExtend: string): Filter {
         // west, south, east, north
-        const extentTab = extent.trim().split(',');
-        const west = extentTab[0];
-        const east = extentTab[2];
-        let finalExtend = [extent.trim()];
-        if (parseFloat(west) > parseFloat(east)) {
-            finalExtend = [];
-            const firstExtent = extentTab[0] + ',' + extentTab[1] + ',' + '180' + ',' + extentTab[3];
-            const secondExtent = '-180' + ',' + extentTab[1] + ',' + extentTab[2] + ',' + extentTab[3];
-            finalExtend.push(firstExtent.trim());
-            finalExtend.push(secondExtent.trim());
+        const finalExtend = [];
+        const wrapExtentTab = wrapExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
+        const rawExtentTab = rawExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
+        const rawExtentForTest = rawExtentTab.join(',');
+        const wrapExtentForTest = wrapExtentTab.join(',');
+        if (rawExtentTab[0] < -180 && rawExtentTab[2] > 180) {
+            finalExtend.push('-180' + ',' + '-90' + ',' + '180' + ',' + '90');
+        } else if (rawExtentForTest === wrapExtentForTest) {
+            finalExtend.push(wrapExtend.trim());
+        } else {
+            let west = wrapExtentTab[0];
+            let east = wrapExtentTab[2];
+            if (west < 0 && east < 0) {
+                west = west * -1;
+                east = east * -1;
+            }
+            if (west > east) {
+                const firstExtent = wrapExtentTab[0] + ',' + wrapExtentTab[1] + ',' + '180' + ',' + wrapExtentTab[3];
+                const secondExtent = '-180' + ',' + wrapExtentTab[1] + ',' + wrapExtentTab[2] + ',' + wrapExtentTab[3];
+                finalExtend.push(firstExtent.trim());
+                finalExtend.push(secondExtent.trim());
+            } else {
+                finalExtend.push(wrapExtend.trim());
+            }
         }
         let filter: Filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
@@ -1285,6 +1305,7 @@ export class MapContributor extends Contributor {
             }
         }
         this.mapExtend = newMove.extendForLoad;
+        this.mapRawExtent = newMove.rawExtendForLoad;
     }
     /**
      * adds the second filter to the first filter
