@@ -17,8 +17,8 @@
  * under the License.
  */
 
-import { Observable, Subject, generate, from, concat, of } from 'rxjs';
-import { map, finalize, flatMap, mergeAll, concatAll, debounceTime, retry, catchError } from 'rxjs/operators';
+import { Observable, Subject, generate, from, concat, of, interval } from 'rxjs';
+import { map, finalize, flatMap, mergeAll, concatAll, debounceTime, retry, catchError, min } from 'rxjs/operators';
 
 import {
     CollaborativesearchService, Contributor,
@@ -30,7 +30,8 @@ import {
     Aggregation, Projection,
     Filter, FeatureCollection, Feature, Metric, AggregationResponse
 } from 'arlas-api';
-import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization, NormalizationScope } from '../models/models';
+import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization, NormalizationScope,
+     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity } from '../models/models';
 import { appendIdToSort, removePageFromIndex, ASC } from '../utils/utils';
 import { bboxes } from 'ngeohash';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
@@ -66,7 +67,7 @@ export interface Style {
     isDefault?: boolean;
 }
 
-export enum dataMode {
+export enum DataMode {
     simple,
     dynamic
 }
@@ -76,6 +77,52 @@ export enum dataMode {
  * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
  */
 export class MapContributor extends Contributor {
+    
+    /**
+     * By default the contributor computes the data in a dynamic way (`Dynamic mode`): it switches between
+     * `clusters` and `features` mode according to the zoom level and the number of features.
+     * In the `Simple mode` the contributor returns just the features (with a given sort and size and an optional filter)
+     */
+    public dataMode: DataMode;
+    public geoQueryOperation: Expression.OpEnum;
+    public geoQueryField: string;
+    /** Number of features fetched in a geosearch request. It's used in `Simple mode` only. Default to 100.*/
+    public searchSize: number;
+    /** comma seperated field names that sort the features. Order matters. It's used in `Simple mode` only.*/
+    public searchSort: string;
+    public drawPrecision: number;
+    public isFlat: boolean;
+
+    private CLUSTER_SOURCE = 'cluster';
+    private TOPOLOGY_SOURCE = 'feature-metric';
+    private FEATURE_SOURCE = 'feature';
+
+    private LAYERS_SOURCES_KEY = 'layers_sources';
+    private DATA_MODE_KEY = 'data_mode';
+    private GEO_QUERY_OP_KEY = 'geo_query_op';
+    private GEO_QUERY_FIELD_KEY = 'geo_query_field';
+    private SEARCH_SIZE_KEY = 'search_size';
+    private SEARCH_SORT_KEY = 'search_sort';
+    private DRAW_PRECISION_KEY = 'draw_precision';
+    private IS_FLAT_KEY = 'is_flat';
+
+    private DEFAULT_SEARCH_SIZE = 100;
+    private DEFAULT_SEARCH_SORT = '';
+    private DEFAULT_DRAW_PRECISION = 6;
+    private DEFAULT_IS_FLAT = true;
+
+    private clusterLayersIndex: Map<string, LayerClusterSource>;
+    private topologyLayersIndex: Map<string, LayerTopologySource>;
+    private featureLayersIndex: Map<string, LayerFeatureSource>;
+
+    private minZoomIndex: Map<number, Set<string>> = new Map();
+    private reversedMaxZoomIndex: Map<string, number> = new Map();
+    private reversedMaxFeatureIndex: Map<string, number> = new Map();
+    private reversedMinFeatureIndex: Map<string, number> = new Map();
+
+
+
+
     /**
     * Data to display geoaggregate data or search Data, use in MapComponent @Input
     */
@@ -127,11 +174,7 @@ export class MapContributor extends Contributor {
     public nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
     public idFieldName: string = this.getConfigValue('idFieldName');
     public geomStrategy = this.getConfigValue('geomStrategy');
-    public isFlat = this.getConfigValue('isFlat') !== undefined ? this.getConfigValue('isFlat') : true;
-    public drawPrecision = this.getConfigValue('drawPrecision') !== undefined ? this.getConfigValue('drawPrecision') : 6;
 
-    public geoQueryOperation: Expression.OpEnum;
-    public geoQueryField: string;
     public returned_geometries = '';
 
     public geoPointFields = new Array<string>();
@@ -148,24 +191,10 @@ export class MapContributor extends Contributor {
     private fetchAggregationPipe = new Array<string>();
 
     /**
-     * By default the contributor computes the data in a dynamic way (`Dynamic mode`): it switches between
-     * `clusters` and `features` mode according to the zoom level and the number of features.
-     * In the `Simple mode` the contributor returns just the features (with a given sort and size and an optional filter)
-     */
-    public dataMode: dataMode;
-    /**
      * A filter that is taken into account when fetching features and that is not included in the global collaboration.
      * It's used in `Simple mode` only.
      */
     public expressionFilter: Expression;
-    /**
-     * Number of features fetched in a geosearch request. It's used in `Simple mode` only. Default to 100.
-     */
-    public searchSize = this.getConfigValue('searchSize') !== undefined ? this.getConfigValue('searchSize') : 100;
-    /**
-     * comma seperated field names that sort the features. Order matters. It's used in `Simple mode` only.
-    */
-    public searchSort = this.getConfigValue('searchSort') !== undefined ? this.getConfigValue('searchSort') : '';
     /**
      * ARLAS Server Aggregation used to aggregate features and display them in `clusters` mode. Defined in configuration
      */
@@ -191,83 +220,52 @@ export class MapContributor extends Contributor {
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param onRemoveBboxBus  @Output of Angular MapComponent, send true when the rectangle of selection is removed.
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(
-        public identifier,
-        public collaborativeSearcheService: CollaborativesearchService,
-        public configService: ConfigService
-    ) {
+    constructor(public identifier, public collaborativeSearcheService: CollaborativesearchService, public configService: ConfigService) {
         super(identifier, configService, collaborativeSearcheService);
-        if (this.getConfigValue('dataMode') !== undefined
-            && dataMode[this.getConfigValue('dataMode')].toString() === dataMode.simple.toString()) {
-            this.dataMode = dataMode.simple;
-            this.isGeoaggregateCluster = false;
-        } else {
-            this.dataMode = dataMode.dynamic;
-            this.isGeoaggregateCluster = true;
-        }
 
-        if (this.getConfigValue('fetchType') !== undefined
-            && fetchType[this.getConfigValue('fetchType')].toString() === fetchType.tile.toString()) {
-            this.fetchType = fetchType.tile;
-            this.isGeoaggregateCluster = false;
-        } else {
-            this.fetchType = fetchType.geohash;
-            this.isGeoaggregateCluster = true;
-        }
+        const layersSourcesConfig = this.getConfigValue(this.LAYERS_SOURCES_KEY);
+        const dataModeConfig = this.getConfigValue(this.DATA_MODE_KEY);
+        const geoQueryOpConfig = this.getConfigValue(this.GEO_QUERY_OP_KEY);
+        const geoQueryFieldConfig = this.getConfigValue(this.GEO_QUERY_FIELD_KEY);
+        const searchSizeConfig = this.getConfigValue(this.SEARCH_SIZE_KEY);
+        const searchSortConfig = this.getConfigValue(this.SEARCH_SORT_KEY);
+        const drawPrecisionConfig = this.getConfigValue(this.DRAW_PRECISION_KEY);
+        const isFlatConfig = this.getConfigValue(this.IS_FLAT_KEY);
 
-        if (this.getConfigValue('geoQueryOp') !== undefined) {
-            if (Expression.OpEnum[this.getConfigValue('geoQueryOp')].toString() === Expression.OpEnum.Within.toString()) {
+        if (layersSourcesConfig) {
+            this.clusterLayersIndex = this.getClusterLayersIndex(layersSourcesConfig);
+            this.topologyLayersIndex = this.getTopologyLayersIndex(layersSourcesConfig);
+            this.featureLayersIndex = this.getFeatureLayersIndex(layersSourcesConfig);
+        }
+        if (dataModeConfig !== undefined && DataMode[dataModeConfig].toString() === DataMode.simple.toString()) {
+            this.dataMode = DataMode.simple;
+        } else {
+            this.dataMode = DataMode.dynamic;
+        }
+        if (geoQueryOpConfig !== undefined) {
+            if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Within.toString()) {
                 this.geoQueryOperation = Expression.OpEnum.Within;
-            } else if (Expression.OpEnum[this.getConfigValue('geoQueryOp')].toString() === Expression.OpEnum.Notwithin.toString()) {
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notwithin.toString()) {
                 this.geoQueryOperation = Expression.OpEnum.Notwithin;
-            } else if (Expression.OpEnum[this.getConfigValue('geoQueryOp')].toString() === Expression.OpEnum.Intersects.toString()) {
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Intersects.toString()) {
                 this.geoQueryOperation = Expression.OpEnum.Intersects;
-            } else if (Expression.OpEnum[this.getConfigValue('geoQueryOp')].toString() === Expression.OpEnum.Notwithin.toString()) {
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notwithin.toString()) {
                 this.geoQueryOperation = Expression.OpEnum.Notwithin;
             }
         } else {
             this.geoQueryOperation = Expression.OpEnum.Within;
         }
-        this.collaborativeSearcheService.describe(collaborativeSearcheService.collection)
-            .subscribe(collection => {
-                const fields = collection.properties;
-                Object.keys(fields).forEach(fieldName => {
-                    this.getFieldProperties(fields, fieldName);
-                });
-                this.collectionParams.add(collection.params.centroid_path);
-                this.collectionParams.add(collection.params.geometry_path);
-                this.collectionParams.add(collection.params.id_path);
-                this.collectionParams.add(collection.params.timestamp_path);
-                const geoQueryFieldConf = this.getConfigValue('geoQueryField');
-                this.geoQueryField = geoQueryFieldConf !== undefined ? geoQueryFieldConf : collection.params.centroid_path;
-                this.defaultCentroidField = collection.params.centroid_path;
-                this.returned_geometries = collection.params.geometry_path;
-                if (this.aggregation !== undefined) {
-                    this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.precision = a.interval.value);
-                    this.aggregation.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => this.aggregationField = a.field);
-                } else {
-                    this.aggregationField = collection.params.centroid_path;
-                }
-            });
-
-        if (this.includeFeaturesFields) {
-            this.includeFeaturesFieldsSet = new Set(this.includeFeaturesFields);
-            const allIncludedFeaturesList = [];
-            allIncludedFeaturesList.push(this.includeFeaturesFields);
-            if (this.normalizationFields) {
-                allIncludedFeaturesList.push(this.normalizationFields.filter(f => f.on).map(f => f.on));
-                allIncludedFeaturesList.push(this.normalizationFields.filter(f => f.per).map(f => f.per));
-            }
-            if (this.colorGenerationFields) {
-                allIncludedFeaturesList.push(this.colorGenerationFields);
-            }
-            this.allIncludedFeatures = new Set(allIncludedFeaturesList);
-        }
+        // TODO check if we should do a describe on the collection to get the geometry_path
+        this.geoQueryField = geoQueryFieldConfig;
+        this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
+        this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
+        this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
+        this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
     }
+
     public static getJsonSchema(): Object {
         return jsonSchema;
     }
@@ -281,10 +279,10 @@ export class MapContributor extends Contributor {
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<any> {
         switch (this.dataMode) {
-            case dataMode.simple: {
+            case DataMode.simple: {
                 return this.fetchDataSimpleMode(collaborationEvent);
             }
-            case dataMode.dynamic: {
+            case DataMode.dynamic: {
                 return this.fetchDataDynamicMode(collaborationEvent);
             }
         }
@@ -726,11 +724,11 @@ export class MapContributor extends Contributor {
 
     public onMove(newMove: OnMoveResult) {
         switch (this.dataMode) {
-            case dataMode.simple: {
+            case DataMode.simple: {
                 this.onMoveSimpleMode(newMove);
                 break;
             }
-            case dataMode.dynamic: {
+            case DataMode.dynamic: {
                 this.onMoveDynamicMode(newMove);
                 break;
             }
@@ -744,33 +742,70 @@ export class MapContributor extends Contributor {
     }
 
     /**
-    * Function called on onMove event output component
+    * Function called on onMove event
     */
     public onMoveDynamicMode(newMove: OnMoveResult) {
         this.tiles = newMove.tiles;
         this.geohashList = newMove.geohashForLoad;
         this.zoom = newMove.zoom;
         this.currentExtentGeohashSet = new Set(newMove.geohashForLoad);
-        const nbMaxFeatureForCluster = this.getNbMaxFeatureFromZoom(newMove.zoom);
-        const precision = this.getPrecisionFromZoom(newMove.zoom);
-        let precisionChanged = false;
-        if (precision !== this.precision) {
-            precisionChanged = true;
-            this.precision = precision;
+        const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ',' + newMove.extendForLoad[3] + ','
+            + newMove.extendForLoad[0];
+        const countFilter = this.getFilterForCount(pwithin);
+        this.addFilter(countFilter, this.additionalFilter);
+        const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
+            this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
+        if (count) {
+            count.subscribe(countResponse => {
+                const nbFeatures = countResponse.totalnb;
+                const displayableSources = this.getDisplayableSources(this.zoom, nbFeatures);
+                const dClusterSources = displayableSources[0];
+                const dTopologySources = displayableSources[1];
+                const dFeatureSources = displayableSources[2];
+                this.prepareTopologyAggregations(dTopologySources);
+                this.prepareFeaturesReturnedGeomtries(dFeatureSources);
+                this.drawGeoaggregateGeohash(this.geohashList, 'PRECISION_CHANGED_' + Math.round(Math.random() * 100) / 100);
+                this.drawClustersSources(this.geohashList, this.prepareClusterAggregations(dClusterSources, this.zoom));
+                if (countResponse.totalnb <= nbMaxFeatureForCluster) {
+                    this.fetchType = fetchType.tile;
+                    this.currentGeohashList = [];
+                    if (this.isGeoaggregateCluster) {
+                        this.clearData();
+                        this.clearTiles();
+                    }
+                    const newTilesList = new Array<any>();
+                    newMove.tiles.forEach(tile => {
+                        if (this.currentStringedTilesList.indexOf(tileToString(tile)) < 0) {
+                            newTilesList.push(tile);
+                            this.currentStringedTilesList.push(tileToString(tile));
+                        }
+                    });
+
+                    // if new extend is not totaly include in old extend
+                    if (newMove.extendForLoad[0] > this.mapExtend[0]
+                        || newMove.extendForLoad[2] < this.mapExtend[2]
+                        || newMove.extendForLoad[1] < this.mapExtend[1]
+                        || newMove.extendForLoad[3] > this.mapExtend[3]
+                        || this.isGeoaggregateCluster
+                    ) {
+                        this.drawSearchTiles(newTilesList);
+                    }
+                } else {
+                    this.onMoveInClusterMode(precisionChanged, newMove);
+                }
+                this.mapExtend = newMove.extendForLoad;
+            });
+        } else {
+            this.countExtendBus.next({
+                count: 0,
+                threshold: nbMaxFeatureForCluster
+            });
         }
         if (newMove.zoom < this.zoomLevelForTestCount) {
             this.fetchType = fetchType.geohash;
             this.onMoveInClusterMode(precisionChanged, newMove);
         } else if (newMove.zoom >= this.zoomLevelForTestCount) {
-            const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
-            + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-            const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
-            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
-            const countFilter = this.getFilterForCount(rawExtent, wrapExtent);
-            this.addFilter(countFilter, this.additionalFilter);
-            const count: Observable<Hits> = this.collaborativeSearcheService
-                .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-                    this.identifier, countFilter, false, this.cacheDuration);
+   
             if (count) {
                 count.subscribe(value => {
                     this.countExtendBus.next({
@@ -929,6 +964,59 @@ export class MapContributor extends Contributor {
         return from(tabOfGeohash).pipe(mergeAll());
     }
 
+
+    public fetchClusterSource(geohashList: Array<string>, aggregation: Aggregation, callOrigin?: string): Observable<FeatureCollection> {
+        const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
+        if (this.updateData) {
+            const geohashSet: Set<string> = new Set(geohashList);
+            geohashSet.forEach(geohash => {
+                if (this.currentGeohashList.indexOf(geohash) < 0) {
+                    this.currentGeohashList.push(geohash);
+                }
+                const geohahsAggregation: GeohashAggregation = {
+                    geohash: geohash,
+                    aggregations: [aggregation]
+                };
+                const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
+                    [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
+                    this.isFlat, null, this.additionalFilter, this.cacheDuration);
+                tabOfGeohash.push(geoAggregateData);
+            });
+        }
+        return from(tabOfGeohash).pipe(mergeAll());
+    }
+
+    public drawClustersSources(geohashList: Array<string>, aggregations: Array<Aggregation>, callOrigin?: string) {
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
+        aggregations.forEach(agg => {
+            this.fetchClusterSource(geohashList, agg);
+        });
+        this.fetchDataGeohashGeoaggregate(geohashList, callOrigin)
+            .pipe(
+                map(f => {
+                    if (callOrigin && this.fetchAggregationPipe.length > 0) {
+                        if (callOrigin !== this.fetchAggregationPipe[this.fetchAggregationPipe.length - 1]) {
+                            this.maxValueGeoHash = 0;
+                            this.geohashesMap = new Map();
+                            this.geojsondata.features = [];
+                            throw new Error('STOP Fetch consumption');
+                        }
+                    }
+                    return f;
+                }),
+                map(f => this.computeDataGeohashGeoaggregate(f)),
+                map(f => this.setDataGeohashGeoaggregate(f)),
+                retry(0),
+                catchError(() => of('Consuming fetch results is stopped')),
+                finalize(() => {
+                    this.fetchAggregationPipe = [];
+                    this.renderGeohashFeatures();
+                    this.redrawTile.next(true);
+                    this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                })
+            )
+            .subscribe(data => data);
+    }
     /**
      *
      * @param featureCollection featureCollection returned by a geoaggregation query
@@ -1333,6 +1421,187 @@ export class MapContributor extends Contributor {
         }
     }
 
+
+    private prepareClusterAggregations(clusterSources: Array<string>, zoom: number): Array<Aggregation> {
+        const aggregations = [];
+        // TODO optimize aggregations
+        // TODO use aggregated_geometries
+        clusterSources.forEach(cs => {
+            const ls = this.clusterLayersIndex.get(cs);
+            const aggregation: Aggregation = {
+                type: Aggregation.TypeEnum.Geohash,
+                field: ls.aggGeoField,
+                metrics: ls.metrics.map(m => {
+                    return {
+                        collect_field: m.field,
+                        coleect_fct: m.metric
+                    };
+                }),
+                interval: {
+                    value: this.getPrecision(ls.granularity, zoom)
+                },
+            };
+            aggregations.push(aggregation);
+        });
+        return aggregations;
+    }
+
+    private prepareTopologyAggregations(topologySources: Array<string>): Array<Aggregation> {
+        const aggregations = [];
+        // TODO optimize aggregations
+        // TODO raw_geometries
+        topologySources.forEach(cs => {
+            const ls = this.topologyLayersIndex.get(cs);
+            const aggregation: Aggregation = {
+                type: Aggregation.TypeEnum.Geohash,
+                field: ls.geometryId,
+                metrics: ls.metrics.map(m => {
+                    return {
+                        collect_field: m.field,
+                        coleect_fct: m.metric
+                    };
+                }),
+                size: '' + ls.maxfeatures
+            };
+            aggregations.push(aggregation);
+        });
+        return aggregations;
+    }
+
+    private prepareFeaturesReturnedGeomtries(featureSources: Array<string>): string {
+        const geometries = new Set();
+        featureSources.forEach(cs => {
+            const ls = this.featureLayersIndex.get(cs);
+            geometries.add(ls.returnedGeometry);
+        });
+        return Array.from(geometries).join(',');
+    }
+
+    // TODO
+    private getPrecision(g: Granularity, zoom: number): number {
+        return 1;
+    }
+    /**
+     * This method indexes all the minimum zooms configured. For each minzoom value, we set the list of layers that have it.
+     * This index will be used to get which layers to display
+     * @param minZoom
+     * @param source
+     */
+    private indexMinZoom(minZoom: number, source: string): void {
+        let sources = this.minZoomIndex.get(minZoom);
+        if (!sources) {
+            sources = new Set();
+        }
+        sources.add(source);
+        this.minZoomIndex.set(minZoom, sources);
+    }
+
+    private indexMaxZoom(maxZoom: number, source: string): void {
+        this.reversedMaxZoomIndex.set(source, maxZoom);
+    }
+
+
+    private indexMinFeature(minfeatures: number, source: string): void {
+        // TODO
+    }
+
+    private indexMaxFeature(maxfeatures: number, source: string): void {
+        // TODO
+    }
+
+    /**
+     * Parses the layers_sources config and returns the clusters layers index
+     * @param layersSourcesConfig layers_sources configuration object
+     */
+    private getClusterLayersIndex(layersSourcesConfig): Map<string, LayerClusterSource> {
+        const clusterLayers = new Map<string, LayerClusterSource>();
+        layersSourcesConfig.filter(ls => ls.source.startsWith(this.CLUSTER_SOURCE)).forEach(ls => {
+            const clusterLayer = new LayerClusterSource();
+            clusterLayer.id = ls.id;
+            clusterLayer.source = ls.source;
+            clusterLayer.maxzoom = ls.maxzoom;
+            clusterLayer.minzoom = ls.minzoom;
+            clusterLayer.minfeatures = ls.minfeatures;
+            clusterLayer.aggGeoField = ls.agg_geo_field;
+            clusterLayer.granularity = ls.granularity;
+            clusterLayer.rawGeometry = ls.raw_geometry;
+            clusterLayer.aggregatedGeometry = ls.aggregated_geometry;
+            clusterLayer.metrics = ls.metrics;
+            this.indexMinZoom(ls.minzoom, ls.source);
+            this.indexMaxZoom(ls.maxzoom, ls.source);
+            this.indexMinFeature(ls.minfeatures, ls.source);
+            clusterLayers.set(clusterLayer.source, clusterLayer);
+        });
+        return clusterLayers;
+    }
+
+    /**
+     * Parses the layers_sources config and returns the topology layers index
+     * @param layersSourcesConfig layers_sources configuration object
+     */
+    private getTopologyLayersIndex(layersSourcesConfig): Map<string, LayerTopologySource> {
+        const topologyLayers = new Map<string, LayerTopologySource>();
+        layersSourcesConfig.filter(ls => ls.source.startsWith(this.TOPOLOGY_SOURCE)).forEach(ls => {
+            const topologyLayer = new LayerTopologySource();
+            topologyLayer.id = ls.id;
+            topologyLayer.source = ls.source;
+            topologyLayer.maxzoom = ls.maxzoom;
+            topologyLayer.minzoom = ls.minzoom;
+            topologyLayer.maxfeatures = ls.maxfeatures;
+            topologyLayer.geometrySupport = ls.geometry_support;
+            topologyLayer.geometryId = ls.geometry_id;
+            topologyLayer.metrics = ls.metrics;
+            this.indexMinZoom(ls.minzoom, ls.source);
+            this.indexMaxZoom(ls.maxzoom, ls.source);
+            this.indexMaxFeature(ls.maxfeatures, ls.source);
+            topologyLayers.set(topologyLayer.source, topologyLayer);
+        });
+        return topologyLayers;
+    }
+
+/**
+     * Parses the layers_sources config and returns the feature layers index
+     * @param layersSourcesConfig layers_sources configuration object
+     */
+    private getFeatureLayersIndex(layersSourcesConfig): Map<string, LayerFeatureSource> {
+        const featureLayers = new Map<string, LayerFeatureSource>();
+        layersSourcesConfig.filter(ls => ls.source.startsWith(this.FEATURE_SOURCE)).forEach(ls => {
+            const featureLayer = new LayerFeatureSource();
+            featureLayer.id = ls.id;
+            featureLayer.source = ls.source;
+            featureLayer.maxzoom = ls.maxzoom;
+            featureLayer.minzoom = ls.minzoom;
+            featureLayer.maxfeatures = ls.maxfeatures;
+            featureLayer.normalizationFields = ls.normalization_fields;
+            featureLayer.includeFields = new Set(ls.include_fields);
+            featureLayer.colorField = ls.metrics;
+            featureLayer.returnedGeometry = ls.returned_geometry;
+            this.indexMinZoom(ls.minzoom, ls.source);
+            this.indexMaxZoom(ls.maxzoom, ls.source);
+            this.indexMaxFeature(ls.maxfeatures, ls.source);
+            featureLayers.set(featureLayer.source, featureLayer);
+        });
+        return featureLayers;
+    }
+
+
+    /**
+     * Returns sources to be displayed on the map
+     * @param zoom
+     * @param nbFeatures
+     */
+    private getDisplayableSources(zoom: number, nbFeatures: number): [Array<string>, Array<string>, Array<string>] {
+        const minZooms: Map<number, Set<string>> = new Map([...this.minZoomIndex].filter(([k, v]) => k <= zoom));
+        const zoomSources = [...this.reversedMaxZoomIndex].filter(([k, v]) => {
+            const sources = minZooms.get(v);
+            return sources && sources.has(k) && v >= zoom;
+        }).map(kv => kv[0]);
+        return [
+            zoomSources.filter(s => this.clusterLayersIndex.get(s) && this.clusterLayersIndex.get(s).minfeatures >= nbFeatures),
+            zoomSources.filter(s => this.topologyLayersIndex.get(s) && this.topologyLayersIndex.get(s).maxfeatures <= nbFeatures),
+            zoomSources.filter(s => this.featureLayersIndex.get(s) && this.featureLayersIndex.get(s).maxfeatures <= nbFeatures)
+        ];
+    }
     /**
      * Normalizes the values of the configured features fields
      * Emits a redrawTile event
