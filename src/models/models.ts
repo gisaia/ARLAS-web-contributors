@@ -18,6 +18,8 @@
  */
 
 import moment from 'moment';
+import { Metric } from 'arlas-api/api';
+
 /**
 * Enum of sorting value define in Arlas-web-components
 */
@@ -445,7 +447,6 @@ export interface AttachmentConfig {
 export interface Normalization {
     on: string;
     per?: string;
-    keysSize?: number;
     scope: NormalizationScope;
 }
 
@@ -472,4 +473,49 @@ export class FeaturesNormalization implements Normalization {
 export enum NormalizationScope {
     global = 'global',
     local = 'local'
+}
+
+export class LayerSource {
+    public id: string;
+    public source: string;
+    public minzoom: number;
+    public maxzoom: number;
+}
+
+export class LayerFeatureSource extends LayerSource {
+    public maxfeatures: number;
+    public normalizationFields: Array<Normalization>;
+    public includeFields: Set<string>;
+    public colorField: string;
+    public returnedGeometry: string;
+}
+
+export class LayerClusterSource extends LayerSource {
+    public minfeatures: number;
+    public aggGeoField: string;
+    public granularity: Granularity;
+    /** TODO: recupérer l'enum de la nouvelle api */
+    public aggregatedGeometry: string;
+    public rawGeometry: any;
+    public metrics: Array<MetricConfig>;
+}
+
+/** Topology = feature-metric */
+export class LayerTopologySource extends LayerSource {
+    public maxfeatures: number;
+    public metrics: Array<MetricConfig>;
+    public geometryId: string;
+    public geometrySupport: string;
+}
+
+export enum Granularity {
+    coarse = 'Coarse',
+    fine = 'Fine',
+    finest = 'Finest'
+}
+
+export interface MetricConfig {
+    field: string;
+    metric: Metric;
+    normalize: NormalizationScope;
 }
