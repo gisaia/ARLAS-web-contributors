@@ -154,3 +154,16 @@ export function getFieldValue(field: string, data: Hits): any {
     }
     return result;
 }
+
+
+export function fineGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+    if (zoom >= 0 && zoom <= 3) {
+        return {tilesPrecision: 1, requestsPrecision: 3};
+    } else  if (zoom > 3 && zoom <= 6) {
+        return {tilesPrecision: 2, requestsPrecision: 4};
+    } else  if (zoom > 6 && zoom <= 8) {
+        return {tilesPrecision: 3, requestsPrecision: 5};
+    } else  if (zoom > 8) {
+        return {tilesPrecision: 4, requestsPrecision: 6};
+    }
+}
