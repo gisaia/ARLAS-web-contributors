@@ -78,7 +78,7 @@ export class TopoMapContributor extends MapContributor {
         } else if (this.zoom >= this.zoomLevelForTestCount) {
             const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
             // test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
-            const countFilter = this.getFilterForCount(pwithin);
+            const countFilter = this.getFilterForCount(pwithin, '');
             this.addFilter(countFilter, this.additionalFilter);
             const newCount = this.getTopoCardinality(this.field_cardinality, countFilter);
             if (newCount) {
@@ -122,7 +122,6 @@ export class TopoMapContributor extends MapContributor {
             const aggregations = this.aggregation;
             aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
             aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.size = this.nbMaxFeatureForCluster);
-            aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetch_geometry.strategy = this.geomStrategy);
             const geohashSet = new Set(geohashList);
             geohashSet.forEach(geohash => {
                 if (this.currentGeohashList.indexOf(geohash) < 0) {
@@ -166,7 +165,7 @@ export class TopoMapContributor extends MapContributor {
             const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
                 + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
             // Test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
-            const countFilter = this.getFilterForCount(pwithin);
+            const countFilter = this.getFilterForCount(pwithin,'');
             this.addFilter(countFilter, this.additionalFilter);
             const count = this.getTopoCardinality(this.field_cardinality, countFilter);
             if (count) {
