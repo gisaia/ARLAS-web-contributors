@@ -123,7 +123,6 @@ export class TopoMapContributor extends MapContributor {
             const aggregations = this.aggregation;
             aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
             aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Term).map(a => a.size = this.nbMaxFeatureForCluster);
-            aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.fetch_geometry.strategy = this.geomStrategy);
             const geohashSet = new Set(geohashList);
             geohashSet.forEach(geohash => {
                 if (this.currentGeohashList.indexOf(geohash) < 0) {

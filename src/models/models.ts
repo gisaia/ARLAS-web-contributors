@@ -18,7 +18,7 @@
  */
 
 import moment from 'moment';
-import { Metric } from 'arlas-api/api';
+import { Metric, RawGeometry, Aggregation } from 'arlas-api';
 
 /**
 * Enum of sorting value define in Arlas-web-components
@@ -495,9 +495,8 @@ export class LayerClusterSource extends LayerSource {
     public minfeatures: number;
     public aggGeoField: string;
     public granularity: Granularity;
-    /** TODO: recupérer l'enum de la nouvelle api */
-    public aggregatedGeometry: string;
-    public rawGeometry: any;
+    public aggregatedGeometry: Aggregation.AggregatedGeometriesEnum;
+    public rawGeometry: RawGeometry;
     public metrics: Array<MetricConfig>;
 }
 
@@ -517,6 +516,6 @@ export enum Granularity {
 
 export interface MetricConfig {
     field: string;
-    metric: Metric;
+    metric: Metric.CollectFctEnum;
     normalize: NormalizationScope;
 }
