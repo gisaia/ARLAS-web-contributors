@@ -43,7 +43,7 @@ import { getBounds, tileToString, truncate, isClockwise } from './../utils/mapUt
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import { mix } from 'tinycolor2';
-import moment, { duration } from 'moment';
+import moment from 'moment';
 
 
 export enum geomStrategyEnum {
@@ -77,7 +77,7 @@ export enum DataMode {
  * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
  */
 export class MapContributor extends Contributor {
-    
+
     /**
      * By default the contributor computes the data in a dynamic way (`Dynamic mode`): it switches between
      * `clusters` and `features` mode according to the zoom level and the number of features.
@@ -121,6 +121,7 @@ export class MapContributor extends Contributor {
     private parentGeohashesPerSource: Map<string, Set<string>> = new Map();
 
     private clusterSourcesStats: Map<string, {count: number}> = new Map();
+    private clusterSourcesMetrics: Map<string, Set<string>> = new Map();
     private sourcesVisitedTiles: Map<string, Set<string>> = new Map();
     private sourcesPrecisions: Map<string, {tilesPrecision?: number, requestsPrecision?: number}> = new Map();
     private granularityFunctions: Map<Granularity, (zoom: number) => {tilesPrecision: number, requestsPrecision: number}> = new Map();
@@ -159,12 +160,8 @@ export class MapContributor extends Contributor {
      */
     public normalizationFields: Array<FeaturesNormalization> = this.getConfigValue('normalizationFields');
     public colorGenerationFields: Array<string> = this.getConfigValue('colorGenerationFields');
-    public isGeoaggregateCluster: boolean;
     public fetchType: fetchType;
-    public zoomToPrecisionCluster: Array<Array<number>> = this.getConfigValue('zoomToPrecisionCluster');
-    public maxPrecision: Array<number> = this.getConfigValue('maxPrecision');
 
-    public maxValueGeoHash = 0;
     public zoom = this.getConfigValue('initZoom');
     public tiles: Array<{ x: number, y: number, z: number }> = new Array<{ x: number, y: number, z: number }>();
     public geohashList: Array<string> = bboxes(-90, -180, 90, 180, 1);
@@ -192,8 +189,6 @@ export class MapContributor extends Contributor {
     public origins: Map<string, string> = new Map();
     protected geohashesMap: Map<string, Feature> = new Map();
     protected parentGeohashesSet: Set<string> = new Set();
-    private fetchAggregationPipe = new Array<string>();
-
     /**
      * A filter that is taken into account when fetching features and that is not included in the global collaboration.
      * It's used in `Simple mode` only.
@@ -489,34 +484,7 @@ export class MapContributor extends Contributor {
     }
 
     public setSelection(data: any, collaboration: Collaboration): any {
-        if (this.fetchType === fetchType.geohash) {
-            this.renderGeohashFeatures();
-            this.redrawTile.next(true);
-        } else {
-            /** redrawTile event is emitted whether there is normalization or not */
-            this.normalizeFeatures();
-        }
-        this.setDrawings(collaboration);
         return from([]);
-    }
-
-    /**
-     * Clears all variables storing the data
-     */
-    public clearData() {
-        this.geojsondata.features = [];
-        this.maxValueGeoHash = 0;
-    }
-
-    /**
-     * Clears all the variables storing the visited tiles
-     */
-    public clearTiles() {
-        this.currentGeohashList = [];
-        this.currentExtentGeohashSet = new Set();
-        this.geohashesMap = new Map();
-        this.parentGeohashesSet = new Set();
-        this.currentStringedTilesList = [];
     }
 
     public setDrawings(collaboration: Collaboration): void {
@@ -652,11 +620,11 @@ export class MapContributor extends Contributor {
         return 'Area Of Interest';
     }
 
-    public wrap(n: number, min: number, max: number): number {
-        const d = max - min;
-        const w = ((n - min) % d + d) % d + min;
+    public wrap(n: number, minimum: number, maximum: number): number {
+        const d = maximum - minimum;
+        const w = ((n - minimum) % d + d) % d + minimum;
         const factor = Math.pow(10, this.drawPrecision);
-        return (w === min) ? max : Math.round(w * factor) / factor;
+        return (w === minimum) ? maximum : Math.round(w * factor) / factor;
     }
 
     /**
@@ -731,7 +699,7 @@ export class MapContributor extends Contributor {
     }
 
     public onMove(newMove: OnMoveResult) {
-        console.log('moove')
+        console.log('moove');
         switch (this.dataMode) {
             case DataMode.simple: {
                 this.onMoveSimpleMode(newMove);
@@ -769,7 +737,7 @@ export class MapContributor extends Contributor {
         this.prepareClusterAggregations(dClusterSources, this.zoom, true);
         const sourcesToRemove = displayableSources[3];
         sourcesToRemove.forEach(s => {
-            // todo clear the correct type 
+            // todo clear the correct type
             this.redrawSource.next({source: s, data: []});
             this.parentGeohashesPerSource.set(s, new Set());
             this.geohashesPerSource.set(s, new Map());
@@ -810,39 +778,27 @@ export class MapContributor extends Contributor {
             .subscribe(data => data);
     }
 
-    public renderGeohashFeatures() {
-        this.geojsondata.features = [];
-        let geohashTile: string;
-        if (this.currentExtentGeohashSet && this.currentExtentGeohashSet.size > 0) {
-            geohashTile = this.currentExtentGeohashSet.keys().next().value;
-        }
-        /**the use of `currentExtentGeohashSet` help us draw only geohashes that are in the current extent (+ padding) */
-        if (this.fetchType === fetchType.geohash) {
-            this.geohashesMap.forEach((feature, geohash) => {
-                feature.properties['point_count'] = feature.properties.count;
-                feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
-                feature.properties['point_count_normalize'] = Math.round(feature.properties.point_count / this.maxValueGeoHash * 100);
-                if (geohashTile) {
-                    if (this.currentExtentGeohashSet.has(geohash.substring(0, geohashTile.length))) {
-                        this.geojsondata.features.push(feature);
-                    }
-                } else {
-                    this.geojsondata.features.push(feature);
-                }
-            });
-        }
-    }
-
     public renderClusterSources(sources: Array<string>): void {
         sources.forEach(s => {
             this.redrawSource.next({source: s, data: []});
             const sourceGeohashes = this.geohashesPerSource.get(s);
             const sourceStats = this.clusterSourcesStats.get(s);
             const sourceData = [];
-            sourceGeohashes.forEach((feature, geohash) => {
-                feature.properties['point_count'] = feature.properties.count;
-                feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
-                feature.properties['point_count_normalize'] = Math.round(feature.properties.point_count / sourceStats.count * 100);
+            sourceGeohashes.forEach((f, geohash) => {
+                const feature = Object.assign({}, f);
+                // feature.properties['point_count'] = feature.properties.count;
+                // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
+                feature.properties['point_count_normalize'] = Math.round(feature.properties.count / sourceStats.count * 100);
+                delete feature.properties.geohash;
+                delete feature.properties.parent_geohash;
+                delete feature.properties.geometry_ref;
+                delete feature.properties.geometry_type;
+                delete feature.properties.feature_type;
+                Object.keys(feature.properties).forEach(k => {
+                    if (this.clusterSourcesMetrics.get(s) && !this.clusterSourcesMetrics.get(s).has(k) && k !== 'point_count_normalize') {
+                        delete feature.properties[k];
+                    }
+                });
                 sourceData.push(feature);
             });
             this.redrawSource.next({source: s, data: sourceData});
@@ -866,63 +822,7 @@ export class MapContributor extends Contributor {
             .subscribe(data => data);
     }
 
-    public drawGeoaggregateGeohash(geohashList: Array<string>, callOrigin?: string) {
-        this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        this.fetchDataGeohashGeoaggregate(geohashList, callOrigin)
-            .pipe(
-                map(f => {
-                    if (callOrigin && this.fetchAggregationPipe.length > 0) {
-                        if (callOrigin !== this.fetchAggregationPipe[this.fetchAggregationPipe.length - 1]) {
-                            this.maxValueGeoHash = 0;
-                            this.geohashesMap = new Map();
-                            this.geojsondata.features = [];
-                            throw new Error('STOP Fetch consumption');
-                        }
-                    }
-                    return f;
-                }),
-                map(f => this.computeDataGeohashGeoaggregate(f)),
-                map(f => this.setDataGeohashGeoaggregate(f)),
-                retry(0),
-                catchError(() => of('Consuming fetch results is stopped')),
-                finalize(() => {
-                    this.fetchAggregationPipe = [];
-                    this.renderGeohashFeatures();
-                    this.redrawTile.next(true);
-                    this.collaborativeSearcheService.ongoingSubscribe.next(-1);
-                })
-            )
-            .subscribe(data => data);
-    }
-
-    public fetchDataGeohashGeoaggregate(geohashList: Array<string>, callOrigin?: string): Observable<FeatureCollection> {
-        const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
-        if (this.updateData) {
-            const aggregations = this.aggregation;
-            if (callOrigin) {
-                this.fetchAggregationPipe.push(callOrigin);
-            }
-            aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.interval.value = this.precision);
-            const geohashSet: Set<string> = new Set(geohashList);
-            geohashSet.forEach(geohash => {
-                if (this.currentGeohashList.indexOf(geohash) < 0) {
-                    this.currentGeohashList.push(geohash);
-                }
-                const geohahsAggregation: GeohashAggregation = {
-                    geohash: geohash,
-                    aggregations: aggregations
-                };
-                const geoAggregateData: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollection(
-                    [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
-                    this.isFlat, null, this.additionalFilter, this.cacheDuration);
-                tabOfGeohash.push(geoAggregateData);
-            });
-        }
-        return from(tabOfGeohash).pipe(mergeAll());
-    }
-
-
-    public fetchClusterSource(visitedTiles: Set<string>, aggSources: {agg: Aggregation, sources: Array<string>}, callOrigin?: string): 
+    public fetchClusterSource(visitedTiles: Set<string>, aggSources: {agg: Aggregation, sources: Array<string>}, callOrigin?: string):
         Observable<FeatureCollection> {
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
         this.updateData = true;
@@ -973,8 +873,9 @@ export class MapContributor extends Contributor {
                 let tiles = new Set<string>();
                 let start = true;
                 aggSource.sources.forEach(s => {
-                    if (start) { start = false; tiles = this.sourcesVisitedTiles.get(s); }
-                    else { if (this.sourcesVisitedTiles.get(s).size < tiles.size) {
+                    if (start) {
+                        start = false; tiles = this.sourcesVisitedTiles.get(s);
+                    } else { if (this.sourcesVisitedTiles.get(s).size < tiles.size) {
                         tiles = this.sourcesVisitedTiles.get(s);
                     }}
                 });
@@ -993,32 +894,35 @@ export class MapContributor extends Contributor {
             const totalcount = newVisitedTiles.size;
             if (newVisitedTiles.size > 0) {
                 this.collaborativeSearcheService.ongoingSubscribe.next(1);
-                const marrat = []
+                const marrat = [];
                 const start = Date.now();
                 this.fetchClusterSource(newVisitedTiles, aggSource)
                 .pipe(
-                    takeUntil(this.untils.get(id) && this.untils.get(id).get(this.origins.get(id)) ? this.untils.get(id).get(this.origins.get(id)) : of()),
+                    // todo how to stop pending http calls
+                    takeUntil(this.untils.get(id) && this.untils.get(id).get(this.origins.get(id)) ?
+                     this.untils.get(id).get(this.origins.get(id)) : of()),
                     map(f => this.computeClusterData(f, aggSource)),
                     tap(() => count++),
                     // todo strategy to render data at some stages
                     tap(() => {
                         const progression = count / totalcount * 100;
-                        const duration = Date.now() - start;
-                        if (duration> 2000) {
-                            if (progression > 25 && marrat.length == 0) {
+                        const consumption = Date.now() - start;
+                        if (consumption > 2000) {
+                            if (progression > 25 && marrat.length === 0) {
                                 this.renderClusterSources(aggSource.sources);
-                                marrat.push("1")
+                                marrat.push('1');
                             }
                             if (progression > 50 && marrat.length <= 1) {
                                 this.renderClusterSources(aggSource.sources);
-                                marrat.push("2")
+                                marrat.push('2');
                             }
                             if (progression > 75 && marrat.length <= 2) {
                                 this.renderClusterSources(aggSource.sources);
-                                marrat.push("3")
+                                marrat.push('3');
                             }
                         }
-                        console.log(count / totalcount * 100 + '   ' + callOrigin   + '  ' + id)}),
+                        console.log(count / totalcount * 100 + '   ' + callOrigin   + '  ' + id);
+                    }),
                     finalize(() => {
                         this.renderClusterSources(aggSource.sources);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
@@ -1073,33 +977,6 @@ export class MapContributor extends Contributor {
      * @param featureCollection featureCollection returned by a geoaggregation query
      */
     public computeDataGeohashGeoaggregate(featureCollection: FeatureCollection): Array<any> {
-        let parent_geohash = '';
-        if (featureCollection && featureCollection.features !== undefined) {
-            featureCollection.features.forEach(feature => {
-                /** Here a feature is a geohash. */
-                /** We check if the geohash is already displayed in the map */
-                const alreadyExistingGeohash = this.geohashesMap.get(feature.properties.geohash);
-                if (alreadyExistingGeohash) {
-                    /** parent_geohash corresponds to the geohash tile on which we applied the geoaggregation */
-                    if (!this.parentGeohashesSet.has(feature.properties.parent_geohash)) {
-                        /** when this tile (parent_geohash) is requested for the first time we merge the counts */
-                        feature.properties.count = feature.properties.count + alreadyExistingGeohash.properties.count;
-                    } else {
-                        /** when the tile has already been visited. (This can happen when we load the app for the first time),
-                         * then we don't merge */
-                        feature.properties.count = alreadyExistingGeohash.properties.count;
-                    }
-                }
-                parent_geohash = feature.properties.parent_geohash;
-                this.geohashesMap.set(feature.properties.geohash, feature);
-                if (this.maxValueGeoHash < feature.properties.count) {
-                    this.maxValueGeoHash = feature.properties.count;
-                }
-            });
-        }
-        if (parent_geohash !== '') {
-            this.parentGeohashesSet.add(parent_geohash);
-        }
         return [];
     }
 
@@ -1170,7 +1047,6 @@ export class MapContributor extends Contributor {
         return [];
     }
     public setDataGeohashGeoaggregate(features: Array<any>): any {
-        this.isGeoaggregateCluster = true;
         return features;
     }
     /**
@@ -1219,16 +1095,9 @@ export class MapContributor extends Contributor {
      */
     public fetchDataGeoSearch(includeFeaturesFields: Set<string>, sort: string,
         afterParam?: string, whichPage?: PageEnum, fromParam?): Observable<FeatureCollection> {
-<<<<<<< HEAD
         const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
         const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ',' + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
         const filter: Filter = this.getFilterForCount(rawExtent, wrapExtent);
-=======
-        const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2]
-            + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
-            // todo collection.centroid_path
-        const filter: Filter = this.getFilterForCount(pwithin, 'track.location');
->>>>>>> cluster layers
         if (this.expressionFilter !== undefined) {
             filter.f.push([this.expressionFilter]);
         }
@@ -1325,40 +1194,7 @@ export class MapContributor extends Contributor {
         }
     }
     public setDataTileSearch(features: Array<any>): any {
-        features.forEach(f => this.geojsondata.features.push(f));
-        this.isGeoaggregateCluster = false;
         return features;
-    }
-    public getPrecisionFromZoom(zoom: number): number {
-        const zoomToPrecisionClusterObject = {};
-        const zoomToPrecisionCluster = this.zoomToPrecisionCluster;
-        zoomToPrecisionCluster.forEach(triplet => {
-            zoomToPrecisionClusterObject[triplet[0]] = [triplet[1], triplet[2]];
-        });
-        if (zoomToPrecisionClusterObject[Math.ceil(zoom) - 1] !== undefined) {
-            const precision = zoomToPrecisionClusterObject[Math.ceil(zoom) - 1][0];
-            if (precision !== undefined) {
-                return precision;
-            } else {
-                return this.getConfigValue('maxPrecision')[0];
-            }
-        } else {
-            return this.getConfigValue('maxPrecision')[0];
-        }
-    }
-
-
-    public getNbMaxFeatureFromZoom(zoom: number): number {
-        const zoomToNbMaxFeatureForClusterObject = {};
-        const zoomToNbMaxFeatureForCluster: Array<Array<number>> = this.getConfigValue('zoomToNbMaxFeatureForCluster');
-        zoomToNbMaxFeatureForCluster.forEach(couple => {
-            zoomToNbMaxFeatureForClusterObject[couple[0]] = couple[1];
-        });
-        let nbMaxFeatureForCluster = zoomToNbMaxFeatureForClusterObject[Math.ceil(zoom) - 1];
-        if (nbMaxFeatureForCluster === undefined) {
-            nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
-        }
-        return nbMaxFeatureForCluster;
     }
 
     public getFilterForCount(rawExtend: string, wrapExtend: string): Filter {
@@ -1490,36 +1326,6 @@ export class MapContributor extends Contributor {
         return filter;
     }
 
-
-    protected onMoveInClusterMode(precisionChanged: boolean, newMove: OnMoveResult) {
-        this.fetchType = fetchType.geohash;
-        if (!this.isGeoaggregateCluster) {
-            this.clearData();
-            this.clearTiles();
-        }
-        if (precisionChanged) {
-            this.clearData();
-            this.clearTiles();
-            this.drawGeoaggregateGeohash(this.geohashList, 'PRECISION_CHANGED_' + Math.round(Math.random() * 100) / 100);
-        } else {
-            const newGeohashList = new Array<string>();
-            this.geohashList.forEach(geohash => {
-                if (this.currentGeohashList.indexOf(geohash) < 0) {
-                    newGeohashList.push(geohash);
-                    this.currentGeohashList.push(geohash);
-                }
-            });
-            if (newGeohashList.length > 0) {
-                this.geojsondata.features = [];
-                this.drawGeoaggregateGeohash(newGeohashList, 'NEW_GEOHASHES_' + Math.round(Math.random() * 100) / 100);
-            } else {
-                this.renderGeohashFeatures();
-                this.redrawTile.next(true);
-            }
-        }
-        this.mapExtend = newMove.extendForLoad;
-        this.mapRawExtent = newMove.rawExtendForLoad;
-    }
     /**
      * adds the second filter to the first filter
      * @param filter filter to enrich
@@ -1547,17 +1353,25 @@ export class MapContributor extends Contributor {
     }
 
 
+    /**
+     * @description Parses the cluster sources. Prepares the corresponding aggregation. Number of aggregation is optimized. One aggregation
+     * represents one or several sources.
+     * @param clusterSources List of cluster sources ids
+     * @param zoom zoom level. Zoom level is necessary to get the aggregation precision.
+     * @param checkPrecisionChanges If true, this function performs a check of precision change.
+     * If so, the ongoing http calls of the same aggregation are stopped.
+     */
     private prepareClusterAggregations(clusterSources: Array<string>, zoom: number, checkPrecisionChanges?: boolean):
         Map<string, {agg: Aggregation, sources: Array<string>}> {
         const aggregationsMap: Map<string, {agg: Aggregation, sources: Array<string>}> = new Map();
-        // TODO optimize aggregations
         clusterSources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
             const raw_geo = ls.rawGeometry ? ':' + ls.rawGeometry.sort : '';
             const id = ls.aggGeoField + ':' + ls.granularity.toString();
             const aggBuilder = aggregationsMap.get(id);
-            let sources = [];
+            let sources;
             let aggregation: Aggregation;
+            /** check if an aggregation that suits tis source `cs` exists already */
             if (aggBuilder) {
                 aggregation = aggBuilder.agg;
                 sources = aggBuilder.sources;
@@ -1565,38 +1379,37 @@ export class MapContributor extends Contributor {
                 aggregation = {
                     type: Aggregation.TypeEnum.Geohash,
                     field: ls.aggGeoField,
-                    interval: {
-                        value: this.getPrecision(ls.granularity, zoom)
-                    }
+                    interval: { value: this.getPrecision(ls.granularity, zoom) }
                 };
+                sources = [];
             }
             if (ls.metrics) {
-                if (!aggregation.metrics) {
-                    aggregation.metrics = [];
-                }
+                if (!aggregation.metrics) { aggregation.metrics = []; }
                 ls.metrics.forEach(m => {
                     aggregation.metrics.push({
                         collect_field: m.field,
                         collect_fct: m.metric
                     });
+                    let metrics = this.clusterSourcesMetrics.get(cs);
+                    if (!metrics) { metrics = new Set(); }
+                    metrics.add(m.field.replace(/\./g, this.FLAT_CHAR) + '_' + m.metric.toString().toLowerCase() + '_');
+                    this.clusterSourcesMetrics.set(cs, metrics);
                 });
             }
             if (ls.aggregatedGeometry) {
-                if (!aggregation.aggregated_geometries) {
-                    aggregation.aggregated_geometries = [];
-                }
+                if (!aggregation.aggregated_geometries) { aggregation.aggregated_geometries = []; }
                 aggregation.aggregated_geometries.push(ls.aggregatedGeometry);
             }
             if (ls.rawGeometry) {
                 if (!aggregation.raw_geometries) {
-                    aggregation.raw_geometries = []
+                    aggregation.raw_geometries = [];
                 }
                 aggregation.raw_geometries.push(ls.rawGeometry);
             }
             sources.push(cs);
             aggregationsMap.set(id, {agg: aggregation, sources});
             if (checkPrecisionChanges) {
-                const precisions = Object.assign({}, this.granularityFunctions.get(ls.granularity)(this.zoom));
+                const precisions = Object.assign({}, this.granularityFunctions.get(ls.granularity)(zoom));
                 let oldPrecisions;
                 sources.forEach(s => {
                     const p = Object.assign({}, this.sourcesPrecisions.get(s));
@@ -1607,7 +1420,7 @@ export class MapContributor extends Contributor {
                 if (oldPrecisions.tilesPrecision !== precisions.tilesPrecision ||
                     oldPrecisions.requestsPrecision !== precisions.requestsPrecision) {
                     /** precision changed, need to stop consumption of current http calls using the old precision */
-                    console.log('precision change id    ' + id)
+                    console.log('precision change id    ' + id);
                     let tils = this.untils.get(id);
                     if (!tils) { tils = new Map(); }
                     const callOrigin = Date.now() + '';
@@ -1906,25 +1719,25 @@ export class MapContributor extends Contributor {
                 if (perField) {
                     const minMax = n.minMaxPerKey.get(f.properties[perField]);
                     const value = this.getValueFromFeature(f, n.on, normalizeField);
-                    const min = minMax[0];
+                    const minimum = minMax[0];
                     const max = minMax[1];
                     let normalizedValue;
-                    if (min === max) {
+                    if (minimum === max) {
                         normalizedValue = 1;
                     } else {
-                        normalizedValue = (value - min) / (max - min);
+                        normalizedValue = (value - minimum) / (max - minimum);
                     }
                     f.properties[normalizeField + '_locally_normalized_per_' + perField] = normalizedValue;
                 } else {
                     const minMax = n.minMax;
                     const value = this.getValueFromFeature(f, n.on, normalizeField);
-                    const min = minMax[0];
+                    const minimum = minMax[0];
                     const max = minMax[1];
                     let normalizedValue;
-                    if (min === max) {
+                    if (minimum === max) {
                         normalizedValue = 1;
                     } else {
-                        normalizedValue = (value - min) / (max - min);
+                        normalizedValue = (value - minimum) / (max - minimum);
                     }
                     f.properties[normalizeField + '_locally_normalized'] = normalizedValue;
                 }
@@ -1943,13 +1756,13 @@ export class MapContributor extends Contributor {
                     if (f.properties[perField] && f.properties[normalizeField]) {
                         const minMax = n.minMaxPerKey.get(f.properties[perField]);
                         const value = this.getValueFromFeature(f, n.on, normalizeField);
-                        const min = minMax[0];
+                        const minimum = minMax[0];
                         const max = minMax[1];
                         let normalizedValue;
-                        if (min === max) {
+                        if (minimum === max) {
                             normalizedValue = 1;
                         } else {
-                            normalizedValue = (value - min) / (max - min);
+                            normalizedValue = (value - minimum) / (max - minimum);
                         }
                         f.properties[normalizeField + '_globally_normalized_per_' + perField] = normalizedValue;
                     }
