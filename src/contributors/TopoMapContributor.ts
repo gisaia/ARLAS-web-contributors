@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, from } from 'rxjs';
+import { Observable, from, of } from 'rxjs';
 
 import {
     CollaborativesearchService,
@@ -69,37 +69,35 @@ export class TopoMapContributor extends MapContributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<any> {
-        this.clearData();
-        this.clearTiles();
-        if (this.zoom < this.zoomLevelForTestCount) {
-            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
-            this.fetchType = fetchType.geohash;
-            return this.fetchDataGeohashGeoaggregate(this.geohashList);
-        } else if (this.zoom >= this.zoomLevelForTestCount) {
-            const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
-            const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ',' + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
-            const countFilter = this.getFilterForCount(rawExtent, wrapExtent);
-            // test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
-            this.addFilter(countFilter, this.additionalFilter);
-            const newCount = this.getTopoCardinality(this.field_cardinality, countFilter);
-            if (newCount) {
-                return newCount.pipe(flatMap(
-                    computationResponse => {
-                        this.size = computationResponse.value;
-                        if (this.size <= this.nbMaxFeatureForCluster) {
-                            // AGG TOPO
-                            this.aggregation = this.topoAggregation;
-                            this.fetchType = fetchType.topology;
-                            return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, this.additionalFilter);
-                        } else {
-                            // Classique AGG geohash
-                            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
-                            this.fetchType = fetchType.geohash;
-                            return this.fetchDataGeohashGeoaggregate(this.geohashList);
-                        }
-                    }));
-            }
-        }
+        // if (this.zoom < this.zoomLevelForTestCount) {
+        //     this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
+        //     this.fetchType = fetchType.geohash;
+        //     return this.fetchDataGeohashGeoaggregate(this.geohashList);
+        // } else if (this.zoom >= this.zoomLevelForTestCount) {
+        //     const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
+        //     // test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
+        //     const countFilter = this.getFilterForCount(pwithin, '');
+        //     this.addFilter(countFilter, this.additionalFilter);
+        //     const newCount = this.getTopoCardinality(this.field_cardinality, countFilter);
+        //     if (newCount) {
+        //         return newCount.pipe(flatMap(
+        //             computationResponse => {
+        //                 this.size = computationResponse.value;
+        //                 if (this.size <= this.nbMaxFeatureForCluster) {
+        //                     // AGG TOPO
+        //                     this.aggregation = this.topoAggregation;
+        //                     this.fetchType = fetchType.topology;
+        //                     return this.fetchTopoDataGeohashGeoaggregate(this.geohashList, this.additionalFilter);
+        //                 } else {
+        //                     // Classique AGG geohash
+        //                     this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
+        //                     this.fetchType = fetchType.geohash;
+        //                     return this.fetchDataGeohashGeoaggregate(this.geohashList);
+        //                 }
+        //             }));
+        //     }
+        // }
+        return of();
     }
     public computeData(data: any): any[] {
         if (this.fetchType === fetchType.topology) {
@@ -148,83 +146,62 @@ export class TopoMapContributor extends MapContributor {
     public onMove(newMove: OnMoveResult) {
         this.geohashList = newMove.geohash;
         this.zoom = newMove.zoom;
-        const nbMaxFeatures = this.getNbMaxFeatureFromZoom(newMove.zoom);
-        const precision = this.getPrecisionFromZoom(newMove.zoom);
-        let precisionChanged = false;
-        if (precision !== this.precision) {
-            precisionChanged = true;
-            this.precision = precision;
-        }
-        if (newMove.zoom < this.zoomLevelForTestCount) {
-            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
-            this.onMoveInClusterMode(precisionChanged, newMove);
-        } else if (newMove.zoom >= this.zoomLevelForTestCount) {
-            if (precisionChanged) {
-                this.clearData();
-                this.clearTiles();
-            }
-            const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
-            + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-            const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
-            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
-            const countFilter = this.getFilterForCount(rawExtent, wrapExtent);
-            // Test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
-            this.addFilter(countFilter, this.additionalFilter);
-            const count = this.getTopoCardinality(this.field_cardinality, countFilter);
-            if (count) {
-                count
-                    .subscribe(computationResponse => {
-                        this.size = computationResponse.value;
-                        if (this.size <= nbMaxFeatures) {
-                            this.aggregation = this.topoAggregation;
-                            this.fetchType = fetchType.topology;
-                            if (this.isGeoaggregateCluster) {
-                                this.clearData();
-                                this.clearTiles();
-                            }
-                            const newGeohashList = new Array<string>();
-                            this.geohashList.forEach(geohash => {
-                                if (this.currentGeohashList.indexOf(geohash) < 0) {
-                                    newGeohashList.push(geohash);
-                                    this.currentGeohashList.push(geohash);
-                                }
-                            });
-                            // if new extend is not totaly include in old extend
-                            if (newGeohashList.length > 0 || newMove.extendForLoad[0] > this.mapExtend[0]
-                                || newMove.extendForLoad[2] < this.mapExtend[2]
-                                || newMove.extendForLoad[1] < this.mapExtend[1]
-                                || newMove.extendForLoad[3] > this.mapExtend[3]
-                                || this.isGeoaggregateCluster
-                            ) {
-                                this.drawTopoGeoaggregateGeohash(newGeohashList, this.additionalFilter);
-                            }
-                        } else {
-                            this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
-                            this.onMoveInClusterMode(precisionChanged, newMove);
-                        }
-                        this.mapExtend = newMove.extendForLoad;
-                    });
-            }
-        }
-    }
-
-    /**
-     * Clears all variables storing the data
-     */
-    public clearData() {
-        this.geojsondata.features = [];
-        this.geoIds = new Set();
-        this.maxValueGeoHash = 0;
-    }
-
-    /**
-     * Clears all the variables storing the visited tiles
-     */
-    public clearTiles() {
-        this.currentGeohashList = [];
-        this.currentExtentGeohashSet = new Set();
-        this.geohashesMap = new Map();
-        this.parentGeohashesSet = new Set();
+        // const nbMaxFeatures = this.getNbMaxFeatureFromZoom(newMove.zoom);
+        // const precision = this.getPrecisionFromZoom(newMove.zoom);
+        // let precisionChanged = false;
+        // if (precision !== this.precision) {
+        //     precisionChanged = true;
+        //     this.precision = precision;
+        // }
+        // if (newMove.zoom < this.zoomLevelForTestCount) {
+        //     this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
+        //     this.onMoveInClusterMode(precisionChanged, newMove);
+        // } else if (newMove.zoom >= this.zoomLevelForTestCount) {
+        //     if (precisionChanged) {
+        //         this.clearData();
+        //         this.clearTiles();
+        //     }
+        //     const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2]
+        //         + ',' + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
+        //     // Test for count with aggregation geoagreate interval 1 metrics cadinalitty sur le champs
+        //     const countFilter = this.getFilterForCount(pwithin,'');
+        //     this.addFilter(countFilter, this.additionalFilter);
+        //     const count = this.getTopoCardinality(this.field_cardinality, countFilter);
+        //     if (count) {
+        //         count
+        //             .subscribe(computationResponse => {
+        //                 this.size = computationResponse.value;
+        //                 if (this.size <= nbMaxFeatures) {
+        //                     this.aggregation = this.topoAggregation;
+        //                     this.fetchType = fetchType.topology;
+        //                     if (this.isGeoaggregateCluster) {
+        //                         this.clearData();
+        //                         this.clearTiles();
+        //                     }
+        //                     const newGeohashList = new Array<string>();
+        //                     this.geohashList.forEach(geohash => {
+        //                         if (this.currentGeohashList.indexOf(geohash) < 0) {
+        //                             newGeohashList.push(geohash);
+        //                             this.currentGeohashList.push(geohash);
+        //                         }
+        //                     });
+        //                     // if new extend is not totaly include in old extend
+        //                     if (newGeohashList.length > 0 || newMove.extendForLoad[0] > this.mapExtend[0]
+        //                         || newMove.extendForLoad[2] < this.mapExtend[2]
+        //                         || newMove.extendForLoad[1] < this.mapExtend[1]
+        //                         || newMove.extendForLoad[3] > this.mapExtend[3]
+        //                         || this.isGeoaggregateCluster
+        //                     ) {
+        //                         this.drawTopoGeoaggregateGeohash(newGeohashList, this.additionalFilter);
+        //                     }
+        //                 } else {
+        //                     this.aggregation = this.getConfigValue(this.AGGREGATION_MODELS);
+        //                     this.onMoveInClusterMode(precisionChanged, newMove);
+        //                 }
+        //                 this.mapExtend = newMove.extendForLoad;
+        //             });
+        //     }
+        // }
     }
 
     public drawTopoGeoaggregateGeohash(geohashList: Array<string>, filter: Filter) {
@@ -243,18 +220,6 @@ export class TopoMapContributor extends MapContributor {
 
     public computeTopoGeoaggregateData(featureCollection: FeatureCollection): Array<any> {
         const featuresResults = [];
-        if (featureCollection.features !== undefined) {
-            featureCollection.features.forEach(f => {
-                if (this.maxValueGeoHash <= f.properties.count) {
-                    this.maxValueGeoHash = f.properties.count;
-                }
-            });
-            featureCollection.features.forEach(f => {
-                f.properties['point_count_normalize'] = f.properties.count / this.maxValueGeoHash * 100;
-                f.properties['point_count'] = f.properties.count;
-                featuresResults.push(f);
-            });
-        }
         return featuresResults;
     }
     public setTopoGeoaggregateData(features: Array<any>): any {
@@ -264,7 +229,6 @@ export class TopoMapContributor extends MapContributor {
                 this.geoIds.add(f.properties.key);
             }
         });
-        this.isGeoaggregateCluster = false;
         return features;
     }
 
