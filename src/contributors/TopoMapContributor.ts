@@ -30,7 +30,7 @@ import {
 } from 'arlas-api';
 import { OnMoveResult } from '../models/models';
 import * as jsonSchema from '../jsonSchemas/topomapContributorConf.schema.json';
-import { MapContributor, fetchType } from './MapContributor';
+import { MapContributor } from './MapContributor';
 import { flatMap, mergeAll, map, finalize } from 'rxjs/operators';
 
 
@@ -99,20 +99,10 @@ export class TopoMapContributor extends MapContributor {
         // }
         return of();
     }
-    public computeData(data: any): any[] {
-        if (this.fetchType === fetchType.topology) {
-            return this.computeTopoGeoaggregateData(data);
-        } else {
-            return this.computeDataGeohashGeoaggregate(data);
-        }
+    public computeData(data: any) {
     }
 
     public setData(data: any) {
-        if (this.fetchType === fetchType.topology) {
-            return this.setTopoGeoaggregateData(data);
-        } else {
-            return this.setDataGeohashGeoaggregate(data);
-        }
     }
 
     public fetchTopoDataGeohashGeoaggregate(geohashList: Array<string>, filter: Filter): Observable<FeatureCollection> {
