@@ -155,6 +155,15 @@ export function getFieldValue(field: string, data: Hits): any {
     return result;
 }
 
+export function coarseGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+    if (zoom >= 0 && zoom <= 4) {
+        return {tilesPrecision: 1, requestsPrecision: 3};
+    } else  if (zoom > 4 && zoom <= 12) {
+        return {tilesPrecision: 2, requestsPrecision: 4};
+    } else  if (zoom > 12) {
+        return {tilesPrecision: 3, requestsPrecision: 5};
+    }
+}
 
 export function fineGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
     if (zoom >= 0 && zoom <= 4) {
@@ -165,5 +174,19 @@ export function fineGranularity(zoom: number): {tilesPrecision: number, requests
         return {tilesPrecision: 3, requestsPrecision: 5};
     } else  if (zoom > 10) {
         return {tilesPrecision: 4, requestsPrecision: 6};
+    }
+}
+
+export function finestGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+    if (zoom >= 0 && zoom <= 3) {
+        return {tilesPrecision: 1, requestsPrecision: 3};
+    } else  if (zoom > 3 && zoom <= 6) {
+        return {tilesPrecision: 2, requestsPrecision: 4};
+    } else  if (zoom > 6 && zoom <= 9) {
+        return {tilesPrecision: 3, requestsPrecision: 5};
+    } else  if (zoom > 9 && zoom <= 15) {
+        return {tilesPrecision: 4, requestsPrecision: 6};
+    } else  if (zoom > 15) {
+        return {tilesPrecision: 5, requestsPrecision: 7};
     }
 }

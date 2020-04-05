@@ -32,7 +32,7 @@ import {
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization, NormalizationScope,
      LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity } from '../models/models';
-import { appendIdToSort, removePageFromIndex, ASC, fineGranularity } from '../utils/utils';
+import { appendIdToSort, removePageFromIndex, ASC, fineGranularity, coarseGranularity, finestGranularity } from '../utils/utils';
 import { bboxes } from 'ngeohash';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
@@ -271,6 +271,8 @@ export class MapContributor extends Contributor {
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
         this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
         this.granularityFunctions.set(Granularity.fine, fineGranularity);
+        this.granularityFunctions.set(Granularity.coarse, coarseGranularity);
+        this.granularityFunctions.set(Granularity.finest, finestGranularity);
     }
 
     public static getJsonSchema(): Object {
