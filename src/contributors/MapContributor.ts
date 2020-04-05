@@ -110,7 +110,7 @@ export class MapContributor extends Contributor {
     private cancelSubjects: Map<string, Map<string, Subject<void>>> = new Map();
     /**This map stores for each agg id, the instant of the lastest call to this agg. */
     private lastCalls: Map<string, string> = new Map();
-     /**This map stores for each agg id, an abort controller. This controller will abort pending calls when precision of
+    /**This map stores for each agg id, an abort controller. This controller will abort pending calls when precision of
       * the agg changes. */
     private abortControllers: Map<string, AbortController> = new Map();
 
@@ -696,6 +696,17 @@ export class MapContributor extends Contributor {
                 dClusterSources = displayableSources[0];
                 const dTopologySources = displayableSources[1];
                 const dFeatureSources = displayableSources[2];
+                const nbFeaturesSourcesToRemove = displayableSources[3];
+                const alreadyRemovedSources = new Set(sourcesToRemove);
+                nbFeaturesSourcesToRemove.filter(s => !alreadyRemovedSources.has(s)).forEach(s => {
+                    // todo clear the correct type
+                    this.redrawSource.next({source: s, data: []});
+                    this.parentGeohashesPerSource.set(s, new Set());
+                    this.geohashesPerSource.set(s, new Map());
+                    this.clusterSourcesStats.set(s, {count: 0});
+                    this.sourcesVisitedTiles.set(s, new Set());
+                    this.sourcesPrecisions.set(s, {});
+                });
                 this.prepareTopologyAggregations(dTopologySources);
                 this.prepareFeaturesReturnedGeomtries(dFeatureSources);
                 const aggregationsBuilder = this.prepareClusterAggregations(dClusterSources, this.zoom);
@@ -1368,7 +1379,7 @@ export class MapContributor extends Contributor {
         const aggregationsMap: Map<string, {agg: Aggregation, sources: Array<string>}> = new Map();
         clusterSources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
-            const raw_geo = ls.rawGeometry ? ':' + ls.rawGeometry.sort : '';
+            // const raw_geo = ls.rawGeometry ? ':' + ls.rawGeometry.sort : '';
             const id = ls.aggGeoField + ':' + ls.granularity.toString();
             const aggBuilder = aggregationsMap.get(id);
             let sources;
