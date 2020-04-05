@@ -17,12 +17,12 @@
  * under the License.
  */
 
-import { Observable, Subject, generate, from, concat, of, interval } from 'rxjs';
-import { map, finalize, flatMap, mergeAll, concatAll, debounceTime, retry, catchError, min, tap, takeUntil } from 'rxjs/operators';
+import { Observable, Subject, from, of } from 'rxjs';
+import { map, finalize, mergeAll, concatAll, tap, takeUntil } from 'rxjs/operators';
 
 import {
     CollaborativesearchService, Contributor,
-    ConfigService, Collaboration, OperationEnum,
+    ConfigService, Collaboration,
     projType, GeohashAggregation, TiledSearch, CollaborationEvent
 } from 'arlas-web-core';
 import {
@@ -38,34 +38,13 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, tileToString, truncate, isClockwise } from './../utils/mapUtils';
+import { getBounds, truncate, isClockwise } from './../utils/mapUtils';
 
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import { mix } from 'tinycolor2';
 import moment from 'moment';
 
-
-export enum geomStrategyEnum {
-    bbox,
-    centroid,
-    first,
-    last,
-    byDefault,
-    geohash
-}
-export enum fetchType {
-    tile,
-    geohash,
-    topology
-}
-export interface Style {
-    id: string;
-    name: string;
-    layerIds: Set<string>;
-    geomStrategy?: geomStrategyEnum;
-    isDefault?: boolean;
-}
 
 export enum DataMode {
     simple,
@@ -167,7 +146,6 @@ export class MapContributor extends Contributor {
      */
     public normalizationFields: Array<FeaturesNormalization> = this.getConfigValue('normalizationFields');
     public colorGenerationFields: Array<string> = this.getConfigValue('colorGenerationFields');
-    public fetchType: fetchType;
 
     public zoom = this.getConfigValue('initZoom');
     public tiles: Array<{ x: number, y: number, z: number }> = new Array<{ x: number, y: number, z: number }>();
@@ -176,23 +154,17 @@ export class MapContributor extends Contributor {
     public currentExtentGeohashSet: Set<string> = new Set<string>();
     public currentStringedTilesList: Array<string> = new Array<string>();
     public mapExtend = [90, -180, -90, 180];
-    public zoomLevelFullData = this.getConfigValue('zoomLevelFullData');
-    public zoomLevelForTestCount = this.getConfigValue('zoomLevelForTestCount');
     public nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
     public idFieldName: string = this.getConfigValue('idFieldName');
-    public geomStrategy = this.getConfigValue('geomStrategy');
 
     public returned_geometries = '';
 
     public geoPointFields = new Array<string>();
     public geoShapeFields = new Array<string>();
-    public strategyEnum = geomStrategyEnum;
 
     public countExtendBus = new Subject<{ count: number, threshold: number }>();
     public saturationWeight = 0.5;
 
-    protected geohashesMap: Map<string, Feature> = new Map();
-    protected parentGeohashesSet: Set<string> = new Set();
     /**
      * A filter that is taken into account when fetching features and that is not included in the global collaboration.
      * It's used in `Simple mode` only.
@@ -346,15 +318,7 @@ export class MapContributor extends Contributor {
 
         return of();
     }
-    public computeData(data: any): any[] {
-        switch (this.fetchType) {
-            case fetchType.tile: {
-                return this.computeDataTileSearch(data);
-            }
-            case fetchType.geohash: {
-                return this.computeDataGeohashGeoaggregate(data);
-            }
-        }
+    public computeData(data: any) {
     }
 
     /**
@@ -403,14 +367,6 @@ export class MapContributor extends Contributor {
         aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.field = geoAggregateField);
         this.aggregation = aggregations;
         this.aggregationField = geoAggregateField;
-    }
-
-    /**
-     * Sets the strategy of geoaggregation (`bbox`, `centroid`, `first`, `last`, `byDefault`, `geohash`)
-     * @param geomStrategy
-     */
-    public setGeomStrategy(geomStrategy: geomStrategyEnum) {
-        this.geomStrategy = geomStrategy;
     }
 
     /**
@@ -479,14 +435,6 @@ export class MapContributor extends Contributor {
     }
 
     public setData(data: any) {
-        switch (this.fetchType) {
-            case fetchType.tile: {
-                return this.setDataTileSearch(data);
-            }
-            case fetchType.geohash: {
-                return this.setDataGeohashGeoaggregate(data);
-            }
-        }
     }
 
     public setSelection(data: any, collaboration: Collaboration): any {
@@ -581,20 +529,6 @@ export class MapContributor extends Contributor {
     public getBoundsToFit(elementidentifier: ElementIdentifier): Observable<Array<Array<number>>> {
         const bounddsToFit = getBounds(elementidentifier, this.collaborativeSearcheService);
         return bounddsToFit;
-    }
-
-    public switchLayerCluster(style: Style) {
-        // if (this.strategyEnum[style.geomStrategy].toString() !== this.geomStrategy.toString()) {
-        //     this.updateData = true;
-        //     this.geomStrategy = style.geomStrategy;
-        //     if (this.isGeoaggregateCluster) {
-        //         this.fetchType = fetchType.geohash;
-        //         this.clearData();
-        //         this.drawGeoaggregateGeohash(this.geohashList, 'SWITCHER');
-        //         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
-        //         this.setDrawings(collaboration);
-        //     }
-        // }
     }
 
     public getFeatureToHightLight(elementidentifier: ElementIdentifier) {
