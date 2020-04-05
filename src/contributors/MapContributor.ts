@@ -677,8 +677,8 @@ export class MapContributor extends Contributor {
         let displayableSources = this.getDisplayableSources(this.zoom);
         let dClusterSources = displayableSources[0];
         this.prepareClusterAggregations(dClusterSources, this.zoom, true);
-        const sourcesToRemove = displayableSources[3];
-        sourcesToRemove.forEach(s => {
+        const zoomSourcesToRemove = displayableSources[3];
+        zoomSourcesToRemove.forEach(s => {
             // todo clear the correct type
             this.redrawSource.next({source: s, data: []});
             this.parentGeohashesPerSource.set(s, new Set());
@@ -697,7 +697,7 @@ export class MapContributor extends Contributor {
                 const dTopologySources = displayableSources[1];
                 const dFeatureSources = displayableSources[2];
                 const nbFeaturesSourcesToRemove = displayableSources[3];
-                const alreadyRemovedSources = new Set(sourcesToRemove);
+                const alreadyRemovedSources = new Set(zoomSourcesToRemove);
                 nbFeaturesSourcesToRemove.filter(s => !alreadyRemovedSources.has(s)).forEach(s => {
                     // todo clear the correct type
                     this.redrawSource.next({source: s, data: []});
@@ -765,6 +765,20 @@ export class MapContributor extends Contributor {
             });
             this.redrawSource.next({source: s, data: sourceData});
         });
+    }
+
+    public nomalizeClustersLocally(s: string) {
+        const source = this.clusterLayersIndex.get(s);
+        const metricsKeys = new Set<string>();
+        source.metrics.forEach(m => {
+            const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' + m.metric.toString().toLowerCase() + '_';
+            if (m.normalize) {
+                metricsKeys.add(key + m.normalize.toString().toLowerCase());
+            } else {
+                metricsKeys.add(key);
+            }
+        });
+        // todo caclulate the min and max value of each metric
     }
     public drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
         this.updateData = true;
@@ -1384,7 +1398,7 @@ export class MapContributor extends Contributor {
             const aggBuilder = aggregationsMap.get(id);
             let sources;
             let aggregation: Aggregation;
-            /** check if an aggregation that suits tis source `cs` exists already */
+            /** check if an aggregation that suits this source `cs` exists already */
             if (aggBuilder) {
                 aggregation = aggBuilder.agg;
                 sources = aggBuilder.sources;
