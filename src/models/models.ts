@@ -506,6 +506,7 @@ export class LayerTopologySource extends LayerSource {
     public metrics: Array<MetricConfig>;
     public geometryId: string;
     public geometrySupport: string;
+    public granularity: Granularity;
 }
 
 export enum Granularity {
