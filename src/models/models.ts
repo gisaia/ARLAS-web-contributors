@@ -520,3 +520,8 @@ export interface MetricConfig {
     metric: Metric.CollectFctEnum;
     normalize: NormalizationScope;
 }
+
+export interface SourcesAgg {
+    agg: Aggregation;
+    sources: Array<string>;
+}
