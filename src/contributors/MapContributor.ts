@@ -31,7 +31,7 @@ import {
     Filter, FeatureCollection, Feature, Metric, AggregationResponse
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization, NormalizationScope,
-     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity, SourcesAgg } from '../models/models';
+     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity, SourcesAgg, MetricConfig } from '../models/models';
 import { appendIdToSort, removePageFromIndex, ASC, fineGranularity, coarseGranularity, finestGranularity } from '../utils/utils';
 import { bboxes } from 'ngeohash';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
@@ -756,9 +756,26 @@ export class MapContributor extends Contributor {
                 delete feature.properties.geometry_type;
                 delete feature.properties.feature_type;
                 Object.keys(feature.properties).forEach(k => {
-                    if (this.aggSourcesMetrics.get(s)) {
-                        if (!this.aggSourcesMetrics.get(s).has(k) && k !== 'point_count_normalize' && k !== 'count') {
+                    const metricStats = sourceStats[k];
+                    const metricsKeys = this.aggSourcesMetrics.get(s);
+                    if (metricsKeys) {
+                        if (!metricsKeys.has(k) && k !== 'point_count_normalize' && k !== 'count') {
                           delete feature.properties[k];
+                        } else if (k.includes('_avg_')) {
+                            /** completes the weighted average calculus by dividing by the total count */
+                            feature.properties[k] = feature.properties[k] / feature.properties.count;
+                            if (metricStats) {
+                                sourceStats[k].min = metricStats.min / feature.properties.count;
+                                sourceStats[k].max = metricStats.max / feature.properties.count;
+                            }
+                        }
+                        /** normalize */
+                        if (k.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
+                            if (metricStats.min === metricStats.max) {
+                                feature.properties[k] = 0;
+                            } else {
+                                feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
+                            }
                         }
                     } else if (k !== 'point_count_normalize' && k !== 'count') {
                       delete feature.properties[k];
@@ -789,12 +806,26 @@ export class MapContributor extends Contributor {
                 delete feature.properties.geometry_type;
                 delete feature.properties.feature_type;
                 Object.keys(feature.properties).forEach(k => {
-                    if (this.aggSourcesMetrics.get(s)) {
-                        if (!this.aggSourcesMetrics.get(s).has(k) && k !== 'point_count_normalize') {
+                    const metricStats = sourceStats[k];
+                    const metricsKeys = this.aggSourcesMetrics.get(s);
+                    if (metricsKeys) {
+                        if (!metricsKeys.has(k) && k !== 'point_count_normalize') {
                           delete feature.properties[k];
                         } else if (k.includes('_avg_')) {
                             /** completes the weighted average calculus by dividing by the total count */
                             feature.properties[k] = feature.properties[k] / feature.properties.count;
+                            if (metricStats) {
+                                sourceStats[k].min = metricStats.min / feature.properties.count;
+                                sourceStats[k].max = metricStats.max / feature.properties.count;
+                            }
+                        }
+                        /** normalize */
+                        if (k.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
+                            if (metricStats.min === metricStats.max) {
+                                feature.properties[k] = 0;
+                            } else {
+                                feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
+                            }
                         }
                     } else if (k !== 'point_count_normalize') {
                       delete feature.properties[k];
@@ -1040,11 +1071,22 @@ export class MapContributor extends Contributor {
                     }
                     const metricsKeys = this.aggSourcesMetrics.get(source);
                     if (metricsKeys) {
-                        const countValue = feature.properties.count;
+                        /** prepare normalization by calculating the min and max values of each metrics that is to be normalized */
                         metricsKeys.forEach(key => {
-                            // todo calculuate max/min of metrics values for local normalization concerns
+                            if (key.includes('_sum_') || key.includes('_max_') || key.includes('_min_') || key.includes('_avg_')) {
+                                if (key.endsWith('_' + NormalizationScope.local.toString().toLowerCase())) {
+                                    if (!stats[key]) {stats[key] = {min: Number.MAX_VALUE, max: Number.MIN_VALUE}; }
+                                    if (stats[key].max < feature.properties[key]) {
+                                        stats[key].max = feature.properties[key];
+                                    }
+                                    if (stats[key].min > feature.properties[key]) {
+                                        stats[key].min = feature.properties[key];
+                                    }
+                                }
+                            }
                         });
                     }
+                    this.aggSourcesStats.set(source, stats);
                     topologyData.push(feature);
                     this.topologyDataPerSource.set(source, topologyData);
                 });
@@ -1138,16 +1180,17 @@ export class MapContributor extends Contributor {
                             stats.count = feature.properties.count;
                         }
                         if (metricsKeys) {
+                            /** prepare normalization by calculating the min and max values of each metrics that is to be normalized */
                             metricsKeys.forEach(key => {
-                                if (key.includes('_sum_')) {
-                                    if (!stats[key]) {stats[key] = 0; }
-                                    if (stats[key] < feature.properties[key]) {
-                                        stats[key] = feature.properties[key];
-                                    }
-                                } else if (key.includes('_max_')) {
-                                    if (!stats[key]) {stats[key] = 0; }
-                                    if (stats[key] < feature.properties[key]) {
-                                        stats[key] = feature.properties[key];
+                                if (key.includes('_sum_') || key.includes('_max_') || key.includes('_min_') || key.includes('_avg_')) {
+                                    if (key.endsWith('_' + NormalizationScope.local.toString().toLowerCase())) {
+                                        if (!stats[key]) {stats[key] = {min: Number.MAX_VALUE, max: Number.MIN_VALUE}; }
+                                        if (stats[key].max < feature.properties[key]) {
+                                            stats[key].max = feature.properties[key];
+                                        }
+                                        if (stats[key].min > feature.properties[key]) {
+                                            stats[key].min = feature.properties[key];
+                                        }
                                     }
                                 }
                             });
@@ -1495,14 +1538,7 @@ export class MapContributor extends Contributor {
             if (ls.metrics) {
                 if (!aggregation.metrics) { aggregation.metrics = []; }
                 ls.metrics.forEach(m => {
-                    aggregation.metrics.push({
-                        collect_field: m.field,
-                        collect_fct: m.metric
-                    });
-                    let metrics = this.aggSourcesMetrics.get(cs);
-                    if (!metrics) { metrics = new Set(); }
-                    metrics.add(m.field.replace(/\./g, this.FLAT_CHAR) + '_' + m.metric.toString().toLowerCase() + '_');
-                    this.aggSourcesMetrics.set(cs, metrics);
+                    this.indexAggSourcesMetrics(cs, aggregation, m);
                 });
             }
             if (ls.aggregatedGeometry) {
@@ -1530,6 +1566,21 @@ export class MapContributor extends Contributor {
         return aggregationsMap;
     }
 
+    private indexAggSourcesMetrics(source: string, aggregation: Aggregation, m: MetricConfig): void {
+        aggregation.metrics.push({
+            collect_field: m.field,
+            collect_fct: m.metric
+        });
+        let metrics = this.aggSourcesMetrics.get(source);
+        if (!metrics) { metrics = new Set(); }
+        const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' + m.metric.toString().toLowerCase() + '_';
+        if (m.normalize) {
+            metrics.add(key + m.normalize.toString().toLowerCase());
+        } else {
+            metrics.add(key);
+        }
+        this.aggSourcesMetrics.set(source, metrics);
+    }
     private prepareTopologyAggregations(topologySources: Array<string>, zoom: number, checkPrecisionChanges?: boolean):
      Map<string, SourcesAgg> {
         const aggregationsMap: Map<string, SourcesAgg> = new Map();
@@ -1555,14 +1606,7 @@ export class MapContributor extends Contributor {
             if (ls.metrics) {
                 if (!aggregation.metrics) { aggregation.metrics = []; }
                 ls.metrics.forEach(m => {
-                    aggregation.metrics.push({
-                        collect_field: m.field,
-                        collect_fct: m.metric
-                    });
-                    let metrics = this.aggSourcesMetrics.get(cs);
-                    if (!metrics) { metrics = new Set(); }
-                    metrics.add(m.field.replace(/\./g, this.FLAT_CHAR) + '_' + m.metric.toString().toLowerCase() + '_');
-                    this.aggSourcesMetrics.set(cs, metrics);
+                    this.indexAggSourcesMetrics(cs, aggregation, m);
                 });
             }
             if (ls.geometrySupport) {
