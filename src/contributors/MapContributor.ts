@@ -670,7 +670,7 @@ export class MapContributor extends Contributor {
         const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ',' + newMove.extendForLoad[3] + ','
             + newMove.extendForLoad[0];
         // todo collection.centroid_path
-        const countFilter = this.getFilterForCount(pwithin, 'track.location');
+        const countFilter = this.getFilterForCount(pwithin, 'data.geometry');
         this.addFilter(countFilter, this.additionalFilter);
 
         /** Get displayable sources using zoom visibility rules only.
@@ -678,8 +678,8 @@ export class MapContributor extends Contributor {
         let displayableSources = this.getDisplayableSources(this.zoom);
         let dClusterSources = displayableSources[0];
         let dTopologySources = displayableSources[1];
-        this.prepareClusterAggregations(dClusterSources, this.zoom, true);
-        this.prepareTopologyAggregations(dTopologySources, this.zoom, true);
+        this.checkAggPrecision(dClusterSources, this.zoom);
+        this.checkAggPrecision(dTopologySources, this.zoom);
         const zoomSourcesToRemove = displayableSources[3];
         zoomSourcesToRemove.forEach(s => {
             // todo clear the correct type
@@ -755,9 +755,17 @@ export class MapContributor extends Contributor {
                 delete feature.properties.geometry_ref;
                 delete feature.properties.geometry_type;
                 delete feature.properties.feature_type;
+                const metricsKeys = this.aggSourcesMetrics.get(s);
+                if (metricsKeys) {
+                    metricsKeys.forEach(mk => {
+                        if (mk.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
+                            const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
+                            feature.properties[mk] = feature.properties[kWithoutN];
+                        }
+                    });
+                }
                 Object.keys(feature.properties).forEach(k => {
                     const metricStats = sourceStats[k];
-                    const metricsKeys = this.aggSourcesMetrics.get(s);
                     if (metricsKeys) {
                         if (!metricsKeys.has(k) && k !== 'point_count_normalize' && k !== 'count') {
                           delete feature.properties[k];
@@ -777,6 +785,7 @@ export class MapContributor extends Contributor {
                                 feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
                             }
                         }
+                        
                     } else if (k !== 'point_count_normalize' && k !== 'count') {
                       delete feature.properties[k];
                     }
@@ -805,9 +814,17 @@ export class MapContributor extends Contributor {
                 delete feature.properties.geometry_ref;
                 delete feature.properties.geometry_type;
                 delete feature.properties.feature_type;
+                const metricsKeys = this.aggSourcesMetrics.get(s);
+                if (metricsKeys) {
+                    metricsKeys.forEach(mk => {
+                        if (mk.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
+                            const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
+                            feature.properties[mk] = feature.properties[kWithoutN];
+                        }
+                    });
+                }
                 Object.keys(feature.properties).forEach(k => {
                     const metricStats = sourceStats[k];
-                    const metricsKeys = this.aggSourcesMetrics.get(s);
                     if (metricsKeys) {
                         if (!metricsKeys.has(k) && k !== 'point_count_normalize') {
                           delete feature.properties[k];
@@ -1075,12 +1092,13 @@ export class MapContributor extends Contributor {
                         metricsKeys.forEach(key => {
                             if (key.includes('_sum_') || key.includes('_max_') || key.includes('_min_') || key.includes('_avg_')) {
                                 if (key.endsWith('_' + NormalizationScope.local.toString().toLowerCase())) {
+                                    const keyWithoutNormalize = key.replace(NormalizationScope.local.toString().toLowerCase(), '');
                                     if (!stats[key]) {stats[key] = {min: Number.MAX_VALUE, max: Number.MIN_VALUE}; }
-                                    if (stats[key].max < feature.properties[key]) {
-                                        stats[key].max = feature.properties[key];
+                                    if (stats[key].max < feature.properties[keyWithoutNormalize]) {
+                                        stats[key].max = feature.properties[keyWithoutNormalize];
                                     }
-                                    if (stats[key].min > feature.properties[key]) {
-                                        stats[key].min = feature.properties[key];
+                                    if (stats[key].min > feature.properties[keyWithoutNormalize]) {
+                                        stats[key].min = feature.properties[keyWithoutNormalize];
                                     }
                                 }
                             }
@@ -1184,12 +1202,13 @@ export class MapContributor extends Contributor {
                             metricsKeys.forEach(key => {
                                 if (key.includes('_sum_') || key.includes('_max_') || key.includes('_min_') || key.includes('_avg_')) {
                                     if (key.endsWith('_' + NormalizationScope.local.toString().toLowerCase())) {
-                                        if (!stats[key]) {stats[key] = {min: Number.MAX_VALUE, max: Number.MIN_VALUE}; }
-                                        if (stats[key].max < feature.properties[key]) {
-                                            stats[key].max = feature.properties[key];
+                                        const keyWithoutNormalize = key.replace(NormalizationScope.local.toString().toLowerCase(), '');
+                                        if (!stats[keyWithoutNormalize]) {stats[keyWithoutNormalize] = {min: Number.MAX_VALUE, max: Number.MIN_VALUE}; }
+                                        if (stats[key].max < feature.properties[keyWithoutNormalize]) {
+                                            stats[key].max = feature.properties[keyWithoutNormalize];
                                         }
-                                        if (stats[key].min > feature.properties[key]) {
-                                            stats[key].min = feature.properties[key];
+                                        if (stats[key].min > feature.properties[keyWithoutNormalize]) {
+                                            stats[key].min = feature.properties[keyWithoutNormalize];
                                         }
                                     }
                                 }
@@ -1263,7 +1282,7 @@ export class MapContributor extends Contributor {
         const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2]
             + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
             // todo collection.centroid_path
-        const filter: Filter = this.getFilterForCount(pwithin, 'track.location');
+        const filter: Filter = this.getFilterForCount(pwithin, 'data.geometry');
         if (this.expressionFilter !== undefined) {
             filter.f.push([this.expressionFilter]);
         }
@@ -1513,7 +1532,7 @@ export class MapContributor extends Contributor {
      * @param checkPrecisionChanges If true, this function performs a check of precision change.
      * If so, the ongoing http calls of the same aggregation are stopped.
      */
-    private prepareClusterAggregations(clusterSources: Array<string>, zoom: number, checkPrecisionChanges?: boolean):
+    private prepareClusterAggregations(clusterSources: Array<string>, zoom: number):
         Map<string, SourcesAgg> {
         const aggregationsMap: Map<string, SourcesAgg> = new Map();
         clusterSources.forEach(cs => {
@@ -1553,35 +1572,25 @@ export class MapContributor extends Contributor {
             }
             sources.push(cs);
             aggregationsMap.set(aggId, {agg: aggregation, sources});
-            if (checkPrecisionChanges) {
-                this.abortOldPendingCalls(aggId, sources, ls.granularity, zoom);
-            }
-            // set abort controller that will be sent with fetching data requests
-            const control = this.abortControllers.get(aggId);
-            if (!control || control.signal.aborted) {
-                const controller = new AbortController();
-                this.abortControllers.set(aggId, controller);
-            }
         });
         return aggregationsMap;
     }
 
     private indexAggSourcesMetrics(source: string, aggregation: Aggregation, m: MetricConfig): void {
-        aggregation.metrics.push({
-            collect_field: m.field,
-            collect_fct: m.metric
-        });
         let metrics = this.aggSourcesMetrics.get(source);
-        if (!metrics) { metrics = new Set(); }
         const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' + m.metric.toString().toLowerCase() + '_';
-        if (m.normalize) {
-            metrics.add(key + m.normalize.toString().toLowerCase());
-        } else {
-            metrics.add(key);
+        const normalizeKey = m.normalize ? key + m.normalize.toString().toLowerCase() : key;
+        if (!metrics || (!metrics.has(key) && !metrics.has(normalizeKey))) {
+            aggregation.metrics.push({
+                collect_field: m.field,
+                collect_fct: m.metric
+            });
         }
+        if (!metrics) { metrics = new Set(); }
+        metrics.add(normalizeKey);
         this.aggSourcesMetrics.set(source, metrics);
     }
-    private prepareTopologyAggregations(topologySources: Array<string>, zoom: number, checkPrecisionChanges?: boolean):
+    private prepareTopologyAggregations(topologySources: Array<string>, zoom: number):
      Map<string, SourcesAgg> {
         const aggregationsMap: Map<string, SourcesAgg> = new Map();
         topologySources.forEach(cs => {
@@ -1617,10 +1626,19 @@ export class MapContributor extends Contributor {
             }
             sources.push(cs);
             aggregationsMap.set(aggId, {agg: aggregation, sources});
+        });
+        return aggregationsMap;
+    }
+
+    private checkAggPrecision(topologySources: Array<string>, zoom: number):
+     Map<string, SourcesAgg> {
+        const aggregationsMap: Map<string, SourcesAgg> = new Map();
+        topologySources.forEach(cs => {
+            const ls = this.topologyLayersIndex.get(cs);
+            this.aggSourcesMetrics.set(cs, new Set());
+            const aggId = ls.geometryId + ':' + ls.granularity.toString();
             const control = this.abortControllers.get(aggId);
-            if (checkPrecisionChanges) {
-                this.abortOldPendingCalls(aggId, sources, ls.granularity, zoom);
-            }
+            this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom);
             if (!control || control.signal.aborted) {
                 const controller = new AbortController();
                 this.abortControllers.set(aggId, controller);
@@ -1629,16 +1647,13 @@ export class MapContributor extends Contributor {
         return aggregationsMap;
     }
 
-
-    private abortOldPendingCalls(aggId: string, sources: Array<string>, granularity: Granularity, zoom: number) {
+    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, zoom: number) {
         const precisions = Object.assign({}, this.granularityFunctions.get(granularity)(zoom));
         let oldPrecisions;
-        sources.forEach(s => {
-            const p = Object.assign({}, this.sourcesPrecisions.get(s));
-            if (p && p.requestsPrecision && p.tilesPrecision) {
-                oldPrecisions = p;
-            }
-        });
+        const p = Object.assign({}, this.sourcesPrecisions.get(s));
+        if (p && p.requestsPrecision && p.tilesPrecision) {
+            oldPrecisions = p;
+        }
         if (!oldPrecisions) {oldPrecisions = {}; }
         if (oldPrecisions.tilesPrecision !== precisions.tilesPrecision ||
             oldPrecisions.requestsPrecision !== precisions.requestsPrecision) {
