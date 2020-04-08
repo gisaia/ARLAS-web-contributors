@@ -670,10 +670,12 @@ export class MapContributor extends Contributor {
     public onMoveDynamicMode(newMove: OnMoveResult) {
         this.tiles = newMove.tiles;
         this.zoom = newMove.zoom;
-        const pwithin = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ',' + newMove.extendForLoad[3] + ','
-            + newMove.extendForLoad[0];
-        // todo collection.centroid_path
-        const countFilter = this.getFilterForCount(pwithin, 'data.geometry');
+        const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
+          + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
+            const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
+            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
+        // todo put collection.centroid_path
+        const countFilter = this.getFilterForCount(rawExtent, wrapExtent, 'data.geometry');
         this.addFilter(countFilter, this.additionalFilter);
 
         /** Get displayable sources using zoom visibility rules only.
@@ -687,7 +689,7 @@ export class MapContributor extends Contributor {
         zoomSourcesToRemove.forEach(s => {
             // todo clear the correct type
             this.redrawSource.next({source: s, data: []});
-            this.clearData(s)
+            this.clearData(s);
             this.sourcesVisitedTiles.set(s, new Set());
             this.sourcesPrecisions.set(s, {});
         });
@@ -788,7 +790,6 @@ export class MapContributor extends Contributor {
                                 feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
                             }
                         }
-                        
                     } else if (k !== 'point_count_normalize' && k !== 'count') {
                       delete feature.properties[k];
                     }
@@ -1206,7 +1207,9 @@ export class MapContributor extends Contributor {
                                 if (key.includes('_sum_') || key.includes('_max_') || key.includes('_min_') || key.includes('_avg_')) {
                                     if (key.endsWith('_' + NormalizationScope.local.toString().toLowerCase())) {
                                         const keyWithoutNormalize = key.replace(NormalizationScope.local.toString().toLowerCase(), '');
-                                        if (!stats[keyWithoutNormalize]) {stats[keyWithoutNormalize] = {min: Number.MAX_VALUE, max: Number.MIN_VALUE}; }
+                                        if (!stats[keyWithoutNormalize]) {
+                                            stats[keyWithoutNormalize] = {min: Number.MAX_VALUE, max: Number.MIN_VALUE};
+                                        }
                                         if (stats[key].max < feature.properties[keyWithoutNormalize]) {
                                             stats[key].max = feature.properties[keyWithoutNormalize];
                                         }
@@ -1284,7 +1287,7 @@ export class MapContributor extends Contributor {
         afterParam?: string, whichPage?: PageEnum, fromParam?): Observable<FeatureCollection> {
         const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
         const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ',' + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
-        const filter: Filter = this.getFilterForCount(rawExtent, wrapExtent);
+        const filter: Filter = this.getFilterForCount(rawExtent, wrapExtent, 'data.geometry');
         if (this.expressionFilter !== undefined) {
             filter.f.push([this.expressionFilter]);
         }
@@ -1384,7 +1387,7 @@ export class MapContributor extends Contributor {
         return features;
     }
 
-    public getFilterForCount(rawExtend: string, wrapExtend: string): Filter {
+    public getFilterForCount(rawExtend: string, wrapExtend: string, countGeoField: string): Filter {
         // west, south, east, north
         const finalExtend = [];
         const wrapExtentTab = wrapExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
