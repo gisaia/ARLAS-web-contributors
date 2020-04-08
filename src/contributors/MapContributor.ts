@@ -264,6 +264,8 @@ export class MapContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<any> {
+        console.log("fetch data")
+        console.log(this.dataMode);
         switch (this.dataMode) {
             case DataMode.simple: {
                 return this.fetchDataSimpleMode(collaborationEvent);
@@ -280,48 +282,20 @@ export class MapContributor extends Contributor {
     }
 
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
-        // this.currentStringedTilesList = [];
-        // this.currentGeohashList = [];
-        // this.maxValueGeoHash = 0;
-        // if (this.zoom < this.zoomLevelForTestCount) {
-        //     this.fetchType = fetchType.geohash;
-        //     this.geojsondata.features = [];
-        //     this.geohashesMap = new Map();
-        //     this.parentGeohashesSet = new Set();
-        //     return this.fetchDataGeohashGeoaggregate(this.geohashList);
-        // } else if (this.zoom >= this.zoomLevelForTestCount) {
-        //     const pwithin = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
-        //     const countFilter = this.getFilterForCount(pwithin);
-        //     this.addFilter(countFilter, this.additionalFilter);
-        //     const count: Observable<Hits> = this.collaborativeSearcheService
-        //         .resolveButNotHits([projType.count, {}], this.collaborativeSearcheService.collaborations,
-        //             this.identifier, countFilter, true, this.cacheDuration);
-        //     if (count) {
-        //         return count.pipe(flatMap(c => {
-        //             this.countExtendBus.next({
-        //                 count: c.totalnb,
-        //                 threshold: this.nbMaxFeatureForCluster
-        //             });
-        //             if (c.totalnb <= this.nbMaxFeatureForCluster) {
-        //                 this.geojsondata.features = [];
-        //                 this.fetchType = fetchType.tile;
-        //                 return this.fetchDataTileSearch(this.tiles);
-        //             } else {
-        //                 this.fetchType = fetchType.geohash;
-        //                 this.geojsondata.features = [];
-        //                 this.geohashesMap = new Map();
-        //                 this.parentGeohashesSet = new Set();
-        //                 return this.fetchDataGeohashGeoaggregate(this.geohashList);
-        //             }
-        //         }));
-        //     } else {
-        //         this.countExtendBus.next({
-        //             count: 0,
-        //             threshold: this.nbMaxFeatureForCluster
-        //         });
-        //     }
-        // }
-
+        console.log('FETCH')
+        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
+          + this.mapExtend[3] + ',' + this.mapExtend[0];
+            const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
+            + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        this.aggSourcesMetrics.clear();
+        this.aggSourcesStats.clear();
+        this.sourcesPrecisions.clear();
+        this.sourcesVisitedTiles.clear();
+        this.topologyDataPerSource.clear();
+        this.geohashesPerSource.clear();
+        this.parentGeohashesPerSource.clear();
+        // todo put collection.centroid_path
+        this.fetchAll(rawExtent, wrapExtent, this.mapExtend, this.zoom);
         return of();
     }
     public computeData(data: any) {
@@ -384,6 +358,54 @@ export class MapContributor extends Contributor {
             'features': []
         };
         this.updateFromCollaboration(null);
+    }
+
+    public fetchAll(rawExtent, wrapExtent, mapExtent, zoom): void {
+        const countFilter = this.getFilterForCount(rawExtent, wrapExtent, 'data.geometry');
+        this.addFilter(countFilter, this.additionalFilter);
+
+        /** Get displayable sources using zoom visibility rules only.
+         *  If the precision of a cluster souce changes, it will stop the ongoing http calls */
+        let displayableSources = this.getDisplayableSources(zoom);
+        let dClusterSources = displayableSources[0];
+        let dTopologySources = displayableSources[1];
+        this.checkAggPrecision(dClusterSources, zoom);
+        this.checkAggPrecision(dTopologySources, zoom);
+        const zoomSourcesToRemove = displayableSources[3];
+        zoomSourcesToRemove.forEach(s => {
+            // todo clear the correct type
+            this.redrawSource.next({source: s, data: []});
+            this.clearData(s);
+            this.sourcesVisitedTiles.set(s, new Set());
+            this.sourcesPrecisions.set(s, {});
+        });
+        const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
+            this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
+        if (count) {
+            count.subscribe(countResponse => {
+                console.log('FETCH AFTER COUNT')
+                const nbFeatures = countResponse.totalnb;
+                displayableSources = this.getDisplayableSources(zoom, nbFeatures);
+                dClusterSources = displayableSources[0];
+                dTopologySources = displayableSources[1];
+                const dFeatureSources = displayableSources[2];
+                const nbFeaturesSourcesToRemove = displayableSources[3];
+                const alreadyRemovedSources = new Set(zoomSourcesToRemove);
+                nbFeaturesSourcesToRemove.filter(s => !alreadyRemovedSources.has(s)).forEach(s => {
+                    // todo clear the correct type
+                    this.redrawSource.next({source: s, data: []});
+                    this.clearData(s);
+                    this.aggSourcesStats.set(s, {count: 0});
+                    this.sourcesVisitedTiles.set(s, new Set());
+                    this.sourcesPrecisions.set(s, {});
+                });
+                this.prepareFeaturesReturnedGeomtries(dFeatureSources);
+                const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
+                const topologyAggsBuilder = this.prepareTopologyAggregations(dTopologySources, zoom);
+                this.drawAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
+                this.drawAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
+            });
+        }
     }
 
     /**
@@ -668,57 +690,18 @@ export class MapContributor extends Contributor {
     * Function called on onMove event
     */
     public onMoveDynamicMode(newMove: OnMoveResult) {
+        console.log('ON MOVE');
+        this.updateData = true;
         this.tiles = newMove.tiles;
         this.zoom = newMove.zoom;
+        this.mapExtend = newMove.extendForLoad;
+        this.mapRawExtent = newMove.rawExtendForLoad;
         const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
           + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-            const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
+        const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
             + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
         // todo put collection.centroid_path
-        const countFilter = this.getFilterForCount(rawExtent, wrapExtent, 'data.geometry');
-        this.addFilter(countFilter, this.additionalFilter);
-
-        /** Get displayable sources using zoom visibility rules only.
-         *  If the precision of a cluster souce changes, it will stop the ongoing http calls */
-        let displayableSources = this.getDisplayableSources(this.zoom);
-        let dClusterSources = displayableSources[0];
-        let dTopologySources = displayableSources[1];
-        this.checkAggPrecision(dClusterSources, this.zoom);
-        this.checkAggPrecision(dTopologySources, this.zoom);
-        const zoomSourcesToRemove = displayableSources[3];
-        zoomSourcesToRemove.forEach(s => {
-            // todo clear the correct type
-            this.redrawSource.next({source: s, data: []});
-            this.clearData(s);
-            this.sourcesVisitedTiles.set(s, new Set());
-            this.sourcesPrecisions.set(s, {});
-        });
-        const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
-            this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
-        if (count) {
-            count.subscribe(countResponse => {
-                const nbFeatures = countResponse.totalnb;
-                displayableSources = this.getDisplayableSources(this.zoom, nbFeatures);
-                dClusterSources = displayableSources[0];
-                dTopologySources = displayableSources[1];
-                const dFeatureSources = displayableSources[2];
-                const nbFeaturesSourcesToRemove = displayableSources[3];
-                const alreadyRemovedSources = new Set(zoomSourcesToRemove);
-                nbFeaturesSourcesToRemove.filter(s => !alreadyRemovedSources.has(s)).forEach(s => {
-                    // todo clear the correct type
-                    this.redrawSource.next({source: s, data: []});
-                    this.clearData(s);
-                    this.aggSourcesStats.set(s, {count: 0});
-                    this.sourcesVisitedTiles.set(s, new Set());
-                    this.sourcesPrecisions.set(s, {});
-                });
-                this.prepareFeaturesReturnedGeomtries(dFeatureSources);
-                const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, this.zoom);
-                const topologyAggsBuilder = this.prepareTopologyAggregations(dTopologySources, this.zoom);
-                this.drawAggSources(newMove.extendForLoad, this.zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
-                this.drawAggSources(newMove.extendForLoad, this.zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
-            });
-        }
+        this.fetchAll(rawExtent, wrapExtent, this.mapExtend, this.zoom);
     }
 
     public drawGeoSearch(fromParam?: number, appendId?: boolean) {
@@ -750,52 +733,54 @@ export class MapContributor extends Contributor {
             const topologyRawData = this.topologyDataPerSource.get(s);
             const sourceStats = this.aggSourcesStats.get(s);
             const sourceData = [];
-            topologyRawData.forEach((f) => {
-                const properties = Object.assign({}, f.properties);
-                const feature = Object.assign({}, f);
-                feature.properties = properties;
-                // feature.properties['point_count'] = feature.properties.count;
-                // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
-                feature.properties['point_count_normalize'] = Math.round(feature.properties.count / sourceStats.count * 100);
-                delete feature.properties.geometry_ref;
-                delete feature.properties.geometry_type;
-                delete feature.properties.feature_type;
-                const metricsKeys = this.aggSourcesMetrics.get(s);
-                if (metricsKeys) {
-                    metricsKeys.forEach(mk => {
-                        if (mk.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
-                            const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
-                            feature.properties[mk] = feature.properties[kWithoutN];
+            if (topologyRawData) {
+                topologyRawData.forEach((f) => {
+                    const properties = Object.assign({}, f.properties);
+                    const feature = Object.assign({}, f);
+                    feature.properties = properties;
+                    // feature.properties['point_count'] = feature.properties.count;
+                    // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
+                    feature.properties['point_count_normalize'] = Math.round(feature.properties.count / sourceStats.count * 100);
+                    delete feature.properties.geometry_ref;
+                    delete feature.properties.geometry_type;
+                    delete feature.properties.feature_type;
+                    const metricsKeys = this.aggSourcesMetrics.get(s);
+                    if (metricsKeys) {
+                        metricsKeys.forEach(mk => {
+                            if (mk.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
+                                const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
+                                feature.properties[mk] = feature.properties[kWithoutN];
+                            }
+                        });
+                    }
+                    Object.keys(feature.properties).forEach(k => {
+                        const metricStats = sourceStats[k];
+                        if (metricsKeys) {
+                            if (!metricsKeys.has(k) && k !== 'point_count_normalize' && k !== 'count') {
+                              delete feature.properties[k];
+                            } else if (k.includes('_avg_')) {
+                                /** completes the weighted average calculus by dividing by the total count */
+                                feature.properties[k] = feature.properties[k] / feature.properties.count;
+                                if (metricStats) {
+                                    sourceStats[k].min = metricStats.min / feature.properties.count;
+                                    sourceStats[k].max = metricStats.max / feature.properties.count;
+                                }
+                            }
+                            /** normalize */
+                            if (k.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
+                                if (metricStats.min === metricStats.max) {
+                                    feature.properties[k] = 0;
+                                } else {
+                                    feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
+                                }
+                            }
+                        } else if (k !== 'point_count_normalize' && k !== 'count') {
+                          delete feature.properties[k];
                         }
                     });
-                }
-                Object.keys(feature.properties).forEach(k => {
-                    const metricStats = sourceStats[k];
-                    if (metricsKeys) {
-                        if (!metricsKeys.has(k) && k !== 'point_count_normalize' && k !== 'count') {
-                          delete feature.properties[k];
-                        } else if (k.includes('_avg_')) {
-                            /** completes the weighted average calculus by dividing by the total count */
-                            feature.properties[k] = feature.properties[k] / feature.properties.count;
-                            if (metricStats) {
-                                sourceStats[k].min = metricStats.min / feature.properties.count;
-                                sourceStats[k].max = metricStats.max / feature.properties.count;
-                            }
-                        }
-                        /** normalize */
-                        if (k.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
-                            if (metricStats.min === metricStats.max) {
-                                feature.properties[k] = 0;
-                            } else {
-                                feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
-                            }
-                        }
-                    } else if (k !== 'point_count_normalize' && k !== 'count') {
-                      delete feature.properties[k];
-                    }
+                    sourceData.push(feature);
                 });
-                sourceData.push(feature);
-            });
+            }
             this.redrawSource.next({source: s, data: sourceData});
         });
     }
@@ -806,54 +791,56 @@ export class MapContributor extends Contributor {
             const sourceGeohashes = this.geohashesPerSource.get(s);
             const sourceStats = this.aggSourcesStats.get(s);
             const sourceData = [];
-            sourceGeohashes.forEach((f, geohash) => {
-                const properties = Object.assign({}, f.properties);
-                const feature = Object.assign({}, f);
-                feature.properties = properties;
-                // feature.properties['point_count'] = feature.properties.count;
-                // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
-                feature.properties['point_count_normalize'] = Math.round(feature.properties.count / sourceStats.count * 100);
-                delete feature.properties.geohash;
-                delete feature.properties.parent_geohash;
-                delete feature.properties.geometry_ref;
-                delete feature.properties.geometry_type;
-                delete feature.properties.feature_type;
-                const metricsKeys = this.aggSourcesMetrics.get(s);
-                if (metricsKeys) {
-                    metricsKeys.forEach(mk => {
-                        if (mk.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
-                            const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
-                            feature.properties[mk] = feature.properties[kWithoutN];
+            if (sourceGeohashes) {
+                sourceGeohashes.forEach((f, geohash) => {
+                    const properties = Object.assign({}, f.properties);
+                    const feature = Object.assign({}, f);
+                    feature.properties = properties;
+                    // feature.properties['point_count'] = feature.properties.count;
+                    // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
+                    feature.properties['point_count_normalize'] = Math.round(feature.properties.count / sourceStats.count * 100);
+                    delete feature.properties.geohash;
+                    delete feature.properties.parent_geohash;
+                    delete feature.properties.geometry_ref;
+                    delete feature.properties.geometry_type;
+                    delete feature.properties.feature_type;
+                    const metricsKeys = this.aggSourcesMetrics.get(s);
+                    if (metricsKeys) {
+                        metricsKeys.forEach(mk => {
+                            if (mk.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
+                                const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
+                                feature.properties[mk] = feature.properties[kWithoutN];
+                            }
+                        });
+                    }
+                    Object.keys(feature.properties).forEach(k => {
+                        const metricStats = sourceStats[k];
+                        if (metricsKeys) {
+                            if (!metricsKeys.has(k) && k !== 'point_count_normalize') {
+                              delete feature.properties[k];
+                            } else if (k.includes('_avg_')) {
+                                /** completes the weighted average calculus by dividing by the total count */
+                                feature.properties[k] = feature.properties[k] / feature.properties.count;
+                                if (metricStats) {
+                                    sourceStats[k].min = metricStats.min / feature.properties.count;
+                                    sourceStats[k].max = metricStats.max / feature.properties.count;
+                                }
+                            }
+                            /** normalize */
+                            if (k.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
+                                if (metricStats.min === metricStats.max) {
+                                    feature.properties[k] = 0;
+                                } else {
+                                    feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
+                                }
+                            }
+                        } else if (k !== 'point_count_normalize') {
+                          delete feature.properties[k];
                         }
                     });
-                }
-                Object.keys(feature.properties).forEach(k => {
-                    const metricStats = sourceStats[k];
-                    if (metricsKeys) {
-                        if (!metricsKeys.has(k) && k !== 'point_count_normalize') {
-                          delete feature.properties[k];
-                        } else if (k.includes('_avg_')) {
-                            /** completes the weighted average calculus by dividing by the total count */
-                            feature.properties[k] = feature.properties[k] / feature.properties.count;
-                            if (metricStats) {
-                                sourceStats[k].min = metricStats.min / feature.properties.count;
-                                sourceStats[k].max = metricStats.max / feature.properties.count;
-                            }
-                        }
-                        /** normalize */
-                        if (k.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
-                            if (metricStats.min === metricStats.max) {
-                                feature.properties[k] = 0;
-                            } else {
-                                feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
-                            }
-                        }
-                    } else if (k !== 'point_count_normalize') {
-                      delete feature.properties[k];
-                    }
+                    sourceData.push(feature);
                 });
-                sourceData.push(feature);
-            });
+            }
             this.redrawSource.next({source: s, data: sourceData});
         });
     }
