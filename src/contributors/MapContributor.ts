@@ -284,7 +284,6 @@ export class MapContributor extends Contributor {
     }
 
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
-        console.log('FETCH')
         const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
           + this.mapExtend[3] + ',' + this.mapExtend[0];
             const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
@@ -372,6 +371,7 @@ export class MapContributor extends Contributor {
         let displayableSources = this.getDisplayableSources(zoom);
         let dClusterSources = displayableSources[0];
         let dTopologySources = displayableSources[1];
+        let dFeatureSources = displayableSources[2];
         this.checkAggPrecision(dClusterSources, zoom);
         this.checkAggPrecision(dTopologySources, zoom);
         const zoomSourcesToRemove = displayableSources[3];
@@ -386,13 +386,11 @@ export class MapContributor extends Contributor {
             this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
         if (count) {
             count.subscribe(countResponse => {
-                console.log('FETCH AFTER COUNT');
                 const nbFeatures = countResponse.totalnb;
                 displayableSources = this.getDisplayableSources(zoom, nbFeatures);
                 dClusterSources = displayableSources[0];
                 dTopologySources = displayableSources[1];
-
-                const dFeatureSources = displayableSources[2];
+                dFeatureSources = displayableSources[2];
                 const nbFeaturesSourcesToRemove = displayableSources[3];
                 const alreadyRemovedSources = new Set(zoomSourcesToRemove);
                 const globalMetricsToFetch = [];
@@ -1797,6 +1795,19 @@ export class MapContributor extends Contributor {
                 clusterLayer.aggregatedGeometry = ls.aggregated_geometry;
             }
             clusterLayer.metrics = ls.metrics;
+            /** extends rules visibility */
+            const existingClusterLayer = clusterLayers.get(clusterLayer.source);
+            if (existingClusterLayer) {
+                if (existingClusterLayer.minzoom < clusterLayer.minzoom) {
+                    clusterLayer.minzoom = existingClusterLayer.minzoom;
+                }
+                if (existingClusterLayer.maxzoom > clusterLayer.maxzoom) {
+                    clusterLayer.maxzoom = existingClusterLayer.maxzoom;
+                }
+                if (existingClusterLayer.minfeatures < clusterLayer.minfeatures) {
+                    clusterLayer.minfeatures = existingClusterLayer.minfeatures;
+                }
+            }
             clusterLayers.set(clusterLayer.source, clusterLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.minfeatures, this.CLUSTER_SOURCE, ls.source);
@@ -1821,6 +1832,19 @@ export class MapContributor extends Contributor {
             topologyLayer.geometryId = ls.geometry_id;
             topologyLayer.metrics = ls.metrics;
             topologyLayer.granularity = ls.granularity;
+            /** extends rules visibility */
+            const existingTopologyLayer = topologyLayers.get(topologyLayer.source);
+            if (existingTopologyLayer) {
+                if (existingTopologyLayer.minzoom < topologyLayer.minzoom) {
+                    topologyLayer.minzoom = existingTopologyLayer.minzoom;
+                }
+                if (existingTopologyLayer.maxzoom > topologyLayer.maxzoom) {
+                    topologyLayer.maxzoom = existingTopologyLayer.maxzoom;
+                }
+                if (existingTopologyLayer.maxfeatures > topologyLayer.maxfeatures) {
+                    topologyLayer.maxfeatures = existingTopologyLayer.maxfeatures;
+                }
+            }
             topologyLayers.set(topologyLayer.source, topologyLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.maxfeatures, this.TOPOLOGY_SOURCE, ls.source);
@@ -1847,6 +1871,19 @@ export class MapContributor extends Contributor {
             featureLayer.includeFields = new Set(ls.include_fields);
             featureLayer.colorField = ls.metrics;
             featureLayer.returnedGeometry = ls.returned_geometry;
+            /** extends rules visibility */
+            const existingFeatureLayer = featureLayers.get(featureLayer.source);
+            if (existingFeatureLayer) {
+                if (existingFeatureLayer.minzoom < featureLayer.minzoom) {
+                    featureLayer.minzoom = existingFeatureLayer.minzoom;
+                }
+                if (existingFeatureLayer.maxzoom > featureLayer.maxzoom) {
+                    featureLayer.maxzoom = existingFeatureLayer.maxzoom;
+                }
+                if (existingFeatureLayer.maxfeatures > featureLayer.maxfeatures) {
+                    featureLayer.maxfeatures = existingFeatureLayer.maxfeatures;
+                }
+            }
             featureLayers.set(featureLayer.source, featureLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.maxfeatures, this.FEATURE_SOURCE, ls.source);
