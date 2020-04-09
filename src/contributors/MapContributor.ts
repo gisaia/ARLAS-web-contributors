@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, Subject, from, of } from 'rxjs';
+import { Observable, Subject, from, of, forkJoin } from 'rxjs';
 import { map, finalize, mergeAll, concatAll, tap, takeUntil } from 'rxjs/operators';
 
 import {
@@ -27,7 +27,7 @@ import {
 } from 'arlas-web-core';
 import {
     Search, Expression, Hits,
-    Aggregation, Projection,
+    Aggregation, Projection, ComputationResponse, ComputationRequest,
     Filter, FeatureCollection, Feature, Metric, AggregationResponse
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization, NormalizationScope,
@@ -105,6 +105,8 @@ export class MapContributor extends Contributor {
 
     private aggSourcesStats: Map<string, {count: number, sum?: number}> = new Map();
     private aggSourcesMetrics: Map<string, Set<string>> = new Map();
+    private globalMetricsIndex: Map<string, number> = new Map();
+    private flatMetricsIndex: Map<string, Metric> = new Map();
     private sourcesVisitedTiles: Map<string, Set<string>> = new Map();
     private sourcesPrecisions: Map<string, {tilesPrecision?: number, requestsPrecision?: number}> = new Map();
     private granularityFunctions: Map<Granularity, (zoom: number) => {tilesPrecision: number, requestsPrecision: number}> = new Map();
@@ -294,6 +296,8 @@ export class MapContributor extends Contributor {
         this.topologyDataPerSource.clear();
         this.geohashesPerSource.clear();
         this.parentGeohashesPerSource.clear();
+        this.flatMetricsIndex.clear();
+        this.globalMetricsIndex.clear();
         // todo put collection.centroid_path
         this.fetchAll(rawExtent, wrapExtent, this.mapExtend, this.zoom);
         return of();
@@ -363,7 +367,6 @@ export class MapContributor extends Contributor {
     public fetchAll(rawExtent, wrapExtent, mapExtent, zoom): void {
         const countFilter = this.getFilterForCount(rawExtent, wrapExtent, 'data.geometry');
         this.addFilter(countFilter, this.additionalFilter);
-
         /** Get displayable sources using zoom visibility rules only.
          *  If the precision of a cluster souce changes, it will stop the ongoing http calls */
         let displayableSources = this.getDisplayableSources(zoom);
@@ -383,14 +386,22 @@ export class MapContributor extends Contributor {
             this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
         if (count) {
             count.subscribe(countResponse => {
-                console.log('FETCH AFTER COUNT')
+                console.log('FETCH AFTER COUNT');
                 const nbFeatures = countResponse.totalnb;
                 displayableSources = this.getDisplayableSources(zoom, nbFeatures);
                 dClusterSources = displayableSources[0];
                 dTopologySources = displayableSources[1];
+
                 const dFeatureSources = displayableSources[2];
                 const nbFeaturesSourcesToRemove = displayableSources[3];
                 const alreadyRemovedSources = new Set(zoomSourcesToRemove);
+                const globalMetricsToFetch = [];
+                this.getGlobalMetrics(dClusterSources, dTopologySources).forEach(gm => {
+                    const gmi = this.globalMetricsIndex.get(gm);
+                    if (gmi === undefined) {
+                        globalMetricsToFetch.push(gm);
+                    }
+                });
                 nbFeaturesSourcesToRemove.filter(s => !alreadyRemovedSources.has(s)).forEach(s => {
                     // todo clear the correct type
                     this.redrawSource.next({source: s, data: []});
@@ -399,15 +410,59 @@ export class MapContributor extends Contributor {
                     this.sourcesVisitedTiles.set(s, new Set());
                     this.sourcesPrecisions.set(s, {});
                 });
-                this.prepareFeaturesReturnedGeomtries(dFeatureSources);
-                const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
-                const topologyAggsBuilder = this.prepareTopologyAggregations(dTopologySources, zoom);
-                this.drawAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
-                this.drawAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
+                if (globalMetricsToFetch.length > 0) {
+                    this.computeMetrics(globalMetricsToFetch).subscribe(computations => {
+                        computations.forEach(cr => {
+                            const key = cr.field.replace(/\./g, this.FLAT_CHAR) + '_' +
+                                cr.metric.toString().toLowerCase() + '_' + NormalizationScope.global.toString().toLowerCase();
+                            this.globalMetricsIndex.set(key, cr.value);
+                            this.prepareFeaturesReturnedGeomtries(dFeatureSources);
+                            const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
+                            const topologyAggsBuilder = this.prepareTopologyAggregations(dTopologySources, zoom);
+                            this.drawAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
+                            this.drawAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
+                        });
+                    });
+                } else {
+                    this.prepareFeaturesReturnedGeomtries(dFeatureSources);
+                    const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
+                    const topologyAggsBuilder = this.prepareTopologyAggregations(dTopologySources, zoom);
+                    this.drawAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
+                    this.drawAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
+                }
             });
         }
     }
 
+
+    public getGlobalMetrics(css, tss): Set<string> {
+        const globalMetrics = new Set<string>();
+        css.forEach(cs => {
+            const c = this.clusterLayersIndex.get(cs);
+            c.metrics.filter(m => m.normalize === NormalizationScope.global).forEach(m => {
+                const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' +
+                    m.metric.toString().toLowerCase() + '_' + m.normalize.toString().toLowerCase();
+                this.flatMetricsIndex.set(key, {
+                    collect_fct: m.metric,
+                    collect_field: m.field
+                });
+                globalMetrics.add(key);
+            });
+        });
+        tss.forEach(cs => {
+            const c = this.topologyLayersIndex.get(cs);
+            c.metrics.filter(m => m.normalize === NormalizationScope.global).forEach(m => {
+                const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' +
+                    m.metric.toString().toLowerCase() + '_' + m.normalize.toString().toLowerCase();
+                this.flatMetricsIndex.set(key, {
+                    collect_fct: m.metric,
+                    collect_field: m.field
+                });
+                globalMetrics.add(key);
+            });
+        });
+        return globalMetrics;
+    }
     /**
      * Applies the geoQueryOperation
      */
@@ -750,6 +805,9 @@ export class MapContributor extends Contributor {
                             if (mk.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
                                 const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
                                 feature.properties[mk] = feature.properties[kWithoutN];
+                            } else if (mk.endsWith('_'  + NormalizationScope.global.toString().toLowerCase())){
+                                const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
+                                feature.properties[mk] = feature.properties[kWithoutN];
                             }
                         });
                     }
@@ -773,6 +831,16 @@ export class MapContributor extends Contributor {
                                 } else {
                                     feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
                                 }
+                            } else if (k.endsWith('_'  + NormalizationScope.global.toString().toLowerCase())) {
+                                // todo to be discussed with the team. Global normalization is not possible for all metrics
+                                // if (k.includes('_sum_') || k.includes('_max_') || k.includes('_cardinality_') || k.includes('_min_')) {
+                                //     const value = feature.properties[k];
+                                //     const metric = this.globalMetricsIndex.get(ok); 
+                                //     feature.properties[k] = feature.properties[k] / this.globalMetricsIndex.get(k);
+                                // } else if (k.includes('_min_')){
+                                //     feature.properties[k] = this.globalMetricsIndex(k) / fe
+                                // }
+
                             }
                         } else if (k !== 'point_count_normalize' && k !== 'count') {
                           delete feature.properties[k];
@@ -845,20 +913,6 @@ export class MapContributor extends Contributor {
         });
     }
 
-    // todo complete implementation
-    public nomalizeClustersLocally(s: string) {
-        const source = this.clusterLayersIndex.get(s);
-        const metricsKeys = new Set<string>();
-        source.metrics.forEach(m => {
-            const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' + m.metric.toString().toLowerCase() + '_';
-            if (m.normalize) {
-                metricsKeys.add(key + m.normalize.toString().toLowerCase());
-            } else {
-                metricsKeys.add(key);
-            }
-        });
-        // todo caclulate the min and max value of each metric
-    }
     public drawSearchTiles(tiles: Array<{ x: number, y: number, z: number }>) {
         this.updateData = true;
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
@@ -895,6 +949,16 @@ export class MapContributor extends Contributor {
         return from(tabOfGeohash).pipe(mergeAll());
     }
 
+    public computeMetrics(globalMetrics: Array<string>):
+        Observable<Array<ComputationResponse>> {
+        return forkJoin(globalMetrics.map(m => {
+            const metric = this.flatMetricsIndex.get(m);
+            return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+            <ComputationRequest>{ field: metric.collect_field, 
+                metric: ComputationRequest.MetricEnum[metric.collect_fct.toString().toUpperCase()] }],
+                this.collaborativeSearcheService.collaborations, null, {}, false, this.cacheDuration);
+        }));
+    }
     public clearData(s: string, aggType?: string) {
         if (!aggType) {
             aggType = this.clusterLayersIndex.get(s) ? this.CLUSTER_SOURCE : this.TOPOLOGY_SOURCE;
