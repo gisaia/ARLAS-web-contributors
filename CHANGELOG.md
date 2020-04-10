@@ -1,5 +1,14 @@
 # Change Log
 
+## [v12.7.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.0) (2020-04-10)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.6.0...v12.7.0)
+
+**New stuff:**
+
+- Update arlas-core version [\#305](https://github.com/gisaia/ARLAS-web-contributors/pull/305) ([mbarbet](https://github.com/mbarbet))
+- Fix map getFilterForCount [\#301](https://github.com/gisaia/ARLAS-web-contributors/pull/301) ([mbarbet](https://github.com/mbarbet))
+
 ## [v12.6.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.6.0) (2020-03-12)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.3...v12.6.0)
