@@ -385,8 +385,8 @@ export class MapContributor extends Contributor {
         let dClusterSources = displayableSources[0];
         let dTopologySources = displayableSources[1];
         let dFeatureSources = displayableSources[2];
-        this.checkAggPrecision(dClusterSources, zoom);
-        this.checkAggPrecision(dTopologySources, zoom);
+        this.checkAggPrecision(dClusterSources, zoom, this.CLUSTER_SOURCE);
+        this.checkAggPrecision(dTopologySources, zoom, this.TOPOLOGY_SOURCE);
         const zoomSourcesToRemove = displayableSources[3];
         zoomSourcesToRemove.forEach(s => {
             // todo clear the correct type
@@ -453,27 +453,31 @@ export class MapContributor extends Contributor {
         const globalMetrics = new Set<string>();
         css.forEach(cs => {
             const c = this.clusterLayersIndex.get(cs);
-            c.metrics.filter(m => m.normalize === NormalizationScope.global).forEach(m => {
-                const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' +
-                    m.metric.toString().toLowerCase() + '_' + m.normalize.toString().toLowerCase();
-                this.flatMetricsIndex.set(key, {
-                    collect_fct: m.metric,
-                    collect_field: m.field
+            if (c.metrics) {
+                c.metrics.filter(m => m.normalize === NormalizationScope.global).forEach(m => {
+                    const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' +
+                        m.metric.toString().toLowerCase() + '_' + m.normalize.toString().toLowerCase();
+                    this.flatMetricsIndex.set(key, {
+                        collect_fct: m.metric,
+                        collect_field: m.field
+                    });
+                    globalMetrics.add(key);
                 });
-                globalMetrics.add(key);
-            });
+            }
         });
         tss.forEach(cs => {
             const c = this.topologyLayersIndex.get(cs);
-            c.metrics.filter(m => m.normalize === NormalizationScope.global).forEach(m => {
-                const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' +
-                    m.metric.toString().toLowerCase() + '_' + m.normalize.toString().toLowerCase();
-                this.flatMetricsIndex.set(key, {
-                    collect_fct: m.metric,
-                    collect_field: m.field
+            if (c.metrics) {
+                c.metrics.filter(m => m.normalize === NormalizationScope.global).forEach(m => {
+                    const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' +
+                        m.metric.toString().toLowerCase() + '_' + m.normalize.toString().toLowerCase();
+                    this.flatMetricsIndex.set(key, {
+                        collect_fct: m.metric,
+                        collect_field: m.field
+                    });
+                    globalMetrics.add(key);
                 });
-                globalMetrics.add(key);
-            });
+            }
         });
         return globalMetrics;
     }
@@ -1821,11 +1825,12 @@ export class MapContributor extends Contributor {
     private checkFeaturesPrecision(featureSources: Array<string>, zoom: number) {
 
     }
-    private checkAggPrecision(aggSources: Array<string>, zoom: number): void {
+    private checkAggPrecision(aggSources: Array<string>, zoom: number, aggType: string): void {
         aggSources.forEach(cs => {
-            const ls = this.topologyLayersIndex.get(cs);
+            const ls = aggType === this.TOPOLOGY_SOURCE ? this.topologyLayersIndex.get(cs) : this.clusterLayersIndex.get(cs);
+            const aggId = aggType === this.TOPOLOGY_SOURCE ? (ls as LayerTopologySource).geometryId + ':' + ls.granularity.toString() :
+            (ls as LayerClusterSource).aggGeoField + ':' + ls.granularity.toString();
             this.aggSourcesMetrics.set(cs, new Set());
-            const aggId = ls.geometryId + ':' + ls.granularity.toString();
             const control = this.abortControllers.get(aggId);
             this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom);
             if (!control || control.signal.aborted) {
