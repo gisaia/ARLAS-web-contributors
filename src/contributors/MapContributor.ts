@@ -1736,7 +1736,7 @@ export class MapContributor extends Contributor {
     }
     private prepareFeaturesSearch(featureSources: Array<string>, count: number) {
         const search: Search = {};
-        if (count === 0) { count++;}
+        if (count === 0) { count++; }
         search.page = {
             size: count
         };
