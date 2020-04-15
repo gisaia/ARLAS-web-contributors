@@ -26,7 +26,7 @@ import {
     projType, GeohashAggregation, TiledSearch, CollaborationEvent
 } from 'arlas-web-core';
 import {
-    Search, Expression, Hits,
+    Search, Expression, Hits, CollectionReferenceParameters,
     Aggregation, Projection, ComputationResponse, ComputationRequest,
     Filter, FeatureCollection, Feature, Metric, AggregationResponse
 } from 'arlas-api';
@@ -113,6 +113,7 @@ export class MapContributor extends Contributor {
     private sourcesVisitedTiles: Map<string, Set<string>> = new Map();
     private sourcesPrecisions: Map<string, {tilesPrecision?: number, requestsPrecision?: number}> = new Map();
     private granularityFunctions: Map<Granularity, (zoom: number) => {tilesPrecision: number, requestsPrecision: number}> = new Map();
+    private collectionParameters: CollectionReferenceParameters;
 
     /**This map stores for each agg id, a map of call Instant and a Subject;
      * The Subject will be emitted once precision of agg changes ==> all previous calls that are still pending will stop */
@@ -247,8 +248,6 @@ export class MapContributor extends Contributor {
         } else {
             this.geoQueryOperation = Expression.OpEnum.Within;
         }
-        // TODO check if we should do a describe on the collection to get the geometry_path
-        this.geoQueryField = geoQueryFieldConfig;
         this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
         this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
@@ -256,6 +255,18 @@ export class MapContributor extends Contributor {
         this.granularityFunctions.set(Granularity.fine, fineGranularity);
         this.granularityFunctions.set(Granularity.coarse, coarseGranularity);
         this.granularityFunctions.set(Granularity.finest, finestGranularity);
+        // TODO check if we should include the collection reference in the collobarative search service, to avoid doing a describe
+        // in this contributor
+        this.collaborativeSearcheService.describe(collaborativeSearcheService.collection)
+            .subscribe(collection => {
+                const fields = collection.properties;
+                Object.keys(fields).forEach(fieldName => {
+                    this.getFieldProperties(fields, fieldName);
+                });
+                this.collectionParameters = collection.params;
+                this.geoQueryField = geoQueryFieldConfig !== undefined ? geoQueryFieldConfig : this.collectionParameters.centroid_path;
+            }
+        );
     }
 
     public static getJsonSchema(): Object {
@@ -270,8 +281,6 @@ export class MapContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<any> {
-        console.log("fetch data")
-        console.log(this.dataMode);
         switch (this.dataMode) {
             case DataMode.simple: {
                 return this.fetchDataSimpleMode(collaborationEvent);
@@ -302,7 +311,6 @@ export class MapContributor extends Contributor {
         this.parentGeohashesPerSource.clear();
         this.flatMetricsIndex.clear();
         this.globalMetricsIndex.clear();
-        // todo put collection.centroid_path
         this.fetchAll(rawExtent, wrapExtent, this.mapExtend, this.zoom);
         return of();
     }
@@ -369,7 +377,7 @@ export class MapContributor extends Contributor {
     }
 
     public fetchAll(rawExtent, wrapExtent, mapExtent, zoom): void {
-        const countFilter = this.getFilterForCount(rawExtent, wrapExtent, 'data.geometry');
+        const countFilter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
          *  If the precision of a cluster souce changes, it will stop the ongoing http calls */
@@ -761,7 +769,6 @@ export class MapContributor extends Contributor {
           + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
         const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
             + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
-        // todo put collection.centroid_path
         this.fetchAll(rawExtent, wrapExtent, this.mapExtend, this.zoom);
     }
 
@@ -1427,7 +1434,7 @@ export class MapContributor extends Contributor {
         afterParam?: string, whichPage?: PageEnum, fromParam?): Observable<FeatureCollection> {
         const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ',' + this.mapExtend[3] + ',' + this.mapExtend[0];
         const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ',' + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
-        const filter: Filter = this.getFilterForCount(rawExtent, wrapExtent, 'data.geometry');
+        const filter: Filter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
         if (this.expressionFilter !== undefined) {
             filter.f.push([this.expressionFilter]);
         }
@@ -1744,6 +1751,7 @@ export class MapContributor extends Contributor {
             flat: this.isFlat
         };
         const includes = new Set<string>();
+        includes.add(this.collectionParameters.id_path);
         const geometries = new Set();
         featureSources.forEach(cs => {
 
@@ -1765,7 +1773,6 @@ export class MapContributor extends Contributor {
             geometries.add(ls.returnedGeometry);
         });
         search.projection = {
-            // todo add id field
             includes: Array.from(includes).join(',')
         };
         search.returned_geometries = Array.from(geometries).join(',');
