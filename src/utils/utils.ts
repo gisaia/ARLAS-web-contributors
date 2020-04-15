@@ -190,3 +190,33 @@ export function finestGranularity(zoom: number): {tilesPrecision: number, reques
         return {tilesPrecision: 5, requestsPrecision: 7};
     }
 }
+
+
+export function featurestTilesGranularity(zoom: number): number {
+    if (zoom >= 0 && zoom < 3) {
+        return 2;
+    } else if (zoom >= 3 && zoom < 5) {
+        return 4;
+    } else if (zoom >= 5 && zoom < 7) {
+        return 6;
+    } else if (zoom >= 7 && zoom < 9) {
+        return 8;
+    } else if (zoom >= 9 && zoom < 11) {
+        return 10;
+    } else if (zoom >= 11 && zoom < 13) {
+        return 12;
+    } else if (zoom >= 13 && zoom < 15) {
+        return 14;
+    } else if (zoom >= 15 && zoom < 17) {
+        return 16;
+    } else if (zoom >= 17 && zoom < 19) {
+        return 18;
+    } else if (zoom >= 19 && zoom < 21) {
+        return 20;
+    } else if (zoom >= 21 && zoom < 23) {
+        return 22;
+    } else if (zoom >= 23 && zoom < 25) {
+        return 24;
+    }
+}
+
