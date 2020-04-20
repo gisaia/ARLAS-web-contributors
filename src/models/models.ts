@@ -18,7 +18,7 @@
  */
 
 import moment from 'moment';
-import { Metric, RawGeometry, Aggregation } from 'arlas-api';
+import { Metric, RawGeometry, Aggregation, Search } from 'arlas-api';
 
 /**
 * Enum of sorting value define in Arlas-web-components
@@ -448,7 +448,7 @@ export interface AttachmentConfig {
 export interface Normalization {
     on: string;
     per?: string;
-    scope: NormalizationScope;
+    scope?: NormalizationScope;
 }
 
 /**
@@ -464,11 +464,11 @@ export interface Normalization {
 export class FeaturesNormalization implements Normalization {
     public on: string;
     public per?: string;
-    public keysSize = 100;
-    public scope: NormalizationScope;
+    public keysSize? = 100;
+    public scope?: NormalizationScope;
 
-    public minMaxPerKey = new Map<string, [number, number]>();
-    public minMax: [number, number];
+    public minMaxPerKey ? = new Map<string, [number, number]>();
+    public minMax?: [number, number];
 }
 
 export enum NormalizationScope {
@@ -523,5 +523,10 @@ export interface MetricConfig {
 
 export interface SourcesAgg {
     agg: Aggregation;
+    sources: Array<string>;
+}
+
+export interface SourcesSearch {
+    search: Search;
     sources: Array<string>;
 }
