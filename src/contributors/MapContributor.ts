@@ -18,7 +18,7 @@
  */
 
 import { Observable, Subject, from, of, forkJoin } from 'rxjs';
-import { map, finalize, mergeAll, concatAll, tap, takeUntil } from 'rxjs/operators';
+import { map, finalize, mergeAll, concatAll, tap, takeUntil, find } from 'rxjs/operators';
 
 import {
     CollaborativesearchService, Contributor,
@@ -31,7 +31,7 @@ import {
     Filter, FeatureCollection, Feature, Metric, AggregationResponse
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization, NormalizationScope,
-     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity, SourcesAgg, MetricConfig } from '../models/models';
+     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity, SourcesAgg, MetricConfig, SourcesSearch } from '../models/models';
 import { appendIdToSort, removePageFromIndex, ASC, fineGranularity, coarseGranularity, finestGranularity, featurestTilesGranularity } from '../utils/utils';
 import { bboxes } from 'ngeohash';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
@@ -94,6 +94,8 @@ export class MapContributor extends Contributor {
     private topologyLayersIndex: Map<string, LayerTopologySource>;
     private featureLayersIndex: Map<string, LayerFeatureSource>;
 
+    private sourcesTypesIndex: Map<string, string> = new Map();
+
     private visibiltyRulesIndex: Map<string, {type: string, minzoom: number, maxzoom: number, nbfeatures: number}> = new Map();
 
     /**Cluster data support */
@@ -108,12 +110,16 @@ export class MapContributor extends Contributor {
 
     private aggSourcesStats: Map<string, {count: number, sum?: number}> = new Map();
     private aggSourcesMetrics: Map<string, Set<string>> = new Map();
+    private searchNormalizations: Map<string, Map<string, FeaturesNormalization>> = new Map();
+    private searchSourcesMetrics: Map<string, Set<string>> = new Map();
     private globalMetricsIndex: Map<string, number> = new Map();
     private flatMetricsIndex: Map<string, Metric> = new Map();
     private sourcesVisitedTiles: Map<string, Set<string>> = new Map();
     private sourcesPrecisions: Map<string, {tilesPrecision?: number, requestsPrecision?: number}> = new Map();
     private granularityFunctions: Map<Granularity, (zoom: number) => {tilesPrecision: number, requestsPrecision: number}> = new Map();
     private collectionParameters: CollectionReferenceParameters;
+    private featuresIdsIndex = new Map<string, Set<string>>();
+    private featuresOldExtent = new Map<string, any>();
 
     /**This map stores for each agg id, a map of call Instant and a Subject;
      * The Subject will be emitted once precision of agg changes ==> all previous calls that are still pending will stop */
@@ -123,7 +129,6 @@ export class MapContributor extends Contributor {
     /**This map stores for each agg id, an abort controller. This controller will abort pending calls when precision of
       * the agg changes. */
     private abortControllers: Map<string, AbortController> = new Map();
-    private tileZoom: number;
 
     /**
     * Data to display geoaggregate data or search Data, use in MapComponent @Input
@@ -165,6 +170,7 @@ export class MapContributor extends Contributor {
     public currentExtentGeohashSet: Set<string> = new Set<string>();
     public currentStringedTilesList: Array<string> = new Array<string>();
     public mapExtend = [90, -180, -90, 180];
+
     public mapRawExtent = [90, -180, -90, 180];
 
     public nbMaxFeatureForCluster = this.getConfigValue('nbMaxDefautFeatureForCluster');
@@ -183,15 +189,6 @@ export class MapContributor extends Contributor {
      * It's used in `Simple mode` only.
      */
     public expressionFilter: Expression;
-    /**
-     * ARLAS Server Aggregation used to aggregate features and display them in `clusters` mode. Defined in configuration
-     */
-    public aggregation: Array<Aggregation> = this.getConfigValue('aggregationmodels');
-    public precision;
-
-    public aggregationField: string;
-
-    public redrawTile: Subject<boolean> = new Subject<boolean>();
 
     public redrawSource: Subject<any> = new Subject<any>();
     /** CONSTANTS */
@@ -299,7 +296,7 @@ export class MapContributor extends Contributor {
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
         const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
           + this.mapExtend[3] + ',' + this.mapExtend[0];
-            const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
+        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
             + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
         this.aggSourcesMetrics.clear();
         this.aggSourcesStats.clear();
@@ -308,9 +305,13 @@ export class MapContributor extends Contributor {
         this.topologyDataPerSource.clear();
         this.geohashesPerSource.clear();
         this.featureDataPerSource.clear();
+        this.featuresIdsIndex.clear();
+        this.featuresOldExtent.clear();
         this.parentGeohashesPerSource.clear();
         this.flatMetricsIndex.clear();
         this.globalMetricsIndex.clear();
+        this.searchNormalizations.clear();
+        this.searchSourcesMetrics.clear();
         this.fetchAll(rawExtent, wrapExtent, this.mapExtend, this.zoom);
         return of();
     }
@@ -359,10 +360,7 @@ export class MapContributor extends Contributor {
      * @param geoAggregateField
      */
     public setGeoAggregateGeomField(geoAggregateField: string) {
-        const aggregations = this.aggregation;
-        aggregations.filter(agg => agg.type === Aggregation.TypeEnum.Geohash).map(a => a.field = geoAggregateField);
-        this.aggregation = aggregations;
-        this.aggregationField = geoAggregateField;
+
     }
 
     /**
@@ -385,20 +383,22 @@ export class MapContributor extends Contributor {
         let dClusterSources = displayableSources[0];
         let dTopologySources = displayableSources[1];
         let dFeatureSources = displayableSources[2];
-        this.checkAggPrecision(dClusterSources, zoom, this.CLUSTER_SOURCE);
-        this.checkAggPrecision(dTopologySources, zoom, this.TOPOLOGY_SOURCE);
+        const callOrigin = Date.now() + '';
+        this.checkAggPrecision(dClusterSources, zoom, callOrigin, this.CLUSTER_SOURCE);
+        this.checkAggPrecision(dTopologySources, zoom, callOrigin, this.TOPOLOGY_SOURCE);
         const zoomSourcesToRemove = displayableSources[3];
         zoomSourcesToRemove.forEach(s => {
             // todo clear the correct type
             this.redrawSource.next({source: s, data: []});
             this.clearData(s);
-            this.sourcesVisitedTiles.set(s, new Set());
-            this.sourcesPrecisions.set(s, {});
+            this.abortRemovedSources(s, callOrigin);
         });
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
             this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
         if (count) {
             count.subscribe(countResponse => {
+                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 const nbFeatures = countResponse.totalnb;
                 displayableSources = this.getDisplayableSources(zoom, nbFeatures);
                 dClusterSources = displayableSources[0];
@@ -417,10 +417,7 @@ export class MapContributor extends Contributor {
                     // todo clear the correct type
                     this.redrawSource.next({source: s, data: []});
                     this.clearData(s);
-                    this.aggSourcesStats.set(s, {count: 0});
-                    this.sourcesVisitedTiles.set(s, new Set());
-                    this.sourcesPrecisions.set(s, {});
-                    this.featureDataPerSource.set(s, []);
+                    this.abortRemovedSources(s, callOrigin);
                 });
                 if (globalMetricsToFetch.length > 0) {
                     this.computeMetrics(globalMetricsToFetch).subscribe(computations => {
@@ -430,19 +427,19 @@ export class MapContributor extends Contributor {
                             this.globalMetricsIndex.set(key, cr.value);
                             const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
                             const topologyAggsBuilder = this.prepareTopologyAggregations(dTopologySources, zoom);
-                            const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, countResponse.totalnb);
+                            const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources);
                             this.drawAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
                             this.drawAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
-                            this.drawSearchSources(mapExtent, featureSearchBuilder, zoom);
+                            this.drawSearchSources(mapExtent, zoom, featureSearchBuilder);
                         });
                     });
                 } else {
                     const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
                     const topologyAggsBuilder = this.prepareTopologyAggregations(dTopologySources, zoom);
-                    const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, countResponse.totalnb);
+                    const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources);
                     this.drawAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
                     this.drawAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
-                    this.drawSearchSources(mapExtent, featureSearchBuilder, zoom);
+                    this.drawSearchSources(mapExtent, zoom, featureSearchBuilder);
                 }
             });
         }
@@ -773,7 +770,7 @@ export class MapContributor extends Contributor {
           + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
         const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
             + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
-        this.fetchAll(rawExtent, wrapExtent, this.mapExtend, this.zoom);
+        this.fetchAll(rawExtent, wrapExtent, newMove.extendForLoad, this.zoom);
     }
 
     public drawGeoSearch(fromParam?: number, appendId?: boolean) {
@@ -792,15 +789,26 @@ export class MapContributor extends Contributor {
             .subscribe(data => data);
     }
 
-    public renderAggSources(sources: Array<string>, aggType: string): void {
-        if (aggType === this.CLUSTER_SOURCE) {
-            this.renderClusterSources(sources);
-        } else if (aggType === this.TOPOLOGY_SOURCE) {
-            this.renderTopologySources(sources);
+    /**
+     * Renders the data of the given sources.
+     * @param sources List of sources names (sources must be of the same type : cluster OR topology)
+     */
+    public renderAggSources(sources: Array<string>): void {
+        if (sources && sources.length > 0) {
+            const aggType = this.sourcesTypesIndex.get(sources[0]);
+            switch (aggType) {
+                case this.CLUSTER_SOURCE:
+                    this.renderClusterSources(sources);
+                    break;
+                case this.TOPOLOGY_SOURCE:
+                    this.renderTopologySources(sources);
+                    break;
+            }
         }
     }
 
     public renderSearchSources(sources: Array<string>): void {
+        console.log('render search')
         sources.forEach(s => {
             this.redrawSource.next({source: s, data: []});
             const featureRawData = this.featureDataPerSource.get(s);
@@ -810,10 +818,24 @@ export class MapContributor extends Contributor {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
-
+                    const normalizations = this.searchNormalizations.get(s);
+                    if (normalizations) {
+                        normalizations.forEach(n => this.normalize(feature, n));
+                    }
+                    const colorField = this.featureLayersIndex.get(s).colorField;
+                    if (colorField) {
+                        const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenColorField + '_color'] = this.getHexColor(feature.properties[flattenColorField], 0.5);
+                    }
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
                     delete feature.properties.md;
+                    const metricsKeys = this.searchSourcesMetrics.get(s);
+                    Object.keys(feature.properties).forEach(k => {
+                        if (metricsKeys && !metricsKeys.has(k) && k !== this.collectionParameters.id_path) {
+                            delete feature.properties[k];
+                        }
+                    });
                     sourceData.push(feature);
                 });
             }
@@ -843,7 +865,7 @@ export class MapContributor extends Contributor {
                             if (mk.endsWith('_'  + NormalizationScope.local.toString().toLowerCase())) {
                                 const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
                                 feature.properties[mk] = feature.properties[kWithoutN];
-                            } else if (mk.endsWith('_'  + NormalizationScope.global.toString().toLowerCase())){
+                            } else if (mk.endsWith('_'  + NormalizationScope.global.toString().toLowerCase())) {
                                 const kWithoutN = mk.replace(NormalizationScope.local.toString().toLowerCase(), '');
                                 feature.properties[mk] = feature.properties[kWithoutN];
                             }
@@ -873,7 +895,7 @@ export class MapContributor extends Contributor {
                                 // todo to be discussed with the team. Global normalization is not possible for all metrics
                                 // if (k.includes('_sum_') || k.includes('_max_') || k.includes('_cardinality_') || k.includes('_min_')) {
                                 //     const value = feature.properties[k];
-                                //     const metric = this.globalMetricsIndex.get(ok); 
+                                //     const metric = this.globalMetricsIndex.get(ok);
                                 //     feature.properties[k] = feature.properties[k] / this.globalMetricsIndex.get(k);
                                 // } else if (k.includes('_min_')){
                                 //     feature.properties[k] = this.globalMetricsIndex(k) / fe
@@ -974,59 +996,100 @@ export class MapContributor extends Contributor {
         return forkJoin(globalMetrics.map(m => {
             const metric = this.flatMetricsIndex.get(m);
             return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-            <ComputationRequest>{ field: metric.collect_field, 
+            <ComputationRequest>{ field: metric.collect_field,
                 metric: ComputationRequest.MetricEnum[metric.collect_fct.toString().toUpperCase()] }],
                 this.collaborativeSearcheService.collaborations, null, {}, false, this.cacheDuration);
         }));
     }
-    public clearData(s: string, aggType?: string) {
-        if (!aggType) {
-            aggType = this.clusterLayersIndex.get(s) ? this.CLUSTER_SOURCE : this.TOPOLOGY_SOURCE;
+    public clearData(s: string) {
+        const sourceType = this.sourcesTypesIndex.get(s);
+        switch (sourceType) {
+            case this.CLUSTER_SOURCE:
+                this.parentGeohashesPerSource.set(s, new Set());
+                this.geohashesPerSource.set(s, new Map());
+                this.aggSourcesStats.set(s, {count: 0});
+                this.sourcesPrecisions.set(s, {});
+                this.aggSourcesMetrics.set(s, new Set());
+                break;
+            case this.TOPOLOGY_SOURCE:
+                this.topologyDataPerSource.set(s, new Array());
+                this.aggSourcesStats.set(s, {count: 0});
+                this.sourcesPrecisions.set(s, {});
+                this.aggSourcesMetrics.set(s, new Set());
+                break;
+            case this.FEATURE_SOURCE:
+                this.featureDataPerSource.set(s, []);
+                this.featuresIdsIndex.set(s, new Set());
+                this.featuresOldExtent.set(s, undefined);
+                this.searchNormalizations.set(s, new Map());
+                this.searchSourcesMetrics.set(s, new Set());
+                break;
         }
-        if (aggType === this.CLUSTER_SOURCE) {
-            this.parentGeohashesPerSource.set(s, new Set());
-            this.geohashesPerSource.set(s, new Map());
-        } else if (aggType === this.TOPOLOGY_SOURCE) {
-            this.topologyDataPerSource.set(s, new Array());
-        }
-        this.aggSourcesStats.set(s, {count: 0});
+        this.sourcesVisitedTiles.set(s, new Set());
     }
 
-    public getVisitedXYZTiles(extent, sources, zoom) {
-        let newVisitedTiles: Set<string> = new Set();
-        const tileZoom = featurestTilesGranularity(zoom);
-        const visitedTiles = xyz([[extent[1], extent[2]], [extent[3], extent[0]]], tileZoom);
-        const oldTileZoom = this.tileZoom;
-        if (oldTileZoom !== tileZoom) {
-            /** precision changed, need to clean tiles index */
-            newVisitedTiles = new Set(visitedTiles.map(t => tileToString(t)));
-            sources.forEach(s => this.sourcesVisitedTiles.set(s, newVisitedTiles));
-            this.featureDataPerSource.clear();
-            this.tileZoom = tileZoom;
-        } else {
-            let tiles = new Set<string>();
-            let start = true;
+    public getVisitedXYZTiles(extent, sources: Array<string>): Set<string> {
+        /** we will check if in the given sources, there a source with 0 visited tiles
+         * this means a new geometry is requested ==> we clean all the visited tiles and re fetch data from scratch
+         * 
+         * Otherwise, if no new source is added while naviguing, we fetch data in the newly visited tiles
+         * If the tiles are within an extent within whom the precedent extent, it means data has already been fetched in this area
+         */
+        sources.forEach(s => {
+            if (!this.sourcesVisitedTiles.get(s)) {
+                this.sourcesVisitedTiles.set(s, new Set());
+            }
+        });
+        const emptyTiles = sources.find(s => this.sourcesVisitedTiles.get(s) && this.sourcesVisitedTiles.get(s).size === 0);
+        if (emptyTiles) {
             sources.forEach(s => {
-                if (this.sourcesVisitedTiles.get(s)) {
-                    if (start) {
-                        start = false; tiles = this.sourcesVisitedTiles.get(s);
-                    } else { if (this.sourcesVisitedTiles.get(s).size < tiles.size) {
-                        tiles = this.sourcesVisitedTiles.get(s);
-                    }}
-                }
+                this.sourcesVisitedTiles.set(s, new Set());
+                this.featuresOldExtent.set(s, undefined);
             });
-            visitedTiles.forEach(vt => {
-                const stringVT = tileToString(vt);
-                if (!tiles.has(stringVT)) {
-                    newVisitedTiles.add(stringVT);
-                    tiles.add(stringVT);
-                }
-            });
-            sources.forEach(s => {
-                this.sourcesVisitedTiles.set(s, tiles);
-            });
-
         }
+
+        const newVisitedTiles: Set<string> = new Set();
+        const visitedTiles = xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((this.zoom) - 1));
+        let tiles = new Set<string>();
+        let start = true;
+        sources.forEach(s => {
+            // this loop aims to take the smallest already visited tiles list
+            if (start) {
+                start = false; tiles = this.sourcesVisitedTiles.get(s);
+            } else { if (this.sourcesVisitedTiles.get(s).size < tiles.size) {
+                tiles = this.sourcesVisitedTiles.get(s);
+            }}
+        });
+        visitedTiles.forEach(vt => {
+            const stringVT = tileToString(vt);
+            if (!tiles.has(stringVT)) {
+                newVisitedTiles.add(stringVT);
+                tiles.add(stringVT);
+            }
+        });
+        sources.forEach(s => {
+            this.sourcesVisitedTiles.set(s, tiles);
+        });
+        const oldMapExtent = this.featuresOldExtent.get(sources[0]);
+        if (oldMapExtent) {
+            if (extent[0] > oldMapExtent[0]
+                || extent[2] < oldMapExtent[2]
+                || extent[1] < oldMapExtent[1]
+                || extent[3] > oldMapExtent[3]
+            ) {
+                sources.forEach(s => {
+                    this.featuresOldExtent.set(s, extent);
+                });
+                return newVisitedTiles;
+            }
+            sources.forEach(s => {
+                this.featuresOldExtent.set(s, extent);
+            });
+            return new Set();
+        }
+        sources.forEach(s => {
+            this.featuresOldExtent.set(s, extent);
+        });
         return newVisitedTiles;
     }
     public getVisitedTiles(extent, zoom, granularity, aggSource, aggType) {
@@ -1048,7 +1111,7 @@ export class MapContributor extends Contributor {
             /** precision changed, need to clean tiles index */
             newVisitedTiles = visitedTiles;
             aggSource.sources.forEach(s => {
-                this.clearData(s, aggType);
+                this.clearData(s);
                 this.sourcesVisitedTiles.set(s, visitedTiles);
                 this.sourcesPrecisions.set(s, precisions);
             });
@@ -1076,23 +1139,26 @@ export class MapContributor extends Contributor {
         return newVisitedTiles;
     }
 
-    public drawSearchSources(extent, searchSource: {search: Search, sources: Array<string>}, zoom) {
-        const newVisitedTiles = this.getVisitedXYZTiles(extent, searchSource.sources, zoom);
-        let count = 0;
-        const totalcount = newVisitedTiles.size;
-        if (newVisitedTiles.size > 0 && searchSource.sources.length > 0) {
-            this.collaborativeSearcheService.ongoingSubscribe.next(1);
-            const start = Date.now();
-            this.fetchSearchSource(newVisitedTiles, searchSource.search)
-            .pipe(
-                map(f => this.computeFeatureData(f, searchSource.sources)),
-                tap(() => count++),
-                finalize(() => {
-                    this.renderSearchSources(searchSource.sources);
-                    this.collaborativeSearcheService.ongoingSubscribe.next(-1);
-                })
-            ).subscribe(data => data);
-        }
+    public drawSearchSources(extent, zoom: number, searches: Map<string, SourcesSearch>) {
+        searches.forEach((searchSource, searchId) => {
+            const newVisitedTiles = this.getVisitedXYZTiles(extent, searchSource.sources);
+            let count = 0;
+            const totalcount = newVisitedTiles.size;
+            if (newVisitedTiles.size > 0 && searchSource.sources.length > 0) {
+                this.collaborativeSearcheService.ongoingSubscribe.next(1);
+                const start = Date.now();
+                this.fetchSearchSource(newVisitedTiles, searchSource.search)
+                .pipe(
+                    map(f => this.computeFeatureData(f, searchSource.sources)),
+                    tap(() => count++),
+                    finalize(() => {
+                        this.renderSearchSources(searchSource.sources);
+                        this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                    })
+                ).subscribe(data => data);
+            }
+
+        });
     }
     public drawAggSources(extent: Array<number>, zoom: number, aggs:  Map<string, SourcesAgg>, aggType: string): void {
         aggs.forEach((aggSource, aggId) => {
@@ -1122,21 +1188,21 @@ export class MapContributor extends Contributor {
                         const consumption = Date.now() - start;
                         if (consumption > 2000) {
                             if (progression > 25 && renderRetries.length === 0) {
-                                this.renderAggSources(aggSource.sources, aggType);
+                                this.renderAggSources(aggSource.sources);
                                 renderRetries.push('1');
                             }
                             if (progression > 50 && renderRetries.length <= 1) {
-                                this.renderAggSources(aggSource.sources, aggType);
+                                this.renderAggSources(aggSource.sources);
                                 renderRetries.push('2');
                             }
                             if (progression > 75 && renderRetries.length <= 2) {
-                                this.renderAggSources(aggSource.sources, aggType);
+                                this.renderAggSources(aggSource.sources);
                                 renderRetries.push('3');
                             }
                         }
                     }),
                     finalize(() => {
-                        this.renderAggSources(aggSource.sources, aggType);
+                        this.renderAggSources(aggSource.sources);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     })
                 ).subscribe(data => data);
@@ -1216,8 +1282,23 @@ export class MapContributor extends Contributor {
                     if (!featureData) {
                         featureData = new Array();
                     }
-                    if (feature.properties.geometry_path === source_geometry_index.get(source)) {
-                        featureData.push(feature);
+                    let ids = this.featuresIdsIndex.get(source);
+                    if (!ids) {
+                        ids = new Set();
+                    }
+                    if (!ids.has(feature.properties.id)) {
+                        const normalizations = this.searchNormalizations.get(source);
+                        if (normalizations) {
+                            normalizations.forEach(n => {
+                                this.prepareSearchNormalization(feature, n);
+                            });
+                            this.searchNormalizations.set(source, normalizations);
+                        }
+                        if (feature.properties.geometry_path === source_geometry_index.get(source)) {
+                            featureData.push(feature);
+                        }
+                        ids.add(feature.properties.id);
+                        this.featuresIdsIndex.set(source, ids);
                     }
                     this.featureDataPerSource.set(source, featureData);
                 });
@@ -1421,7 +1502,7 @@ export class MapContributor extends Contributor {
                                 f.forEach(d => { this.geojsondata.features.push(d); });
                             }
                         }
-                        this.redrawTile.next(true);
+                        // this.redrawTile.next(true);
                     })
                 ).subscribe(data => data);
         }
@@ -1478,6 +1559,7 @@ export class MapContributor extends Contributor {
     }
 
     public fetchSearchSource(tiles: Set<string>, search: Search): Observable<FeatureCollection> {
+        console.log('fetch serach data')
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
         let filter: Filter = {};
         if (this.expressionFilter !== undefined) {
@@ -1731,6 +1813,12 @@ export class MapContributor extends Contributor {
         return aggregationsMap;
     }
 
+    /**
+     *
+     * @param source
+     * @param aggregation
+     * @param m
+     */
     private indexAggSourcesMetrics(source: string, aggregation: Aggregation, m: MetricConfig): void {
         let metrics = this.aggSourcesMetrics.get(source);
         const key = m.field.replace(/\./g, this.FLAT_CHAR) + '_' + m.metric.toString().toLowerCase() + '_';
@@ -1745,42 +1833,122 @@ export class MapContributor extends Contributor {
         metrics.add(normalizeKey);
         this.aggSourcesMetrics.set(source, metrics);
     }
-    private prepareFeaturesSearch(featureSources: Array<string>, count: number) {
-        const search: Search = {};
-        if (count === 0) { count++; }
-        search.page = {
-            size: count
-        };
-        search.form = {
-            flat: this.isFlat
-        };
-        const includes = new Set<string>();
-        includes.add(this.collectionParameters.id_path);
-        const geometries = new Set();
-        featureSources.forEach(cs => {
 
+    private indexSearchSourcesMetrics(source: string, field: string, indexationType: ReturnedField, nkey?: string): void {
+        let metrics = this.searchSourcesMetrics.get(source);
+        let normalizations = this.searchNormalizations.get(source);
+        if (!metrics) { metrics = new Set(); }
+        let key: string;
+        switch (indexationType) {
+            case ReturnedField.flat: {
+                key = field.replace(/\./g, this.FLAT_CHAR);
+                break;
+            }
+            case ReturnedField.generatedcolor: {
+                key = field.replace(/\./g, this.FLAT_CHAR) + '_color';
+                break;
+            }
+            case ReturnedField.normalized: {
+                if (!normalizations) { normalizations = new Map(); }
+                key = field.replace(/\./g, this.FLAT_CHAR) + ':normalized';
+                if (!normalizations.get(field)) {
+                    const fn: FeaturesNormalization = {
+                        on: field,
+                        minMax: [Number.MAX_VALUE, Number.MIN_VALUE]
+                    };
+                    normalizations.set(field, fn);
+
+                }
+                break;
+            }
+            case ReturnedField.normalizedwithkey: {
+                if (!normalizations) { normalizations = new Map(); }
+                key = field.replace(/\./g, this.FLAT_CHAR) + ':normalized:' + nkey.replace(/\./g, this.FLAT_CHAR) ;
+                if (!normalizations.get(field + ':' + nkey)) {
+                    const fn: FeaturesNormalization = {
+                        on: field,
+                        per: nkey
+                    };
+                    normalizations.set(field + ':' + nkey, fn);
+                }
+                break;
+            }
+        }
+        metrics.add(key);
+        this.searchSourcesMetrics.set(source, metrics);
+        if (normalizations) {
+            this.searchNormalizations.set(source, normalizations);
+        }
+    }
+    /**
+     * Search request are splitted according to visibility rules => sources with the same visibility
+     * rules will be fetched using the same search requests
+     * @param featureSources list of feature sources names
+     */
+    private prepareFeaturesSearch(featureSources: Array<string>) {
+        const searchesMap:  Map<string, SourcesSearch>  = new Map();
+        const includePerSearch = new Map<string, Set<string>>();
+        const geometriesPerSearch = new Map<string, Set<string>>();
+        featureSources.forEach(cs => {
             const ls = this.featureLayersIndex.get(cs);
+            /** the split of search requests is done thanks to this id.
+             * change the id construction to change the 'granularity' of this split
+             */
+            const searchId = ls.maxfeatures + ':' + ls.minzoom + ':' + ls.maxzoom;
+            const searchBuilder: SourcesSearch =  searchesMap.get(searchId);
+            let sources: Array<string>;
+            let search: Search;
+            if (searchBuilder) {
+                sources = searchBuilder.sources;
+                search = searchBuilder.search;
+                search.page.size = Math.max(ls.maxfeatures, search.page.size);
+            } else {
+                sources = [];
+                search = {};
+                search.page = {
+                    size: ls.maxfeatures
+                };
+                search.form = {
+                    flat: this.isFlat
+                };
+            }
+            let includes = includePerSearch.get(searchId);
+            if (!includes) { includes = new Set(); }
+            includes.add(this.collectionParameters.id_path);
             if (ls.includeFields) {
-                ls.includeFields.forEach(f => includes.add(f));
+                ls.includeFields.forEach(f => {
+                    includes.add(f);
+                    this.indexSearchSourcesMetrics(cs, f, ReturnedField.flat);
+                });
             }
             if (ls.colorField) {
                 includes.add(ls.colorField);
+                this.indexSearchSourcesMetrics(cs, ls.colorField, ReturnedField.generatedcolor);
             }
             if (ls.normalizationFields) {
                 ls.normalizationFields.forEach(nf => {
                     includes.add(nf.on);
                     if (nf.per) {
                         includes.add(nf.per);
+                        this.indexSearchSourcesMetrics(cs, nf.on, ReturnedField.normalizedwithkey, nf.per);
+                    } else {
+                        this.indexSearchSourcesMetrics(cs, nf.on, ReturnedField.normalized);
                     }
                 });
             }
+            includePerSearch.set(searchId, includes);
+            search.projection = {
+                includes: Array.from(includes).join(',')
+            };
+            let geometries = geometriesPerSearch.get(searchId);
+            if (!geometries) { geometries = new Set(); }
             geometries.add(ls.returnedGeometry);
+            geometriesPerSearch.set(searchId, geometries);
+            search.returned_geometries = Array.from(geometries).join(',');
+            sources.push(cs);
+            searchesMap.set(searchId, {search, sources});
         });
-        search.projection = {
-            includes: Array.from(includes).join(',')
-        };
-        search.returned_geometries = Array.from(geometries).join(',');
-        return {search, sources: featureSources};
+        return searchesMap;
     }
     private prepareTopologyAggregations(topologySources: Array<string>, zoom: number):
      Map<string, SourcesAgg> {
@@ -1825,14 +1993,14 @@ export class MapContributor extends Contributor {
     private checkFeaturesPrecision(featureSources: Array<string>, zoom: number) {
 
     }
-    private checkAggPrecision(aggSources: Array<string>, zoom: number, aggType: string): void {
+    private checkAggPrecision(aggSources: Array<string>, zoom: number, callOrigin: string, aggType: string): void {
         aggSources.forEach(cs => {
             const ls = aggType === this.TOPOLOGY_SOURCE ? this.topologyLayersIndex.get(cs) : this.clusterLayersIndex.get(cs);
             const aggId = aggType === this.TOPOLOGY_SOURCE ? (ls as LayerTopologySource).geometryId + ':' + ls.granularity.toString() :
             (ls as LayerClusterSource).aggGeoField + ':' + ls.granularity.toString();
             this.aggSourcesMetrics.set(cs, new Set());
             const control = this.abortControllers.get(aggId);
-            this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom);
+            this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom, callOrigin);
             if (!control || control.signal.aborted) {
                 const controller = new AbortController();
                 this.abortControllers.set(aggId, controller);
@@ -1840,7 +2008,38 @@ export class MapContributor extends Contributor {
         });
     }
 
-    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, zoom: number) {
+    private abortRemovedSources(s: string, callOrigin: string) {
+        const aggType = this.sourcesTypesIndex.get(s);
+        let ls;
+        let aggId;
+        switch (aggType) {
+            case this.CLUSTER_SOURCE:
+                ls = this.clusterLayersIndex.get(s);
+                aggId = (ls as LayerClusterSource).aggGeoField + ':' + ls.granularity.toString();
+                break;
+            case this.TOPOLOGY_SOURCE:
+                ls = this.topologyLayersIndex.get(s);
+                aggId = (ls as LayerTopologySource).geometryId + ':' + ls.granularity.toString();
+                break;
+            case this.FEATURE_SOURCE:
+                // todo
+                break;
+        }
+
+        if (aggId) {
+            const cancelSubjects = this.cancelSubjects.get(aggId);
+            if (cancelSubjects) {
+                cancelSubjects.forEach((subject, k) => { if (+k < +callOrigin) { subject.next(); subject.complete(); }});
+                cancelSubjects.clear();
+            }
+            const abortController = this.abortControllers.get(aggId);
+            if (abortController && !abortController.signal.aborted) {
+                /** abort pending calls of this agg id because precision changed or source is removed */
+                abortController.abort();
+            }
+        }
+    }
+    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, zoom: number, callOrigin: string) {
         const precisions = Object.assign({}, this.granularityFunctions.get(granularity)(zoom));
         let oldPrecisions;
         const p = Object.assign({}, this.sourcesPrecisions.get(s));
@@ -1854,7 +2053,6 @@ export class MapContributor extends Contributor {
             console.log('precision change id    ' + aggId);
             let cancelSubjects = this.cancelSubjects.get(aggId);
             if (!cancelSubjects) { cancelSubjects = new Map(); }
-            const callOrigin = Date.now() + '';
             cancelSubjects.forEach((subject, k) => { if (+k < +callOrigin) { subject.next(); subject.complete(); }});
             cancelSubjects.clear();
             cancelSubjects.set(callOrigin, new Subject());
@@ -1929,6 +2127,7 @@ export class MapContributor extends Contributor {
             clusterLayers.set(clusterLayer.source, clusterLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.minfeatures, this.CLUSTER_SOURCE, ls.source);
+            this.sourcesTypesIndex.set(ls.source, this.CLUSTER_SOURCE);
         });
         return clusterLayers;
     }
@@ -1966,6 +2165,7 @@ export class MapContributor extends Contributor {
             topologyLayers.set(topologyLayer.source, topologyLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.maxfeatures, this.TOPOLOGY_SOURCE, ls.source);
+            this.sourcesTypesIndex.set(ls.source, this.TOPOLOGY_SOURCE);
 
         });
         return topologyLayers;
@@ -2005,6 +2205,7 @@ export class MapContributor extends Contributor {
             featureLayers.set(featureLayer.source, featureLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.maxfeatures, this.FEATURE_SOURCE, ls.source);
+            this.sourcesTypesIndex.set(ls.source, this.FEATURE_SOURCE);
 
         });
         return featureLayers;
@@ -2061,7 +2262,6 @@ export class MapContributor extends Contributor {
      */
     private normalizeFeatures(): void {
         if (this.normalizationFields) {
-            this.normalizeFeaturesLocally();
             const nbGlobalNormalizationPerKey = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && f.per).length;
             const nbGlobalNormalization = this.normalizationFields.filter(f => f.scope === NormalizationScope.global && !f.per).length;
             if (nbGlobalNormalizationPerKey > 0) {
@@ -2095,7 +2295,6 @@ export class MapContributor extends Contributor {
                     concatAll(),
                     finalize(() => {
                         this.normalizeFeaturesGlobally();
-                        this.redrawTile.next(true);
                     })).subscribe(agg => {
                         const n: FeaturesNormalization = tabOfFeaturesNormalizations[i];
                         i++;
@@ -2112,7 +2311,6 @@ export class MapContributor extends Contributor {
                         this.globalNormalisation.push(n);
                     });
             } else {
-                this.redrawTile.next(true);
             }
             if (nbGlobalNormalization > 0) {
                 console.warn(' #### Global normalization without a `per` field is not supported yet. ####');
@@ -2121,7 +2319,70 @@ export class MapContributor extends Contributor {
                 });
             }
         } else {
-            this.redrawTile.next(true);
+        }
+    }
+
+    private prepareSearchNormalization(f: Feature, n: FeaturesNormalization): void {
+        const normalizeField = (this.isFlat && n.on) ? n.on.replace(/\./g, this.FLAT_CHAR) : n.on;
+        const perField = (this.isFlat && n.per) ? n.per.replace(/\./g, this.FLAT_CHAR) : n.per;
+        if (perField) {
+            if (!n.minMaxPerKey) {
+                n.minMaxPerKey = new Map();
+            }
+            if (!n.minMaxPerKey.get(f.properties[perField])) {
+                n.minMaxPerKey.set(f.properties[perField], [Number.MAX_VALUE, Number.MIN_VALUE]);
+            }
+            const minMax = n.minMaxPerKey.get(f.properties[perField]);
+            const value = this.getValueFromFeature(f, n.on, normalizeField);
+            if (minMax[0] > value) {
+                minMax[0] = value;
+            }
+            if (minMax[1] < value) {
+                minMax[1] = value;
+            }
+            n.minMaxPerKey.set(f.properties[perField], minMax);
+        } else {
+            if (!n.minMax) {
+                n.minMax = [Number.MAX_VALUE, Number.MIN_VALUE];
+            }
+            const minMax = n.minMax;
+            const value = this.getValueFromFeature(f, n.on, normalizeField);
+            if (minMax[0] > value) {
+                minMax[0] = value;
+            }
+            if (minMax[1] < value) {
+                minMax[1] = value;
+            }
+        }
+    }
+
+    private normalize(f: Feature, n: FeaturesNormalization): void {
+        const normalizeField = (this.isFlat && n.on) ? n.on.replace(/\./g, this.FLAT_CHAR) : n.on;
+        const perField = (this.isFlat && n.per) ? n.per.replace(/\./g, this.FLAT_CHAR) : n.per;
+        if (perField) {
+            const minMax = n.minMaxPerKey.get(f.properties[perField]);
+            const value = this.getValueFromFeature(f, n.on, normalizeField);
+            const minimum = minMax[0];
+            const max = minMax[1];
+            let normalizedValue;
+            if (minimum === max) {
+                normalizedValue = 1;
+            } else {
+                normalizedValue = (value - minimum) / (max - minimum);
+            }
+            f.properties[normalizeField + ':normalized:' + perField] = normalizedValue;
+        } else {
+            const minMax = n.minMax;
+            const value = this.getValueFromFeature(f, n.on, normalizeField);
+            const minimum = minMax[0];
+            const max = minMax[1];
+            let normalizedValue;
+            if (minimum === max) {
+                normalizedValue = 1;
+            } else {
+                normalizedValue = (value - minimum) / (max - minimum);
+            }
+            f.properties[normalizeField + ':normalized'] = normalizedValue;
         }
     }
     private normalizeFeaturesLocally() {
@@ -2348,3 +2609,7 @@ export class MapContributor extends Contributor {
     }
 }
 
+
+export enum ReturnedField {
+    flat, generatedcolor, normalized, normalizedwithkey
+}
