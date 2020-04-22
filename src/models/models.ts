@@ -448,7 +448,6 @@ export interface AttachmentConfig {
 export interface Normalization {
     on: string;
     per?: string;
-    scope?: NormalizationScope;
 }
 
 /**
@@ -464,16 +463,8 @@ export interface Normalization {
 export class FeaturesNormalization implements Normalization {
     public on: string;
     public per?: string;
-    public keysSize? = 100;
-    public scope?: NormalizationScope;
-
     public minMaxPerKey ? = new Map<string, [number, number]>();
     public minMax?: [number, number];
-}
-
-export enum NormalizationScope {
-    global = 'global',
-    local = 'local'
 }
 
 export class LayerSource {
@@ -518,7 +509,7 @@ export enum Granularity {
 export interface MetricConfig {
     field: string;
     metric: Metric.CollectFctEnum;
-    normalize: NormalizationScope;
+    normalize: boolean;
 }
 
 export interface SourcesAgg {

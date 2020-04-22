@@ -95,7 +95,7 @@ export class TopoMapContributor extends MapContributor {
     public setTopoGeoaggregateData(features: Array<any>): any {
         features.forEach(f => {
             if (!this.geoIds.has(f.properties.key)) {
-                this.geojsondata.features.push(f);
+                // this.geojsondata.features.push(f);
                 this.geoIds.add(f.properties.key);
             }
         });

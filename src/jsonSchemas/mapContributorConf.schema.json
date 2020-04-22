@@ -67,14 +67,6 @@
                                     "description": "The **date** of **numeric** field which values are normalized",
                                     "type": "string"
                                 },
-                                "scope": {
-                                    "description": "`global` or `local`. `global` scope means a normalization considering all the data. `local` scope means a normalization considering the data on the current map extent only.",
-                                    "type": "string",
-                                    "enum": [
-                                        "local",
-                                        "global"
-                                    ]
-                                },
                                 "per": {
                                     "description": "Optional. **keyword** field that allows to normalize the `on` field values per keyword. A keyword being a value of the '`per`' field.",
                                     "type": "string"
@@ -131,23 +123,18 @@
                                     "type": "string"
                                 },
                                 "metric": {
-                                    "description": "The metric to calculate. Possible values are: avg | min | max | sum | cardinality",
+                                    "description": "The metric to calculate. Possible values are: avg | min | max | sum ",
                                     "type": "string",
                                     "enum": [
                                         "avg",
                                         "min",
                                         "max",
-                                        "sum",
-                                        "cardinality"
+                                        "sum"
                                     ]
                                 },
                                 "normalize": {
                                     "description": "If specified, it normalizes the metrics above locally to the current map extend or globally",
-                                    "type": "string",
-                                    "enum": [
-                                        "local",
-                                        "global"
-                                    ]
+                                    "type": "boolean"
                                 }
                             }
                         }
