@@ -18,7 +18,7 @@
  */
 
 import { Observable, Subject, from, of } from 'rxjs';
-import { map, finalize, mergeAll, tap, takeUntil } from 'rxjs/operators';
+import { map, finalize, mergeAll, tap, takeUntil, elementAt } from 'rxjs/operators';
 
 import {
     CollaborativesearchService, Contributor,
@@ -52,6 +52,8 @@ export enum DataMode {
 
 export const NORMALIZE = ':normalized';
 export const NORMALIZE_PER_KEY = ':normalized:';
+export const COUNT = 'count';
+export const NORMALIZED_COUNT = 'count_:normalized';
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -757,16 +759,13 @@ export class MapContributor extends Contributor {
         sources.forEach(s => {
             this.redrawSource.next({source: s, data: []});
             const topologyRawData = this.topologyDataPerSource.get(s);
-            const sourceStats = this.aggSourcesStats.get(s);
             const sourceData = [];
             if (topologyRawData) {
                 topologyRawData.forEach((f) => {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
-                    // feature.properties['point_count'] = feature.properties.count;
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
-                    feature.properties['point_count_normalize'] = Math.round(feature.properties.count / sourceStats.count * 100);
                     this.cleanRenderedAggFeature(s, feature);
                     sourceData.push(feature);
                 });
@@ -779,16 +778,13 @@ export class MapContributor extends Contributor {
         sources.forEach(s => {
             this.redrawSource.next({source: s, data: []});
             const sourceGeohashes = this.geohashesPerSource.get(s);
-            const sourceStats = this.aggSourcesStats.get(s);
             const sourceData = [];
             if (sourceGeohashes) {
                 sourceGeohashes.forEach((f, geohash) => {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
-                    // feature.properties['point_count'] = feature.properties.count;
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
-                    feature.properties['point_count_normalize'] = Math.round(feature.properties.count / sourceStats.count * 100);
                     delete feature.properties.geohash;
                     delete feature.properties.parent_geohash;
                     this.cleanRenderedAggFeature(s, feature, true);
@@ -810,6 +806,9 @@ export class MapContributor extends Contributor {
                 if (mk.endsWith(NORMALIZE)) {
                     const kWithoutN = mk.replace(NORMALIZE, '');
                     feature.properties[mk] = feature.properties[kWithoutN];
+                    if (mk === NORMALIZED_COUNT) {
+                        feature.properties[mk] = Math.round(feature.properties.count / sourceStats.count * 100);
+                    }
                 }
             });
         }
@@ -824,21 +823,25 @@ export class MapContributor extends Contributor {
                 }
             }
             if (metricsKeys) {
-                if (!metricsKeys.has(k) && k !== 'point_count_normalize' && k !== 'count') {
-                    delete feature.properties[k];
-                } 
                 /** normalize */
-                if (k.endsWith(NORMALIZE)) {
+                if (k.endsWith(NORMALIZE) && k !== NORMALIZED_COUNT) {
                     if (metricStats.min === metricStats.max) {
                         feature.properties[k] = 0;
                     } else {
                         feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
                     }
                 }
-            } else if (k !== 'point_count_normalize') {
+            } else {
                 delete feature.properties[k];
             }
         });
+        if (metricsKeys) {
+            metricsKeys.forEach(k => {
+                if (!metricsKeys.has(k)) {
+                    delete feature.properties[k];
+                }
+            });
+        }
     }
     public fetchSearchSource(tiles: Set<string>, searchId: string, search: Search): Observable<FeatureCollection> {
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
@@ -1639,22 +1642,26 @@ export class MapContributor extends Contributor {
     private indexAggSourcesMetrics(source: string, aggregation: Aggregation, metricConfig: MetricConfig): void {
         let metrics = this.aggSourcesMetrics.get(source);
         const key = metricConfig.field.replace(/\./g, this.FLAT_CHAR) + '_' + metricConfig.metric.toString().toLowerCase() + '_';
-        const normalizeKey = metricConfig.normalize ? key + NORMALIZE : key;
-        if (!metrics || (!metrics.has(key) && !metrics.has(normalizeKey))) {
-            aggregation.metrics.push({
-                collect_field: metricConfig.field,
-                collect_fct: metricConfig.metric
-            });
-        } else {
-            const existingMetric = aggregation.metrics
-                .map(m => m.collect_field.replace(/\./g, this.FLAT_CHAR) + '_' + m.collect_fct.toString().toLowerCase() + '_')
-                .find(k => k === key);
-            if (!existingMetric) {
+        let normalizeKey = metricConfig.normalize ? key + NORMALIZE : key;
+        if (!key.includes('_' + COUNT)) {
+            if (!metrics || (!metrics.has(key) && !metrics.has(normalizeKey))) {
                 aggregation.metrics.push({
                     collect_field: metricConfig.field,
                     collect_fct: metricConfig.metric
                 });
+            } else {
+                const existingMetric = aggregation.metrics
+                    .map(m => m.collect_field.replace(/\./g, this.FLAT_CHAR) + '_' + m.collect_fct.toString().toLowerCase() + '_')
+                    .find(k => k === key);
+                if (!existingMetric) {
+                    aggregation.metrics.push({
+                        collect_field: metricConfig.field,
+                        collect_fct: metricConfig.metric
+                    });
+                }
             }
+        } else {
+            normalizeKey = normalizeKey.includes(NORMALIZED_COUNT) ? NORMALIZED_COUNT : COUNT;
         }
         if (!metrics) { metrics = new Set(); }
         metrics.add(normalizeKey);

@@ -123,13 +123,14 @@
                                     "type": "string"
                                 },
                                 "metric": {
-                                    "description": "The metric to calculate. Possible values are: avg | min | max | sum ",
+                                    "description": "The metric to calculate. Possible values are: avg | min | max | sum | count",
                                     "type": "string",
                                     "enum": [
                                         "avg",
                                         "min",
                                         "max",
-                                        "sum"
+                                        "sum",
+                                        "count"
                                     ]
                                 },
                                 "normalize": {
