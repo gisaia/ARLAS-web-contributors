@@ -65,9 +65,11 @@ export const ASC = 'asc';
 export const DESC = 'desc';
 
 /**
- * @description appends the `idFieldName` to sortString
+ * @description appends the `idFieldName` to sortString.
+ * It checks if the `idFieldName` is already present in the `sortString` and moves to the end of the string if it's the case
  * @param sortString comma separated field names.
  * @param order whether to apply ascending or descending sort on `idFieldName`. Possible values are `asc` and `desc`
+ * @param idFieldName id field name to append to the `sortString`
  */
 export function appendIdToSort(sortString: string, order: string = ASC, idFieldName: string): string {
     let sortStringWithId = sortString;
