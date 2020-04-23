@@ -178,6 +178,10 @@
                 "dynamic"
             ]
         },
+        "simple_mode_accumulative": {
+            "description": "Indicates whether rendered old data is kept or removed when onMove event is triggered. Taken into account only when data_mode = simple.",
+            "type": "boolean"
+        },
         "search_sort": {
             "description": "Separated comma field to defined the order of te search",
             "type": "string"
