@@ -1984,7 +1984,7 @@ export class MapContributor extends Contributor {
             featureLayer.maxfeatures = ls.maxfeatures;
             featureLayer.normalizationFields = ls.normalization_fields;
             featureLayer.includeFields = new Set(ls.include_fields);
-            featureLayer.colorField = ls.metrics;
+            featureLayer.colorField = ls.color_from_field;
             featureLayer.returnedGeometry = ls.returned_geometry;
             /** extends rules visibility */
             const existingFeatureLayer = featureLayers.get(featureLayer.source);
