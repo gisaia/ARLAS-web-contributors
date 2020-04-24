@@ -105,7 +105,7 @@ export class MapContributor extends Contributor {
     private featureLayersIndex: Map<string, LayerFeatureSource>;
 
     private sourcesTypesIndex: Map<string, string> = new Map();
-
+    private layersSourcesIndex: Map<string, string> = new Map();
     private visibiltyRulesIndex: Map<string, {type: string, minzoom: number, maxzoom: number, nbfeatures: number}> = new Map();
 
     /**Cluster data support */
@@ -150,18 +150,9 @@ export class MapContributor extends Contributor {
      */
 
     public zoom;
-    public tiles: Array<{ x: number, y: number, z: number }> = new Array<{ x: number, y: number, z: number }>();
-    public geohashList: Array<string> = bboxes(-90, -180, 90, 180, 1);
-    public currentGeohashList: Array<string> = new Array<string>();
-    public currentExtentGeohashSet: Set<string> = new Set<string>();
-    public currentStringedTilesList: Array<string> = new Array<string>();
     public mapExtend = [90, -180, -90, 180];
-
     public mapRawExtent = [90, -180, -90, 180];
-
-
-    public returned_geometries = '';
-
+    public visibleSources: Set<string> = new Set();
     public geoPointFields = new Array<string>();
     public geoShapeFields = new Array<string>();
 
@@ -306,12 +297,11 @@ export class MapContributor extends Contributor {
         this.parentGeohashesPerSource.clear();
         this.searchNormalizations.clear();
         this.searchSourcesMetrics.clear();
-        this.getDynamicModeData(rawExtent, wrapExtent, this.mapExtend, this.zoom);
+        this.getDynamicModeData(rawExtent, wrapExtent, this.mapExtend, this.zoom, this.visibleSources);
         return of();
     }
 
     public onMoveSimpleMode(newMove: OnMoveResult) {
-        this.tiles = newMove.tiles;
         this.zoom = newMove.zoom;
         this.mapExtend = newMove.extendForLoad;
         this.mapRawExtent = newMove.rawExtendForLoad;
@@ -319,23 +309,38 @@ export class MapContributor extends Contributor {
           + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
         const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
             + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
-        this.getSimpleModeData(wrapExtent, rawExtent, this.searchSort, this.isSimpleModeAccumulative);
+        if (this.updateData) {
+            this.getSimpleModeData(wrapExtent, rawExtent, this.searchSort, this.isSimpleModeAccumulative);
         }
+    }
 
+    public changeVisualisation(visibleLayers: Set<string>) {
+        const visibleSources = new Set<string>();
+        visibleLayers.forEach(l => {
+         visibleSources.add(this.layersSourcesIndex.get(l))
+        });
+        this.visibleSources = visibleSources;
+        this.fetchDataDynamicMode(null);
+    }
     /**
     * Function called on onMove event
     */
     public onMoveDynamicMode(newMove: OnMoveResult) {
-        this.updateData = true;
-        this.tiles = newMove.tiles;
         this.zoom = newMove.zoom;
         this.mapExtend = newMove.extendForLoad;
         this.mapRawExtent = newMove.rawExtendForLoad;
+        const visibleSources = new Set<string>();
+        this.visibleSources.clear();
+        newMove.visibleLayers.forEach(l => {
+            this.visibleSources.add(this.layersSourcesIndex.get(l)); visibleSources.add(this.layersSourcesIndex.get(l))
+        });
         const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
           + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
         const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
             + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
-        this.getDynamicModeData(rawExtent, wrapExtent, newMove.extendForLoad, this.zoom);
+        if (this.updateData) {
+            this.getDynamicModeData(rawExtent, wrapExtent, newMove.extendForLoad, this.zoom, visibleSources);
+        }
     }
     public computeData(data: any) {
     }
@@ -374,7 +379,6 @@ export class MapContributor extends Contributor {
      * @param returned_geometries comma separated geometry/point fields paths
      */
     public setReturnedGeometries(returned_geometries: string) {
-        this.returned_geometries = returned_geometries;
     }
 
     /**
@@ -435,12 +439,12 @@ export class MapContributor extends Contributor {
         this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy);
     }
 
-    public getDynamicModeData(rawExtent, wrapExtent, mapExtent, zoom): void {
+    public getDynamicModeData(rawExtent, wrapExtent, mapExtent, zoom: number, visibleSources: Set<string>): void {
         const countFilter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
          *  If the precision of a cluster souce changes, it will stop the ongoing http calls */
-        let displayableSources = this.getDisplayableSources(zoom);
+        let displayableSources = this.getDisplayableSources(zoom, visibleSources);
         let dClusterSources = displayableSources[0];
         let dTopologySources = displayableSources[1];
         let dFeatureSources = displayableSources[2];
@@ -463,7 +467,7 @@ export class MapContributor extends Contributor {
             count.subscribe(countResponse => {
                 this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 const nbFeatures = countResponse.totalnb;
-                displayableSources = this.getDisplayableSources(zoom, nbFeatures);
+                displayableSources = this.getDisplayableSources(zoom, visibleSources, nbFeatures);
                 dClusterSources = displayableSources[0];
                 dTopologySources = displayableSources[1];
                 dFeatureSources = displayableSources[2];
@@ -543,6 +547,7 @@ export class MapContributor extends Contributor {
     }
 
     public setSelection(data: any, collaboration: Collaboration): any {
+        this.setDrawings(collaboration);
         return from([]);
     }
 
@@ -1888,6 +1893,7 @@ export class MapContributor extends Contributor {
             const clusterLayer = new LayerClusterSource();
             clusterLayer.id = ls.id;
             clusterLayer.source = ls.source;
+            this.layersSourcesIndex.set(ls.id, ls.source);
             clusterLayer.maxzoom = ls.maxzoom;
             clusterLayer.minzoom = ls.minzoom;
             clusterLayer.minfeatures = ls.minfeatures;
@@ -1931,6 +1937,7 @@ export class MapContributor extends Contributor {
             const topologyLayer = new LayerTopologySource();
             topologyLayer.id = ls.id;
             topologyLayer.source = ls.source;
+            this.layersSourcesIndex.set(ls.id, ls.source);
             topologyLayer.maxzoom = ls.maxzoom;
             topologyLayer.minzoom = ls.minzoom;
             topologyLayer.maxfeatures = ls.maxfeatures;
@@ -1971,6 +1978,7 @@ export class MapContributor extends Contributor {
             const featureLayer = new LayerFeatureSource();
             featureLayer.id = ls.id;
             featureLayer.source = ls.source;
+            this.layersSourcesIndex.set(ls.id, ls.source);
             featureLayer.maxzoom = ls.maxzoom;
             featureLayer.minzoom = ls.minzoom;
             featureLayer.maxfeatures = ls.maxfeatures;
@@ -2023,13 +2031,14 @@ export class MapContributor extends Contributor {
      * @param zoom
      * @param nbFeatures
      */
-    private getDisplayableSources(zoom: number, nbFeatures?: number): [Array<string>, Array<string>, Array<string>, Array<string>] {
+    private getDisplayableSources(zoom: number,
+        visibleSources: Set<string>, nbFeatures?: number): [Array<string>, Array<string>, Array<string>, Array<string>] {
         const clusterSources = [];
         const topologySources = [];
         const featureSources = [];
         const sourcesToRemove = [];
         this.visibiltyRulesIndex.forEach((v, k) => {
-            if (v.maxzoom >= zoom && v.minzoom <= zoom) {
+            if (v.maxzoom >= zoom && v.minzoom <= zoom && visibleSources.has(k)) {
                 switch (v.type) {
                     case this.CLUSTER_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures <= nbFeatures) {
