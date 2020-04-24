@@ -20,6 +20,7 @@
 import * as FileSaver from 'file-saver';
 import jp from 'jsonpath/jsonpath.min';
 import { Hits } from 'arlas-api';
+import { mix } from 'tinycolor2';
 
 /**
 * Retrieve JSON element from JSON object and string path.
@@ -220,5 +221,20 @@ export function featurestTilesGranularity(zoom: number): number {
     } else if (zoom >= 23 && zoom < 25) {
         return 24;
     }
+}
+
+export function getHexColor(key: string, saturationWeight: number): string {
+    const text = key + ':' + key;
+    // string to int
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+        hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // int to rgb
+    let hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+    hex = '00000'.substring(0, 6 - hex.length) + hex;
+    const color = mix(hex, hex);
+    color.saturate(color.toHsv().s * saturationWeight + ((1 - saturationWeight) * 100));
+    return color.toHexString();
 }
 
