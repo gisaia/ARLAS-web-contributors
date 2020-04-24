@@ -18,7 +18,7 @@
  */
 
 import { Observable, Subject, from, of } from 'rxjs';
-import { map, finalize, mergeAll, tap, takeUntil, elementAt } from 'rxjs/operators';
+import { map, finalize, mergeAll, tap, takeUntil } from 'rxjs/operators';
 
 import {
     CollaborativesearchService, Contributor,
@@ -27,23 +27,20 @@ import {
 } from 'arlas-web-core';
 import {
     Search, Expression, Hits, CollectionReferenceParameters,
-    Aggregation, Projection, Filter, FeatureCollection, Feature
+    Aggregation, Filter, FeatureCollection, Feature
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
      LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity, SourcesAgg, MetricConfig, SourcesSearch } from '../models/models';
-import { appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity, removePageFromIndex } from '../utils/utils';
-import { bboxes } from 'ngeohash';
+import { appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity, removePageFromIndex, getHexColor } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz } from './../utils/mapUtils';
+import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes } from './../utils/mapUtils';
 
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
-import { mix } from 'tinycolor2';
 import moment from 'moment';
-
 
 export enum DataMode {
     simple,
@@ -317,7 +314,7 @@ export class MapContributor extends Contributor {
     public changeVisualisation(visibleLayers: Set<string>) {
         const visibleSources = new Set<string>();
         visibleLayers.forEach(l => {
-         visibleSources.add(this.layersSourcesIndex.get(l))
+         visibleSources.add(this.layersSourcesIndex.get(l));
         });
         this.visibleSources = visibleSources;
         this.fetchDataDynamicMode(null);
@@ -332,7 +329,7 @@ export class MapContributor extends Contributor {
         const visibleSources = new Set<string>();
         this.visibleSources.clear();
         newMove.visibleLayers.forEach(l => {
-            this.visibleSources.add(this.layersSourcesIndex.get(l)); visibleSources.add(this.layersSourcesIndex.get(l))
+            this.visibleSources.add(this.layersSourcesIndex.get(l)); visibleSources.add(this.layersSourcesIndex.get(l));
         });
         const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
           + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
@@ -800,7 +797,7 @@ export class MapContributor extends Contributor {
                     const colorField = this.featureLayersIndex.get(s).colorField;
                     if (colorField) {
                         const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenColorField + '_color'] = this.getHexColor(feature.properties[flattenColorField], 0.5);
+                        feature.properties[flattenColorField + '_color'] = getHexColor(feature.properties[flattenColorField], 0.5);
                     }
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
@@ -2227,7 +2224,7 @@ export class MapContributor extends Contributor {
     }
 
     private getVisitedTiles(extent, zoom, granularity, aggSource, aggType) {
-        const visitedTiles = this.extentToGeohashes(extent, zoom, this.granularityFunctions.get(granularity));
+        const visitedTiles = extentToGeohashes(extent, zoom, this.granularityFunctions.get(granularity));
         const precisions = Object.assign({}, this.granularityFunctions.get(granularity)(zoom));
         let oldPrecisions;
         aggSource.sources.forEach(s => {
@@ -2353,61 +2350,6 @@ export class MapContributor extends Contributor {
                 this.dateFieldFormatMap.set((parentPrefix ? parentPrefix : '') + fieldName, fieldList[fieldName].format);
             }
         }
-    }
-
-    private getHexColor(key: string, saturationWeight: number): string {
-        const text = key + ':' + key;
-        // string to int
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-            hash = text.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        // int to rgb
-        let hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-        hex = '00000'.substring(0, 6 - hex.length) + hex;
-        const color = mix(hex, hex);
-        color.saturate(color.toHsv().s * saturationWeight + ((1 - saturationWeight) * 100));
-        return color.toHexString();
-    }
-    private extentToGeohashes(extent: Array<number>, zoom: number,
-        granularityFunction: (zoom: number) => {tilesPrecision: number, requestsPrecision: number}): Set<string> {
-        let geohashList = [];
-        const west = extent[1];
-        const east = extent[3];
-        const south = extent[2];
-        const north = extent[0];
-        if (west < -180 && east > 180) {
-          geohashList = bboxes(Math.min(south, north),
-            -180,
-            Math.max(south, north),
-            180, Math.max(granularityFunction(zoom).tilesPrecision, 1));
-        } else if (west < -180 && east < 180) {
-          const geohashList_1: Array<string> = bboxes(Math.min(south, north),
-            Math.min(-180, west + 360),
-            Math.max(south, north),
-            Math.max(-180, west + 360), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-          const geohashList_2: Array<string> = bboxes(Math.min(south, north),
-            Math.min(east, 180),
-            Math.max(south, north),
-            Math.max(east, 180), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-          geohashList = geohashList_1.concat(geohashList_2);
-        } else if (east > 180 && west > -180) {
-          const geohashList_1: Array<string> = bboxes(Math.min(south, north),
-            Math.min(180, east - 360),
-            Math.max(south, north),
-            Math.max(180, east - 360), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-          const geohashList_2: Array<string> = bboxes(Math.min(south, north),
-            Math.min(west, -180),
-            Math.max(south, north),
-            Math.max(west, -180), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-          geohashList = geohashList_1.concat(geohashList_2);
-        } else {
-          geohashList = bboxes(Math.min(south, north),
-            Math.min(east, west),
-            Math.max(south, north),
-            Math.max(east, west), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-        }
-        return new Set(geohashList);
     }
 }
 
