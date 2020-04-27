@@ -40,6 +40,7 @@ export { ComputeContributor } from './contributors/ComputeContributor';
 
 
 export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum } from './models/models';
+export { getSourceName } from './utils/utils';
 
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);

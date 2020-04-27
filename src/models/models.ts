@@ -159,6 +159,25 @@ export interface StringifiedTimeShortcut {
     type: string;
 }
 
+export interface LayerSourceConfig {
+    id: string;
+    source: string;
+    minzoom: number;
+    maxzoom: number;
+    minfeatures?: number;
+    maxfeatures?: number;
+    returned_geometry?: string;
+    geometry_id?: string;
+    geometry_support?: string;
+    agg_geo_field?: string;
+    color_from_field?: string;
+    include_fields?: Array<string>;
+    normalization_fields?: Array<NormalizationFieldConfig>;
+    aggregated_geometry?: string;
+    raw_geometry?: RawGeometryConfig;
+    granularity?: string;
+    metrics?: Array<MetricConfig>;
+}
 export enum DateUnitEnum {
     y = 'y',
     M = 'M',
@@ -435,31 +454,28 @@ export interface AttachmentConfig {
 /**
  * This interface defines how to apply normalization on the values of a field.
  * 1. `on` : Choose the **date** or **numeric** field which values are normalized.
- * 2. `scope`: (`global` | `local`) Choose the normalization scope :
- *  - `global`, considering all the data
- *  - `local`, considering the data on the current map extent only
- * 3. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
- * 4. `keysSize`: (Optional, works in combination with `per`) Choose how many `"per"` keywords to use. Defaults to 100. Maximum is 10000.
+ * 2. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
  */
-export interface Normalization {
+export interface NormalizationFieldConfig {
     on: string;
     per?: string;
+}
+
+export interface RawGeometryConfig {
+    geometry: string;
+    sort: string;
 }
 
 /**
  * This class defines how to apply normalization on the values of a field.
  * 1. `on` : Choose the **date** or **numeric** field which values are normalized.
- * 2. `scope`: (`global` | `local`) Choose the normalization scope :
- *  - `global`, considering all the data
- *  - `local`, considering the data on the current map extent only
- * 3. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
- * 4. `keysSize`: (Optional, works in combination with `per`) Choose how many `"per"` keywords to use. Defaults to 100. Maximum is 10000.
- * An object of this class stores the **min** and **max** values of the `"on"` field (given the `"scope"` and the `"per"` field)
+ * 2. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
+ * An object of this class stores the **min** and **max** values of the `"on"` field (given the `"per"` field)
  */
-export class FeaturesNormalization implements Normalization {
+export class FeaturesNormalization implements NormalizationFieldConfig {
     public on: string;
     public per?: string;
-    public minMaxPerKey ? = new Map<string, [number, number]>();
+    public minMaxPerKey? = new Map<string, [number, number]>();
     public minMax?: [number, number];
 }
 
@@ -472,7 +488,7 @@ export class LayerSource {
 
 export class LayerFeatureSource extends LayerSource {
     public maxfeatures: number;
-    public normalizationFields: Array<Normalization>;
+    public normalizationFields: Array<NormalizationFieldConfig>;
     public includeFields: Set<string>;
     public colorField: string;
     public returnedGeometry: string;
