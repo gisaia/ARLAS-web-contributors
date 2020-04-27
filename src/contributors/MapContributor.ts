@@ -1825,7 +1825,7 @@ export class MapContributor extends Contributor {
                     const kWithoutN = mk.replace(NORMALIZE, '');
                     feature.properties[mk] = feature.properties[kWithoutN];
                     if (mk === NORMALIZED_COUNT) {
-                        feature.properties[mk] = Math.round(feature.properties.count / sourceStats.count * 100);
+                        feature.properties[mk] = Math.round(feature.properties.count / sourceStats.count * 100000) / 100000;
                     }
                 }
             });
