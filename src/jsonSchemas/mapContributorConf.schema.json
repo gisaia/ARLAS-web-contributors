@@ -41,7 +41,7 @@
                         "description": "Minimum number of features that a geoaggregation represents as clusters. below this value a `cluster` layer is no longer displayed on the map.",
                         "type": "number"
                     },
-                    "rendered_geometry": {
+                    "returned_geometry": {
                         "description": "`geo-point` or a `geo-shape` field to display on the map for a feature layer",
                         "type": "string"
                     },
