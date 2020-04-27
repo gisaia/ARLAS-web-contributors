@@ -21,7 +21,7 @@ import * as FileSaver from 'file-saver';
 import jp from 'jsonpath/jsonpath.min';
 import { Hits } from 'arlas-api';
 import { mix } from 'tinycolor2';
-import { LayerSourceConfig } from 'models/models';
+import { LayerSourceConfig } from '../models/models';
 
 /**
 * Retrieve JSON element from JSON object and string path.
@@ -254,7 +254,7 @@ export function getSourceName(ls: LayerSourceConfig): string {
             sourceNameComponents.push(ls.agg_geo_field);
             sourceNameComponents.push(ls.granularity);
             if (ls.aggregated_geometry) {
-                sourceNameComponents.push(ls.aggregated_geometry)
+                sourceNameComponents.push(ls.aggregated_geometry);
             } else {
                 sourceNameComponents.push(ls.raw_geometry.geometry);
                 sourceNameComponents.push(ls.raw_geometry.sort);
