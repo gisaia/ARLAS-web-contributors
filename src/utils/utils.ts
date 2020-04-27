@@ -21,6 +21,7 @@ import * as FileSaver from 'file-saver';
 import jp from 'jsonpath/jsonpath.min';
 import { Hits } from 'arlas-api';
 import { mix } from 'tinycolor2';
+import { LayerSourceConfig } from 'models/models';
 
 /**
 * Retrieve JSON element from JSON object and string path.
@@ -238,3 +239,34 @@ export function getHexColor(key: string, saturationWeight: number): string {
     return color.toHexString();
 }
 
+
+export function getSourceName(ls: LayerSourceConfig): string {
+    let sourceType = 'cluster';
+    if (ls.returned_geometry) {
+        sourceType = 'feature';
+    } else if (ls.geometry_id) {
+        sourceType = 'feature-metric';
+    }
+    const sourceNameComponents = [];
+    sourceNameComponents.push(sourceType);
+    switch (sourceType) {
+        case 'cluster':
+            sourceNameComponents.push(ls.agg_geo_field);
+            sourceNameComponents.push(ls.granularity);
+            if (ls.aggregated_geometry) {
+                sourceNameComponents.push(ls.aggregated_geometry)
+            } else {
+                sourceNameComponents.push(ls.raw_geometry.geometry);
+                sourceNameComponents.push(ls.raw_geometry.sort);
+            }
+            break;
+        case 'feature-metric':
+            sourceNameComponents.push(ls.geometry_id);
+            sourceNameComponents.push(ls.geometry_support);
+            break;
+        case 'feature':
+            sourceNameComponents.push(ls.returned_geometry);
+            break;
+    }
+    return sourceNameComponents.join('-');
+}

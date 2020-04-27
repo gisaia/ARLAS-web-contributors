@@ -30,7 +30,8 @@ import {
     Aggregation, Filter, FeatureCollection, Feature
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
-     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity, SourcesAgg, MetricConfig, SourcesSearch } from '../models/models';
+     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
+     SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig } from '../models/models';
 import { appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity, removePageFromIndex, getHexColor } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
@@ -182,7 +183,7 @@ export class MapContributor extends Contributor {
     constructor(public identifier, public collaborativeSearcheService: CollaborativesearchService, public configService: ConfigService) {
         super(identifier, configService, collaborativeSearcheService);
 
-        const layersSourcesConfig = this.getConfigValue(this.LAYERS_SOURCES_KEY);
+        const layersSourcesConfig: Array<LayerSourceConfig> = this.getConfigValue(this.LAYERS_SOURCES_KEY);
         const dataModeConfig = this.getConfigValue(this.DATA_MODE_KEY);
         const simpleModeAccumulativeConfig = this.getConfigValue(this.SIMPLE_MODE_ACCUMULATIVE_KEY);
         const geoQueryOpConfig = this.getConfigValue(this.GEO_QUERY_OP_KEY);
@@ -1884,7 +1885,7 @@ export class MapContributor extends Contributor {
      * Parses the layers_sources config and returns the clusters layers index
      * @param layersSourcesConfig layers_sources configuration object
      */
-    private getClusterLayersIndex(layersSourcesConfig): Map<string, LayerClusterSource> {
+    private getClusterLayersIndex(layersSourcesConfig: Array<LayerSourceConfig>): Map<string, LayerClusterSource> {
         const clusterLayers = new Map<string, LayerClusterSource>();
         layersSourcesConfig.filter(ls => ls.source.startsWith(this.CLUSTER_SOURCE)).forEach(ls => {
             const clusterLayer = new LayerClusterSource();
@@ -1895,12 +1896,12 @@ export class MapContributor extends Contributor {
             clusterLayer.minzoom = ls.minzoom;
             clusterLayer.minfeatures = ls.minfeatures;
             clusterLayer.aggGeoField = ls.agg_geo_field;
-            clusterLayer.granularity = ls.granularity;
+            clusterLayer.granularity = <any>ls.granularity;
             if (ls.raw_geometry) {
                 clusterLayer.rawGeometry = ls.raw_geometry;
             }
             if (ls.aggregated_geometry) {
-                clusterLayer.aggregatedGeometry = ls.aggregated_geometry;
+                clusterLayer.aggregatedGeometry = <any>ls.aggregated_geometry;
             }
             clusterLayer.metrics = ls.metrics;
             /** extends rules visibility */
@@ -1928,7 +1929,7 @@ export class MapContributor extends Contributor {
      * Parses the layers_sources config and returns the topology layers index
      * @param layersSourcesConfig layers_sources configuration object
      */
-    private getTopologyLayersIndex(layersSourcesConfig): Map<string, LayerTopologySource> {
+    private getTopologyLayersIndex(layersSourcesConfig: Array<LayerSourceConfig>): Map<string, LayerTopologySource> {
         const topologyLayers = new Map<string, LayerTopologySource>();
         layersSourcesConfig.filter(ls => ls.source.startsWith(this.TOPOLOGY_SOURCE)).forEach(ls => {
             const topologyLayer = new LayerTopologySource();
@@ -1941,7 +1942,7 @@ export class MapContributor extends Contributor {
             topologyLayer.geometrySupport = ls.geometry_support;
             topologyLayer.geometryId = ls.geometry_id;
             topologyLayer.metrics = ls.metrics;
-            topologyLayer.granularity = ls.granularity;
+            topologyLayer.granularity = <any>ls.granularity;
             /** extends rules visibility */
             const existingTopologyLayer = topologyLayers.get(topologyLayer.source);
             if (existingTopologyLayer) {
@@ -1968,7 +1969,7 @@ export class MapContributor extends Contributor {
      * Parses the layers_sources config and returns the feature layers index
      * @param layersSourcesConfig layers_sources configuration object
      */
-    private getFeatureLayersIndex(layersSourcesConfig): Map<string, LayerFeatureSource> {
+    private getFeatureLayersIndex(layersSourcesConfig: Array<LayerSourceConfig>): Map<string, LayerFeatureSource> {
         const featureLayers = new Map<string, LayerFeatureSource>();
         layersSourcesConfig.filter(ls => ls.source.startsWith(this.FEATURE_SOURCE) &&
          !ls.source.startsWith(this.TOPOLOGY_SOURCE)).forEach(ls => {
