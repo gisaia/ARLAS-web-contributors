@@ -27,7 +27,7 @@ import {
 } from 'arlas-web-core';
 import {
     Search, Expression, Hits, CollectionReferenceParameters,
-    Aggregation, Filter, FeatureCollection, Feature
+    Aggregation, Filter, FeatureCollection, Feature, Metric
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
      LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
@@ -1505,7 +1505,7 @@ export class MapContributor extends Contributor {
             if (!metrics || (!metrics.has(key) && !metrics.has(normalizeKey))) {
                 aggregation.metrics.push({
                     collect_field: metricConfig.field,
-                    collect_fct: metricConfig.metric
+                    collect_fct: <Metric.CollectFctEnum>metricConfig.metric
                 });
             } else {
                 const existingMetric = aggregation.metrics
@@ -1514,7 +1514,7 @@ export class MapContributor extends Contributor {
                 if (!existingMetric) {
                     aggregation.metrics.push({
                         collect_field: metricConfig.field,
-                        collect_fct: metricConfig.metric
+                        collect_fct: <Metric.CollectFctEnum>metricConfig.metric
                     });
                 }
             }

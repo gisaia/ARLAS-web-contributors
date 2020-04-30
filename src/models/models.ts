@@ -520,7 +520,7 @@ export enum Granularity {
 
 export interface MetricConfig {
     field: string;
-    metric: Metric.CollectFctEnum;
+    metric: Metric.CollectFctEnum | string;
     normalize: boolean;
 }
 
