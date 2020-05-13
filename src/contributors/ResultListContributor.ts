@@ -63,11 +63,11 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 cssClass: ''
             };
             const cssClass = item.itemData ? item.itemData.get(action.cssClass) : undefined;
-            if (cssClass) {
-                ac.cssClass = cssClass;
+            // cssClass = false is a valid possibiliy
+             if (cssClass !== undefined) {
+                ac.cssClass = String(cssClass);
             }
             actions.push(ac);
-
         });
         return from(new Array(actions));
     }
