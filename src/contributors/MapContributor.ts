@@ -116,7 +116,7 @@ export class MapContributor extends Contributor {
     /**Feature data support */
     private featureDataPerSource: Map<string, Array<Feature>> = new Map();
 
-    private aggSourcesStats: Map<string, {count: number, sum?: number}> = new Map();
+    private aggSourcesStats: Map<string, {count: number}> = new Map();
     private aggSourcesMetrics: Map<string, Set<string>> = new Map();
     private searchNormalizations: Map<string, Map<string, FeaturesNormalization>> = new Map();
     private searchSourcesMetrics: Map<string, Set<string>> = new Map();
@@ -164,6 +164,8 @@ export class MapContributor extends Contributor {
     public expressionFilter: Expression;
 
     public redrawSource: Subject<any> = new Subject<any>();
+    public legendUpdater: Subject<any> = new Subject<any>();
+    public legendData: Map<string, {minValue: string, maxValue: string}> = new Map();
     /** CONSTANTS */
     private NEXT_AFTER = '_nextAfter';
     private PREVIOUS_AFTER = '_previousAfter';
@@ -776,7 +778,33 @@ export class MapContributor extends Contributor {
             }
         }
     }
+    public setLegendSearchData(s): void {
+        if (this.searchNormalizations) {
+            const featuresNormalization = this.searchNormalizations.get(s);
+            if (featuresNormalization) {
+                featuresNormalization.forEach(n => {
+                    const normalizeField = (this.isFlat && n.on) ? n.on.replace(/\./g, this.FLAT_CHAR) : n.on;
+                    const perField = (this.isFlat && n.per) ? n.per.replace(/\./g, this.FLAT_CHAR) : n.per;
+                    if (n.per) {
+                        let legendData = {minValue: '', maxValue: ''};
+                        if (this.dateFieldFormatMap.has(n.on)) {
+                            legendData = { minValue: 'Old', maxValue: 'Recent' };
+                        } else {
+                            legendData = { minValue: 'Small', maxValue: 'High' };
+                        }
+                        this.legendData.set(normalizeField + NORMALIZE_PER_KEY + perField, legendData);
 
+                    } else {
+                        const minMax = n.minMax;
+                        const minValue = this.getAbreviatedNumber(minMax[0]);
+                        const maxValue = this.getAbreviatedNumber(minMax[1]);
+                        const legendData = { minValue, maxValue };
+                        this.legendData.set(normalizeField + NORMALIZE, legendData);
+                    }
+                });
+            }
+        }
+    }
     /**
      * Render raw data provided by `feature` mode sources. It's used for both simple and dynamic mode.
      * @param sources List of sources names (sources must be of the same type : feature)
@@ -784,6 +812,7 @@ export class MapContributor extends Contributor {
     public renderSearchSources(sources: Array<string>): void {
         sources.forEach(s => {
             this.redrawSource.next({source: s, data: []});
+            this.setLegendSearchData(s);
             const featureRawData = this.featureDataPerSource.get(s);
             const sourceData = [];
             if (featureRawData) {
@@ -813,6 +842,7 @@ export class MapContributor extends Contributor {
                 });
             }
             this.redrawSource.next({source: s, data: sourceData});
+            this.legendUpdater.next(this.legendData);
         });
     }
 
@@ -847,6 +877,8 @@ export class MapContributor extends Contributor {
         sources.forEach(s => {
             this.redrawSource.next({source: s, data: []});
             const sourceGeohashes = this.geohashesPerSource.get(s);
+            const stats = this.aggSourcesStats.get(s);
+         
             const sourceData = [];
             if (sourceGeohashes) {
                 sourceGeohashes.forEach((f, geohash) => {
@@ -860,7 +892,12 @@ export class MapContributor extends Contributor {
                     sourceData.push(feature);
                 });
             }
+            Object.keys(stats).forEach(k => {
+                this.legendData.set(k, {minValue: this.getAbreviatedNumber(stats[k].min),
+                    maxValue: this.getAbreviatedNumber(stats[k].max)});
+            });
             this.redrawSource.next({source: s, data: sourceData});
+            this.legendUpdater.next(this.legendData);
         });
     }
 
@@ -1866,6 +1903,21 @@ export class MapContributor extends Contributor {
     private getPrecision(g: Granularity, zoom: number): number {
         return this.granularityFunctions.get(g)(zoom).requestsPrecision;
     }
+
+    private getAbreviatedNumber(value: number): string {
+        let abbreviatedValue = '';
+        if (value >= 10000 || value <= -10000) {
+            let m = value;
+            if (m < 0) {
+                m *= -1;
+                abbreviatedValue += '-';
+            }
+            abbreviatedValue += this.intToString(m);
+        } else {
+            abbreviatedValue += Math.round(value * 10) / 10;
+        }
+        return abbreviatedValue;
+    }
     /**
      * This method indexes all the minimum zooms configured. For each minzoom value, we set the list of layers that have it.
      * This index will be used to get which layers to display
@@ -2314,7 +2366,7 @@ export class MapContributor extends Contributor {
     }
 
     private intToString(value: number): string {
-        let newValue = value.toString();
+        let newValue = Math.round(value).toString();
         if (value >= 1000) {
             const suffixes = ['', 'k', 'M', 'b', 't'];
             const suffixNum = Math.floor(('' + value).length / 3);
