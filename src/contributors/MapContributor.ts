@@ -27,7 +27,8 @@ import {
 } from 'arlas-web-core';
 import {
     Search, Expression, Hits, CollectionReferenceParameters,
-    Aggregation, Filter, FeatureCollection, Feature, Metric
+    Aggregation, Filter, FeatureCollection, Feature, Metric,
+    ComputationRequest, ComputationResponse
 } from 'arlas-api';
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
      LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
@@ -449,7 +450,7 @@ export class MapContributor extends Contributor {
          *  If the precision of a cluster souce changes, it will stop the ongoing http calls */
         let displayableSources = this.getDisplayableSources(zoom, visibleSources);
         let dClusterSources = displayableSources[0];
-        let dTopologySources = displayableSources[1];
+        const dTopologySources = displayableSources[1];
         let dFeatureSources = displayableSources[2];
         const callOrigin = Date.now() + '';
         this.checkAggPrecision(dClusterSources, zoom, callOrigin);
@@ -465,29 +466,62 @@ export class MapContributor extends Contributor {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
             this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
-        
-        if (count) {        console.log('moove');
+        const geo_ids = new Set(dTopologySources.map(s => this.topologyLayersIndex.get(s).geometryId));
+        const topoCounts: Array<Observable<ComputationResponse>> = [];
+        geo_ids.forEach(geo_id => {
+            const topoCount = this.getTopoCardinality(geo_id, countFilter);
+            topoCounts.push(topoCount);
+        });
+        const displayableTopoSources = new Set<string>();
+        const removableTopoSources = new Set<string>();
+        from(topoCounts).pipe(mergeAll()).pipe(
+            map(computationResponse => {
+                const nbFeatures = computationResponse.value;
+                const topoVisbleSources = new Set(dTopologySources.filter(s =>
+                    this.topologyLayersIndex.get(s).geometryId === computationResponse.field));
+                const topoSources = this.getDisplayableTopologySources(zoom, topoVisbleSources, nbFeatures);
+                topoSources[0].forEach(s => displayableTopoSources.add(s));
+                topoSources[1].forEach(s => removableTopoSources.add(s));
+                const topologyAggsBuilder = this.prepareTopologyAggregations(topoSources[0], zoom);
+                this.fetchAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
+            }),
+            finalize(() => {
+                this.topologyLayersIndex.forEach((v, k) => {
+                    if (!displayableTopoSources.has(k)) {
+                        removableTopoSources.add(k);
+                        this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                    }
+                });
+                const nbFeaturesSourcesToRemove = displayableSources[3];
+                removableTopoSources.forEach(s => {
+                    this.redrawSource.next({source: s, data: []});
+                    this.clearData(s);
+                    this.aggSourcesMetrics.set(s, new Set());
+                    this.abortRemovedSources(s, callOrigin);
+                });
+                this.visibilityUpdater.next(this.visibilityStatus);
+            })
+        ).subscribe(d => d);
+        if (count) {
             count.subscribe(countResponse => {
                 this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 const nbFeatures = countResponse.totalnb;
-                displayableSources = this.getDisplayableSources(zoom, visibleSources, nbFeatures);
+                const nottopoVisbleSources = new Set(Array.from(visibleSources).filter(s => !this.topologyLayersIndex.has(s)));
+                displayableSources = this.getDisplayableSources(zoom, nottopoVisbleSources, nbFeatures);
                 this.visibilityUpdater.next(this.visibilityStatus);
                 dClusterSources = displayableSources[0];
-                dTopologySources = displayableSources[1];
                 dFeatureSources = displayableSources[2];
                 const nbFeaturesSourcesToRemove = displayableSources[3];
                 const alreadyRemovedSources = new Set(zoomSourcesToRemove);
-                nbFeaturesSourcesToRemove.filter(s => !alreadyRemovedSources.has(s)).forEach(s => {
+                nbFeaturesSourcesToRemove.filter(s => !this.topologyLayersIndex.has(s)  && !alreadyRemovedSources.has(s)).forEach(s => {
                     this.redrawSource.next({source: s, data: []});
                     this.clearData(s);
                     this.aggSourcesMetrics.set(s, new Set());
                     this.abortRemovedSources(s, callOrigin);
                 });
                 const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
-                const topologyAggsBuilder = this.prepareTopologyAggregations(dTopologySources, zoom);
                 const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.visibility_rules);
                 this.fetchAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
-                this.fetchAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
                 this.fetchTiledSearchSources(mapExtent, featureSearchBuilder);
             });
         }
@@ -1899,7 +1933,7 @@ export class MapContributor extends Contributor {
                 /** normalize */
                 if (k.endsWith(NORMALIZE) && k !== NORMALIZED_COUNT) {
                     if (metricStats.min === metricStats.max) {
-                        feature.properties[k] = 0;
+                        feature.properties[k] = 1;
                     } else {
                         feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
                     }
@@ -1909,7 +1943,7 @@ export class MapContributor extends Contributor {
             }
         });
         if (metricsKeys) {
-            metricsKeys.forEach(k => {
+            Object.keys(feature.properties).forEach(k => {
                 if (!metricsKeys.has(k)) {
                     delete feature.properties[k];
                 }
@@ -1980,19 +2014,18 @@ export class MapContributor extends Contributor {
             /** extends rules visibility */
             const existingClusterLayer = clusterLayers.get(clusterLayer.source);
             if (existingClusterLayer) {
-                if (existingClusterLayer.minzoom < clusterLayer.minzoom) {
-                    clusterLayer.minzoom = existingClusterLayer.minzoom;
-                }
-                if (existingClusterLayer.maxzoom > clusterLayer.maxzoom) {
-                    clusterLayer.maxzoom = existingClusterLayer.maxzoom;
-                }
-                if (existingClusterLayer.minfeatures < clusterLayer.minfeatures) {
-                    clusterLayer.minfeatures = existingClusterLayer.minfeatures;
+                clusterLayer.minzoom = Math.min(existingClusterLayer.minzoom, clusterLayer.minzoom);
+                clusterLayer.maxzoom = Math.max(existingClusterLayer.maxzoom, clusterLayer.maxzoom);
+                clusterLayer.minfeatures = Math.min(existingClusterLayer.minfeatures, clusterLayer.minfeatures);
+                if (existingClusterLayer.metrics) {
+                    clusterLayer.metrics = clusterLayer.metrics ? existingClusterLayer.metrics.concat(clusterLayer.metrics) :
+                        existingClusterLayer.metrics;
                 }
             }
             clusterLayers.set(clusterLayer.source, clusterLayer);
             this.dataSources.add(ls.source);
-            this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.minfeatures, this.CLUSTER_SOURCE, ls.source);
+            this.indexVisibilityRules(clusterLayer.minzoom, clusterLayer.maxzoom, clusterLayer.minfeatures,
+                this.CLUSTER_SOURCE, clusterLayer.source);
             this.sourcesTypesIndex.set(ls.source, this.CLUSTER_SOURCE);
         });
         return clusterLayers;
@@ -2023,26 +2056,25 @@ export class MapContributor extends Contributor {
             /** extends rules visibility */
             const existingTopologyLayer = topologyLayers.get(topologyLayer.source);
             if (existingTopologyLayer) {
-                if (existingTopologyLayer.minzoom < topologyLayer.minzoom) {
-                    topologyLayer.minzoom = existingTopologyLayer.minzoom;
-                }
-                if (existingTopologyLayer.maxzoom > topologyLayer.maxzoom) {
-                    topologyLayer.maxzoom = existingTopologyLayer.maxzoom;
-                }
-                if (existingTopologyLayer.maxfeatures > topologyLayer.maxfeatures) {
-                    topologyLayer.maxfeatures = existingTopologyLayer.maxfeatures;
+                topologyLayer.minzoom = Math.min(existingTopologyLayer.minzoom, topologyLayer.minzoom);
+                topologyLayer.maxzoom = Math.max(existingTopologyLayer.maxzoom, topologyLayer.maxzoom);
+                topologyLayer.maxfeatures = Math.max(existingTopologyLayer.maxfeatures, topologyLayer.maxfeatures);
+                if (existingTopologyLayer.metrics) {
+                    topologyLayer.metrics = topologyLayer.metrics ? existingTopologyLayer.metrics.concat(topologyLayer.metrics) :
+                    existingTopologyLayer.metrics;
                 }
             }
             topologyLayers.set(topologyLayer.source, topologyLayer);
             this.dataSources.add(ls.source);
-            this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.maxfeatures, this.TOPOLOGY_SOURCE, ls.source);
+            this.indexVisibilityRules(topologyLayer.minzoom, topologyLayer.maxzoom, topologyLayer.maxfeatures,
+                 this.TOPOLOGY_SOURCE, topologyLayer.source);
             this.sourcesTypesIndex.set(ls.source, this.TOPOLOGY_SOURCE);
 
         });
         return topologyLayers;
     }
 
-/**
+    /**
      * Parses the layers_sources config and returns the feature layers index
      * @param layersSourcesConfig layers_sources configuration object
      */
@@ -2068,19 +2100,14 @@ export class MapContributor extends Contributor {
             /** extends rules visibility */
             const existingFeatureLayer = featureLayers.get(featureLayer.source);
             if (existingFeatureLayer) {
-                if (existingFeatureLayer.minzoom < featureLayer.minzoom) {
-                    featureLayer.minzoom = existingFeatureLayer.minzoom;
-                }
-                if (existingFeatureLayer.maxzoom > featureLayer.maxzoom) {
-                    featureLayer.maxzoom = existingFeatureLayer.maxzoom;
-                }
-                if (existingFeatureLayer.maxfeatures > featureLayer.maxfeatures) {
-                    featureLayer.maxfeatures = existingFeatureLayer.maxfeatures;
-                }
+                featureLayer.minzoom = Math.min(existingFeatureLayer.minzoom, featureLayer.minzoom);
+                featureLayer.maxzoom = Math.max(existingFeatureLayer.maxzoom, featureLayer.maxzoom);
+                featureLayer.maxfeatures = Math.max(existingFeatureLayer.maxfeatures, featureLayer.maxfeatures);
             }
             featureLayers.set(featureLayer.source, featureLayer);
             this.dataSources.add(ls.source);
-            this.indexVisibilityRules(ls.minzoom, ls.maxzoom, ls.maxfeatures, this.FEATURE_SOURCE, ls.source);
+            this.indexVisibilityRules(featureLayer.minzoom, featureLayer.maxzoom, featureLayer.maxfeatures,
+                this.FEATURE_SOURCE, featureLayer.source);
             this.sourcesTypesIndex.set(ls.source, this.FEATURE_SOURCE);
 
         });
@@ -2150,12 +2177,38 @@ export class MapContributor extends Contributor {
                         break;
                     }
                 }
-            } else {
+            } else if (visibleSources.has(k)) {
                 sourcesToRemove.push(k);
                 this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+            } else {
+                sourcesToRemove.push(k);
             }
         });
         return [clusterSources, topologySources, featureSources, sourcesToRemove];
+    }
+
+    private getDisplayableTopologySources(zoom: number,
+        visibleSources: Set<string>, nbFeatures?: number): [Array<string>, Array<string>] {
+        const topologySources = [];
+        const sourcesToRemove = [];
+        this.visibiltyRulesIndex.forEach((v, k) => {
+            if (v.type === this.TOPOLOGY_SOURCE) {
+                if (v.maxzoom >= zoom && v.minzoom <= zoom && visibleSources.has(k)) {
+                    if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
+                        this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, true));
+                        topologySources.push(k);
+                    } else {
+                        sourcesToRemove.push(k);
+                        this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                    }
+                } else if (visibleSources.has(k)) {
+                    sourcesToRemove.push(k);
+                    this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                }
+
+            }
+        });
+        return [topologySources, sourcesToRemove];
     }
 
     private prepareSearchNormalization(f: Feature, n: FeaturesNormalization): void {
@@ -2440,6 +2493,13 @@ export class MapContributor extends Contributor {
                 this.dateFieldFormatMap.set((parentPrefix ? parentPrefix : '') + fieldName, fieldList[fieldName].format);
             }
         }
+    }
+
+    private getTopoCardinality(collectField: string, filter: Filter): Observable<ComputationResponse> {
+        const computationRequest: ComputationRequest = { field: collectField, metric: ComputationRequest.MetricEnum.CARDINALITY };
+        return this.collaborativeSearcheService.resolveButNotComputation([projType.compute, computationRequest],
+            this.collaborativeSearcheService.collaborations, null, filter, false, this.cacheDuration);
+
     }
 }
 
