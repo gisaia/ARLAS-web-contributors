@@ -166,7 +166,7 @@ export class MapContributor extends Contributor {
 
     public redrawSource: Subject<any> = new Subject();
     public legendUpdater: Subject<any> = new Subject();
-    public legendData: Map<string, {minValue: string, maxValue: string}> = new Map();
+    public legendData: Map<string, LegendData> = new Map();
     public visibilityUpdater: Subject<any> = new Subject();
     public visibilityStatus: Map<string, boolean> = new Map();
     /** CONSTANTS */
@@ -465,8 +465,8 @@ export class MapContributor extends Contributor {
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
             this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
+        
         if (count) {        console.log('moove');
-
             count.subscribe(countResponse => {
                 this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 const nbFeatures = countResponse.totalnb;
@@ -783,6 +783,7 @@ export class MapContributor extends Contributor {
         }
     }
     public setLegendSearchData(s): void {
+        this.legendData.clear();
         if (this.searchNormalizations) {
             const featuresNormalization = this.searchNormalizations.get(s);
             if (featuresNormalization) {
@@ -832,6 +833,18 @@ export class MapContributor extends Contributor {
                     if (colorField) {
                         const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
                         feature.properties[flattenColorField + '_color'] = getHexColor(feature.properties[flattenColorField], 0.5);
+
+                        /** set the key-to-color map to be displayed on the legend. */
+                        let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
+                        if (!colorLegend) {
+                            colorLegend = {};
+                            colorLegend.keysColorsMap = new Map();
+                        } else if (!colorLegend.keysColorsMap) {
+                            colorLegend.keysColorsMap = new Map();
+                        }
+                        colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
+                            feature.properties[flattenColorField + '_color']);
+                        this.legendData.set(flattenColorField + '_color', colorLegend);
                     }
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
@@ -895,6 +908,7 @@ export class MapContributor extends Contributor {
                     sourceData.push(feature);
                 });
             }
+            /** set minValue and maxValue foreach metric to be sent to the legend */
             Object.keys(stats).forEach(k => {
                 this.legendData.set(k, {minValue: this.getAbreviatedNumber(stats[k].min),
                     maxValue: this.getAbreviatedNumber(stats[k].max)});
@@ -2447,4 +2461,10 @@ export enum RenderStrategy {
     accumulative,
     /** Apply a scroll by removing oldest data when maxPages is exceeded */
     scroll
+}
+
+export interface LegendData {
+    minValue?:  string;
+    maxValue?: string;
+    keysColorsMap?: Map<string, string>;
 }
