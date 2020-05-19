@@ -104,6 +104,7 @@ export class MapContributor extends Contributor {
 
     private sourcesTypesIndex: Map<string, string> = new Map();
     private layersSourcesIndex: Map<string, string> = new Map();
+    private sourcesLayersIndex: Map<string, Set<string>> = new Map();
     private visibiltyRulesIndex: Map<string, {type: string, minzoom: number, maxzoom: number, nbfeatures: number}> = new Map();
 
     /**Cluster data support */
@@ -163,9 +164,11 @@ export class MapContributor extends Contributor {
      */
     public expressionFilter: Expression;
 
-    public redrawSource: Subject<any> = new Subject<any>();
-    public legendUpdater: Subject<any> = new Subject<any>();
+    public redrawSource: Subject<any> = new Subject();
+    public legendUpdater: Subject<any> = new Subject();
     public legendData: Map<string, {minValue: string, maxValue: string}> = new Map();
+    public visibilityUpdater: Subject<any> = new Subject();
+    public visibilityStatus: Map<string, boolean> = new Map();
     /** CONSTANTS */
     private NEXT_AFTER = '_nextAfter';
     private PREVIOUS_AFTER = '_previousAfter';
@@ -468,6 +471,7 @@ export class MapContributor extends Contributor {
                 this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                 const nbFeatures = countResponse.totalnb;
                 displayableSources = this.getDisplayableSources(zoom, visibleSources, nbFeatures);
+                this.visibilityUpdater.next(this.visibilityStatus);
                 dClusterSources = displayableSources[0];
                 dTopologySources = displayableSources[1];
                 dFeatureSources = displayableSources[2];
@@ -878,7 +882,6 @@ export class MapContributor extends Contributor {
             this.redrawSource.next({source: s, data: []});
             const sourceGeohashes = this.geohashesPerSource.get(s);
             const stats = this.aggSourcesStats.get(s);
-         
             const sourceData = [];
             if (sourceGeohashes) {
                 sourceGeohashes.forEach((f, geohash) => {
@@ -1944,6 +1947,10 @@ export class MapContributor extends Contributor {
             clusterLayer.id = ls.id;
             clusterLayer.source = ls.source;
             this.layersSourcesIndex.set(ls.id, ls.source);
+            let layers = this.sourcesLayersIndex.get(ls.source);
+            if (!layers) { layers = new Set(); }
+            layers.add(ls.id);
+            this.sourcesLayersIndex.set(ls.source, layers);
             clusterLayer.maxzoom = ls.maxzoom;
             clusterLayer.minzoom = ls.minzoom;
             clusterLayer.minfeatures = ls.minfeatures;
@@ -1988,6 +1995,10 @@ export class MapContributor extends Contributor {
             topologyLayer.id = ls.id;
             topologyLayer.source = ls.source;
             this.layersSourcesIndex.set(ls.id, ls.source);
+            let layers = this.sourcesLayersIndex.get(ls.source);
+            if (!layers) { layers = new Set(); }
+            layers.add(ls.id);
+            this.sourcesLayersIndex.set(ls.source, layers);
             topologyLayer.maxzoom = ls.maxzoom;
             topologyLayer.minzoom = ls.minzoom;
             topologyLayer.maxfeatures = ls.maxfeatures;
@@ -2029,6 +2040,10 @@ export class MapContributor extends Contributor {
             featureLayer.id = ls.id;
             featureLayer.source = ls.source;
             this.layersSourcesIndex.set(ls.id, ls.source);
+            let layers = this.sourcesLayersIndex.get(ls.source);
+            if (!layers) { layers = new Set(); }
+            layers.add(ls.id);
+            this.sourcesLayersIndex.set(ls.source, layers);
             featureLayer.maxzoom = ls.maxzoom;
             featureLayer.minzoom = ls.minzoom;
             featureLayer.maxfeatures = ls.maxfeatures;
@@ -2093,30 +2108,37 @@ export class MapContributor extends Contributor {
                     case this.CLUSTER_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures <= nbFeatures) {
                             clusterSources.push(k);
+                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, true));
                         } else {
                             sourcesToRemove.push(k);
+                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                         }
                         break;
                     }
                     case this.TOPOLOGY_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
+                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, true));
                             topologySources.push(k);
                         } else {
                             sourcesToRemove.push(k);
+                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                         }
                         break;
                     }
                     case this.FEATURE_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
                             featureSources.push(k);
+                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, true));
                         } else {
                             sourcesToRemove.push(k);
+                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                         }
                         break;
                     }
                 }
             } else {
                 sourcesToRemove.push(k);
+                this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
             }
         });
         return [clusterSources, topologySources, featureSources, sourcesToRemove];
@@ -2366,10 +2388,11 @@ export class MapContributor extends Contributor {
     }
 
     private intToString(value: number): string {
-        let newValue = Math.round(value).toString();
+        value = Math.round(value);
+        let newValue = value.toString();
         if (value >= 1000) {
             const suffixes = ['', 'k', 'M', 'b', 't'];
-            const suffixNum = Math.floor(('' + value).length / 3);
+            const suffixNum = Math.floor(('' + value).length / 4);
             let shortValue: number;
             for (let precision = 3; precision >= 1; precision--) {
                 shortValue = parseFloat((suffixNum !== 0 ? (value / Math.pow(1000, suffixNum)) : value)
