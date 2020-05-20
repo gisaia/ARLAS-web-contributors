@@ -20,6 +20,8 @@
 import * as FileSaver from 'file-saver';
 import jp from 'jsonpath/jsonpath.min';
 import { Hits } from 'arlas-api';
+import { mix } from 'tinycolor2';
+import { LayerSourceConfig } from 'models/models';
 
 /**
 * Retrieve JSON element from JSON object and string path.
@@ -65,9 +67,11 @@ export const ASC = 'asc';
 export const DESC = 'desc';
 
 /**
- * @description appends the `idFieldName` to sortString
+ * @description appends the `idFieldName` to sortString.
+ * It checks if the `idFieldName` is already present in the `sortString` and moves to the end of the string if it's the case
  * @param sortString comma separated field names.
  * @param order whether to apply ascending or descending sort on `idFieldName`. Possible values are `asc` and `desc`
+ * @param idFieldName id field name to append to the `sortString`
  */
 export function appendIdToSort(sortString: string, order: string = ASC, idFieldName: string): string {
     let sortStringWithId = sortString;
@@ -153,4 +157,116 @@ export function getFieldValue(field: string, data: Hits): any {
         }
     }
     return result;
+}
+
+export function coarseGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+    if (zoom >= 0 && zoom <= 4) {
+        return {tilesPrecision: 1, requestsPrecision: 3};
+    } else  if (zoom > 4 && zoom <= 12) {
+        return {tilesPrecision: 2, requestsPrecision: 4};
+    } else  if (zoom > 12) {
+        return {tilesPrecision: 3, requestsPrecision: 5};
+    }
+}
+
+export function fineGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+    if (zoom >= 0 && zoom <= 4) {
+        return {tilesPrecision: 1, requestsPrecision: 3};
+    } else  if (zoom > 4 && zoom <= 7) {
+        return {tilesPrecision: 2, requestsPrecision: 4};
+    } else  if (zoom > 7 && zoom <= 10) {
+        return {tilesPrecision: 3, requestsPrecision: 5};
+    } else  if (zoom > 10) {
+        return {tilesPrecision: 4, requestsPrecision: 6};
+    }
+}
+
+export function finestGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+    if (zoom >= 0 && zoom <= 3) {
+        return {tilesPrecision: 1, requestsPrecision: 3};
+    } else  if (zoom > 3 && zoom <= 6) {
+        return {tilesPrecision: 2, requestsPrecision: 4};
+    } else  if (zoom > 6 && zoom <= 9) {
+        return {tilesPrecision: 3, requestsPrecision: 5};
+    } else  if (zoom > 9 && zoom <= 15) {
+        return {tilesPrecision: 4, requestsPrecision: 6};
+    } else  if (zoom > 15) {
+        return {tilesPrecision: 5, requestsPrecision: 7};
+    }
+}
+
+
+export function featurestTilesGranularity(zoom: number): number {
+    if (zoom >= 0 && zoom < 3) {
+        return 2;
+    } else if (zoom >= 3 && zoom < 5) {
+        return 4;
+    } else if (zoom >= 5 && zoom < 7) {
+        return 6;
+    } else if (zoom >= 7 && zoom < 9) {
+        return 8;
+    } else if (zoom >= 9 && zoom < 11) {
+        return 10;
+    } else if (zoom >= 11 && zoom < 13) {
+        return 12;
+    } else if (zoom >= 13 && zoom < 15) {
+        return 14;
+    } else if (zoom >= 15 && zoom < 17) {
+        return 16;
+    } else if (zoom >= 17 && zoom < 19) {
+        return 18;
+    } else if (zoom >= 19 && zoom < 21) {
+        return 20;
+    } else if (zoom >= 21 && zoom < 23) {
+        return 22;
+    } else if (zoom >= 23 && zoom < 25) {
+        return 24;
+    }
+}
+
+export function getHexColor(key: string, saturationWeight: number): string {
+    const text = key + ':' + key;
+    // string to int
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+        hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // int to rgb
+    let hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+    hex = '00000'.substring(0, 6 - hex.length) + hex;
+    const color = mix(hex, hex);
+    color.saturate(color.toHsv().s * saturationWeight + ((1 - saturationWeight) * 100));
+    return color.toHexString();
+}
+
+
+export function getSourceName(ls: LayerSourceConfig): string {
+    let sourceType = 'cluster';
+    if (ls.returned_geometry) {
+        sourceType = 'feature';
+    } else if (ls.geometry_id) {
+        sourceType = 'feature-metric';
+    }
+    const sourceNameComponents = [];
+    sourceNameComponents.push(sourceType);
+    switch (sourceType) {
+        case 'cluster':
+            sourceNameComponents.push(ls.agg_geo_field);
+            sourceNameComponents.push(ls.granularity);
+            if (ls.aggregated_geometry) {
+                sourceNameComponents.push(ls.aggregated_geometry)
+            } else {
+                sourceNameComponents.push(ls.raw_geometry.geometry);
+                sourceNameComponents.push(ls.raw_geometry.sort);
+            }
+            break;
+        case 'feature-metric':
+            sourceNameComponents.push(ls.geometry_id);
+            sourceNameComponents.push(ls.geometry_support);
+            break;
+        case 'feature':
+            sourceNameComponents.push(ls.returned_geometry);
+            break;
+    }
+    return sourceNameComponents.join('-');
 }

@@ -18,6 +18,8 @@
  */
 
 import moment from 'moment';
+import { Metric, RawGeometry, Aggregation, Search } from 'arlas-api';
+
 /**
 * Enum of sorting value define in Arlas-web-components
 */
@@ -75,11 +77,7 @@ export interface OnMoveResult {
     extendForLoad: Array<number>;
     rawExtendForLoad: Array<number>;
     extendForTest: Array<number>;
-    tiles: Array<{ x: number, y: number, z: number }>;
-    geohash: Array<string>;
-    geohashForLoad: Array<string>;
-
-
+    visibleLayers: Set<string>;
 }
 
 export interface FieldsConfiguration {
@@ -161,6 +159,25 @@ export interface StringifiedTimeShortcut {
     type: string;
 }
 
+export interface LayerSourceConfig {
+    id: string;
+    source: string;
+    minzoom: number;
+    maxzoom: number;
+    minfeatures?: number;
+    maxfeatures?: number;
+    returned_geometry?: string;
+    geometry_id?: string;
+    geometry_support?: string;
+    agg_geo_field?: string;
+    color_from_field?: string;
+    include_fields?: Array<string>;
+    normalization_fields?: Array<NormalizationFieldConfig>;
+    aggregated_geometry?: string;
+    raw_geometry?: RawGeometryConfig;
+    granularity?: string;
+    metrics?: Array<MetricConfig>;
+}
 export enum DateUnitEnum {
     y = 'y',
     M = 'M',
@@ -437,40 +454,82 @@ export interface AttachmentConfig {
 /**
  * This interface defines how to apply normalization on the values of a field.
  * 1. `on` : Choose the **date** or **numeric** field which values are normalized.
- * 2. `scope`: (`global` | `local`) Choose the normalization scope :
- *  - `global`, considering all the data
- *  - `local`, considering the data on the current map extent only
- * 3. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
- * 4. `keysSize`: (Optional, works in combination with `per`) Choose how many `"per"` keywords to use. Defaults to 100. Maximum is 10000.
+ * 2. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
  */
-export interface Normalization {
+export interface NormalizationFieldConfig {
     on: string;
     per?: string;
-    keysSize?: number;
-    scope: NormalizationScope;
+}
+
+export interface RawGeometryConfig {
+    geometry: string;
+    sort: string;
 }
 
 /**
  * This class defines how to apply normalization on the values of a field.
  * 1. `on` : Choose the **date** or **numeric** field which values are normalized.
- * 2. `scope`: (`global` | `local`) Choose the normalization scope :
- *  - `global`, considering all the data
- *  - `local`, considering the data on the current map extent only
- * 3. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
- * 4. `keysSize`: (Optional, works in combination with `per`) Choose how many `"per"` keywords to use. Defaults to 100. Maximum is 10000.
- * An object of this class stores the **min** and **max** values of the `"on"` field (given the `"scope"` and the `"per"` field)
+ * 2. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
+ * An object of this class stores the **min** and **max** values of the `"on"` field (given the `"per"` field)
  */
-export class FeaturesNormalization implements Normalization {
+export class FeaturesNormalization implements NormalizationFieldConfig {
     public on: string;
     public per?: string;
-    public keysSize = 100;
-    public scope: NormalizationScope;
-
-    public minMaxPerKey = new Map<string, [number, number]>();
-    public minMax: [number, number];
+    public minMaxPerKey? = new Map<string, [number, number]>();
+    public minMax?: [number, number];
 }
 
-export enum NormalizationScope {
-    global = 'global',
-    local = 'local'
+export class LayerSource {
+    public id: string;
+    public source: string;
+    public minzoom: number;
+    public maxzoom: number;
+}
+
+export class LayerFeatureSource extends LayerSource {
+    public maxfeatures: number;
+    public normalizationFields: Array<NormalizationFieldConfig>;
+    public includeFields: Set<string>;
+    public colorField: string;
+    public returnedGeometry: string;
+}
+
+export class LayerClusterSource extends LayerSource {
+    public minfeatures: number;
+    public aggGeoField: string;
+    public granularity: Granularity;
+    public aggregatedGeometry: Aggregation.AggregatedGeometriesEnum;
+    public rawGeometry: RawGeometry;
+    public metrics: Array<MetricConfig>;
+}
+
+/** Topology = feature-metric */
+export class LayerTopologySource extends LayerSource {
+    public maxfeatures: number;
+    public metrics: Array<MetricConfig>;
+    public geometryId: string;
+    public geometrySupport: string;
+    public granularity: Granularity;
+}
+
+export enum Granularity {
+    coarse = 'Coarse',
+    fine = 'Fine',
+    finest = 'Finest'
+}
+
+export interface MetricConfig {
+    field: string;
+    metric: Metric.CollectFctEnum;
+    normalize: boolean;
+}
+
+export interface SourcesAgg {
+    agg: Aggregation;
+    sources: Array<string>;
+}
+
+export interface SourcesSearch {
+    search: Search;
+    sources: Array<string>;
 }

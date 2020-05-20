@@ -7,6 +7,7 @@ import bbox from '@turf/bbox';
 import { CollaborativesearchService } from 'arlas-web-core/services/collaborativesearch.service';
 import { map } from 'rxjs/internal/operators/map';
 import * as meta from '@turf/meta';
+import { bboxes } from 'ngeohash';
 
 export function getBounds(elementidentifier: ElementIdentifier, collaborativeSearcheService: CollaborativesearchService)
     : Observable<Array<Array<number>>> {
@@ -35,11 +36,117 @@ export function getBounds(elementidentifier: ElementIdentifier, collaborativeSea
             }));
 }
 
-export function tileToString(tile: { x: number, y: number, z: number }): string {
-    return tile.x.toString() + tile.y.toString() + tile.z.toString();
+export function extentToGeohashes(extent: Array<number>, zoom: number,
+    granularityFunction: (zoom: number) => {tilesPrecision: number, requestsPrecision: number}): Set<string> {
+    let geohashList = [];
+    const west = extent[1];
+    const east = extent[3];
+    const south = extent[2];
+    const north = extent[0];
+    if (west < -180 && east > 180) {
+      geohashList = bboxes(Math.min(south, north),
+        -180,
+        Math.max(south, north),
+        180, Math.max(granularityFunction(zoom).tilesPrecision, 1));
+    } else if (west < -180 && east < 180) {
+      const geohashList_1: Array<string> = bboxes(Math.min(south, north),
+        Math.min(-180, west + 360),
+        Math.max(south, north),
+        Math.max(-180, west + 360), Math.max(granularityFunction(zoom).tilesPrecision, 1));
+      const geohashList_2: Array<string> = bboxes(Math.min(south, north),
+        Math.min(east, 180),
+        Math.max(south, north),
+        Math.max(east, 180), Math.max(granularityFunction(zoom).tilesPrecision, 1));
+      geohashList = geohashList_1.concat(geohashList_2);
+    } else if (east > 180 && west > -180) {
+      const geohashList_1: Array<string> = bboxes(Math.min(south, north),
+        Math.min(180, east - 360),
+        Math.max(south, north),
+        Math.max(180, east - 360), Math.max(granularityFunction(zoom).tilesPrecision, 1));
+      const geohashList_2: Array<string> = bboxes(Math.min(south, north),
+        Math.min(west, -180),
+        Math.max(south, north),
+        Math.max(west, -180), Math.max(granularityFunction(zoom).tilesPrecision, 1));
+      geohashList = geohashList_1.concat(geohashList_2);
+    } else {
+      geohashList = bboxes(Math.min(south, north),
+        Math.min(east, west),
+        Math.max(south, north),
+        Math.max(east, west), Math.max(granularityFunction(zoom).tilesPrecision, 1));
+    }
+    return new Set(geohashList);
 }
 
+export function tileToString(tile: { x: number, y: number, z: number }): string {
+    return tile.x.toString() + '_' + tile.y.toString() + '_' + tile.z.toString();
+}
 
+export function stringToTile(tileString: string): { x: number, y: number, z: number } {
+    const numbers = tileString.split('_');
+    return { x: +numbers[0], y: +numbers[1], z: +numbers[2]};
+}
+
+function tiled(num: number): number {
+    return Math.floor(num / 256);
+}
+
+export function project(lat: number, lng: number, zoom: number): { x: number, y: number } {
+
+    const R = 6378137;
+    const sphericalScale = 0.5 / (Math.PI * R);
+    const d = Math.PI / 180;
+    const max = 1 - 1E-15;
+    const sin = Math.max(Math.min(Math.sin(lat * d), max), -max);
+    const scale = 256 * Math.pow(2, zoom);
+
+    const point = {
+        x: R * lng * d,
+        y: R * Math.log((1 + sin) / (1 - sin)) / 2
+    };
+
+    point.x = tiled(scale * (sphericalScale * point.x + 0.5));
+    point.y = tiled(scale * (-sphericalScale * point.y + 0.5));
+
+    return point;
+}
+export function getTiles(bounds: Array<Array<number>>, zoom: number): Array<{ x: number, y: number, z: number }> {
+    // north,west
+    const min = project(bounds[1][1], bounds[0][0], zoom);
+    // south,east
+    const max = project(bounds[0][1], bounds[1][0], zoom);
+    const tiles = [];
+    for (let x = min.x; x <= max.x; x++) {
+        for (let y = min.y; y <= max.y; y++) {
+
+            tiles.push({
+                x: x % (2 ** (zoom)),
+                y: y % (2 ** (zoom)),
+                z: zoom
+            });
+        }
+    }
+    return tiles;
+}
+
+export function xyz(bounds, minZoom, maxZoom?): Array<{ x: number, y: number, z: number }> {
+    let min;
+    let max;
+    let tiles = [];
+
+    if (!maxZoom) {
+        max = min = minZoom;
+    } else if (maxZoom < minZoom) {
+        min = maxZoom;
+        max = minZoom;
+    } else {
+        min = minZoom;
+        max = maxZoom;
+    }
+    for (let z = min; z <= max; z++) {
+        tiles = tiles.concat(getTiles(bounds, z));
+    }
+    return tiles;
+}
 /**
  * Takes a GeoJSON Feature or FeatureCollection and truncates the precision of the geometry.
  *
