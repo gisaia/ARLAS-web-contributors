@@ -1500,6 +1500,145 @@ export class MapContributor extends Contributor {
         return filter;
     }
 
+
+    public static getClusterSource(ls: LayerSourceConfig): LayerClusterSource {
+        const clusterLayer = new LayerClusterSource();
+        clusterLayer.id = ls.id;
+        clusterLayer.source = ls.source;
+        clusterLayer.maxzoom = ls.maxzoom;
+        clusterLayer.minzoom = ls.minzoom;
+        clusterLayer.minfeatures = ls.minfeatures;
+        clusterLayer.aggGeoField = ls.agg_geo_field;
+        clusterLayer.granularity = <any>ls.granularity;
+        if (ls.raw_geometry) {
+            clusterLayer.rawGeometry = ls.raw_geometry;
+        }
+        if (ls.aggregated_geometry) {
+            clusterLayer.aggregatedGeometry = <any>ls.aggregated_geometry;
+        }
+        clusterLayer.metrics = ls.metrics;
+        return clusterLayer;
+    }
+
+    public static getTopologySource(ls: LayerSourceConfig): LayerTopologySource {
+        const topologyLayer = new LayerTopologySource();
+        topologyLayer.id = ls.id;
+        topologyLayer.source = ls.source;
+        topologyLayer.maxzoom = ls.maxzoom;
+        topologyLayer.minzoom = ls.minzoom;
+        topologyLayer.maxfeatures = ls.maxfeatures;
+        topologyLayer.geometrySupport = ls.geometry_support;
+        topologyLayer.geometryId = ls.geometry_id;
+        topologyLayer.metrics = ls.metrics;
+        topologyLayer.granularity = <any>ls.granularity;
+        return topologyLayer;
+    }
+
+    public static getFeatureSource(ls: LayerSourceConfig): LayerFeatureSource {
+        const featureLayer = new LayerFeatureSource();
+        featureLayer.id = ls.id;
+        featureLayer.source = ls.source;
+        featureLayer.maxzoom = ls.maxzoom;
+        featureLayer.minzoom = ls.minzoom;
+        featureLayer.maxfeatures = ls.maxfeatures;
+        featureLayer.normalizationFields = ls.normalization_fields;
+        featureLayer.includeFields = new Set(ls.include_fields);
+        featureLayer.colorField = ls.color_from_field;
+        featureLayer.returnedGeometry = ls.returned_geometry;
+        return featureLayer;
+    }
+
+    public static getClusterAggregration(source: LayerSourceConfig): Aggregation {
+        const ls = this.getClusterSource(source);
+        let aggregation: Aggregation;
+        aggregation = {
+            type: Aggregation.TypeEnum.Geohash,
+            field: ls.aggGeoField,
+            interval: { value: 1 }
+        };
+        if (ls.metrics) {
+            if (!aggregation.metrics) { aggregation.metrics = []; }
+            ls.metrics.forEach(m => {
+                aggregation.metrics.push({
+                    collect_field: m.field,
+                    collect_fct: <Metric.CollectFctEnum>m.metric
+                });
+            });
+        }
+        if (ls.aggregatedGeometry) {
+            if (!aggregation.aggregated_geometries) { aggregation.aggregated_geometries = []; }
+            aggregation.aggregated_geometries.push(ls.aggregatedGeometry);
+        }
+        if (ls.rawGeometry) {
+            if (!aggregation.raw_geometries) {
+                aggregation.raw_geometries = [];
+            }
+            aggregation.raw_geometries.push(ls.rawGeometry);
+        }
+        return aggregation;
+    }
+
+    public static getTopologyAggregration(source: LayerSourceConfig): Aggregation {
+        const ls = this.getTopologySource(source);
+        let aggregation: Aggregation;
+        aggregation = {
+            type: Aggregation.TypeEnum.Term,
+            field: ls.geometryId,
+            size: '' + 1000,
+        };
+        if (ls.metrics) {
+            if (!aggregation.metrics) { aggregation.metrics = []; }
+            ls.metrics.forEach(m => {
+                aggregation.metrics.push({
+                    collect_field: m.field,
+                    collect_fct: <Metric.CollectFctEnum>m.metric
+                });
+            });
+        }
+        if (ls.geometrySupport) {
+            if (!aggregation.raw_geometries) {
+                aggregation.raw_geometries = [];
+            }
+            aggregation.raw_geometries.push({geometry: ls.geometrySupport});
+        }
+        return aggregation;
+    }
+
+    public static getFeatureSearch(source: LayerSourceConfig): Search {
+        const ls = MapContributor.getFeatureSource(source);
+        const search: Search = {};
+        search.page = {
+            size: 10
+        };
+        search.form = {
+            flat: false
+        };
+        const includes = new Set();
+        if (ls.includeFields) {
+            ls.includeFields.forEach(f => {
+                includes.add(f);
+            });
+        }
+        if (ls.colorField) {
+            includes.add(ls.colorField);
+        }
+        if (ls.normalizationFields) {
+            ls.normalizationFields.forEach(nf => {
+                includes.add(nf.on);
+                if (nf.per) {
+                    includes.add(nf.per);
+                }
+            });
+        }
+        search.projection = {
+            includes: Array.from(includes).join(',')
+        };
+        const geometries = new Set();
+        geometries.add(ls.returnedGeometry);
+        search.returned_geometries = Array.from(geometries).join(',');
+        return search;
+    }
+
     /**
      * adds the second filter to the first filter
      * @param filter filter to enrich
@@ -1991,26 +2130,7 @@ export class MapContributor extends Contributor {
     private getClusterLayersIndex(layersSourcesConfig: Array<LayerSourceConfig>): Map<string, LayerClusterSource> {
         const clusterLayers = new Map<string, LayerClusterSource>();
         layersSourcesConfig.filter(ls => ls.source.startsWith(this.CLUSTER_SOURCE)).forEach(ls => {
-            const clusterLayer = new LayerClusterSource();
-            clusterLayer.id = ls.id;
-            clusterLayer.source = ls.source;
-            this.layersSourcesIndex.set(ls.id, ls.source);
-            let layers = this.sourcesLayersIndex.get(ls.source);
-            if (!layers) { layers = new Set(); }
-            layers.add(ls.id);
-            this.sourcesLayersIndex.set(ls.source, layers);
-            clusterLayer.maxzoom = ls.maxzoom;
-            clusterLayer.minzoom = ls.minzoom;
-            clusterLayer.minfeatures = ls.minfeatures;
-            clusterLayer.aggGeoField = ls.agg_geo_field;
-            clusterLayer.granularity = <any>ls.granularity;
-            if (ls.raw_geometry) {
-                clusterLayer.rawGeometry = ls.raw_geometry;
-            }
-            if (ls.aggregated_geometry) {
-                clusterLayer.aggregatedGeometry = <any>ls.aggregated_geometry;
-            }
-            clusterLayer.metrics = ls.metrics;
+            const clusterLayer = MapContributor.getClusterSource(ls);
             /** extends rules visibility */
             const existingClusterLayer = clusterLayers.get(clusterLayer.source);
             if (existingClusterLayer) {
@@ -2019,9 +2139,14 @@ export class MapContributor extends Contributor {
                 clusterLayer.minfeatures = Math.min(existingClusterLayer.minfeatures, clusterLayer.minfeatures);
                 if (existingClusterLayer.metrics) {
                     clusterLayer.metrics = clusterLayer.metrics ? existingClusterLayer.metrics.concat(clusterLayer.metrics) :
-                        existingClusterLayer.metrics;
+                    existingClusterLayer.metrics;
                 }
             }
+            this.layersSourcesIndex.set(ls.id, ls.source);
+            let layers = this.sourcesLayersIndex.get(ls.source);
+            if (!layers) { layers = new Set(); }
+            layers.add(ls.id);
+            this.sourcesLayersIndex.set(ls.source, layers);
             clusterLayers.set(clusterLayer.source, clusterLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(clusterLayer.minzoom, clusterLayer.maxzoom, clusterLayer.minfeatures,
@@ -2038,21 +2163,7 @@ export class MapContributor extends Contributor {
     private getTopologyLayersIndex(layersSourcesConfig: Array<LayerSourceConfig>): Map<string, LayerTopologySource> {
         const topologyLayers = new Map<string, LayerTopologySource>();
         layersSourcesConfig.filter(ls => ls.source.startsWith(this.TOPOLOGY_SOURCE)).forEach(ls => {
-            const topologyLayer = new LayerTopologySource();
-            topologyLayer.id = ls.id;
-            topologyLayer.source = ls.source;
-            this.layersSourcesIndex.set(ls.id, ls.source);
-            let layers = this.sourcesLayersIndex.get(ls.source);
-            if (!layers) { layers = new Set(); }
-            layers.add(ls.id);
-            this.sourcesLayersIndex.set(ls.source, layers);
-            topologyLayer.maxzoom = ls.maxzoom;
-            topologyLayer.minzoom = ls.minzoom;
-            topologyLayer.maxfeatures = ls.maxfeatures;
-            topologyLayer.geometrySupport = ls.geometry_support;
-            topologyLayer.geometryId = ls.geometry_id;
-            topologyLayer.metrics = ls.metrics;
-            topologyLayer.granularity = <any>ls.granularity;
+            const topologyLayer = MapContributor.getTopologySource(ls);
             /** extends rules visibility */
             const existingTopologyLayer = topologyLayers.get(topologyLayer.source);
             if (existingTopologyLayer) {
@@ -2065,10 +2176,15 @@ export class MapContributor extends Contributor {
                 }
             }
             topologyLayers.set(topologyLayer.source, topologyLayer);
+            this.layersSourcesIndex.set(ls.id, ls.source);
+            let layers = this.sourcesLayersIndex.get(ls.source);
+            if (!layers) { layers = new Set(); }
+            layers.add(ls.id);
+            this.sourcesLayersIndex.set(ls.source, layers);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(topologyLayer.minzoom, topologyLayer.maxzoom, topologyLayer.maxfeatures,
-                 this.TOPOLOGY_SOURCE, topologyLayer.source);
-            this.sourcesTypesIndex.set(ls.source, this.TOPOLOGY_SOURCE);
+                this.TOPOLOGY_SOURCE, topologyLayer.source);
+                this.sourcesTypesIndex.set(ls.source, this.TOPOLOGY_SOURCE);
 
         });
         return topologyLayers;
@@ -2082,21 +2198,7 @@ export class MapContributor extends Contributor {
         const featureLayers = new Map<string, LayerFeatureSource>();
         layersSourcesConfig.filter(ls => ls.source.startsWith(this.FEATURE_SOURCE) &&
          !ls.source.startsWith(this.TOPOLOGY_SOURCE)).forEach(ls => {
-            const featureLayer = new LayerFeatureSource();
-            featureLayer.id = ls.id;
-            featureLayer.source = ls.source;
-            this.layersSourcesIndex.set(ls.id, ls.source);
-            let layers = this.sourcesLayersIndex.get(ls.source);
-            if (!layers) { layers = new Set(); }
-            layers.add(ls.id);
-            this.sourcesLayersIndex.set(ls.source, layers);
-            featureLayer.maxzoom = ls.maxzoom;
-            featureLayer.minzoom = ls.minzoom;
-            featureLayer.maxfeatures = ls.maxfeatures;
-            featureLayer.normalizationFields = ls.normalization_fields;
-            featureLayer.includeFields = new Set(ls.include_fields);
-            featureLayer.colorField = ls.color_from_field;
-            featureLayer.returnedGeometry = ls.returned_geometry;
+            const featureLayer = MapContributor.getFeatureSource(ls);
             /** extends rules visibility */
             const existingFeatureLayer = featureLayers.get(featureLayer.source);
             if (existingFeatureLayer) {
@@ -2104,6 +2206,11 @@ export class MapContributor extends Contributor {
                 featureLayer.maxzoom = Math.max(existingFeatureLayer.maxzoom, featureLayer.maxzoom);
                 featureLayer.maxfeatures = Math.max(existingFeatureLayer.maxfeatures, featureLayer.maxfeatures);
             }
+            this.layersSourcesIndex.set(ls.id, ls.source);
+            let layers = this.sourcesLayersIndex.get(ls.source);
+            if (!layers) { layers = new Set(); }
+            layers.add(ls.id);
+            this.sourcesLayersIndex.set(ls.source, layers);
             featureLayers.set(featureLayer.source, featureLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(featureLayer.minzoom, featureLayer.maxzoom, featureLayer.maxfeatures,
