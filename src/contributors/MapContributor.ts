@@ -486,20 +486,21 @@ export class MapContributor extends Contributor {
                 this.fetchAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
             }),
             finalize(() => {
-                this.topologyLayersIndex.forEach((v, k) => {
-                    if (!displayableTopoSources.has(k)) {
-                        removableTopoSources.add(k);
-                        this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
-                    }
-                });
-                const nbFeaturesSourcesToRemove = displayableSources[3];
-                removableTopoSources.forEach(s => {
-                    this.redrawSource.next({source: s, data: []});
-                    this.clearData(s);
-                    this.aggSourcesMetrics.set(s, new Set());
-                    this.abortRemovedSources(s, callOrigin);
-                });
-                this.visibilityUpdater.next(this.visibilityStatus);
+                if (!!topoCounts && topoCounts.length > 0) {
+                    this.topologyLayersIndex.forEach((v, k) => {
+                        if (!displayableTopoSources.has(k)) {
+                            removableTopoSources.add(k);
+                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                        }
+                    });
+                    removableTopoSources.forEach(s => {
+                        this.redrawSource.next({source: s, data: []});
+                        this.clearData(s);
+                        this.aggSourcesMetrics.set(s, new Set());
+                        this.abortRemovedSources(s, callOrigin);
+                    });
+                    this.visibilityUpdater.next(this.visibilityStatus);
+                }
             })
         ).subscribe(d => d);
         if (count) {
@@ -835,8 +836,13 @@ export class MapContributor extends Contributor {
 
                     } else {
                         const minMax = n.minMax;
-                        const minValue = this.getAbreviatedNumber(minMax[0]);
-                        const maxValue = this.getAbreviatedNumber(minMax[1]);
+                        const featureData = this.featureDataPerSource.get(s);
+                        let minValue = '';
+                        let maxValue = '';
+                        if (!!featureData && featureData.length > 0) {
+                            minValue = this.getAbreviatedNumber(minMax[0]);
+                            maxValue = this.getAbreviatedNumber(minMax[1]);
+                        }
                         const legendData = { minValue, maxValue };
                         this.legendData.set(normalizeField + NORMALIZE, legendData);
                     }
@@ -943,12 +949,14 @@ export class MapContributor extends Contributor {
                 });
             }
             /** set minValue and maxValue foreach metric to be sent to the legend */
-            Object.keys(stats).forEach(k => {
-                this.legendData.set(k, {minValue: this.getAbreviatedNumber(stats[k].min),
-                    maxValue: this.getAbreviatedNumber(stats[k].max)});
-            });
             this.redrawSource.next({source: s, data: sourceData});
-            this.legendUpdater.next(this.legendData);
+            if (!!stats) {
+                Object.keys(stats).forEach(k => {
+                    this.legendData.set(k, {minValue: this.getAbreviatedNumber(stats[k].min),
+                        maxValue: this.getAbreviatedNumber(stats[k].max)});
+                });
+                this.legendUpdater.next(this.legendData);
+            }
         });
     }
 
