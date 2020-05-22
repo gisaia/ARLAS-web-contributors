@@ -1032,12 +1032,31 @@ export class MapContributor extends Contributor {
                 const start = Date.now();
                 const cancelSubjects = this.cancelSubjects.get(searchId);
                 const lastCall = this.lastCalls.get(searchId);
+                const renderRetries = [];
                 this.resolveTiledSearchSources(newVisitedTiles, searchId, searchSource.search)
                 .pipe(
                     takeUntil(cancelSubjects && cancelSubjects.get(lastCall) ? cancelSubjects.get(lastCall) : of()),
 
                     map(f => this.computeFeatureData(f, searchSource.sources)),
                     tap(() => count++),
+                    tap(() => {
+                        const progression = count / totalcount * 100;
+                        const consumption = Date.now() - start;
+                        if (consumption > 2000) {
+                            if (progression > 25 && renderRetries.length === 0) {
+                                this.renderSearchSources(searchSource.sources);
+                                renderRetries.push('1');
+                            }
+                            if (progression > 50 && renderRetries.length <= 1) {
+                                this.renderSearchSources(searchSource.sources);
+                                renderRetries.push('2');
+                            }
+                            if (progression > 75 && renderRetries.length <= 2) {
+                                this.renderSearchSources(searchSource.sources);
+                                renderRetries.push('3');
+                            }
+                        }
+                    }),
                     finalize(() => {
                         this.renderSearchSources(searchSource.sources);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
