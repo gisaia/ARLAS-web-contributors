@@ -38,7 +38,7 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes } from './../utils/mapUtils';
+import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString } from './../utils/mapUtils';
 
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
@@ -150,8 +150,9 @@ export class MapContributor extends Contributor {
      */
 
     public zoom;
-    public mapExtend = [90, -180, -90, 180];
-    public mapRawExtent = [90, -180, -90, 180];
+    public mapLoadExtent = [90, -180, -90, 180];
+    public mapTestExtent = [90, -180, -90, 180];
+    public mapTestRawExtent = [90, -180, -90, 180];
     public visibleSources: Set<string> = new Set();
     public geoPointFields = new Array<string>();
     public geoShapeFields = new Array<string>();
@@ -271,10 +272,8 @@ export class MapContributor extends Contributor {
     }
 
     public fetchDataSimpleMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
-        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
-          + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
-            + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         this.searchNormalizations.clear();
         this.searchSourcesMetrics.clear();
         this.featureDataPerSource.clear();
@@ -285,10 +284,8 @@ export class MapContributor extends Contributor {
     }
 
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
-        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
-          + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
-            + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         this.aggSourcesMetrics.clear();
         this.aggSourcesStats.clear();
         this.sourcesPrecisions.clear();
@@ -301,18 +298,17 @@ export class MapContributor extends Contributor {
         this.parentGeohashesPerSource.clear();
         this.searchNormalizations.clear();
         this.searchSourcesMetrics.clear();
-        this.getDynamicModeData(rawExtent, wrapExtent, this.mapExtend, this.zoom, this.visibleSources);
+        this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, this.visibleSources);
         return of();
     }
 
     public onMoveSimpleMode(newMove: OnMoveResult) {
         this.zoom = newMove.zoom;
-        this.mapExtend = newMove.extendForLoad;
-        this.mapRawExtent = newMove.rawExtendForLoad;
-        const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
-          + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-        const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
-            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
+        this.mapLoadExtent = newMove.extendForLoad;
+        this.mapTestExtent = newMove.extendForTest;
+        this.mapTestRawExtent = newMove.rawExtendForTest;
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         if (this.updateData) {
             this.getSimpleModeData(wrapExtent, rawExtent, this.searchSort, this.isSimpleModeAccumulative);
         }
@@ -331,19 +327,18 @@ export class MapContributor extends Contributor {
     */
     public onMoveDynamicMode(newMove: OnMoveResult) {
         this.zoom = newMove.zoom;
-        this.mapExtend = newMove.extendForLoad;
-        this.mapRawExtent = newMove.rawExtendForLoad;
+        this.mapLoadExtent = newMove.extendForLoad;
+        this.mapTestExtent = newMove.extendForTest;
+        this.mapTestRawExtent = newMove.rawExtendForTest;
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         const visibleSources = new Set<string>();
         this.visibleSources.clear();
         newMove.visibleLayers.forEach(l => {
             this.visibleSources.add(this.layersSourcesIndex.get(l)); visibleSources.add(this.layersSourcesIndex.get(l));
         });
-        const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
-          + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-        const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
-            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
         if (this.updateData) {
-            this.getDynamicModeData(rawExtent, wrapExtent, newMove.extendForLoad, this.zoom, visibleSources);
+            this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, visibleSources);
         }
     }
     public computeData(data: any) {
@@ -443,8 +438,8 @@ export class MapContributor extends Contributor {
         this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy);
     }
 
-    public getDynamicModeData(rawExtent, wrapExtent, mapExtent, zoom: number, visibleSources: Set<string>): void {
-        const countFilter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
+    public getDynamicModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, zoom: number, visibleSources: Set<string>): void {
+        const countFilter = this.getFilterForCount(rawTestExtent, wrapTestExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
          *  If the precision of a cluster souce changes, it will stop the ongoing http calls */
@@ -483,7 +478,7 @@ export class MapContributor extends Contributor {
                 topoSources[0].forEach(s => displayableTopoSources.add(s));
                 topoSources[1].forEach(s => removableTopoSources.add(s));
                 const topologyAggsBuilder = this.prepareTopologyAggregations(topoSources[0], zoom);
-                this.fetchAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
+                this.fetchAggSources(mapLoadExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
             }),
             finalize(() => {
                 if (!!topoCounts && topoCounts.length > 0) {
@@ -522,8 +517,8 @@ export class MapContributor extends Contributor {
                 });
                 const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
                 const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.visibility_rules);
-                this.fetchAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
-                this.fetchTiledSearchSources(mapExtent, featureSearchBuilder);
+                this.fetchAggSources(mapLoadExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
+                this.fetchTiledSearchSources(mapLoadExtent, featureSearchBuilder);
             });
         }
     }
@@ -1307,10 +1302,8 @@ export class MapContributor extends Contributor {
      * @param maxPages The maxumum number of set features.
      */
     public getPage(reference: Map<string, string | number | Date>, sort: string, whichPage: PageEnum, maxPages: number): void {
-        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
-        + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
-          + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         let after;
         if (whichPage === PageEnum.previous) {
             after = reference.get(this.PREVIOUS_AFTER);
@@ -1389,10 +1382,8 @@ export class MapContributor extends Contributor {
      * @param appendId Whether to append the id field name to the sort string. Default to 'false'
      */
     public drawGeoSearch(fromParam?: number, appendId?: boolean) {
-        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
-          + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
-            + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         const sort = appendId ? appendIdToSort(this.searchSort, ASC, this.collectionParameters.id_path) : this.searchSort;
         const keepOldData = false;
         this.getSimpleModeData(wrapExtent, rawExtent, sort, keepOldData, null, null, fromParam);

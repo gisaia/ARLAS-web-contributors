@@ -75,7 +75,7 @@ export interface OnMoveResult {
     center: any;
     extend: Array<number>;
     extendForLoad: Array<number>;
-    rawExtendForLoad: Array<number>;
+    rawExtendForTest: Array<number>;
     extendForTest: Array<number>;
     visibleLayers: Set<string>;
 }
