@@ -81,6 +81,10 @@ export function tileToString(tile: { x: number, y: number, z: number }): string 
     return tile.x.toString() + '_' + tile.y.toString() + '_' + tile.z.toString();
 }
 
+export function extentToString(extent: Array<number>): string {
+    return extent[1] + ',' + extent[2] + ',' + extent[3] + ',' + extent[0];
+}
+
 export function stringToTile(tileString: string): { x: number, y: number, z: number } {
     const numbers = tileString.split('_');
     return { x: +numbers[0], y: +numbers[1], z: +numbers[2]};

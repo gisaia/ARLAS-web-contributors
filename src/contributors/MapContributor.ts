@@ -38,7 +38,7 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes } from './../utils/mapUtils';
+import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString } from './../utils/mapUtils';
 
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
@@ -150,8 +150,9 @@ export class MapContributor extends Contributor {
      */
 
     public zoom;
-    public mapExtend = [90, -180, -90, 180];
-    public mapRawExtent = [90, -180, -90, 180];
+    public mapLoadExtent = [90, -180, -90, 180];
+    public mapTestExtent = [90, -180, -90, 180];
+    public mapTestRawExtent = [90, -180, -90, 180];
     public visibleSources: Set<string> = new Set();
     public geoPointFields = new Array<string>();
     public geoShapeFields = new Array<string>();
@@ -271,10 +272,8 @@ export class MapContributor extends Contributor {
     }
 
     public fetchDataSimpleMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
-        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
-          + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
-            + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         this.searchNormalizations.clear();
         this.searchSourcesMetrics.clear();
         this.featureDataPerSource.clear();
@@ -285,10 +284,8 @@ export class MapContributor extends Contributor {
     }
 
     public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
-        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
-          + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
-            + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         this.aggSourcesMetrics.clear();
         this.aggSourcesStats.clear();
         this.sourcesPrecisions.clear();
@@ -301,18 +298,17 @@ export class MapContributor extends Contributor {
         this.parentGeohashesPerSource.clear();
         this.searchNormalizations.clear();
         this.searchSourcesMetrics.clear();
-        this.getDynamicModeData(rawExtent, wrapExtent, this.mapExtend, this.zoom, this.visibleSources);
+        this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, this.visibleSources);
         return of();
     }
 
     public onMoveSimpleMode(newMove: OnMoveResult) {
         this.zoom = newMove.zoom;
-        this.mapExtend = newMove.extendForLoad;
-        this.mapRawExtent = newMove.rawExtendForLoad;
-        const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
-          + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-        const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
-            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
+        this.mapLoadExtent = newMove.extendForLoad;
+        this.mapTestExtent = newMove.extendForTest;
+        this.mapTestRawExtent = newMove.rawExtendForTest;
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         if (this.updateData) {
             this.getSimpleModeData(wrapExtent, rawExtent, this.searchSort, this.isSimpleModeAccumulative);
         }
@@ -331,19 +327,18 @@ export class MapContributor extends Contributor {
     */
     public onMoveDynamicMode(newMove: OnMoveResult) {
         this.zoom = newMove.zoom;
-        this.mapExtend = newMove.extendForLoad;
-        this.mapRawExtent = newMove.rawExtendForLoad;
+        this.mapLoadExtent = newMove.extendForLoad;
+        this.mapTestExtent = newMove.extendForTest;
+        this.mapTestRawExtent = newMove.rawExtendForTest;
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         const visibleSources = new Set<string>();
         this.visibleSources.clear();
         newMove.visibleLayers.forEach(l => {
             this.visibleSources.add(this.layersSourcesIndex.get(l)); visibleSources.add(this.layersSourcesIndex.get(l));
         });
-        const wrapExtent = newMove.extendForLoad[1] + ',' + newMove.extendForLoad[2] + ','
-          + newMove.extendForLoad[3] + ',' + newMove.extendForLoad[0];
-        const rawExtent = newMove.rawExtendForLoad[1] + ',' + newMove.rawExtendForLoad[2] + ','
-            + newMove.rawExtendForLoad[3] + ',' + newMove.rawExtendForLoad[0];
         if (this.updateData) {
-            this.getDynamicModeData(rawExtent, wrapExtent, newMove.extendForLoad, this.zoom, visibleSources);
+            this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, visibleSources);
         }
     }
     public computeData(data: any) {
@@ -443,8 +438,8 @@ export class MapContributor extends Contributor {
         this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy);
     }
 
-    public getDynamicModeData(rawExtent, wrapExtent, mapExtent, zoom: number, visibleSources: Set<string>): void {
-        const countFilter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
+    public getDynamicModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, zoom: number, visibleSources: Set<string>): void {
+        const countFilter = this.getFilterForCount(rawTestExtent, wrapTestExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
          *  If the precision of a cluster souce changes, it will stop the ongoing http calls */
@@ -483,23 +478,24 @@ export class MapContributor extends Contributor {
                 topoSources[0].forEach(s => displayableTopoSources.add(s));
                 topoSources[1].forEach(s => removableTopoSources.add(s));
                 const topologyAggsBuilder = this.prepareTopologyAggregations(topoSources[0], zoom);
-                this.fetchAggSources(mapExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
+                this.fetchAggSources(mapLoadExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
             }),
             finalize(() => {
-                this.topologyLayersIndex.forEach((v, k) => {
-                    if (!displayableTopoSources.has(k)) {
-                        removableTopoSources.add(k);
-                        this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
-                    }
-                });
-                const nbFeaturesSourcesToRemove = displayableSources[3];
-                removableTopoSources.forEach(s => {
-                    this.redrawSource.next({source: s, data: []});
-                    this.clearData(s);
-                    this.aggSourcesMetrics.set(s, new Set());
-                    this.abortRemovedSources(s, callOrigin);
-                });
-                this.visibilityUpdater.next(this.visibilityStatus);
+                if (!!topoCounts && topoCounts.length > 0) {
+                    this.topologyLayersIndex.forEach((v, k) => {
+                        if (!displayableTopoSources.has(k)) {
+                            removableTopoSources.add(k);
+                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                        }
+                    });
+                    removableTopoSources.forEach(s => {
+                        this.redrawSource.next({source: s, data: []});
+                        this.clearData(s);
+                        this.aggSourcesMetrics.set(s, new Set());
+                        this.abortRemovedSources(s, callOrigin);
+                    });
+                    this.visibilityUpdater.next(this.visibilityStatus);
+                }
             })
         ).subscribe(d => d);
         if (count) {
@@ -521,8 +517,8 @@ export class MapContributor extends Contributor {
                 });
                 const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
                 const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.visibility_rules);
-                this.fetchAggSources(mapExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
-                this.fetchTiledSearchSources(mapExtent, featureSearchBuilder);
+                this.fetchAggSources(mapLoadExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
+                this.fetchTiledSearchSources(mapLoadExtent, featureSearchBuilder);
             });
         }
     }
@@ -835,8 +831,13 @@ export class MapContributor extends Contributor {
 
                     } else {
                         const minMax = n.minMax;
-                        const minValue = this.getAbreviatedNumber(minMax[0]);
-                        const maxValue = this.getAbreviatedNumber(minMax[1]);
+                        const featureData = this.featureDataPerSource.get(s);
+                        let minValue = '';
+                        let maxValue = '';
+                        if (!!featureData && featureData.length > 0) {
+                            minValue = this.getAbreviatedNumber(minMax[0]);
+                            maxValue = this.getAbreviatedNumber(minMax[1]);
+                        }
                         const legendData = { minValue, maxValue };
                         this.legendData.set(normalizeField + NORMALIZE, legendData);
                     }
@@ -943,12 +944,14 @@ export class MapContributor extends Contributor {
                 });
             }
             /** set minValue and maxValue foreach metric to be sent to the legend */
-            Object.keys(stats).forEach(k => {
-                this.legendData.set(k, {minValue: this.getAbreviatedNumber(stats[k].min),
-                    maxValue: this.getAbreviatedNumber(stats[k].max)});
-            });
             this.redrawSource.next({source: s, data: sourceData});
-            this.legendUpdater.next(this.legendData);
+            if (!!stats) {
+                Object.keys(stats).forEach(k => {
+                    this.legendData.set(k, {minValue: this.getAbreviatedNumber(stats[k].min),
+                        maxValue: this.getAbreviatedNumber(stats[k].max)});
+                });
+                this.legendUpdater.next(this.legendData);
+            }
         });
     }
 
@@ -1024,12 +1027,29 @@ export class MapContributor extends Contributor {
                 const start = Date.now();
                 const cancelSubjects = this.cancelSubjects.get(searchId);
                 const lastCall = this.lastCalls.get(searchId);
+                const renderRetries = [];
                 this.resolveTiledSearchSources(newVisitedTiles, searchId, searchSource.search)
                 .pipe(
                     takeUntil(cancelSubjects && cancelSubjects.get(lastCall) ? cancelSubjects.get(lastCall) : of()),
 
                     map(f => this.computeFeatureData(f, searchSource.sources)),
                     tap(() => count++),
+                    tap(() => {
+                        const progression = count / totalcount * 100;
+                        const consumption = Date.now() - start;
+                        if (consumption > 2000) {
+                            if (progression > 25 && renderRetries.length === 0) {
+                                this.renderSearchSources(searchSource.sources);
+                                renderRetries.push('1');
+                            } else if (progression > 50 && renderRetries.length <= 1) {
+                                this.renderSearchSources(searchSource.sources);
+                                renderRetries.push('2');
+                            } else if (progression > 75 && renderRetries.length <= 2) {
+                                this.renderSearchSources(searchSource.sources);
+                                renderRetries.push('3');
+                            }
+                        }
+                    }),
                     finalize(() => {
                         this.renderSearchSources(searchSource.sources);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
@@ -1083,12 +1103,10 @@ export class MapContributor extends Contributor {
                             if (progression > 25 && renderRetries.length === 0) {
                                 this.renderAggSources(aggSource.sources);
                                 renderRetries.push('1');
-                            }
-                            if (progression > 50 && renderRetries.length <= 1) {
+                            } else if (progression > 50 && renderRetries.length <= 1) {
                                 this.renderAggSources(aggSource.sources);
                                 renderRetries.push('2');
-                            }
-                            if (progression > 75 && renderRetries.length <= 2) {
+                            } else if (progression > 75 && renderRetries.length <= 2) {
                                 this.renderAggSources(aggSource.sources);
                                 renderRetries.push('3');
                             }
@@ -1280,10 +1298,8 @@ export class MapContributor extends Contributor {
      * @param maxPages The maxumum number of set features.
      */
     public getPage(reference: Map<string, string | number | Date>, sort: string, whichPage: PageEnum, maxPages: number): void {
-        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
-        + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
-          + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         let after;
         if (whichPage === PageEnum.previous) {
             after = reference.get(this.PREVIOUS_AFTER);
@@ -1362,10 +1378,8 @@ export class MapContributor extends Contributor {
      * @param appendId Whether to append the id field name to the sort string. Default to 'false'
      */
     public drawGeoSearch(fromParam?: number, appendId?: boolean) {
-        const wrapExtent = this.mapExtend[1] + ',' + this.mapExtend[2] + ','
-          + this.mapExtend[3] + ',' + this.mapExtend[0];
-        const rawExtent = this.mapRawExtent[1] + ',' + this.mapRawExtent[2] + ','
-            + this.mapRawExtent[3] + ',' + this.mapRawExtent[0];
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
         const sort = appendId ? appendIdToSort(this.searchSort, ASC, this.collectionParameters.id_path) : this.searchSort;
         const keepOldData = false;
         this.getSimpleModeData(wrapExtent, rawExtent, sort, keepOldData, null, null, fromParam);

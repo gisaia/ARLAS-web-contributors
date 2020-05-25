@@ -75,7 +75,7 @@ export interface OnMoveResult {
     center: any;
     extend: Array<number>;
     extendForLoad: Array<number>;
-    rawExtendForLoad: Array<number>;
+    rawExtendForTest: Array<number>;
     extendForTest: Array<number>;
     visibleLayers: Set<string>;
 }
@@ -475,7 +475,7 @@ export interface RawGeometryConfig {
 export class FeaturesNormalization implements NormalizationFieldConfig {
     public on: string;
     public per?: string;
-    public minMaxPerKey? = new Map<string, [number, number]>();
+    public minMaxPerKey ? = new Map<string, [number, number]>();
     public minMax?: [number, number];
 }
 
