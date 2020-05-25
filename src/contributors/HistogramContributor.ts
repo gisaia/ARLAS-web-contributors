@@ -26,7 +26,7 @@ import {
     OperationEnum,
     projType, CollaborationEvent
 } from 'arlas-web-core';
-import { Filter, Aggregation, AggregationResponse, RangeResponse, RangeRequest } from 'arlas-api';
+import { Filter, Aggregation, AggregationResponse, ComputationRequest, ComputationResponse } from 'arlas-api';
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
@@ -74,7 +74,7 @@ export class HistogramContributor extends Contributor {
     /**
      * Histogram's range
     */
-    public range: RangeResponse;
+    public range: ComputationResponse;
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
@@ -254,17 +254,17 @@ export class HistogramContributor extends Contributor {
         const collaborations = new Map<string, Collaboration>();
         this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (this.nbBuckets) {
-            const agg = this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-            <RangeRequest>{ filter: null, field: this.field }], collaborations, identifier, additionalFilter, false, this.cacheDuration)
+            const agg = this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+            <ComputationRequest>{ filter: null, field: this.field, metric: ComputationRequest.MetricEnum.SPANNING }],
+            collaborations, identifier, additionalFilter, false, this.cacheDuration)
                 .pipe(
-                    map((rangeResponse: RangeResponse) => {
-                        const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
-                            (rangeResponse.max - rangeResponse.min) : 0;
-                        const range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
+                    map((computationResponse: ComputationResponse) => {
+                        const dataRange = (!!computationResponse.value) ? computationResponse.value : 0;
+                        const range: ComputationResponse = (!!computationResponse.value) ? computationResponse : null;
                         const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
                         const result = {
-                            range: range,
-                            aggregationPrecision: aggregationPrecision
+                            range,
+                            aggregationPrecision
                         };
                         return result;
                     }),
