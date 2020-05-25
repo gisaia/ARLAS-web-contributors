@@ -475,7 +475,7 @@ export interface RawGeometryConfig {
 export class FeaturesNormalization implements NormalizationFieldConfig {
     public on: string;
     public per?: string;
-    public minMaxPerKey? = new Map<string, [number, number]>();
+    public minMaxPerKey ? = new Map<string, [number, number]>();
     public minMax?: [number, number];
 }
 

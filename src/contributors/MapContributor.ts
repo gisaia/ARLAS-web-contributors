@@ -1041,12 +1041,10 @@ export class MapContributor extends Contributor {
                             if (progression > 25 && renderRetries.length === 0) {
                                 this.renderSearchSources(searchSource.sources);
                                 renderRetries.push('1');
-                            }
-                            if (progression > 50 && renderRetries.length <= 1) {
+                            } else if (progression > 50 && renderRetries.length <= 1) {
                                 this.renderSearchSources(searchSource.sources);
                                 renderRetries.push('2');
-                            }
-                            if (progression > 75 && renderRetries.length <= 2) {
+                            } else if (progression > 75 && renderRetries.length <= 2) {
                                 this.renderSearchSources(searchSource.sources);
                                 renderRetries.push('3');
                             }
@@ -1105,12 +1103,10 @@ export class MapContributor extends Contributor {
                             if (progression > 25 && renderRetries.length === 0) {
                                 this.renderAggSources(aggSource.sources);
                                 renderRetries.push('1');
-                            }
-                            if (progression > 50 && renderRetries.length <= 1) {
+                            } else if (progression > 50 && renderRetries.length <= 1) {
                                 this.renderAggSources(aggSource.sources);
                                 renderRetries.push('2');
-                            }
-                            if (progression > 75 && renderRetries.length <= 2) {
+                            } else if (progression > 75 && renderRetries.length <= 2) {
                                 this.renderAggSources(aggSource.sources);
                                 renderRetries.push('3');
                             }
