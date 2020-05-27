@@ -881,6 +881,27 @@ export class MapContributor extends Contributor {
                             feature.properties[flattenColorField + '_color']);
                         this.legendData.set(flattenColorField + '_color', colorLegend);
                     }
+                    const providedFields = this.featureLayersIndex.get(s).providedFields;
+                    const fieldsToKeep = new Set<string>();
+                    if (providedFields) {
+                        providedFields.forEach(pf => {
+                            const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
+                            const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
+                            /** set the key-to-color map to be displayed on the legend. */
+                            let colorLegend: LegendData = this.legendData.get(flattenColorField);
+                            if (!colorLegend) {
+                                colorLegend = {};
+                                colorLegend.keysColorsMap = new Map();
+                            } else if (!colorLegend.keysColorsMap) {
+                                colorLegend.keysColorsMap = new Map();
+                            }
+                            fieldsToKeep.add(flattenColorField);
+                            fieldsToKeep.add(flattenLabelField);
+                            colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
+                                feature.properties[flattenColorField]);
+                            this.legendData.set(flattenColorField, colorLegend);
+                        });
+                    }
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
                     delete feature.properties.md;
@@ -912,8 +933,32 @@ export class MapContributor extends Contributor {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
+                    /** set the key-to-color map to be displayed on the legend. */
+                    const providedFields = this.topologyLayersIndex.get(s).providedFields;
+                    const fieldsToKeep = new Set<string>();
+                    if (providedFields) {
+                        providedFields.forEach(pf => {
+                            const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
+                            const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
+                            /** set the key-to-color map to be displayed on the legend. */
+                            let colorLegend: LegendData = this.legendData.get(flattenColorField);
+                            if (!colorLegend) {
+                                colorLegend = {};
+                                colorLegend.keysColorsMap = new Map();
+                            } else if (!colorLegend.keysColorsMap) {
+                                colorLegend.keysColorsMap = new Map();
+                            }
+                            feature.properties[flattenLabelField] = feature.properties['hits'][0][flattenLabelField];
+                            feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField];
+                            fieldsToKeep.add(flattenColorField);
+                            fieldsToKeep.add(flattenLabelField);
+                            colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
+                                feature.properties[flattenColorField]);
+                            this.legendData.set(flattenColorField, colorLegend);
+                        });
+                    }
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
-                    this.cleanRenderedAggFeature(s, feature);
+                    this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
                     sourceData.push(feature);
                 });
             }
@@ -939,7 +984,7 @@ export class MapContributor extends Contributor {
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
                     delete feature.properties.geohash;
                     delete feature.properties.parent_geohash;
-                    this.cleanRenderedAggFeature(s, feature, true);
+                    this.cleanRenderedAggFeature(s, feature, new Set(), true);
                     sourceData.push(feature);
                 });
             }
@@ -1548,6 +1593,7 @@ export class MapContributor extends Contributor {
         topologyLayer.geometryId = ls.geometry_id;
         topologyLayer.metrics = ls.metrics;
         topologyLayer.granularity = <any>ls.granularity;
+        topologyLayer.providedFields = ls.provided_fields;
         return topologyLayer;
     }
 
@@ -1562,6 +1608,7 @@ export class MapContributor extends Contributor {
         featureLayer.includeFields = new Set(ls.include_fields);
         featureLayer.colorField = ls.color_from_field;
         featureLayer.returnedGeometry = ls.returned_geometry;
+        featureLayer.providedFields = ls.provided_fields;
         return featureLayer;
     }
 
@@ -1811,7 +1858,8 @@ export class MapContributor extends Contributor {
         if (!metrics) { metrics = new Set(); }
         let key: string;
         switch (indexationType) {
-            case ReturnedField.flat: {
+            case ReturnedField.flat:
+            case ReturnedField.providedcolor: {
                 key = field.replace(/\./g, this.FLAT_CHAR);
                 break;
             }
@@ -1897,6 +1945,17 @@ export class MapContributor extends Contributor {
                 includes.add(ls.colorField);
                 this.indexSearchSourcesMetrics(cs, ls.colorField, ReturnedField.generatedcolor);
             }
+            if (ls.providedFields) {
+                ls.providedFields.forEach(pf => {
+                    includes.add(pf.color);
+                    this.indexSearchSourcesMetrics(cs, pf.color, ReturnedField.providedcolor);
+                    if (pf.label) {
+                        includes.add(pf.label);
+                        this.indexSearchSourcesMetrics(cs, pf.label, ReturnedField.providedcolor);
+                    }
+
+                });
+            }
             if (ls.normalizationFields) {
                 ls.normalizationFields.forEach(nf => {
                     includes.add(nf.on);
@@ -1954,6 +2013,18 @@ export class MapContributor extends Contributor {
                     aggregation.raw_geometries = [];
                 }
                 aggregation.raw_geometries.push({geometry: ls.geometrySupport});
+            }
+            if (ls.providedFields) {
+                if (!aggregation.fetch_hits) {
+                    aggregation.fetch_hits = {size: 1};
+                    const fetchSet = new Set();
+                    ls.providedFields.forEach(pf => {
+                        fetchSet.add(pf.color);
+                        if (pf.label) {
+                            fetchSet.add(pf.label);
+                        }
+                    });
+                }
             }
             sources.push(cs);
             aggregationsMap.set(aggId, {agg: aggregation, sources});
@@ -2046,7 +2117,7 @@ export class MapContributor extends Contributor {
         }
     }
 
-    private cleanRenderedAggFeature(s: string, feature: Feature, isWeightedAverage = false): void {
+    private cleanRenderedAggFeature(s: string, feature: Feature, providedFields: Set<string>, isWeightedAverage = false): void {
         delete feature.properties.geometry_ref;
         delete feature.properties.geometry_type;
         delete feature.properties.feature_type;
@@ -2083,7 +2154,9 @@ export class MapContributor extends Contributor {
                     }
                 }
             } else {
-                delete feature.properties[k];
+                if (!providedFields.has(k)) {
+                    delete feature.properties[k];
+                }
             }
         });
         if (metricsKeys) {
@@ -2179,6 +2252,10 @@ export class MapContributor extends Contributor {
                     topologyLayer.metrics = topologyLayer.metrics ? existingTopologyLayer.metrics.concat(topologyLayer.metrics) :
                     existingTopologyLayer.metrics;
                 }
+                if (existingTopologyLayer.providedFields) {
+                    topologyLayer.providedFields = topologyLayer.providedFields ?
+                        existingTopologyLayer.providedFields.concat(topologyLayer.providedFields) : existingTopologyLayer.providedFields;
+                }
             }
             topologyLayers.set(topologyLayer.source, topologyLayer);
             this.layersSourcesIndex.set(ls.id, ls.source);
@@ -2210,6 +2287,10 @@ export class MapContributor extends Contributor {
                 featureLayer.minzoom = Math.min(existingFeatureLayer.minzoom, featureLayer.minzoom);
                 featureLayer.maxzoom = Math.max(existingFeatureLayer.maxzoom, featureLayer.maxzoom);
                 featureLayer.maxfeatures = Math.max(existingFeatureLayer.maxfeatures, featureLayer.maxfeatures);
+                if (existingFeatureLayer.providedFields) {
+                    featureLayer.providedFields = featureLayer.providedFields ?
+                    existingFeatureLayer.providedFields.concat(featureLayer.providedFields) : existingFeatureLayer.providedFields;
+                }
             }
             this.layersSourcesIndex.set(ls.id, ls.source);
             let layers = this.sourcesLayersIndex.get(ls.source);
@@ -2631,7 +2712,7 @@ export class MapContributor extends Contributor {
 
 
 export enum ReturnedField {
-    flat, generatedcolor, normalized, normalizedwithkey
+    flat, generatedcolor, providedcolor, normalized, normalizedwithkey
 }
 
 export enum SearchStrategy {

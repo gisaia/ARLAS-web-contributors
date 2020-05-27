@@ -52,6 +52,20 @@
                             "type": "string"
                         }
                     },
+                    "provided_fields": {
+                        "description": "List of color fields and their label fields",
+                        "type": "object",
+                        "properties": {
+                            "color": {
+                                "description": "Color field",
+                                "type": "string"
+                            },
+                            "label": {
+                                "description": "label field",
+                                "type": "string"
+                            }
+                        }
+                    },
                     "color_from_field": {
                         "description": "a field which values will be transformed to colors, thanks to ARLAS-color-service, and used for a data-driven colouring of the layer features.",
                         "type": "string"
