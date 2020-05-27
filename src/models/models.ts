@@ -172,11 +172,17 @@ export interface LayerSourceConfig {
     agg_geo_field?: string;
     color_from_field?: string;
     include_fields?: Array<string>;
+    provided_fields?: Array<ColorConfig>;
     normalization_fields?: Array<NormalizationFieldConfig>;
     aggregated_geometry?: string;
     raw_geometry?: RawGeometryConfig;
     granularity?: string;
     metrics?: Array<MetricConfig>;
+}
+
+export interface ColorConfig {
+    color: string;
+    label: string;
 }
 export enum DateUnitEnum {
     y = 'y',
@@ -490,6 +496,7 @@ export class LayerFeatureSource extends LayerSource {
     public maxfeatures: number;
     public normalizationFields: Array<NormalizationFieldConfig>;
     public includeFields: Set<string>;
+    public providedFields: Array<ColorConfig>;
     public colorField: string;
     public returnedGeometry: string;
 }
@@ -510,6 +517,7 @@ export class LayerTopologySource extends LayerSource {
     public geometryId: string;
     public geometrySupport: string;
     public granularity: Granularity;
+    public providedFields: Array<ColorConfig>;
 }
 
 export enum Granularity {
