@@ -182,7 +182,7 @@ export interface LayerSourceConfig {
 
 export interface ColorConfig {
     color: string;
-    label: string;
+    label?: string;
 }
 export enum DateUnitEnum {
     y = 'y',

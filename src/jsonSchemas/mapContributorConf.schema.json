@@ -54,15 +54,17 @@
                     },
                     "provided_fields": {
                         "description": "List of color fields and their label fields",
-                        "type": "object",
-                        "properties": {
-                            "color": {
-                                "description": "Color field",
-                                "type": "string"
-                            },
-                            "label": {
-                                "description": "label field",
-                                "type": "string"
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "color": {
+                                    "description": "Color field",
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "description": "label field",
+                                    "type": "string"
+                                }
                             }
                         }
                     },

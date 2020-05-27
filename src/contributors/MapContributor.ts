@@ -266,6 +266,7 @@ export class MapContributor extends Contributor {
                 return this.fetchDataSimpleMode(collaborationEvent);
             }
             case DataMode.dynamic: {
+                this.legendData.clear();
                 return this.fetchDataDynamicMode(collaborationEvent);
             }
         }
@@ -813,7 +814,6 @@ export class MapContributor extends Contributor {
         }
     }
     public setLegendSearchData(s): void {
-        this.legendData.clear();
         if (this.searchNormalizations) {
             const featuresNormalization = this.searchNormalizations.get(s);
             if (featuresNormalization) {
@@ -897,6 +897,10 @@ export class MapContributor extends Contributor {
                             }
                             fieldsToKeep.add(flattenColorField);
                             fieldsToKeep.add(flattenLabelField);
+                            if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
+                                && !feature.properties[flattenColorField].startsWith('rgb')) {
+                                    feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
+                            }
                             colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
                                 feature.properties[flattenColorField]);
                             this.legendData.set(flattenColorField, colorLegend);
@@ -950,6 +954,10 @@ export class MapContributor extends Contributor {
                             }
                             feature.properties[flattenLabelField] = feature.properties['hits'][0][flattenLabelField];
                             feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField];
+                            if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
+                                && !feature.properties[flattenColorField].startsWith('rgb')) {
+                                    feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
+                            }
                             fieldsToKeep.add(flattenColorField);
                             fieldsToKeep.add(flattenLabelField);
                             colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
@@ -963,6 +971,7 @@ export class MapContributor extends Contributor {
                 });
             }
             this.redrawSource.next({source: s, data: sourceData});
+            this.legendUpdater.next(this.legendData);
         });
     }
 
@@ -2017,13 +2026,14 @@ export class MapContributor extends Contributor {
             if (ls.providedFields) {
                 if (!aggregation.fetch_hits) {
                     aggregation.fetch_hits = {size: 1};
-                    const fetchSet = new Set();
+                    const fetchSet = new Set<string>();
                     ls.providedFields.forEach(pf => {
                         fetchSet.add(pf.color);
                         if (pf.label) {
                             fetchSet.add(pf.label);
                         }
                     });
+                    aggregation.fetch_hits.include = Array.from(fetchSet);
                 }
             }
             sources.push(cs);
@@ -2161,7 +2171,7 @@ export class MapContributor extends Contributor {
         });
         if (metricsKeys) {
             Object.keys(feature.properties).forEach(k => {
-                if (!metricsKeys.has(k)) {
+                if (!metricsKeys.has(k) && !providedFields.has(k)) {
                     delete feature.properties[k];
                 }
             });
