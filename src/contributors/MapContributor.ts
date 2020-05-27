@@ -1025,13 +1025,13 @@ export class MapContributor extends Contributor {
             if (newVisitedTiles.size > 0 && searchSource.sources.length > 0) {
                 this.collaborativeSearcheService.ongoingSubscribe.next(1);
                 const start = Date.now();
-                const cancelSubjects = this.cancelSubjects.get(searchId);
                 const lastCall = this.lastCalls.get(searchId);
+                this.setCallCancellers(searchId, lastCall);
+                const cancelSubjects = this.cancelSubjects.get(searchId);
                 const renderRetries = [];
                 this.resolveTiledSearchSources(newVisitedTiles, searchId, searchSource.search)
                 .pipe(
-                    takeUntil(cancelSubjects && cancelSubjects.get(lastCall) ? cancelSubjects.get(lastCall) : of()),
-
+                    takeUntil(cancelSubjects.get(lastCall)),
                     map(f => this.computeFeatureData(f, searchSource.sources)),
                     tap(() => count++),
                     tap(() => {
@@ -1052,6 +1052,7 @@ export class MapContributor extends Contributor {
                     }),
                     finalize(() => {
                         this.renderSearchSources(searchSource.sources);
+                        this.abortControllers.set(searchId, null);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     })
                 ).subscribe(data => data);
@@ -1086,13 +1087,14 @@ export class MapContributor extends Contributor {
             const totalcount = newVisitedTiles.size;
             if (newVisitedTiles.size > 0) {
                 this.collaborativeSearcheService.ongoingSubscribe.next(1);
-                const cancelSubjects = this.cancelSubjects.get(aggId);
                 const lastCall = this.lastCalls.get(aggId);
                 const renderRetries = [];
                 const start = Date.now();
+                this.setCallCancellers(aggId, lastCall);
+                const cancelSubjects = this.cancelSubjects.get(aggId);
                 this.resolveAggSources(newVisitedTiles, aggId, aggSource.agg)
                 .pipe(
-                    takeUntil(cancelSubjects && cancelSubjects.get(lastCall) ? cancelSubjects.get(lastCall) : of()),
+                    takeUntil(cancelSubjects.get(lastCall)),
                     map(f => this.computeAggData(f, aggSource, aggType)),
                     tap(() => count++),
                     // todo strategy to render data at some stages
@@ -1114,6 +1116,7 @@ export class MapContributor extends Contributor {
                     }),
                     finalize(() => {
                         this.renderAggSources(aggSource.sources);
+                        this.abortControllers.set(aggId, null);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     })
                 ).subscribe(data => data);
@@ -1968,10 +1971,6 @@ export class MapContributor extends Contributor {
                 ':' + ls.minzoom + ':' + ls.maxzoom;
             const control = this.abortControllers.get(aggId);
             this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom, callOrigin);
-            if (!control || control.signal.aborted) {
-                const controller = new AbortController();
-                this.abortControllers.set(aggId, controller);
-            }
         });
     }
 
@@ -1979,11 +1978,6 @@ export class MapContributor extends Contributor {
         featuresSources.forEach(cs => {
             const ls = this.featureLayersIndex.get(cs);
             const searchId = ls.maxfeatures + ':' + ls.minzoom + ':' + ls.maxzoom;
-            const control = this.abortControllers.get(searchId);
-            if (!control || control.signal.aborted) {
-                const controller = new AbortController();
-                this.abortControllers.set(searchId, controller);
-            }
             let cancelSubjects = this.cancelSubjects.get(searchId);
             if (!cancelSubjects) { cancelSubjects = new Map(); }
             cancelSubjects.set(callOrigin, new Subject());
@@ -2048,9 +2042,6 @@ export class MapContributor extends Contributor {
             if (abortController && !abortController.signal.aborted) {
                 /** abort pending calls of this agg id because precision changed. */
                 abortController.abort();
-            } else {
-                const controller = new AbortController();
-                this.abortControllers.set(aggId, controller);
             }
         }
     }
@@ -2531,6 +2522,20 @@ export class MapContributor extends Contributor {
             });
         }
         return newVisitedTiles;
+    }
+
+    private setCallCancellers(requestId: string, lastCall: string): void {
+        let cancelSubjects = this.cancelSubjects.get(requestId);
+        if (!cancelSubjects || !cancelSubjects.get(lastCall)) {
+            cancelSubjects = new Map();
+            cancelSubjects.set(lastCall, new Subject());
+            this.cancelSubjects.set(requestId, cancelSubjects);
+        }
+        const control = this.abortControllers.get(requestId);
+        if (!control || control.signal.aborted) {
+            const controller = new AbortController();
+            this.abortControllers.set(requestId, controller);
+        }
     }
     private getValueFromFeature(f: Feature, field: string, flattenedField): number {
         let value = +f.properties[flattenedField];
