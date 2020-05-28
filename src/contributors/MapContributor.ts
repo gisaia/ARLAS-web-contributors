@@ -166,10 +166,10 @@ export class MapContributor extends Contributor {
      */
     public expressionFilter: Expression;
 
-    public redrawSource: Subject<any> = new Subject();
-    public legendUpdater: Subject<any> = new Subject();
+    public redrawSource: Subject<{source: string, data: helpers.Feature[]}> = new Subject();
+    public legendUpdater: Subject<Map<string, LegendData>> = new Subject();
     public legendData: Map<string, LegendData> = new Map();
-    public visibilityUpdater: Subject<any> = new Subject();
+    public visibilityUpdater: Subject<Map<string, boolean>> = new Subject();
     public visibilityStatus: Map<string, boolean> = new Map();
     /** CONSTANTS */
     private NEXT_AFTER = '_nextAfter';
