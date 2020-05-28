@@ -24,7 +24,6 @@ import { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 import { MapContributor } from './contributors/MapContributor';
 import { ResultListContributor } from './contributors/ResultListContributor';
 import { AnalyticsContributor } from './contributors/AnalyticsContributor';
-import { TopoMapContributor} from './contributors/TopoMapContributor';
 import { TreeContributor } from './contributors/TreeContributor';
 import { ComputeContributor } from './contributors/ComputeContributor';
 export { TreeContributor } from './contributors/TreeContributor';
@@ -35,7 +34,6 @@ export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 export { SwimLaneContributor } from './contributors/SwimLaneContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
 export { AnalyticsContributor } from './contributors/AnalyticsContributor';
-export { TopoMapContributor} from './contributors/TopoMapContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
 
 
@@ -47,7 +45,6 @@ contributors.set('histogram', HistogramContributor);
 contributors.set('detailedhistogram', DetailedHistogramContributor);
 contributors.set('resultlist', ResultListContributor);
 contributors.set('map', MapContributor);
-contributors.set('topomap', TopoMapContributor);
 contributors.set('swimlane', SwimLaneContributor);
 contributors.set('chipsearch', ChipsSearchContributor);
 contributors.set('analytics', AnalyticsContributor);
