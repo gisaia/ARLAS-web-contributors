@@ -29,7 +29,7 @@ import {
 import { Observable, from } from 'rxjs';
 import { map, flatMap } from 'rxjs/operators';
 
-import { Aggregation, AggregationResponse, RangeResponse, RangeRequest, Filter, Expression, Interval } from 'arlas-api';
+import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Filter, Expression } from 'arlas-api';
 import { getAggregationPrecision } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
@@ -80,7 +80,7 @@ export class SwimLaneContributor extends Contributor {
     /**
      * The range of data that this contributor fetches.
      */
-    public range: RangeResponse;
+    public range: ComputationResponse;
 
     /**
      * List of aggregation models used to fetch data
@@ -154,14 +154,13 @@ export class SwimLaneContributor extends Contributor {
         this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
-                return (this.collaborativeSearcheService.resolveButNotFieldRange([projType.range,
-                <RangeRequest>{ filter: null, field: this.getXAxisField() }], collaborations, this.identifier
-                    , {}, false, this.cacheDuration)
+                return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+                <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
+                collaborations, this.identifier, {}, false, this.cacheDuration)
                     .pipe(
-                        map((rangeResponse: RangeResponse) => {
-                            const dataRange = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ?
-                                (rangeResponse.max - rangeResponse.min) : 0;
-                            this.range = (rangeResponse.min !== undefined && rangeResponse.max !== undefined) ? rangeResponse : null;
+                        map((computationResponse: ComputationResponse) => {
+                            const dataRange = !!computationResponse.value ? computationResponse.value : 0;
+                            this.range = !!computationResponse.value ? computationResponse : null;
                             this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
                         }),
                         flatMap(() =>

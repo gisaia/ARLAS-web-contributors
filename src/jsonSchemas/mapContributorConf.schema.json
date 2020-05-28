@@ -10,62 +10,168 @@
         }
     ],
     "properties": {
-        "idFieldName": {
-            "description": "Id of entity to show on Map",
-            "type": "string"
-        },
-        "includeFeaturesFields": {
-            "description": "List of fields pattern or names that will be included in features mode as geojson properties.",
+        "layers_sources": {
+            "description": "List of layer_source objects that describe the data source needed to display a layer of data on the map.",
             "type": "array",
             "items": {
-                "description": "Field pattern or name",
-                "type": "string"
-            }
-        },
-        "normalizationFields": {
-            "description": "List of numeric or date fields patterns or names which values are normalized. The fields values can be normalized locally on the current extent OR globally considering the current filters. Also you can normalize fields values (locally or globally) per a given key : For instance I want to normalize the speed of boats for each boat id. **Note** : Global normalization is only possible per a given key.",
-            "type": "array",
-            "items": {
-                "description": "Field pattern or name",
+                "description": "object that describes the data source needed to display a layer of data on the map",
                 "type": "object",
                 "properties": {
-                    "on": {
-                        "description": "The **date** of **numeric** field which values are normalized",
+                    "id": {
+                        "description": "Identifier of the layer.",
                         "type": "string"
                     },
-                    "scope": {
-                        "description": "`global` or `local`. `global` scope means a normalization considering all the data. `local` scope means a normalization considering the data on the current map extent only.",
+                    "source": {
+                        "description": "Type of the data - concat - id.",
                         "type": "string"
                     },
-                    "per": {
-                        "description": "Optional. **keyword** field that allows to normalize the `on` field values per keyword. A keyword being a value of the '`per`' field.",
-                        "type": "string"
-                    },
-                    "keysSize": {
-                        "description": "Optional, works in combination with `per`. Number of `per` keywords to use. Defaults to 100. Maximum is 10000.",
+                    "maxzoom": {
+                        "description": "Maximum zoom level beyond which the layer is no longer displayed.",
                         "type": "number"
+                    },
+                    "minzoom": {
+                        "description": "Minimum zoom level below which the layer is no longer displayed.",
+                        "type": "number"
+                    },
+                    "maxfeatures": {
+                        "description": "Maximum number of features displayed on the map, below which the layer is no longer displayed. To be specified for `feature` and `feature-metric` sources",
+                        "type": "number"
+                    },
+                    "minfeatures": {
+                        "description": "Minimum number of features that a geoaggregation represents as clusters. below this value a `cluster` layer is no longer displayed on the map.",
+                        "type": "number"
+                    },
+                    "returned_geometry": {
+                        "description": "`geo-point` or a `geo-shape` field to display on the map for a feature layer",
+                        "type": "string"
+                    },
+                    "include_fields": {
+                        "description": "List of fields to include in `feature` source that allow a data-driven styling of the layer",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "provided_fields": {
+                        "description": "List of color fields and their label fields",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "color": {
+                                    "description": "Color field",
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "description": "label field",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "color_from_field": {
+                        "description": "a field which values will be transformed to colors, thanks to ARLAS-color-service, and used for a data-driven colouring of the layer features.",
+                        "type": "string"
+                    },
+                    "normalization_fields": {
+                        "description": "List of numeric or date fields patterns or names which values are normalized. The fields values can be normalized locally on the current map extent OR globally; considering the current filters. Also you can normalize fields values (locally or globally) per a given key : For instance I want to normalize the speed of boats for each boat id. **Note** : Global normalization is only possible per a given key.",
+                        "type": "array",
+                        "items": {
+                            "description": "Field pattern or name",
+                            "type": "object",
+                            "properties": {
+                                "on": {
+                                    "description": "The **date** of **numeric** field which values are normalized",
+                                    "type": "string"
+                                },
+                                "per": {
+                                    "description": "Optional. **keyword** field that allows to normalize the `on` field values per keyword. A keyword being a value of the '`per`' field.",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "agg_geo_field": {
+                        "description": "This `geo-point` field is used when geo-aggregating data on a geohash grid. The data on each cell of the grid will be aggregated by this field.",
+                        "type": "string"
+                    },
+                    "granularity": {
+                        "description": "Describes how precise the geo-aggregation is. Three possible values: Coarse, Fine, Finest",
+                        "type": "string",
+                        "enum": [
+                            "Coarse",
+                            "Fine",
+                            "Finest"
+                        ]
+                    },
+                    "aggregated_geometry": {
+                        "description": "Corresponds to the geometry that reprensents the aggregated data on each cell of a geo-aggregation. It's called aggregated geometry because it has the following possible values: geohash_center, geohash, bbox, centroid.",
+                        "type": "string",
+                        "enum": [
+                            "bbox",
+                            "centroid",
+                            "geohash",
+                            "geohash_center"
+                        ]
+                    },
+                    "raw_geometry": {
+                        "description": "Corresponds to the geometry that represents the aggregated data on each cell of a geo-aggregation. This geometry should be a `geo-point` or a `geo-shape` geometry of a document that will be representing all the cell.",
+                        "type": "object",
+                        "properties": {
+                            "geometry": {
+                                "description": "`geo-point` or a `geo-shape` field of the document that will be representing each bucket (cell) of the grid",
+                                "type": "string"
+                            },
+                            "sort": {
+                                "description": "Comma separated fields on which documents within the cell are sorted. The first resulted document of this sort is the one representing the cell.",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "metrics": {
+                        "description": "List of metrics that are calculated inside each aggregation bucket",
+                        "type": "array",
+                        "items": {
+                            "description": "metric that is calculated inside each aggregation bucket",
+                            "type": "object",
+                            "properties": {
+                                "field": {
+                                    "description": "Field on which the metric is calculated",
+                                    "type": "string"
+                                },
+                                "metric": {
+                                    "description": "The metric to calculate. Possible values are: avg | min | max | sum | count",
+                                    "type": "string",
+                                    "enum": [
+                                        "avg",
+                                        "min",
+                                        "max",
+                                        "sum",
+                                        "count"
+                                    ]
+                                },
+                                "normalize": {
+                                    "description": "If specified, it normalizes the metrics above locally to the current map extend or globally",
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "geometry_id": {
+                        "description": "A keyword field that identifies a set of similar geometries",
+                        "type": "string"
+                    }, 
+                    "geomeetry_support": {
+                        "description": "A `geo-point` or `geo-shape` field that represents the geometry_id"
                     }
                 }
             }
         },
-        "colorGenerationFields": {
-            "description": "List of fields patterns or names which values are used to generate a hex color. A property `{field}_color` containing this color will be included in features mode as geojson properties.",
-            "type": "array",
-            "items": {
-                "description": "Field pattern or name",
-                "type": "string"
-            }
-        },
-        "initZoom": {
-            "description": "Initial zoom of  Map",
-            "type": "number"
-        },
-        "geoQueryField": {
-            "description": "Geometry field use for geo query",
+        "geo_query_field": {
+            "description": "Geometry field used for geo query",
             "type": "string"
         },
-        "geoQueryOp": {
-            "description": "Operator  use for geo query",
+        "geo_query_op": {
+            "description": "Operator  used for geo query",
             "enum": [
                 "Within",
                 "NotWithin",
@@ -73,127 +179,35 @@
                 "NotIntersects"
             ]
         },
-        "geomStrategy": {
-            "description": "Geometry method of representation for aggregate data",
-            "enum": [
-                "bbox",
-                "centroid",
-                "first",
-                "last",
-                "byDefault",
-                "geohash"
-            ]
-        },
         "isFlat": {
             "description": "If true, geosjon properties will be flat, true by default",
             "type": "boolean"
         },
-        "zoomLevelFullData": {
-            "description": "Max zoom to retrieve all world data",
-            "type": "number"
-        },
-        "zoomLevelForTestCount": {
-            "description": "Zoom from which we test to retrieve data without aggregation",
-            "type": "number"
-        },
-        "nbMaxDefautFeatureForCluster": {
-            "description": "Defaut number of features below which we show data without agrgegation",
-            "type": "number"
-        },
-        "zoomToNbMaxFeatureForCluster": {
-            "description": "List of couple zoom-number to associate a number of features below which we show data without agrgegation for each zoom",
-            "type": "array",
-            "items": {
-                "type": "array",
-                "minItems": 2,
-                "maxItems": 2,
-                "items": [
-                    {
-                        "description": "Zoom value",
-                        "type": "number"
-                    },
-                    {
-                        "description": "Number of features below which we show data without agrgegation",
-                        "type": "number"
-                    }
-                ]
-            }
-        },
-        "maxPrecision": {
-            "type": "array",
-            "minItems": 2,
-            "maxItems": 2,
-            "items": [
-                {
-                    "description": "Precision of geohash aggregation",
-                    "type": "number"
-                },
-                {
-                    "description": "Level of geohash to retrieve data like tile",
-                    "type": "number"
-                }
-            ]
-        },
-        "zoomToPrecisionCluster": {
-            "description": "List of triplet zoom-precison-level to associate a couple precision-level for each zoom",
-            "type": "array",
-            "items": {
-                "type": "array",
-                "minItems": 3,
-                "maxItems": 3,
-                "items": [
-                    {
-                        "description": "Zoom value",
-                        "type": "number"
-                    },
-                    {
-                        "description": "Precision of geohash aggregation",
-                        "type": "number"
-                    },
-                    {
-                        "description": "Level of geohash to retrieve data like tile",
-                        "type": "number"
-                    }
-                ]
-            }
-        },
-        "drawPrecision": {
+        "draw_precision": {
             "description": "Number of  digits after the decimal point for coordinates in geosjon used for filter",
             "type": "number"
         },
-        "dataMode": {
+        "data_mode": {
             "description": "Initial mode of the contributor : dynamic is the classic cluster/feature mode, simple si always feature mode",
             "enum": [
                 "simple",
                 "dynamic"
             ]
         },
-        "fetchType": {
-            "description": "Type of initial mode of fetching data",
-            "enum": [
-                "tile",
-                "geohash",
-                "topology"
-            ]
+        "simple_mode_accumulative": {
+            "description": "Indicates whether rendered old data is kept or removed when onMove event is triggered. Taken into account only when data_mode = simple.",
+            "type": "boolean"
         },
-        "searchSort": {
+        "search_sort": {
             "description": "Separated comma field to defined the order of te search",
             "type": "string"
         },
-        "searchSize": {
+        "search_size": {
             "description": "Number of  features return by a geosearch",
             "type": "number"
         }
     },
     "required": [
-        "idFieldName",
-        "initZoom",
-        "geomStrategy",
-        "zoomLevelFullData",
-        "zoomLevelForTestCount",
-        "nbMaxDefautFeatureForCluster",
-        "zoomToNbMaxFeatureForCluster",
-        "maxPrecision",
-        "zoomToPrecisionCluster"
+        "layers_sources"
     ]
 }
