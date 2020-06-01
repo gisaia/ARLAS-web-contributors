@@ -170,7 +170,7 @@ export interface LayerSourceConfig {
     geometry_id?: string;
     geometry_support?: string;
     agg_geo_field?: string;
-    color_from_field?: string;
+    colors_from_fields?: Array<string>;
     include_fields?: Array<string>;
     provided_fields?: Array<ColorConfig>;
     normalization_fields?: Array<NormalizationFieldConfig>;
@@ -497,7 +497,7 @@ export class LayerFeatureSource extends LayerSource {
     public normalizationFields: Array<NormalizationFieldConfig>;
     public includeFields: Set<string>;
     public providedFields: Array<ColorConfig>;
-    public colorField: string;
+    public colorFields: Set<string>;
     public returnedGeometry: string;
 }
 
@@ -518,6 +518,7 @@ export class LayerTopologySource extends LayerSource {
     public geometrySupport: string;
     public granularity: Granularity;
     public providedFields: Array<ColorConfig>;
+    public colorFields: Set<string>;
 }
 
 export enum Granularity {
