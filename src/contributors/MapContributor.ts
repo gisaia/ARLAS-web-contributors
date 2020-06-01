@@ -188,7 +188,7 @@ export class MapContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(public identifier, public collaborativeSearcheService: CollaborativesearchService, public configService: ConfigService, 
+    constructor(public identifier, public collaborativeSearcheService: CollaborativesearchService, public configService: ConfigService,
         public colorGenerator?: ColorGeneratorLoader) {
         super(identifier, configService, collaborativeSearcheService);
 
