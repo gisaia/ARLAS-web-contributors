@@ -2153,7 +2153,6 @@ export class MapContributor extends Contributor {
         if (oldPrecisions.tilesPrecision !== precisions.tilesPrecision ||
             oldPrecisions.requestsPrecision !== precisions.requestsPrecision) {
             /** precision changed, need to stop consumption of current http calls using the old precision */
-            console.log('precision change id    ' + aggId);
             let cancelSubjects = this.cancelSubjects.get(aggId);
             if (!cancelSubjects) { cancelSubjects = new Map(); }
             cancelSubjects.forEach((subject, k) => { if (+k < +callOrigin) { subject.next(); subject.complete(); }});
