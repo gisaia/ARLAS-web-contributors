@@ -69,22 +69,22 @@
                         }
                     },
                     "colors_from_fields": {
-                        "description": "a list of fields which values will be transformed to colors, thanks to ARLAS-color-service, and used for a data-driven colouring of the layer features.",
+                        "description": "a list of fields whose values will be transformed to colors, thanks to ARLAS-color-service, and used for a data-driven colouring of the layer features.",
                         "type": "array",
                         "items": {
-                            "description": "field which values will be transformed to colors, thanks to ARLAS-color-service, and used for a data-driven colouring of the layer features.",
+                            "description": "field whose values will be transformed to colors, thanks to ARLAS-color-service, and used for a data-driven colouring of the layer features.",
                             "type": "string"
                         }
                     },
                     "normalization_fields": {
-                        "description": "List of numeric or date fields patterns or names which values are normalized. The fields values can be normalized locally on the current map extent OR globally; considering the current filters. Also you can normalize fields values (locally or globally) per a given key : For instance I want to normalize the speed of boats for each boat id. **Note** : Global normalization is only possible per a given key.",
+                        "description": "List of numeric or date fields patterns or names whose values are normalized. The fields values can be normalized locally on the current map extent OR globally; considering the current filters. Also you can normalize fields values (locally or globally) per a given key : For instance I want to normalize the speed of boats for each boat id. **Note** : Global normalization is only possible per a given key.",
                         "type": "array",
                         "items": {
                             "description": "Field pattern or name",
                             "type": "object",
                             "properties": {
                                 "on": {
-                                    "description": "The **date** of **numeric** field which values are normalized",
+                                    "description": "The **date** of **numeric** field whose values are normalized",
                                     "type": "string"
                                 },
                                 "per": {
