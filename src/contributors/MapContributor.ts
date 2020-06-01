@@ -864,22 +864,24 @@ export class MapContributor extends Contributor {
                     if (normalizations) {
                         normalizations.forEach(n => this.normalize(feature, n));
                     }
-                    const colorField = this.featureLayersIndex.get(s).colorField;
-                    if (colorField) {
-                        const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenColorField + '_color'] = getHexColor(feature.properties[flattenColorField], 0.5);
+                    const colorFields = this.featureLayersIndex.get(s).colorFields;
+                    if (colorFields) {
+                        colorFields.forEach(colorField => {
+                            const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenColorField + '_color'] = getHexColor(feature.properties[flattenColorField], 0.5);
 
-                        /** set the key-to-color map to be displayed on the legend. */
-                        let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
-                        if (!colorLegend) {
-                            colorLegend = {};
-                            colorLegend.keysColorsMap = new Map();
-                        } else if (!colorLegend.keysColorsMap) {
-                            colorLegend.keysColorsMap = new Map();
-                        }
-                        colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
-                            feature.properties[flattenColorField + '_color']);
-                        this.legendData.set(flattenColorField + '_color', colorLegend);
+                            /** set the key-to-color map to be displayed on the legend. */
+                            let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
+                            if (!colorLegend) {
+                                colorLegend = {};
+                                colorLegend.keysColorsMap = new Map();
+                            } else if (!colorLegend.keysColorsMap) {
+                                colorLegend.keysColorsMap = new Map();
+                            }
+                            colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
+                                feature.properties[flattenColorField + '_color']);
+                            this.legendData.set(flattenColorField + '_color', colorLegend);
+                        });
                     }
                     const providedFields = this.featureLayersIndex.get(s).providedFields;
                     const fieldsToKeep = new Set<string>();
@@ -937,9 +939,30 @@ export class MapContributor extends Contributor {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
-                    /** set the key-to-color map to be displayed on the legend. */
-                    const providedFields = this.topologyLayersIndex.get(s).providedFields;
                     const fieldsToKeep = new Set<string>();
+                    /** set the key-to-color map to be displayed on the legend. */
+                    const colorFields = this.topologyLayersIndex.get(s).colorFields;
+                    if (colorFields) {
+                        colorFields.forEach(colorField => {
+                            const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField];
+                            feature.properties[flattenColorField + '_color'] = getHexColor(feature.properties[flattenColorField], 0.5);
+
+                            /** set the key-to-color map to be displayed on the legend. */
+                            let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
+                            if (!colorLegend) {
+                                colorLegend = {};
+                                colorLegend.keysColorsMap = new Map();
+                            } else if (!colorLegend.keysColorsMap) {
+                                colorLegend.keysColorsMap = new Map();
+                            }
+                            colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
+                                feature.properties[flattenColorField + '_color']);
+                            fieldsToKeep.add(flattenColorField + '_color');
+                            this.legendData.set(flattenColorField + '_color', colorLegend);
+                        });
+                    }
+                    const providedFields = this.topologyLayersIndex.get(s).providedFields;
                     if (providedFields) {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
@@ -1603,6 +1626,7 @@ export class MapContributor extends Contributor {
         topologyLayer.metrics = ls.metrics;
         topologyLayer.granularity = <any>ls.granularity;
         topologyLayer.providedFields = ls.provided_fields;
+        topologyLayer.colorFields = new Set(ls.colors_from_fields ? ls.colors_from_fields : []);
         return topologyLayer;
     }
 
@@ -1615,9 +1639,9 @@ export class MapContributor extends Contributor {
         featureLayer.maxfeatures = ls.maxfeatures;
         featureLayer.normalizationFields = ls.normalization_fields;
         featureLayer.includeFields = new Set(ls.include_fields);
-        featureLayer.colorField = ls.color_from_field;
         featureLayer.returnedGeometry = ls.returned_geometry;
         featureLayer.providedFields = ls.provided_fields;
+        featureLayer.colorFields = new Set(ls.colors_from_fields ? ls.colors_from_fields : []);
         return featureLayer;
     }
 
@@ -1692,8 +1716,8 @@ export class MapContributor extends Contributor {
                 includes.add(f);
             });
         }
-        if (ls.colorField) {
-            includes.add(ls.colorField);
+        if (ls.colorFields) {
+            ls.colorFields.forEach(cf => includes.add(cf));
         }
         if (ls.normalizationFields) {
             ls.normalizationFields.forEach(nf => {
@@ -1950,9 +1974,11 @@ export class MapContributor extends Contributor {
                     this.indexSearchSourcesMetrics(cs, f, ReturnedField.flat);
                 });
             }
-            if (ls.colorField) {
-                includes.add(ls.colorField);
-                this.indexSearchSourcesMetrics(cs, ls.colorField, ReturnedField.generatedcolor);
+            if (ls.colorFields) {
+                ls.colorFields.forEach(cf => {
+                    includes.add(cf);
+                    this.indexSearchSourcesMetrics(cs, cf, ReturnedField.generatedcolor);
+                });
             }
             if (ls.providedFields) {
                 ls.providedFields.forEach(pf => {
@@ -2023,18 +2049,30 @@ export class MapContributor extends Contributor {
                 }
                 aggregation.raw_geometries.push({geometry: ls.geometrySupport});
             }
-            if (ls.providedFields) {
+            if (ls.providedFields && ls.providedFields.length > 0) {
                 if (!aggregation.fetch_hits) {
                     aggregation.fetch_hits = {size: 1};
-                    const fetchSet = new Set<string>();
-                    ls.providedFields.forEach(pf => {
-                        fetchSet.add(pf.color);
-                        if (pf.label) {
-                            fetchSet.add(pf.label);
-                        }
-                    });
-                    aggregation.fetch_hits.include = Array.from(fetchSet);
+                    aggregation.fetch_hits.include = [];
                 }
+                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
+                ls.providedFields.forEach(pf => {
+                    fetchSet.add(pf.color);
+                    if (pf.label) {
+                        fetchSet.add(pf.label);
+                    }
+                });
+                aggregation.fetch_hits.include = Array.from(fetchSet);
+            }
+            if (ls.colorFields && ls.colorFields.size > 0) {
+                if (!aggregation.fetch_hits) {
+                    aggregation.fetch_hits = {size: 1};
+                    aggregation.fetch_hits.include = [];
+                }
+                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
+                ls.colorFields.forEach(cf => {
+                    fetchSet.add(cf);
+                });
+                aggregation.fetch_hits.include = Array.from(fetchSet);
             }
             sources.push(cs);
             aggregationsMap.set(aggId, {agg: aggregation, sources});
@@ -2300,6 +2338,10 @@ export class MapContributor extends Contributor {
                 if (existingFeatureLayer.providedFields) {
                     featureLayer.providedFields = featureLayer.providedFields ?
                     existingFeatureLayer.providedFields.concat(featureLayer.providedFields) : existingFeatureLayer.providedFields;
+                }
+                if (existingFeatureLayer.colorFields) {
+                    featureLayer.colorFields = featureLayer.colorFields ?
+                    new Set([...existingFeatureLayer.colorFields].concat([...featureLayer.colorFields])) : existingFeatureLayer.colorFields;
                 }
             }
             this.layersSourcesIndex.set(ls.id, ls.source);
