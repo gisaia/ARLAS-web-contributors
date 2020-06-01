@@ -23,6 +23,48 @@ import { Hits } from 'arlas-api';
 import { mix } from 'tinycolor2';
 import { LayerSourceConfig } from '../models/models';
 
+
+export class ColorGeneratorLoader {
+    public keysToColors: Array<Array<string>>;
+    public colorsSaturationWeight: number ;
+
+    constructor() {
+        this.keysToColors = [];
+        this.colorsSaturationWeight = 0.5;
+    }
+    /**
+     * This method generates a determistic color from the given key, a list of [key, color] and a saturation weight.
+     * @param key The text from which the color is generated
+     * @param externalkeysToColors List of [key, color] couples that associates a hex color to each key.
+     * @param colorsSaturationWeight Knowing that saturation scale is [0, 1], `colorsSaturationWeight` is a factor (between 0 and 1) that
+     * tightens this scale to [(1-colorsSaturationWeight), 1]. Therefore all generated colors saturation will be within this scale.
+     */
+    public getColor(key: string, externalKeysToColors?: Array<[string, string]>, externalColorsSaturationWeight?: number): string {
+        let colorHex = null;
+        const keysToColors = externalKeysToColors ? externalKeysToColors : this.keysToColors;
+        const saturationWeight = (externalColorsSaturationWeight !== undefined && externalColorsSaturationWeight !== null) ?
+        externalColorsSaturationWeight : this.colorsSaturationWeight;
+        if (keysToColors) {
+        for (let i = 0; i < keysToColors.length; i++) {
+            const keyToColor = keysToColors[i];
+            if (keyToColor[0] === key) {
+            colorHex = keyToColor[1];
+            break;
+            }
+        }
+        if (!colorHex) {
+            colorHex = getHexColor(key, saturationWeight);
+        }
+        } else {
+        colorHex = getHexColor(key, saturationWeight);
+        }
+        return colorHex;
+    }
+    public getTextColor (color: string): string {
+        return '#ffffff';
+      }
+}
+
 /**
 * Retrieve JSON element from JSON object and string path.
 * @param jsonObject  JSON Object.
@@ -225,7 +267,7 @@ export function featurestTilesGranularity(zoom: number): number {
 }
 
 export function getHexColor(key: string, saturationWeight: number): string {
-    const text = key + ':' + key;
+    const text = key + ':' + key.split('').reverse().join('') + ':'  + key;
     // string to int
     let hash = 0;
     for (let i = 0; i < text.length; i++) {
@@ -235,7 +277,13 @@ export function getHexColor(key: string, saturationWeight: number): string {
     let hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
     hex = '00000'.substring(0, 6 - hex.length) + hex;
     const color = mix(hex, hex);
-    color.saturate(color.toHsv().s * saturationWeight + ((1 - saturationWeight) * 100));
+    color.lighten(5);
+    const saturation = color.toHsv().s;
+    if (saturation < (1 - saturationWeight) * 100) {
+      const range = (1 - saturationWeight) * 100 - saturation;
+      color.saturate(range);
+    }
+    color.brighten(10);
     return color.toHexString();
 }
 

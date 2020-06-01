@@ -33,7 +33,8 @@ import {
 import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
      LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
      SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig } from '../models/models';
-import { appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity, removePageFromIndex, getHexColor } from '../utils/utils';
+import { appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
+    removePageFromIndex, ColorGeneratorLoader } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
@@ -187,7 +188,8 @@ export class MapContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(public identifier, public collaborativeSearcheService: CollaborativesearchService, public configService: ConfigService) {
+    constructor(public identifier, public collaborativeSearcheService: CollaborativesearchService, public configService: ConfigService, 
+        public colorGenerator?: ColorGeneratorLoader) {
         super(identifier, configService, collaborativeSearcheService);
 
         const layersSourcesConfig: Array<LayerSourceConfig> = this.getConfigValue(this.LAYERS_SOURCES_KEY);
@@ -199,6 +201,9 @@ export class MapContributor extends Contributor {
         const searchSortConfig = this.getConfigValue(this.SEARCH_SORT_KEY);
         const drawPrecisionConfig = this.getConfigValue(this.DRAW_PRECISION_KEY);
         const isFlatConfig = this.getConfigValue(this.IS_FLAT_KEY);
+        if (!colorGenerator) {
+            this.colorGenerator = new ColorGeneratorLoader();
+        }
 
         if (layersSourcesConfig) {
             this.clusterLayersIndex = this.getClusterLayersIndex(layersSourcesConfig);
@@ -868,8 +873,8 @@ export class MapContributor extends Contributor {
                     if (colorFields) {
                         colorFields.forEach(colorField => {
                             const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField + '_color'] = getHexColor(feature.properties[flattenColorField], 0.5);
-
+                            feature.properties[flattenColorField + '_color'] =
+                                this.colorGenerator.getColor(feature.properties[flattenColorField]);
                             /** set the key-to-color map to be displayed on the legend. */
                             let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
                             if (!colorLegend) {
@@ -946,8 +951,8 @@ export class MapContributor extends Contributor {
                         colorFields.forEach(colorField => {
                             const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
                             feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField];
-                            feature.properties[flattenColorField + '_color'] = getHexColor(feature.properties[flattenColorField], 0.5);
-
+                            feature.properties[flattenColorField + '_color'] =
+                                this.colorGenerator.getColor(feature.properties[flattenColorField]);
                             /** set the key-to-color map to be displayed on the legend. */
                             let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
                             if (!colorLegend) {
@@ -1626,7 +1631,7 @@ export class MapContributor extends Contributor {
         topologyLayer.metrics = ls.metrics;
         topologyLayer.granularity = <any>ls.granularity;
         topologyLayer.providedFields = ls.provided_fields;
-        topologyLayer.colorFields = new Set(ls.colors_from_fields ? ls.colors_from_fields : []);
+        topologyLayer.colorFields = new Set(ls.colors_from_fields || []);
         return topologyLayer;
     }
 
@@ -1641,7 +1646,7 @@ export class MapContributor extends Contributor {
         featureLayer.includeFields = new Set(ls.include_fields);
         featureLayer.returnedGeometry = ls.returned_geometry;
         featureLayer.providedFields = ls.provided_fields;
-        featureLayer.colorFields = new Set(ls.colors_from_fields ? ls.colors_from_fields : []);
+        featureLayer.colorFields = new Set(ls.colors_from_fields || []);
         return featureLayer;
     }
 
