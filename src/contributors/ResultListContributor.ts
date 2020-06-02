@@ -392,7 +392,7 @@ export class ResultListContributor extends Contributor {
     public sortColumn(sortParams: { fieldName: string, sortDirection: SortEnum }, sortById?: boolean) {
         this.geoOrderSort = '';
         let sort = '';
-        if (sortParams && sortParams.fieldName && sortParams.sortDirection) {
+        if (sortParams && sortParams.fieldName && sortParams.sortDirection !== undefined && sortParams.sortDirection !== null) {
             let prefix = null;
             if (sortParams.sortDirection.toString() === '0') {
                 prefix = '';
