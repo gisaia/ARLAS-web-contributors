@@ -34,7 +34,7 @@ import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
      LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
      SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig } from '../models/models';
 import { appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
-    removePageFromIndex, ColorGeneratorLoader } from '../utils/utils';
+    removePageFromIndex, ColorGeneratorLoader, rgbToHex } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
@@ -907,6 +907,8 @@ export class MapContributor extends Contributor {
                             if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
                                 && !feature.properties[flattenColorField].startsWith('rgb')) {
                                     feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
+                            } else if (feature.properties[flattenColorField].startsWith('rgb')) {
+                                feature.properties[flattenColorField] = rgbToHex(feature.properties[flattenColorField]);
                             }
                             colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
                                 feature.properties[flattenColorField]);
@@ -985,6 +987,8 @@ export class MapContributor extends Contributor {
                             if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
                                 && !feature.properties[flattenColorField].startsWith('rgb')) {
                                     feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
+                            } else if (feature.properties[flattenColorField].startsWith('rgb')) {
+                                feature.properties[flattenColorField] = rgbToHex(feature.properties[flattenColorField]);
                             }
                             fieldsToKeep.add(flattenColorField);
                             fieldsToKeep.add(flattenLabelField);
@@ -1237,7 +1241,7 @@ export class MapContributor extends Contributor {
                     const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
                      this.collectionParameters.id_path;
                     feature.properties.id = feature.properties[idPath];
-                    if (!ids.has(feature.properties.id)) {
+                    if (!ids.has(feature.properties.id + '-' + feature.properties.geometry_path)) {
                         const normalizations = this.searchNormalizations.get(source);
                         if (normalizations) {
                             normalizations.forEach(n => {
@@ -1248,7 +1252,7 @@ export class MapContributor extends Contributor {
                         if (feature.properties.geometry_path === source_geometry_index.get(source)) {
                             featureData.push(feature);
                         }
-                        ids.add(feature.properties.id);
+                        ids.add(feature.properties.id + '-' + feature.properties.geometry_path);
                         this.featuresIdsIndex.set(source, ids);
                     }
                     this.featureDataPerSource.set(source, featureData);
@@ -2204,6 +2208,12 @@ export class MapContributor extends Contributor {
                     } else {
                         feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
                     }
+                } else if (k.endsWith(NORMALIZE)) {
+                    const legendData: LegendData = {
+                        minValue: metricStats.min,
+                        maxValue: metricStats.max
+                    };
+                    this.legendData.set(k, legendData);
                 }
             } else {
                 if (!providedFields.has(k)) {
@@ -2346,6 +2356,16 @@ export class MapContributor extends Contributor {
                 if (existingFeatureLayer.colorFields) {
                     featureLayer.colorFields = featureLayer.colorFields ?
                     new Set([...existingFeatureLayer.colorFields].concat([...featureLayer.colorFields])) : existingFeatureLayer.colorFields;
+                }
+                if (existingFeatureLayer.includeFields) {
+                    featureLayer.includeFields = featureLayer.includeFields ?
+                        new Set([...existingFeatureLayer.includeFields].concat([...featureLayer.includeFields])) :
+                        existingFeatureLayer.includeFields;
+                }
+                if (existingFeatureLayer.normalizationFields) {
+                    featureLayer.normalizationFields = featureLayer.normalizationFields ?
+                    existingFeatureLayer.normalizationFields.concat(featureLayer.normalizationFields) :
+                        existingFeatureLayer.normalizationFields;
                 }
             }
             this.layersSourcesIndex.set(ls.id, ls.source);

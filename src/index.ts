@@ -37,7 +37,7 @@ export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
 
 
-export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum, LayerSourceConfig } from './models/models';
+export { Action, ElementIdentifier, triggerType, DateExpression, DateUnitEnum, LayerSourceConfig, ColorConfig } from './models/models';
 export { getSourceName } from './utils/utils';
 
 const contributors = new Map<string, any>();
