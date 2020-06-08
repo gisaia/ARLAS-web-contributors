@@ -287,6 +287,11 @@ export function getHexColor(key: string, saturationWeight: number): string {
     return color.toHexString();
 }
 
+export function rgbToHex(rgb: string): string {
+    const color = mix(rgb, rgb);
+    return color.toHexString();
+}
+
 
 export function getSourceName(ls: LayerSourceConfig): string {
     let sourceType = 'cluster';
