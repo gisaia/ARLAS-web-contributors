@@ -228,9 +228,9 @@ export function finestGranularity(zoom: number): {tilesPrecision: number, reques
         return {tilesPrecision: 1, requestsPrecision: 3};
     } else  if (zoom > 3 && zoom <= 6) {
         return {tilesPrecision: 2, requestsPrecision: 4};
-    } else  if (zoom > 6 && zoom <= 9) {
+    } else  if (zoom > 6 && zoom <= 8) {
         return {tilesPrecision: 3, requestsPrecision: 5};
-    } else  if (zoom > 9 && zoom <= 15) {
+    } else  if (zoom > 8 && zoom <= 15) {
         return {tilesPrecision: 4, requestsPrecision: 6};
     } else  if (zoom > 15) {
         return {tilesPrecision: 5, requestsPrecision: 7};
