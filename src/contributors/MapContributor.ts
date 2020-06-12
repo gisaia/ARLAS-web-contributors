@@ -151,6 +151,7 @@ export class MapContributor extends Contributor {
      */
 
     public zoom;
+    public center;
     public mapLoadExtent = [90, -180, -90, 180];
     public mapTestExtent = [90, -180, -90, 180];
     public mapTestRawExtent = [90, -180, -90, 180];
@@ -310,6 +311,7 @@ export class MapContributor extends Contributor {
 
     public onMoveSimpleMode(newMove: OnMoveResult) {
         this.zoom = newMove.zoom;
+        this.center = newMove.center;
         this.mapLoadExtent = newMove.extendForLoad;
         this.mapTestExtent = newMove.extendForTest;
         this.mapTestRawExtent = newMove.rawExtendForTest;
@@ -425,7 +427,12 @@ export class MapContributor extends Contributor {
                 this.featureDataPerSource.set(s, []);
             });
         }
-        search.page.sort = sort;
+        if (sort && sort.length > 0) {
+            search.page.sort = sort;
+        } else {
+            search.page.sort = 'geodistance:' + this.center.lat.toString() + ' ' + this.center.lng.toString() + ',' +
+                this.collectionParameters.id_path;
+        }
         let renderStrategy: RenderStrategy;
         if (afterParam) {
             if (whichPage === PageEnum.next) {
@@ -439,8 +446,10 @@ export class MapContributor extends Contributor {
                 search.page.from = fromParam;
             }
             renderStrategy = RenderStrategy.accumulative;
+            this.isSimpleModeAccumulative = true;
         }
         featureSearchBuilder.set(this.getSearchId(SearchStrategy.combined), {search, sources: dFeatureSources});
+        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy);
     }
 
@@ -1447,7 +1456,16 @@ export class MapContributor extends Contributor {
                         if (!sourceData) {
                             sourceData = new Array();
                         }
-                        sourceData = sourceData.concat(f);
+                        const sourcesFeatures = f.filter(feature => feature.properties.geometry_path === source_geometry_index.get(source));
+                        let ids = this.featuresIdsIndex.get(source);
+                        if (!ids) {
+                            ids = new Set();
+                        }
+                        const features = sourcesFeatures.filter(feature => !ids.has(feature.properties.id));
+                        features.forEach(feature => ids.add(feature.properties.id));
+                        sourceData = sourceData.concat(features);
+                        this.featureDataPerSource.set(source, sourceData);
+                        this.featuresIdsIndex.set(source, ids);
                     });
                     break;
                 case RenderStrategy.scroll:
