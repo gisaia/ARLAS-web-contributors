@@ -216,7 +216,7 @@ export class MapContributor extends Contributor {
             if (simpleModeAccumulativeConfig !== undefined) {
                 this.isSimpleModeAccumulative = simpleModeAccumulativeConfig;
             } else {
-                this.isSimpleModeAccumulative = false;
+                this.isSimpleModeAccumulative = true;
             }
         } else {
             this.dataMode = DataMode.dynamic;
@@ -328,7 +328,21 @@ export class MapContributor extends Contributor {
          visibleSources.add(this.layersSourcesIndex.get(l));
         });
         this.visibleSources = visibleSources;
-        this.fetchDataDynamicMode(null);
+        if (this.dataMode ===  DataMode.dynamic) {
+            this.fetchDataDynamicMode(null);
+        } else {
+            const dFeatureSources = Array.from(this.featureLayersIndex.keys());
+            dFeatureSources.forEach(s => {
+                this.sourcesLayersIndex.get(s).forEach(l => this.visibilityStatus.set(l, false));
+            });
+            /** SWITCH TO VISIBLE MODE ONLY FEATURE SOURCES */
+            [...visibleLayers]
+                .filter(l => this.layersSourcesIndex.get(l).startsWith(this.FEATURE_SOURCE) &&
+                    !this.layersSourcesIndex.get(l).startsWith(this.TOPOLOGY_SOURCE))
+                .forEach(l => this.visibilityStatus.set(l, true));
+            this.visibilityUpdater.next(this.visibilityStatus);
+
+        }
     }
     /**
     * Function called on onMove event
@@ -412,13 +426,16 @@ export class MapContributor extends Contributor {
      * @param fromParam (page.from in arlas api) an offset from which fetching hits starts. It's ignored if `afterParam` is set.
      */
     public getSimpleModeData(wrapExtent, rawExtent, sort: string, keepOldData = true,
-        afterParam?: string, whichPage?: PageEnum, fromParam?): void {
+        afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?): void {
         const countFilter: Filter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
         if (this.expressionFilter !== undefined) {
             countFilter.f.push([this.expressionFilter]);
         }
         this.addFilter(countFilter, this.additionalFilter);
         const dFeatureSources = Array.from(this.featureLayersIndex.keys());
+        dFeatureSources.forEach(s => {
+            this.sourcesLayersIndex.get(s).forEach(l => this.visibilityStatus.set(l, true));
+        });
         const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.combined);
         const search: Search = featureSearchBuilder.get(this.getSearchId(SearchStrategy.combined)).search;
         if (!keepOldData) {
@@ -446,11 +463,10 @@ export class MapContributor extends Contributor {
                 search.page.from = fromParam;
             }
             renderStrategy = RenderStrategy.accumulative;
-            this.isSimpleModeAccumulative = true;
         }
         featureSearchBuilder.set(this.getSearchId(SearchStrategy.combined), {search, sources: dFeatureSources});
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy);
+        this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy, maxPages, whichPage);
     }
 
     public getDynamicModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, zoom: number, visibleSources: Set<string>): void {
@@ -1168,12 +1184,14 @@ export class MapContributor extends Contributor {
         });
     }
 
-    public fetchSearchSources(filter: Filter, searches: Map<string, SourcesSearch>, renderStrategy: RenderStrategy) {
+    public fetchSearchSources(filter: Filter, searches: Map<string, SourcesSearch>, renderStrategy: RenderStrategy,
+        maxPages?: number, whichPage?: PageEnum) {
         searches.forEach((searchSource, searchId) => {
             this.resolveSearchSources(filter, searchId, searchSource.search)
                 .pipe(
-                    map(f => this.computeSimpleModeFeature(f, searchSource.sources, renderStrategy)),
+                    map(f => this.computeSimpleModeFeature(f, searchSource.sources, renderStrategy, maxPages, whichPage)),
                     finalize(() => {
+                        this.visibilityUpdater.next(this.visibilityStatus);
                         this.renderSearchSources(searchSource.sources);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     })
@@ -1419,7 +1437,7 @@ export class MapContributor extends Contributor {
         const sortWithId = appendIdToSort(sort, ASC, this.collectionParameters.id_path);
         const keepOldData = true;
         if (after !== undefined) {
-            this.getSimpleModeData(wrapExtent, rawExtent, sortWithId, keepOldData, after, whichPage);
+            this.getSimpleModeData(wrapExtent, rawExtent, sortWithId, keepOldData, after, whichPage, maxPages);
         }
     }
 
@@ -1471,7 +1489,7 @@ export class MapContributor extends Contributor {
                 case RenderStrategy.scroll:
                     if (maxPages !== undefined && maxPages !== null && whichPage !== undefined && whichPage !== null) {
                         sources.forEach(source => {
-                            const sourceData = this.featureDataPerSource.get(source);
+                            const sourceData = this.featureDataPerSource.get(source) || [];
                             if (maxPages !== -1) {
                                 (whichPage === PageEnum.next) ? f.forEach(d => { sourceData.push(d); }) :
                                     f.reverse().forEach(d => { sourceData.unshift(d); });
@@ -1501,7 +1519,7 @@ export class MapContributor extends Contributor {
         const rawExtent = extentToString(this.mapTestRawExtent);
         const sort = appendId ? appendIdToSort(this.searchSort, ASC, this.collectionParameters.id_path) : this.searchSort;
         const keepOldData = false;
-        this.getSimpleModeData(wrapExtent, rawExtent, sort, keepOldData, null, null, fromParam);
+        this.getSimpleModeData(wrapExtent, rawExtent, sort, keepOldData, null, null, null, fromParam);
     }
 
     public getFilterForCount(rawExtend: string, wrapExtend: string, countGeoField: string): Filter {
