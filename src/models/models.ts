@@ -519,6 +519,7 @@ export class LayerTopologySource extends LayerSource {
     public granularity: Granularity;
     public providedFields: Array<ColorConfig>;
     public colorFields: Set<string>;
+    public includeFields: Set<string>;
 }
 
 export enum Granularity {

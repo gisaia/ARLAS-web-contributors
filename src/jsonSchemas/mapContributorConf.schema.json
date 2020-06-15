@@ -150,7 +150,8 @@
                                         "min",
                                         "max",
                                         "sum",
-                                        "count"
+                                        "count",
+                                        "cardinality"
                                     ]
                                 },
                                 "normalize": {

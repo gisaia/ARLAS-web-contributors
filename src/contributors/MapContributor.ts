@@ -151,6 +151,7 @@ export class MapContributor extends Contributor {
      */
 
     public zoom;
+    public center;
     public mapLoadExtent = [90, -180, -90, 180];
     public mapTestExtent = [90, -180, -90, 180];
     public mapTestRawExtent = [90, -180, -90, 180];
@@ -215,7 +216,7 @@ export class MapContributor extends Contributor {
             if (simpleModeAccumulativeConfig !== undefined) {
                 this.isSimpleModeAccumulative = simpleModeAccumulativeConfig;
             } else {
-                this.isSimpleModeAccumulative = false;
+                this.isSimpleModeAccumulative = true;
             }
         } else {
             this.dataMode = DataMode.dynamic;
@@ -310,6 +311,7 @@ export class MapContributor extends Contributor {
 
     public onMoveSimpleMode(newMove: OnMoveResult) {
         this.zoom = newMove.zoom;
+        this.center = newMove.center;
         this.mapLoadExtent = newMove.extendForLoad;
         this.mapTestExtent = newMove.extendForTest;
         this.mapTestRawExtent = newMove.rawExtendForTest;
@@ -326,7 +328,21 @@ export class MapContributor extends Contributor {
          visibleSources.add(this.layersSourcesIndex.get(l));
         });
         this.visibleSources = visibleSources;
-        this.fetchDataDynamicMode(null);
+        if (this.dataMode ===  DataMode.dynamic) {
+            this.fetchDataDynamicMode(null);
+        } else {
+            const dFeatureSources = Array.from(this.featureLayersIndex.keys());
+            dFeatureSources.forEach(s => {
+                this.sourcesLayersIndex.get(s).forEach(l => this.visibilityStatus.set(l, false));
+            });
+            /** SWITCH TO VISIBLE MODE ONLY FEATURE SOURCES */
+            [...visibleLayers]
+                .filter(l => this.layersSourcesIndex.get(l).startsWith(this.FEATURE_SOURCE) &&
+                    !this.layersSourcesIndex.get(l).startsWith(this.TOPOLOGY_SOURCE))
+                .forEach(l => this.visibilityStatus.set(l, true));
+            this.visibilityUpdater.next(this.visibilityStatus);
+
+        }
     }
     /**
     * Function called on onMove event
@@ -410,13 +426,16 @@ export class MapContributor extends Contributor {
      * @param fromParam (page.from in arlas api) an offset from which fetching hits starts. It's ignored if `afterParam` is set.
      */
     public getSimpleModeData(wrapExtent, rawExtent, sort: string, keepOldData = true,
-        afterParam?: string, whichPage?: PageEnum, fromParam?): void {
+        afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?): void {
         const countFilter: Filter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
         if (this.expressionFilter !== undefined) {
             countFilter.f.push([this.expressionFilter]);
         }
         this.addFilter(countFilter, this.additionalFilter);
         const dFeatureSources = Array.from(this.featureLayersIndex.keys());
+        dFeatureSources.forEach(s => {
+            this.sourcesLayersIndex.get(s).forEach(l => this.visibilityStatus.set(l, true));
+        });
         const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.combined);
         const search: Search = featureSearchBuilder.get(this.getSearchId(SearchStrategy.combined)).search;
         if (!keepOldData) {
@@ -425,7 +444,12 @@ export class MapContributor extends Contributor {
                 this.featureDataPerSource.set(s, []);
             });
         }
-        search.page.sort = sort;
+        if (sort && sort.length > 0) {
+            search.page.sort = sort;
+        } else {
+            search.page.sort = 'geodistance:' + this.center.lat.toString() + ' ' + this.center.lng.toString() + ',' +
+                this.collectionParameters.id_path;
+        }
         let renderStrategy: RenderStrategy;
         if (afterParam) {
             if (whichPage === PageEnum.next) {
@@ -441,7 +465,7 @@ export class MapContributor extends Contributor {
             renderStrategy = RenderStrategy.accumulative;
         }
         featureSearchBuilder.set(this.getSearchId(SearchStrategy.combined), {search, sources: dFeatureSources});
-        this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy);
+        this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy, maxPages, whichPage);
     }
 
     public getDynamicModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, zoom: number, visibleSources: Set<string>): void {
@@ -893,7 +917,6 @@ export class MapContributor extends Contributor {
                     if (providedFields) {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                            const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
                             /** set the key-to-color map to be displayed on the legend. */
                             let colorLegend: LegendData = this.legendData.get(flattenColorField);
                             if (!colorLegend) {
@@ -903,16 +926,19 @@ export class MapContributor extends Contributor {
                                 colorLegend.keysColorsMap = new Map();
                             }
                             fieldsToKeep.add(flattenColorField);
-                            fieldsToKeep.add(flattenLabelField);
                             if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
-                                && !feature.properties[flattenColorField].startsWith('rgb')) {
-                                    feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
+                            && !feature.properties[flattenColorField].startsWith('rgb')) {
+                                feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
                             } else if (feature.properties[flattenColorField].startsWith('rgb')) {
                                 feature.properties[flattenColorField] = rgbToHex(feature.properties[flattenColorField]);
                             }
-                            colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
-                                feature.properties[flattenColorField]);
-                            this.legendData.set(flattenColorField, colorLegend);
+                            if (pf.label && pf.label.length > 0) {
+                                const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
+                                fieldsToKeep.add(flattenLabelField);
+                                colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
+                                    feature.properties[flattenColorField]);
+                                this.legendData.set(flattenColorField, colorLegend);
+                            }
                         });
                     }
                     delete feature.properties.geometry_path;
@@ -973,7 +999,6 @@ export class MapContributor extends Contributor {
                     if (providedFields) {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                            const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
                             /** set the key-to-color map to be displayed on the legend. */
                             let colorLegend: LegendData = this.legendData.get(flattenColorField);
                             if (!colorLegend) {
@@ -982,19 +1007,30 @@ export class MapContributor extends Contributor {
                             } else if (!colorLegend.keysColorsMap) {
                                 colorLegend.keysColorsMap = new Map();
                             }
-                            feature.properties[flattenLabelField] = feature.properties['hits'][0][flattenLabelField];
                             feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField];
                             if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
-                                && !feature.properties[flattenColorField].startsWith('rgb')) {
-                                    feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
+                            && !feature.properties[flattenColorField].startsWith('rgb')) {
+                                feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
                             } else if (feature.properties[flattenColorField].startsWith('rgb')) {
                                 feature.properties[flattenColorField] = rgbToHex(feature.properties[flattenColorField]);
                             }
                             fieldsToKeep.add(flattenColorField);
-                            fieldsToKeep.add(flattenLabelField);
-                            colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
-                                feature.properties[flattenColorField]);
-                            this.legendData.set(flattenColorField, colorLegend);
+                            if (pf.label && pf.label.length > 0) {
+                                const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
+                                feature.properties[flattenLabelField] = feature.properties['hits'][0][flattenLabelField];
+                                fieldsToKeep.add(flattenLabelField);
+                                colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
+                                    feature.properties[flattenColorField]);
+                                this.legendData.set(flattenColorField, colorLegend);
+                            }
+                        });
+                    }
+                    const includeFields = this.topologyLayersIndex.get(s).includeFields;
+                    if (includeFields) {
+                        includeFields.forEach(includeField => {
+                            const flattenField = includeField.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenField] = feature.properties['hits'][0][flattenField];
+                            fieldsToKeep.add(flattenField);
                         });
                     }
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
@@ -1147,12 +1183,15 @@ export class MapContributor extends Contributor {
         });
     }
 
-    public fetchSearchSources(filter: Filter, searches: Map<string, SourcesSearch>, renderStrategy: RenderStrategy) {
-        searches.forEach((searchSource, searchId) => {
+    public fetchSearchSources(filter: Filter, searches: Map<string, SourcesSearch>, renderStrategy: RenderStrategy,
+        maxPages?: number, whichPage?: PageEnum) {
+            searches.forEach((searchSource, searchId) => {
+            this.collaborativeSearcheService.ongoingSubscribe.next(1);
             this.resolveSearchSources(filter, searchId, searchSource.search)
                 .pipe(
-                    map(f => this.computeSimpleModeFeature(f, searchSource.sources, renderStrategy)),
+                    map(f => this.computeSimpleModeFeature(f, searchSource.sources, renderStrategy, maxPages, whichPage)),
                     finalize(() => {
+                        this.visibilityUpdater.next(this.visibilityStatus);
                         this.renderSearchSources(searchSource.sources);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     })
@@ -1398,7 +1437,7 @@ export class MapContributor extends Contributor {
         const sortWithId = appendIdToSort(sort, ASC, this.collectionParameters.id_path);
         const keepOldData = true;
         if (after !== undefined) {
-            this.getSimpleModeData(wrapExtent, rawExtent, sortWithId, keepOldData, after, whichPage);
+            this.getSimpleModeData(wrapExtent, rawExtent, sortWithId, keepOldData, after, whichPage, maxPages);
         }
     }
 
@@ -1435,13 +1474,22 @@ export class MapContributor extends Contributor {
                         if (!sourceData) {
                             sourceData = new Array();
                         }
-                        sourceData = sourceData.concat(f);
+                        const sourcesFeatures = f.filter(feature => feature.properties.geometry_path === source_geometry_index.get(source));
+                        let ids = this.featuresIdsIndex.get(source);
+                        if (!ids) {
+                            ids = new Set();
+                        }
+                        const features = sourcesFeatures.filter(feature => !ids.has(feature.properties.id));
+                        features.forEach(feature => ids.add(feature.properties.id));
+                        sourceData = sourceData.concat(features);
+                        this.featureDataPerSource.set(source, sourceData);
+                        this.featuresIdsIndex.set(source, ids);
                     });
                     break;
                 case RenderStrategy.scroll:
                     if (maxPages !== undefined && maxPages !== null && whichPage !== undefined && whichPage !== null) {
                         sources.forEach(source => {
-                            const sourceData = this.featureDataPerSource.get(source);
+                            const sourceData = this.featureDataPerSource.get(source) || [];
                             if (maxPages !== -1) {
                                 (whichPage === PageEnum.next) ? f.forEach(d => { sourceData.push(d); }) :
                                     f.reverse().forEach(d => { sourceData.unshift(d); });
@@ -1471,7 +1519,7 @@ export class MapContributor extends Contributor {
         const rawExtent = extentToString(this.mapTestRawExtent);
         const sort = appendId ? appendIdToSort(this.searchSort, ASC, this.collectionParameters.id_path) : this.searchSort;
         const keepOldData = false;
-        this.getSimpleModeData(wrapExtent, rawExtent, sort, keepOldData, null, null, fromParam);
+        this.getSimpleModeData(wrapExtent, rawExtent, sort, keepOldData, null, null, null, fromParam);
     }
 
     public getFilterForCount(rawExtend: string, wrapExtend: string, countGeoField: string): Filter {
@@ -1634,6 +1682,7 @@ export class MapContributor extends Contributor {
         topologyLayer.geometryId = ls.geometry_id;
         topologyLayer.metrics = ls.metrics;
         topologyLayer.granularity = <any>ls.granularity;
+        topologyLayer.includeFields = new Set(ls.include_fields || []);
         topologyLayer.providedFields = ls.provided_fields;
         topologyLayer.colorFields = new Set(ls.colors_from_fields || []);
         return topologyLayer;
@@ -1647,7 +1696,7 @@ export class MapContributor extends Contributor {
         featureLayer.minzoom = ls.minzoom;
         featureLayer.maxfeatures = ls.maxfeatures;
         featureLayer.normalizationFields = ls.normalization_fields;
-        featureLayer.includeFields = new Set(ls.include_fields);
+        featureLayer.includeFields = new Set(ls.include_fields || []);
         featureLayer.returnedGeometry = ls.returned_geometry;
         featureLayer.providedFields = ls.provided_fields;
         featureLayer.colorFields = new Set(ls.colors_from_fields || []);
@@ -1993,7 +2042,7 @@ export class MapContributor extends Contributor {
                 ls.providedFields.forEach(pf => {
                     includes.add(pf.color);
                     this.indexSearchSourcesMetrics(cs, pf.color, ReturnedField.providedcolor);
-                    if (pf.label) {
+                    if (pf.label && pf.label.length > 0) {
                         includes.add(pf.label);
                         this.indexSearchSourcesMetrics(cs, pf.label, ReturnedField.providedcolor);
                     }
@@ -2066,7 +2115,7 @@ export class MapContributor extends Contributor {
                 const fetchSet = new Set<string>(aggregation.fetch_hits.include);
                 ls.providedFields.forEach(pf => {
                     fetchSet.add(pf.color);
-                    if (pf.label) {
+                    if (pf.label && pf.label.length > 0) {
                         fetchSet.add(pf.label);
                     }
                 });
@@ -2079,6 +2128,17 @@ export class MapContributor extends Contributor {
                 }
                 const fetchSet = new Set<string>(aggregation.fetch_hits.include);
                 ls.colorFields.forEach(cf => {
+                    fetchSet.add(cf);
+                });
+                aggregation.fetch_hits.include = Array.from(fetchSet);
+            }
+            if (ls.includeFields && ls.includeFields.size > 0) {
+                if (!aggregation.fetch_hits) {
+                    aggregation.fetch_hits = {size: 1};
+                    aggregation.fetch_hits.include = [];
+                }
+                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
+                ls.includeFields.forEach(cf => {
                     fetchSet.add(cf);
                 });
                 aggregation.fetch_hits.include = Array.from(fetchSet);
@@ -2317,6 +2377,11 @@ export class MapContributor extends Contributor {
                 if (existingTopologyLayer.providedFields) {
                     topologyLayer.providedFields = topologyLayer.providedFields ?
                         existingTopologyLayer.providedFields.concat(topologyLayer.providedFields) : existingTopologyLayer.providedFields;
+                }
+                if (existingTopologyLayer.includeFields) {
+                    topologyLayer.includeFields = topologyLayer.includeFields ?
+                        new Set([...existingTopologyLayer.includeFields].concat([...topologyLayer.includeFields])) :
+                        existingTopologyLayer.includeFields;
                 }
             }
             topologyLayers.set(topologyLayer.source, topologyLayer);
