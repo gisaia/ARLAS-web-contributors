@@ -465,7 +465,6 @@ export class MapContributor extends Contributor {
             renderStrategy = RenderStrategy.accumulative;
         }
         featureSearchBuilder.set(this.getSearchId(SearchStrategy.combined), {search, sources: dFeatureSources});
-        this.collaborativeSearcheService.ongoingSubscribe.next(1);
         this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy, maxPages, whichPage);
     }
 
@@ -1186,7 +1185,8 @@ export class MapContributor extends Contributor {
 
     public fetchSearchSources(filter: Filter, searches: Map<string, SourcesSearch>, renderStrategy: RenderStrategy,
         maxPages?: number, whichPage?: PageEnum) {
-        searches.forEach((searchSource, searchId) => {
+            searches.forEach((searchSource, searchId) => {
+            this.collaborativeSearcheService.ongoingSubscribe.next(1);
             this.resolveSearchSources(filter, searchId, searchSource.search)
                 .pipe(
                     map(f => this.computeSimpleModeFeature(f, searchSource.sources, renderStrategy, maxPages, whichPage)),
