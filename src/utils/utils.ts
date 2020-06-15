@@ -26,7 +26,7 @@ import { LayerSourceConfig } from '../models/models';
 
 export class ColorGeneratorLoader {
     public keysToColors: Array<Array<string>>;
-    public colorsSaturationWeight: number ;
+    public colorsSaturationWeight: number;
 
     constructor() {
         this.keysToColors = [];
@@ -43,26 +43,26 @@ export class ColorGeneratorLoader {
         let colorHex = null;
         const keysToColors = externalKeysToColors ? externalKeysToColors : this.keysToColors;
         const saturationWeight = (externalColorsSaturationWeight !== undefined && externalColorsSaturationWeight !== null) ?
-        externalColorsSaturationWeight : this.colorsSaturationWeight;
+            externalColorsSaturationWeight : this.colorsSaturationWeight;
         if (keysToColors) {
-        for (let i = 0; i < keysToColors.length; i++) {
-            const keyToColor = keysToColors[i];
-            if (keyToColor[0] === key) {
-            colorHex = keyToColor[1];
-            break;
+            for (let i = 0; i < keysToColors.length; i++) {
+                const keyToColor = keysToColors[i];
+                if (keyToColor[0] === key) {
+                    colorHex = keyToColor[1];
+                    break;
+                }
             }
-        }
-        if (!colorHex) {
-            colorHex = getHexColor(key, saturationWeight);
-        }
+            if (!colorHex) {
+                colorHex = getHexColor(key, saturationWeight);
+            }
         } else {
-        colorHex = getHexColor(key, saturationWeight);
+            colorHex = getHexColor(key, saturationWeight);
         }
         return colorHex;
     }
-    public getTextColor (color: string): string {
+    public getTextColor(color: string): string {
         return '#ffffff';
-      }
+    }
 }
 
 /**
@@ -201,39 +201,53 @@ export function getFieldValue(field: string, data: Hits): any {
     return result;
 }
 
-export function coarseGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+export function coarseGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
     if (zoom >= 0 && zoom <= 4) {
-        return {tilesPrecision: 1, requestsPrecision: 3};
-    } else  if (zoom > 4 && zoom <= 12) {
-        return {tilesPrecision: 2, requestsPrecision: 4};
-    } else  if (zoom > 12) {
-        return {tilesPrecision: 3, requestsPrecision: 5};
+        return { tilesPrecision: 1, requestsPrecision: 3 };
+    } else if (zoom > 4 && zoom <= 12) {
+        return { tilesPrecision: 2, requestsPrecision: 4 };
+    } else if (zoom > 12) {
+        return { tilesPrecision: 3, requestsPrecision: 5 };
     }
 }
 
-export function fineGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+export function mediumGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
     if (zoom >= 0 && zoom <= 4) {
-        return {tilesPrecision: 1, requestsPrecision: 3};
-    } else  if (zoom > 4 && zoom <= 7) {
-        return {tilesPrecision: 2, requestsPrecision: 4};
-    } else  if (zoom > 7 && zoom <= 10) {
-        return {tilesPrecision: 3, requestsPrecision: 5};
-    } else  if (zoom > 10) {
-        return {tilesPrecision: 4, requestsPrecision: 6};
+        return { tilesPrecision: 1, requestsPrecision: 2 };
+    } else if (zoom > 4 && zoom <= 7) {
+        return { tilesPrecision: 1, requestsPrecision: 3 };
+    } else if (zoom > 7 && zoom <= 8.5) {
+        return { tilesPrecision: 2, requestsPrecision: 4 };
+    } else if (zoom > 8.5 && zoom <= 10) {
+        return { tilesPrecision: 3, requestsPrecision: 5 };
+    } else if (zoom > 10) {
+        return { tilesPrecision: 4, requestsPrecision: 6 };
     }
 }
 
-export function finestGranularity(zoom: number): {tilesPrecision: number, requestsPrecision: number} {
+export function fineGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+    if (zoom >= 0 && zoom <= 4) {
+        return { tilesPrecision: 1, requestsPrecision: 3 };
+    } else if (zoom > 4 && zoom <= 7) {
+        return { tilesPrecision: 2, requestsPrecision: 4 };
+    } else if (zoom > 7 && zoom <= 10) {
+        return { tilesPrecision: 3, requestsPrecision: 5 };
+    } else if (zoom > 10) {
+        return { tilesPrecision: 4, requestsPrecision: 6 };
+    }
+}
+
+export function finestGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
     if (zoom >= 0 && zoom <= 3) {
-        return {tilesPrecision: 1, requestsPrecision: 3};
-    } else  if (zoom > 3 && zoom <= 6) {
-        return {tilesPrecision: 2, requestsPrecision: 4};
-    } else  if (zoom > 6 && zoom <= 8) {
-        return {tilesPrecision: 3, requestsPrecision: 5};
-    } else  if (zoom > 8 && zoom <= 15) {
-        return {tilesPrecision: 4, requestsPrecision: 6};
-    } else  if (zoom > 15) {
-        return {tilesPrecision: 5, requestsPrecision: 7};
+        return { tilesPrecision: 1, requestsPrecision: 3 };
+    } else if (zoom > 3 && zoom <= 6) {
+        return { tilesPrecision: 2, requestsPrecision: 4 };
+    } else if (zoom > 6 && zoom <= 8) {
+        return { tilesPrecision: 3, requestsPrecision: 5 };
+    } else if (zoom > 8 && zoom <= 15) {
+        return { tilesPrecision: 4, requestsPrecision: 6 };
+    } else if (zoom > 15) {
+        return { tilesPrecision: 5, requestsPrecision: 7 };
     }
 }
 
@@ -267,7 +281,7 @@ export function featurestTilesGranularity(zoom: number): number {
 }
 
 export function getHexColor(key: string, saturationWeight: number): string {
-    const text = key + ':' + key.split('').reverse().join('') + ':'  + key;
+    const text = key + ':' + key.split('').reverse().join('') + ':' + key;
     // string to int
     let hash = 0;
     for (let i = 0; i < text.length; i++) {
@@ -280,8 +294,8 @@ export function getHexColor(key: string, saturationWeight: number): string {
     color.lighten(5);
     const saturation = color.toHsv().s;
     if (saturation < (1 - saturationWeight) * 100) {
-      const range = (1 - saturationWeight) * 100 - saturation;
-      color.saturate(range);
+        const range = (1 - saturationWeight) * 100 - saturation;
+        color.saturate(range);
     }
     color.brighten(10);
     return color.toHexString();

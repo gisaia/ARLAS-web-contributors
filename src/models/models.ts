@@ -524,6 +524,7 @@ export class LayerTopologySource extends LayerSource {
 
 export enum Granularity {
     coarse = 'Coarse',
+    medium = 'Medium',
     fine = 'Fine',
     finest = 'Finest'
 }

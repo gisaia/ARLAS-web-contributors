@@ -34,7 +34,7 @@ import { OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
      LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
      SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig } from '../models/models';
 import { appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
-    removePageFromIndex, ColorGeneratorLoader, rgbToHex } from '../utils/utils';
+    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
@@ -238,8 +238,9 @@ export class MapContributor extends Contributor {
         this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
         this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
-        this.granularityFunctions.set(Granularity.fine, fineGranularity);
         this.granularityFunctions.set(Granularity.coarse, coarseGranularity);
+        this.granularityFunctions.set(Granularity.medium, mediumGranularity);
+        this.granularityFunctions.set(Granularity.fine, fineGranularity);
         this.granularityFunctions.set(Granularity.finest, finestGranularity);
         // TODO check if we should include the collection reference in the collobarative search service, to avoid doing a describe
         // in this contributor
