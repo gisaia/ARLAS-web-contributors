@@ -397,28 +397,6 @@ export class MapContributor extends Contributor {
     }
 
     /**
-     * Sets the geometries to render on the map
-     * @param returned_geometries comma separated geometry/point fields paths
-     */
-    public setReturnedGeometries(returned_geometries: string) {
-    }
-
-    /**
-     * Sets the point field on which geoaggregation is applied
-     * @param geoAggregateField
-     */
-    public setGeoAggregateGeomField(geoAggregateField: string) {
-
-    }
-
-    /**
-     * fetches the data, sets it and sets the selection after changing the geometry/path to query
-     */
-    public onChangeGeometries() {
-
-    }
-
-    /**
      * Fetches the data for the `Simple mode`
      * @param includeFeaturesFields properties to include in geojson features
      * @param sort comma separated field names on which feature are sorted.
@@ -1175,7 +1153,6 @@ export class MapContributor extends Contributor {
                     }),
                     finalize(() => {
                         this.renderSearchSources(searchSource.sources);
-                        this.abortControllers.set(searchId, null);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     })
                 ).subscribe(data => data);
@@ -1242,7 +1219,6 @@ export class MapContributor extends Contributor {
                     }),
                     finalize(() => {
                         this.renderAggSources(aggSource.sources);
-                        this.abortControllers.set(aggId, null);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     })
                 ).subscribe(data => data);
@@ -2269,6 +2245,12 @@ export class MapContributor extends Contributor {
                     } else {
                         feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
                     }
+                } else if (k.endsWith(NORMALIZED_COUNT)) {
+                    const legendData: LegendData = {
+                        minValue: '0',
+                        maxValue: sourceStats.count + ''
+                    };
+                    this.legendData.set(k, legendData);
                 } else if (k.endsWith(NORMALIZE)) {
                     const legendData: LegendData = {
                         minValue: metricStats.min,
