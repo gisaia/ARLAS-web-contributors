@@ -1,8 +1,33 @@
 # Change Log
 
+## [v13.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v13.0.0) (2020-06-16)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.1...v13.0.0)
+
+**Breaking changes:**
+
+- \[TOPOMAP\] remove topomap contributor [\#318](https://github.com/gisaia/ARLAS-web-contributors/issues/318)
+- \[Histogram\] Replace the use of \_range by \_compute to calculate each bucket interval [\#311](https://github.com/gisaia/ARLAS-web-contributors/issues/311)
+- \[MAP\]: restructure map contributor to the new specs [\#303](https://github.com/gisaia/ARLAS-web-contributors/issues/303)
+
+**New stuff:**
+
+- Add colorGenerator service [\#322](https://github.com/gisaia/ARLAS-web-contributors/issues/322)
+- MAP: Normalize count between 0 and 1 instead of 0 and 100 [\#246](https://github.com/gisaia/ARLAS-web-contributors/issues/246)
+- Add several colors from field [\#321](https://github.com/gisaia/ARLAS-web-contributors/pull/321) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+**Fixed bugs:**
+
+- \[List\] Ascending sort on columns does not work [\#326](https://github.com/gisaia/ARLAS-web-contributors/issues/326)
+- \[MAP\] Bug in extents : rawExtent is for test & wrapExtent is for load [\#312](https://github.com/gisaia/ARLAS-web-contributors/issues/312)
+
 ## [v12.7.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.1) (2020-05-13)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.0...v12.7.1)
+
+**Fixed bugs:**
+
+- GetActions function for list not working with boolean field for cssClass [\#306](https://github.com/gisaia/ARLAS-web-contributors/issues/306)
 
 ## [v12.7.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.0) (2020-04-10)
 
