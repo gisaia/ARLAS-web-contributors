@@ -64,7 +64,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             };
             const cssClass = item.itemData ? item.itemData.get(action.cssClass) : undefined;
             // cssClass = false is a valid possibiliy
-             if (cssClass !== undefined) {
+            if (cssClass !== undefined) {
                 ac.cssClass = String(cssClass);
             }
             actions.push(ac);
@@ -392,7 +392,7 @@ export class ResultListContributor extends Contributor {
     public sortColumn(sortParams: { fieldName: string, sortDirection: SortEnum }, sortById?: boolean) {
         this.geoOrderSort = '';
         let sort = '';
-        if (sortParams && sortParams.fieldName && sortParams.sortDirection) {
+        if (sortParams && sortParams.fieldName !== undefined && sortParams.sortDirection !== undefined) {
             let prefix = null;
             if (sortParams.sortDirection.toString() === '0') {
                 prefix = '';
