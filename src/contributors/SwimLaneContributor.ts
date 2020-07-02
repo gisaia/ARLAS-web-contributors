@@ -95,7 +95,8 @@ export class SwimLaneContributor extends Contributor {
     */
     private nbBuckets: number = this.getConfigValue('numberOfBuckets');
 
-    private INVALID_AGGREGATIONS_MESSAGE = '`aggregationmodels` should contain 2 bucket aggregations. The first one should be a `term` aggregation. The second one should be a `histogram` OR `datehistogram` aggregation.';
+    private INVALID_AGGREGATIONS_MESSAGE = '`aggregationmodels` should contain 2 bucket aggregations.' +
+     'The first one should be a `term` aggregation. The second one should be a `histogram` OR `datehistogram` aggregation.';
     private INVALID_SWIMLANES_MESSAGE = '`swimlanes` property is mandatory and should contain at least one item.';
 
     /**
