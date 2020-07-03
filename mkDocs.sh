@@ -6,9 +6,9 @@ mkdir target
 mkdir target/generated-docs
 
 ## GENERATE THE DOCUMENTATION ##
-docker run -a STDERR --rm -i -v `pwd`:/docs gisaia/typedocgen:0.0.5 generatedoc src
+docker run -a STDERR --rm -i -v `pwd`:/docs gisaia/typedocgen:0.0.6 generatedoc src
 
-## MOVE ALL THE DOCUMENTATION TO THE 'generated-docs' FOLDER ##
+# MOVE ALL THE DOCUMENTATION TO THE 'generated-docs' FOLDER ##
 mv typedoc_docs/* target/generated-docs
 cp CHANGELOG.md target/generated-docs/CHANGELOG_ARLAS-web-contributors.md
 if [ -d ./docs ] ; then
