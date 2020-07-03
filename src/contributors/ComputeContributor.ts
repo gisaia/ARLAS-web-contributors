@@ -19,7 +19,8 @@
 
 
 import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json';
-import { Contributor, CollaborativesearchService, ConfigService, CollaborationEvent, projType, OperationEnum, Collaboration } from 'arlas-web-core';
+import { Contributor, CollaborativesearchService, ConfigService, CollaborationEvent,
+    projType, OperationEnum, Collaboration } from 'arlas-web-core';
 import { Observable, from, forkJoin } from 'rxjs';
 import { ComputationRequest, ComputationResponse } from 'arlas-api';
 /**
