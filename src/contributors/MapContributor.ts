@@ -929,7 +929,7 @@ export class MapContributor extends Contributor {
                     delete feature.properties.md;
                     const metricsKeys = this.searchSourcesMetrics.get(s);
                     Object.keys(feature.properties).forEach(k => {
-                        if (metricsKeys && this.isBeginingOfKeyInValues(k, metricsKeys) && k !== 'id') {
+                        if (metricsKeys && !this.isBeginingOfKeyInValues(k, metricsKeys) && k !== 'id') {
                             delete feature.properties[k];
                         }
                     });
@@ -2847,7 +2847,7 @@ export class MapContributor extends Contributor {
     private isBeginingOfKeyInValues(value: string, values: Set<string>): boolean {
         let isInSet = false;
         values.forEach(v => {
-            if (v.startsWith(value)) {
+            if (value.startsWith(v)) {
                 isInSet = true;
             }
         });
