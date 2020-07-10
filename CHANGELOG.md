@@ -1,6 +1,22 @@
 # Change Log
 
-## [v13.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v13.0.0) (2020-06-16)
+## [v13.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v13.0.1) (2020-07-10)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.2...v13.0.1)
+
+**Fixed bugs:**
+
+- \[MAP\] included metrics/properties in rendered geometries can be absent  [\#340](https://github.com/gisaia/ARLAS-web-contributors/issues/340)
+
+## [v12.7.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.2) (2020-06-30)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v13.0.0...v12.7.2)
+
+**Fixed bugs:**
+
+- \[MAP\] array fields are not correctly flatenned [\#333](https://github.com/gisaia/ARLAS-web-contributors/issues/333)
+
+## [v13.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v13.0.0) (2020-06-17)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.1...v13.0.0)
 
