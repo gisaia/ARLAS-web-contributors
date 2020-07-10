@@ -33,7 +33,7 @@ import {
 import {
     OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
-    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig
+    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
@@ -877,51 +877,26 @@ export class MapContributor extends Contributor {
                         normalizations.forEach(n => this.normalize(feature, n));
                     }
                     const colorFields = this.featureLayersIndex.get(s).colorFields;
+                    const fieldsToKeep = new Set<string>();
                     if (colorFields) {
                         colorFields.forEach(colorField => {
                             const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField + '_color'] =
-                                this.colorGenerator.getColor(feature.properties[flattenColorField]);
-                            /** set the key-to-color map to be displayed on the legend. */
-                            let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
-                            if (!colorLegend) {
-                                colorLegend = {};
-                                colorLegend.keysColorsMap = new Map();
-                            } else if (!colorLegend.keysColorsMap) {
-                                colorLegend.keysColorsMap = new Map();
-                            }
-                            colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
-                                feature.properties[flattenColorField + '_color']);
-                            this.legendData.set(flattenColorField + '_color', colorLegend);
+                            feature.properties[flattenColorField] = feature.properties[flattenColorField] || 'UNKOWN';
+                            this.setColorFieldLegend(colorField, feature, fieldsToKeep);
                         });
                     }
                     const providedFields = this.featureLayersIndex.get(s).providedFields;
-                    const fieldsToKeep = new Set<string>();
                     if (providedFields) {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                            /** set the key-to-color map to be displayed on the legend. */
-                            let colorLegend: LegendData = this.legendData.get(flattenColorField);
-                            if (!colorLegend) {
-                                colorLegend = {};
-                                colorLegend.keysColorsMap = new Map();
-                            } else if (!colorLegend.keysColorsMap) {
-                                colorLegend.keysColorsMap = new Map();
-                            }
-                            fieldsToKeep.add(flattenColorField);
-                            if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
-                                && !feature.properties[flattenColorField].startsWith('rgb')) {
-                                feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
-                            } else if (feature.properties[flattenColorField].startsWith('rgb')) {
-                                feature.properties[flattenColorField] = rgbToHex(feature.properties[flattenColorField]);
-                            }
+                            feature.properties[flattenColorField] = feature.properties[flattenColorField]
+                                || this.colorGenerator.getColor('UNKNOWN');
                             if (pf.label && pf.label.length > 0) {
                                 const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                                fieldsToKeep.add(flattenLabelField);
-                                colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
-                                    feature.properties[flattenColorField]);
-                                this.legendData.set(flattenColorField, colorLegend);
+                                feature.properties[flattenLabelField] = feature.properties[flattenLabelField]
+                                    || 'UNKNOWN';
                             }
+                            this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
                         });
                     }
                     delete feature.properties.geometry_path;
@@ -940,6 +915,7 @@ export class MapContributor extends Contributor {
             this.legendUpdater.next(this.legendData);
         });
     }
+
 
     /**
      * Renders the data of the given topology sources.
@@ -961,51 +937,22 @@ export class MapContributor extends Contributor {
                     if (colorFields) {
                         colorFields.forEach(colorField => {
                             const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField];
-                            feature.properties[flattenColorField + '_color'] =
-                                this.colorGenerator.getColor(feature.properties[flattenColorField]);
-                            /** set the key-to-color map to be displayed on the legend. */
-                            let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
-                            if (!colorLegend) {
-                                colorLegend = {};
-                                colorLegend.keysColorsMap = new Map();
-                            } else if (!colorLegend.keysColorsMap) {
-                                colorLegend.keysColorsMap = new Map();
-                            }
-                            colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
-                                feature.properties[flattenColorField + '_color']);
-                            fieldsToKeep.add(flattenColorField + '_color');
-                            this.legendData.set(flattenColorField + '_color', colorLegend);
+                            feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField] || 'UNKNOWN';
+                            this.setColorFieldLegend(colorField, feature, fieldsToKeep);
                         });
                     }
                     const providedFields = this.topologyLayersIndex.get(s).providedFields;
                     if (providedFields) {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                            /** set the key-to-color map to be displayed on the legend. */
-                            let colorLegend: LegendData = this.legendData.get(flattenColorField);
-                            if (!colorLegend) {
-                                colorLegend = {};
-                                colorLegend.keysColorsMap = new Map();
-                            } else if (!colorLegend.keysColorsMap) {
-                                colorLegend.keysColorsMap = new Map();
-                            }
-                            feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField];
-                            if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
-                                && !feature.properties[flattenColorField].startsWith('rgb')) {
-                                feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
-                            } else if (feature.properties[flattenColorField].startsWith('rgb')) {
-                                feature.properties[flattenColorField] = rgbToHex(feature.properties[flattenColorField]);
-                            }
-                            fieldsToKeep.add(flattenColorField);
+                            feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField]
+                                || this.colorGenerator.getColor('UNKNOWN');
                             if (pf.label && pf.label.length > 0) {
                                 const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                                feature.properties[flattenLabelField] = feature.properties['hits'][0][flattenLabelField];
-                                fieldsToKeep.add(flattenLabelField);
-                                colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
-                                    feature.properties[flattenColorField]);
-                                this.legendData.set(flattenColorField, colorLegend);
+                                feature.properties[flattenLabelField] = feature.properties['hits'][0][flattenLabelField] || 'UNKNOWN';
                             }
+                            /** set the key-to-color map to be displayed on the legend. */
+                            this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
                         });
                     }
                     const includeFields = this.topologyLayersIndex.get(s).includeFields;
@@ -1803,6 +1750,56 @@ export class MapContributor extends Contributor {
         }
     }
 
+    /**
+     * Sets the legend data relative to layers that use a color generated from a field value
+     * @param colorField field which value will be used to generate a hex color using `ColorGenerator` service
+     * @param feature geojson feature that contains the colorField property
+     * @param fieldsToKeep list of fields to keep in the geojson feature and that will be enriched with this method
+     */
+    private setColorFieldLegend(colorField: string, feature: Feature, fieldsToKeep: Set<string>) {
+        const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
+        feature.properties[flattenColorField + '_color'] =
+            this.colorGenerator.getColor(feature.properties[flattenColorField]);
+        /** set the key-to-color map to be displayed on the legend. */
+        let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
+        if (!colorLegend) {
+            colorLegend = {};
+            colorLegend.keysColorsMap = new Map();
+        } else if (!colorLegend.keysColorsMap) {
+            colorLegend.keysColorsMap = new Map();
+        }
+        colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
+            feature.properties[flattenColorField + '_color']);
+        fieldsToKeep.add(flattenColorField + '_color');
+        this.legendData.set(flattenColorField + '_color', colorLegend);
+    }
+
+
+    private setProvidedFieldLegend(providedField: ColorConfig, feature: Feature, fieldsToKeep: Set<string>) {
+        const flattenColorField = providedField.color.replace(/\./g, this.FLAT_CHAR);
+        /** set the key-to-color map to be displayed on the legend. */
+        let colorLegend: LegendData = this.legendData.get(flattenColorField);
+        if (!colorLegend) {
+            colorLegend = {};
+            colorLegend.keysColorsMap = new Map();
+        } else if (!colorLegend.keysColorsMap) {
+            colorLegend.keysColorsMap = new Map();
+        }
+        fieldsToKeep.add(flattenColorField);
+        if (feature.properties[flattenColorField] && !feature.properties[flattenColorField].startsWith('#')
+            && !feature.properties[flattenColorField].startsWith('rgb')) {
+            feature.properties[flattenColorField] = '#' + feature.properties[flattenColorField];
+        } else if (feature.properties[flattenColorField].startsWith('rgb')) {
+            feature.properties[flattenColorField] = rgbToHex(feature.properties[flattenColorField]);
+        }
+        if (providedField.label && providedField.label.length > 0) {
+            const flattenLabelField = providedField.label.replace(/\./g, this.FLAT_CHAR);
+            fieldsToKeep.add(flattenLabelField);
+            colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
+                feature.properties[flattenColorField]);
+            this.legendData.set(flattenColorField, colorLegend);
+        }
+    }
 
     /**
      * @description Parses the cluster sources. Prepares the corresponding aggregation. Number of aggregation is optimized. One aggregation
