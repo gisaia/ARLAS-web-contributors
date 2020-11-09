@@ -1,5 +1,9 @@
 # Change Log
 
+## [v14.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.0.0) (2020-11-09)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v13.0.1...v14.0.0)
+
 ## [v13.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v13.0.1) (2020-07-10)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.2...v13.0.1)
