@@ -244,10 +244,12 @@ export function finestGranularity(zoom: number): { tilesPrecision: number, reque
         return { tilesPrecision: 2, requestsPrecision: 4 };
     } else if (zoom > 6 && zoom <= 8) {
         return { tilesPrecision: 3, requestsPrecision: 5 };
-    } else if (zoom > 8 && zoom <= 15) {
+    } else if (zoom > 8 && zoom <= 12) {
         return { tilesPrecision: 4, requestsPrecision: 6 };
-    } else if (zoom > 15) {
+    } else if (zoom > 12 && zoom <= 15) {
         return { tilesPrecision: 5, requestsPrecision: 7 };
+    } else if (zoom > 15) {
+        return { tilesPrecision: 6, requestsPrecision: 8 };
     }
 }
 
