@@ -202,52 +202,68 @@ export function getFieldValue(field: string, data: Hits): any {
 }
 
 export function coarseGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
-    if (zoom >= 0 && zoom <= 4) {
+    if (zoom >= 0 && zoom < 4) {
+        return { tilesPrecision: 1, requestsPrecision: 2 };
+    } else if (zoom >= 4 && zoom < 7) {
         return { tilesPrecision: 1, requestsPrecision: 3 };
-    } else if (zoom > 4 && zoom <= 12) {
+    } else if (zoom >= 7 && zoom < 10) {
         return { tilesPrecision: 2, requestsPrecision: 4 };
-    } else if (zoom > 12) {
+    } else if (zoom >= 10 && zoom < 13) {
         return { tilesPrecision: 3, requestsPrecision: 5 };
+    } else if (zoom >= 13) {
+        return { tilesPrecision: 4, requestsPrecision: 6 };
     }
 }
 
 export function mediumGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
-    if (zoom >= 0 && zoom <= 4) {
+    if (zoom >= 0 && zoom < 3) {
         return { tilesPrecision: 1, requestsPrecision: 2 };
-    } else if (zoom > 4 && zoom <= 7) {
+    } else if (zoom >= 3 && zoom < 6) {
         return { tilesPrecision: 1, requestsPrecision: 3 };
-    } else if (zoom > 7 && zoom <= 8.5) {
+    } else if (zoom >= 6 && zoom < 9) {
         return { tilesPrecision: 2, requestsPrecision: 4 };
-    } else if (zoom > 8.5 && zoom <= 10) {
+    } else if (zoom >= 9 && zoom < 12) {
         return { tilesPrecision: 3, requestsPrecision: 5 };
-    } else if (zoom > 10) {
+    } else if (zoom >= 12 && zoom < 15) {
         return { tilesPrecision: 4, requestsPrecision: 6 };
+    } else if (zoom >= 15) {
+        return { tilesPrecision: 5, requestsPrecision: 7 };
     }
 }
 
 export function fineGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
-    if (zoom >= 0 && zoom <= 4) {
+    if (zoom >= 0 && zoom < 2) {
+        return { tilesPrecision: 1, requestsPrecision: 2 };
+    } else if (zoom >= 2 && zoom < 5) {
         return { tilesPrecision: 1, requestsPrecision: 3 };
-    } else if (zoom > 4 && zoom <= 7) {
+    } else if (zoom >= 5 && zoom < 8) {
         return { tilesPrecision: 2, requestsPrecision: 4 };
-    } else if (zoom > 7 && zoom <= 10) {
+    } else if (zoom >= 8 && zoom < 10.5) {
         return { tilesPrecision: 3, requestsPrecision: 5 };
-    } else if (zoom > 10) {
+    } else if (zoom >= 10.5 && zoom < 14) {
         return { tilesPrecision: 4, requestsPrecision: 6 };
+    } else if (zoom >= 14 && zoom < 17) {
+        return { tilesPrecision: 5, requestsPrecision: 7 };
+    } else if (zoom >= 17) {
+        return { tilesPrecision: 6, requestsPrecision: 8 };
     }
 }
 
 export function finestGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
-    if (zoom >= 0 && zoom <= 3) {
+    if (zoom >= 0 && zoom < 3) {
         return { tilesPrecision: 1, requestsPrecision: 3 };
-    } else if (zoom > 3 && zoom <= 6) {
+    } else if (zoom >= 3 && zoom < 6) {
         return { tilesPrecision: 2, requestsPrecision: 4 };
-    } else if (zoom > 6 && zoom <= 8) {
+    } else if (zoom >= 6 && zoom < 9) {
         return { tilesPrecision: 3, requestsPrecision: 5 };
-    } else if (zoom > 8 && zoom <= 15) {
+    } else if (zoom >= 9 && zoom < 12) {
         return { tilesPrecision: 4, requestsPrecision: 6 };
-    } else if (zoom > 15) {
+    } else if (zoom >= 12 && zoom < 15) {
         return { tilesPrecision: 5, requestsPrecision: 7 };
+    } else if (zoom >= 15 && zoom < 18) {
+        return { tilesPrecision: 6, requestsPrecision: 8 };
+    } else if (zoom >= 18) {
+        return { tilesPrecision: 7, requestsPrecision: 9 };
     }
 }
 
