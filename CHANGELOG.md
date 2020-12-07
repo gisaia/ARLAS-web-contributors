@@ -1,5 +1,21 @@
 # Change Log
 
+## [v14.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.1.0) (2020-12-07)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.1.0-beta.0...v14.1.0)
+
+## [v14.1.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.1.0-beta.0) (2020-12-01)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.0.0...v14.1.0-beta.0)
+
+**New stuff:**
+
+- Enhance mapping the zoom levels to aggregation precision [\#345](https://github.com/gisaia/ARLAS-web-contributors/issues/345)
+
+**Fixed bugs:**
+
+- Fix sortColum list function [\#335](https://github.com/gisaia/ARLAS-web-contributors/issues/335)
+
 ## [v14.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.0.0) (2020-11-09)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v13.0.1...v14.0.0)
