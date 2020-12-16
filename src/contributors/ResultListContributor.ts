@@ -87,7 +87,8 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         const filterExpression: Filter = {
             f: [[expression]]
         };
-        searchResult = this.contributor.collaborativeSearcheService.resolveHits([
+        searchResult = this.contributor.collaborativeSearcheService.resolveHits(
+            this.contributor.collection, [
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
             this.contributor.identifier, filterExpression, false, this.contributor.cacheDuration);
         const obs: Observable<AdditionalInfo> = searchResult.pipe(map(searchData => {
@@ -252,11 +253,12 @@ export class ResultListContributor extends Contributor {
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
+        collection: string,
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(collection, identifier, configService, collaborativeSearcheService);
         // Link the ResultListContributor and the detailedDataRetriever
         this.detailedDataRetriever.setContributor(this);
         this.fieldsList = [];
@@ -344,7 +346,8 @@ export class ResultListContributor extends Contributor {
             f: [[expression]]
         };
         searchResult = this.collaborativeSearcheService
-            .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations,
+            .resolveHits(this.collection,
+                [projType.search, search], this.collaborativeSearcheService.collaborations,
                 null, filterExpression, false, this.cacheDuration);
         searchResult.pipe(map(data => JSON.stringify(data))).subscribe(
             data => {
@@ -503,7 +506,7 @@ export class ResultListContributor extends Contributor {
                 }
             });
 
-            const collaboration: Collaboration = { filter: filterValue, enabled: true };
+            const collaboration: Collaboration = { collection: this.collection, filter: filterValue, enabled: true };
             this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
         }
     }
@@ -744,7 +747,7 @@ export class ResultListContributor extends Contributor {
         search.projection = projection;
         projection.includes = includesvalues.join(',');
         const searchResult = this.collaborativeSearcheService
-            .resolveButNotHits([projType.search, search],
+            .resolveButNotHits(this.collection, [projType.search, search],
                 this.collaborativeSearcheService.collaborations,
                 null, this.filter, false, this.cacheDuration)
             .pipe(
@@ -826,7 +829,8 @@ export class ResultListContributor extends Contributor {
             size: size
         });
         const result = this.collaborativeSearcheService
-            .resolveButNotAggregation([projType.aggregate, aggregations], this.collaborativeSearcheService.collaborations);
+            .resolveButNotAggregation(this.collection,
+                [projType.aggregate, aggregations], this.collaborativeSearcheService.collaborations);
         if (result) {
             return result.pipe(map(aggResponse => {
                 if (aggResponse.elements) {

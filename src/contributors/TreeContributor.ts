@@ -65,12 +65,13 @@ export class TreeContributor extends Contributor {
 
 
     constructor(
+        collection: string,
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
         title: string
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(collection, identifier, configService, collaborativeSearcheService);
         this.title = title;
     }
 
@@ -115,6 +116,7 @@ export class TreeContributor extends Contributor {
             delete this.aggregations[0].include;
         }
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
+            this.collection,
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.identifier, filterAgg, false, this.cacheDuration
         );
@@ -234,6 +236,7 @@ export class TreeContributor extends Contributor {
                 }
             });
             const collaboration: Collaboration = {
+                collection: this.collection,
                 filter: filter,
                 enabled: true
             };
@@ -262,13 +265,15 @@ export class TreeContributor extends Contributor {
             delete this.aggregations[0].include;
         }
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
+            this.collection,
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.identifier, filterAgg, false, this.cacheDuration
         );
 
         aggregationObservable.subscribe(aggregationResponse => {
             this.treeData = this.computeData(aggregationResponse);
-            this.setSelection(this.treeData, this.collaborativeSearcheService.collaborations.get(this.identifier));
+            this.setSelection(this.treeData, this.collaborativeSearcheService.collaborations.get(this.collection)
+                .get(this.identifier));
         });
     }
 

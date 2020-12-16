@@ -63,7 +63,9 @@ export class DetailedHistogramContributor extends HistogramContributor {
         this.maxValue = 0;
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             let additionalFilter;
-            const annexedContributorColloaboration = this.collaborativeSearcheService.collaborations.get(this.annexedContributorId);
+            const annexedContributorColloaboration = this.collaborativeSearcheService.collaborations
+            .get(this.collection)
+            .get(this.annexedContributorId);
             if (this.annexedContributorId && annexedContributorColloaboration) {
                 additionalFilter = this.cloneAnnexedContributorFilter(annexedContributorColloaboration);
                 if (additionalFilter && additionalFilter.f && additionalFilter.f.length === 1) {

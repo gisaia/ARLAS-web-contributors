@@ -57,12 +57,13 @@ export class AnalyticsContributor extends Contributor {
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
+        collection: string,
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
         private groupIdToValues: Map<string, Array<string>>
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(collection, identifier, configService, collaborativeSearcheService);
     }
 
     public static getJsonSchema(): Object {
@@ -83,7 +84,7 @@ export class AnalyticsContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
-        const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
+        const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(this.collection,
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.identifier, {}, false, this.cacheDuration
         );

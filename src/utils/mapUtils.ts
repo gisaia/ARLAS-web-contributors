@@ -9,7 +9,8 @@ import { map } from 'rxjs/internal/operators/map';
 import * as meta from '@turf/meta';
 import { bboxes } from 'ngeohash';
 
-export function getBounds(elementidentifier: ElementIdentifier, collaborativeSearcheService: CollaborativesearchService)
+export function getBounds(collectiion: string, elementidentifier: ElementIdentifier,
+    collaborativeSearcheService: CollaborativesearchService)
     : Observable<Array<Array<number>>> {
     let searchResult: Observable<Hits>;
     const search: Search = { page: { size: 1 } };
@@ -22,7 +23,7 @@ export function getBounds(elementidentifier: ElementIdentifier, collaborativeSea
         f: [[expression]]
     };
     searchResult = collaborativeSearcheService
-        .resolveHits([projType.search, search], collaborativeSearcheService.collaborations, '', filter);
+        .resolveHits(collectiion, [projType.search, search], collaborativeSearcheService.collaborations, '', filter);
     return searchResult
         .pipe(
             map(h => {

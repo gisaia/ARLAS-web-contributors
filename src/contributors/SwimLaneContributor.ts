@@ -105,11 +105,12 @@ export class SwimLaneContributor extends Contributor {
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
+        collection: string,
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, private isOneDimension?: boolean
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(collection, identifier, configService, collaborativeSearcheService);
         if (this.getConfigValue('swimlanes')[0]['jsonpath'] !== undefined) {
             this.json_path = this.getConfigValue('swimlanes')[0]['jsonpath'];
         } else {
@@ -138,6 +139,7 @@ export class SwimLaneContributor extends Contributor {
             equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
             filterValue.f.push([equalExpression]);
             const collaboration: Collaboration = {
+                collection: this.collection,
                 filter: filterValue,
                 enabled: true
             };
@@ -150,11 +152,12 @@ export class SwimLaneContributor extends Contributor {
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
         this.checkAggregations();
-        const collaborations = new Map<string, Collaboration>();
+        const collaborations = new Map<string, Map<string, Collaboration>>();
         this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
-                return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+                return (this.collaborativeSearcheService.resolveButNotComputation(
+                    this.collection, [projType.compute,
                 <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
                 collaborations, this.identifier, {}, false, this.cacheDuration)
                     .pipe(
@@ -165,6 +168,7 @@ export class SwimLaneContributor extends Contributor {
                         }),
                         flatMap(() =>
                             this.collaborativeSearcheService.resolveButNotAggregation(
+                                this.collection,
                                 [projType.aggregate, this.aggregations], collaborations,
                                 this.identifier, {}, false, this.cacheDuration)
                         )
@@ -172,6 +176,7 @@ export class SwimLaneContributor extends Contributor {
                 );
             } else {
                 return this.collaborativeSearcheService.resolveButNotAggregation(
+                    this.collection,
                     [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
                     this.identifier, {}, false, this.cacheDuration);
             }

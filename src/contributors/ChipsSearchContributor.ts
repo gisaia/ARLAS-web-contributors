@@ -73,11 +73,12 @@ export class ChipsSearchContributor extends Contributor {
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
+        collection: string,
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(collection, identifier, configService, collaborativeSearcheService);
     }
 
     public static getJsonSchema(): Object {
@@ -105,6 +106,7 @@ export class ChipsSearchContributor extends Contributor {
                             q: [[k]]
                         };
                         const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
+                            this.collection,
                             [projType.count, {}], this.collaborativeSearcheService.collaborations,
                             this.identifier,
                             filter, false, this.cacheDuration
@@ -173,6 +175,7 @@ export class ChipsSearchContributor extends Contributor {
                     q: [[value]]
                 };
                 const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
+                    this.collection,
                     [projType.count, {}], this.collaborativeSearcheService.collaborations,
                     this.identifier,
                     filter, false, this.cacheDuration
@@ -237,6 +240,7 @@ export class ChipsSearchContributor extends Contributor {
         };
         if (this.query.trim().length > 0) {
             const data: Collaboration = {
+                collection: this.collection,
                 filter: filters,
                 enabled: true
             };

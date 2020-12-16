@@ -114,11 +114,12 @@ export class HistogramContributor extends Contributor {
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
     constructor(
+        collection: string,
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, protected isOneDimension?: boolean
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(collection, identifier, configService, collaborativeSearcheService);
         const lastAggregation: Aggregation = this.aggregations[this.aggregations.length - 1];
         if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
             this.timeShortcuts = getPredefinedTimeShortcuts()
@@ -178,7 +179,7 @@ export class HistogramContributor extends Contributor {
     * @param value DateType.millisecond | DateType.second
     */
     public valueChanged(values: SelectedOutputValues[]) {
-        const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService);
+        const resultList = getvaluesChanged(this.collection, values, this.field, this.identifier, this.collaborativeSearcheService);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
@@ -251,10 +252,10 @@ export class HistogramContributor extends Contributor {
     }
 
     protected fetchDataGivenFilter(identifier: string, additionalFilter?: Filter): Observable<AggregationResponse> {
-        const collaborations = new Map<string, Collaboration>();
+        const collaborations = new Map<string, Map<string, Collaboration>>();
         this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (this.nbBuckets) {
-            const agg = this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+            const agg = this.collaborativeSearcheService.resolveButNotComputation(this.collection, [projType.compute,
             <ComputationRequest>{ filter: null, field: this.field, metric: ComputationRequest.MetricEnum.SPANNING }],
             collaborations, identifier, additionalFilter, false, this.cacheDuration)
                 .pipe(
@@ -272,6 +273,7 @@ export class HistogramContributor extends Contributor {
                         this.range = r.range;
                         this.aggregations[0].interval = r.aggregationPrecision;
                         return this.collaborativeSearcheService.resolveButNotAggregation(
+                            this.collection,
                             [projType.aggregate, this.aggregations], collaborations,
                             identifier, additionalFilter, false, this.cacheDuration);
                     }
@@ -283,6 +285,7 @@ export class HistogramContributor extends Contributor {
 
         } else {
             return this.collaborativeSearcheService.resolveButNotAggregation(
+                this.collection,
                 [projType.aggregate, this.aggregations], collaborations,
                 identifier, additionalFilter, false, this.cacheDuration);
         }

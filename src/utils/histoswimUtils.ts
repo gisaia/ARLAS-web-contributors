@@ -21,7 +21,9 @@ import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
 import { SelectedOutputValues, DateExpression } from '../models/models';
 import { Expression, Filter, Aggregation, Interval } from 'arlas-api';
 
-export function getvaluesChanged(values: SelectedOutputValues[],
+export function getvaluesChanged(
+    collection: string,
+    values: SelectedOutputValues[],
     field: string,
     identifier: string,
     collaborativeSearcheService: CollaborativesearchService
@@ -59,6 +61,7 @@ export function getvaluesChanged(values: SelectedOutputValues[],
     rangeExpression.value = rangeExpression.value.substring(0, rangeExpression.value.length - 1);
     filterValue.f.push([rangeExpression]);
     const collaboration: Collaboration = {
+        collection: collection,
         filter: filterValue,
         enabled: true
     };

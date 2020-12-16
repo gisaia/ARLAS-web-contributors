@@ -193,9 +193,11 @@ export class MapContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(public identifier, public collaborativeSearcheService: CollaborativesearchService, public configService: ConfigService,
+    constructor(public collection: string,
+        public identifier: string, public collaborativeSearcheService: CollaborativesearchService,
+        public configService: ConfigService,
         public colorGenerator?: ColorGeneratorLoader) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(collection, identifier, configService, collaborativeSearcheService);
 
         const layersSourcesConfig: Array<LayerSourceConfig> = this.getConfigValue(this.LAYERS_SOURCES_KEY);
         const dataModeConfig = this.getConfigValue(this.DATA_MODE_KEY);
@@ -248,13 +250,13 @@ export class MapContributor extends Contributor {
         this.granularityFunctions.set(Granularity.finest, finestGranularity);
         // TODO check if we should include the collection reference in the collobarative search service, to avoid doing a describe
         // in this contributor
-        this.collaborativeSearcheService.describe(collaborativeSearcheService.collection)
-            .subscribe(collection => {
-                const fields = collection.properties;
+        this.collaborativeSearcheService.describe(this.collection)
+            .subscribe(c => {
+                const fields = c.properties;
                 Object.keys(fields).forEach(fieldName => {
                     this.getFieldProperties(fields, fieldName);
                 });
-                this.collectionParameters = collection.params;
+                this.collectionParameters = c.params;
                 this.geoQueryField = geoQueryFieldConfig !== undefined ? geoQueryFieldConfig : this.collectionParameters.centroid_path;
             }
             );
@@ -472,7 +474,8 @@ export class MapContributor extends Contributor {
             this.abortRemovedSources(s, callOrigin);
         });
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
+        const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
+            this.collection, [projType.count, {}],
             this.collaborativeSearcheService.collaborations, this.identifier, countFilter, false, this.cacheDuration);
         const geo_ids = new Set(dTopologySources.map(s => this.topologyLayersIndex.get(s).geometryId));
         const topoCounts: Array<Observable<ComputationResponse>> = [];
@@ -554,6 +557,7 @@ export class MapContributor extends Contributor {
                         });
                     });
                     const andCollaboration: Collaboration = {
+                        collection: this.collection,
                         filter: {
                             f: andFilter
                         },
@@ -574,6 +578,7 @@ export class MapContributor extends Contributor {
                     });
                     orFilter.push(multiExpressions);
                     const orCollaboration: Collaboration = {
+                        collection: this.collection,
                         filter: {
                             f: orFilter
                         },
@@ -684,7 +689,7 @@ export class MapContributor extends Contributor {
         }
     }
     public getBoundsToFit(elementidentifier: ElementIdentifier): Observable<Array<Array<number>>> {
-        const bounddsToFit = getBounds(elementidentifier, this.collaborativeSearcheService);
+        const bounddsToFit = getBounds(this.collection, elementidentifier, this.collaborativeSearcheService);
         return bounddsToFit;
     }
 
@@ -784,6 +789,7 @@ export class MapContributor extends Contributor {
                     break;
             }
             const data: Collaboration = {
+                collection: this.collection,
                 filter: filters,
                 enabled: true
             };
@@ -1034,6 +1040,7 @@ export class MapContributor extends Contributor {
                 z: tile.z
             };
             const searchResult: Observable<FeatureCollection> = this.collaborativeSearcheService.resolveButNotFeatureCollectionWithAbort(
+                this.collection,
                 [projType.tiledgeosearch, tiledSearch], this.collaborativeSearcheService.collaborations, this.isFlat, control.signal,
                 null, filter, this.cacheDuration);
             tabOfTile.push(searchResult);
@@ -1049,6 +1056,7 @@ export class MapContributor extends Contributor {
      */
     public resolveSearchSources(filter: Filter, searchId: string, search: Search): Observable<FeatureCollection> {
         return this.collaborativeSearcheService.resolveButNotFeatureCollection(
+            this.collection,
             [projType.geosearch, search], this.collaborativeSearcheService.collaborations, this.isFlat,
             null, filter, this.cacheDuration);
 
@@ -1064,6 +1072,7 @@ export class MapContributor extends Contributor {
             };
             const geoAggregateData: Observable<FeatureCollection> =
                 this.collaborativeSearcheService.resolveButNotFeatureCollectionWithAbort(
+                    this.collection,
                     [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
                     this.isFlat, control.signal, null, this.additionalFilter, this.cacheDuration);
             tabOfGeohash.push(geoAggregateData);
@@ -2836,7 +2845,7 @@ export class MapContributor extends Contributor {
 
     private getTopoCardinality(collectField: string, filter: Filter): Observable<ComputationResponse> {
         const computationRequest: ComputationRequest = { field: collectField, metric: ComputationRequest.MetricEnum.CARDINALITY };
-        return this.collaborativeSearcheService.resolveButNotComputation([projType.compute, computationRequest],
+        return this.collaborativeSearcheService.resolveButNotComputation(this.collection, [projType.compute, computationRequest],
             this.collaborativeSearcheService.collaborations, null, filter, false, this.cacheDuration);
 
     }
