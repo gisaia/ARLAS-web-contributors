@@ -2085,7 +2085,7 @@ export class MapContributor extends Contributor {
                 if (!aggregation.raw_geometries) {
                     aggregation.raw_geometries = [];
                 }
-                aggregation.raw_geometries.push({ geometry: ls.geometrySupport });
+                aggregation.raw_geometries.push({ geometry: ls.geometrySupport, sort: '-' + this.collectionParameters.timestamp_path });
             }
             if (ls.providedFields && ls.providedFields.length > 0) {
                 if (!aggregation.fetch_hits) {
