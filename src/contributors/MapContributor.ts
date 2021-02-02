@@ -937,7 +937,7 @@ export class MapContributor extends Contributor {
                     if (colorFields) {
                         colorFields.forEach(colorField => {
                             const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField] || 'UNKNOWN';
+                            feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] || 'UNKNOWN';
                             this.setColorFieldLegend(colorField, feature, fieldsToKeep);
                         });
                     }
@@ -945,11 +945,11 @@ export class MapContributor extends Contributor {
                     if (providedFields) {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = feature.properties['hits'][0][flattenColorField]
+                            feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField]
                                 || this.colorGenerator.getColor('UNKNOWN');
                             if (pf.label && pf.label.length > 0) {
                                 const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                                feature.properties[flattenLabelField] = feature.properties['hits'][0][flattenLabelField] || 'UNKNOWN';
+                                feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenColorField] || 'UNKNOWN';
                             }
                             /** set the key-to-color map to be displayed on the legend. */
                             this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
@@ -959,7 +959,7 @@ export class MapContributor extends Contributor {
                     if (includeFields) {
                         includeFields.forEach(includeField => {
                             const flattenField = includeField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenField] = feature.properties['hits'][0][flattenField];
+                            feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
                             fieldsToKeep.add(flattenField);
                         });
                     }
