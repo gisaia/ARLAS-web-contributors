@@ -1686,6 +1686,41 @@ export class MapContributor extends Contributor {
             }
             aggregation.raw_geometries.push({ geometry: ls.geometrySupport });
         }
+
+        const fetchSet = new Set<string>();
+        if (ls.providedFields && ls.providedFields.length > 0) {
+            if (!aggregation.fetch_hits) {
+                aggregation.fetch_hits = { size: 1 };
+                aggregation.fetch_hits.include = [];
+            }
+            ls.providedFields.forEach(pf => {
+                fetchSet.add(pf.color);
+                if (pf.label && pf.label.length > 0) {
+                    fetchSet.add(pf.label);
+                }
+            });
+        }
+        if (ls.colorFields && ls.colorFields.size > 0) {
+            if (!aggregation.fetch_hits) {
+                aggregation.fetch_hits = { size: 1 };
+                aggregation.fetch_hits.include = [];
+            }
+            ls.colorFields.forEach(cf => {
+                fetchSet.add(cf);
+            });
+        }
+        if (ls.includeFields && ls.includeFields.size > 0) {
+            if (!aggregation.fetch_hits) {
+                aggregation.fetch_hits = { size: 1 };
+                aggregation.fetch_hits.include = [];
+            }
+            ls.includeFields.forEach(cf => {
+                fetchSet.add(cf);
+            });
+        }
+        if (!!aggregation.fetch_hits) {
+            aggregation.fetch_hits.include = Array.from(fetchSet);
+        }
         return aggregation;
     }
 
