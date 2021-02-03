@@ -37,7 +37,7 @@ import {
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
-    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, superFinestGranularity
+    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity, mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity
 } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
@@ -129,7 +129,10 @@ export class MapContributor extends Contributor {
     private searchSourcesMetrics: Map<string, Set<string>> = new Map();
     private sourcesVisitedTiles: Map<string, Set<string>> = new Map();
     private sourcesPrecisions: Map<string, { tilesPrecision?: number, requestsPrecision?: number }> = new Map();
-    private granularityFunctions: Map<Granularity, (zoom: number) => { tilesPrecision: number, requestsPrecision: number }> = new Map();
+    private granularityClusterFunctions: Map<Granularity, (zoom: number) =>
+        { tilesPrecision: number, requestsPrecision: number }> = new Map();
+    private granularityTopologyFunctions: Map<Granularity, (zoom: number) =>
+        { tilesPrecision: number, requestsPrecision: number }> = new Map();
     private collectionParameters: CollectionReferenceParameters;
     private featuresIdsIndex = new Map<string, Set<string>>();
     private featuresOldExtent = new Map<string, any>();
@@ -242,12 +245,17 @@ export class MapContributor extends Contributor {
         this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
         this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
-        this.granularityFunctions.set(Granularity.coarse, coarseGranularity);
-        this.granularityFunctions.set(Granularity.medium, mediumGranularity);
-        this.granularityFunctions.set(Granularity.fine, fineGranularity);
-        this.granularityFunctions.set(Granularity.finest, finestGranularity);
-        this.granularityFunctions.set(Granularity.superfinest, superFinestGranularity);
+        this.granularityClusterFunctions.set(Granularity.coarse, coarseGranularity);
+        this.granularityClusterFunctions.set(Granularity.medium, mediumGranularity);
+        this.granularityClusterFunctions.set(Granularity.fine, fineGranularity);
+        this.granularityClusterFunctions.set(Granularity.finest, finestGranularity);
+        this.granularityClusterFunctions.set(Granularity.superfinest, superFinestGranularity);
 
+
+        this.granularityTopologyFunctions.set(Granularity.coarse, coarseTopoGranularity);
+        this.granularityTopologyFunctions.set(Granularity.medium, mediumTopoGranularity);
+        this.granularityTopologyFunctions.set(Granularity.fine, fineTopoGranularity);
+        this.granularityTopologyFunctions.set(Granularity.finest, finestTopoGranularity);
         // TODO check if we should include the collection reference in the collobarative search service, to avoid doing a describe
         // in this contributor
         this.collaborativeSearcheService.describe(collaborativeSearcheService.collection)
@@ -336,7 +344,10 @@ export class MapContributor extends Contributor {
         });
         this.visibleSources = visibleSources;
         if (this.dataMode === DataMode.dynamic) {
-            this.fetchDataDynamicMode(null);
+            const wrapExtent = extentToString(this.mapTestExtent);
+            const rawExtent = extentToString(this.mapTestRawExtent);
+            /** Call getDynamicModeData method without clearing the sources because we didn't change the precision*/
+            this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, this.visibleSources);
         } else {
             const dFeatureSources = Array.from(this.featureLayersIndex.keys());
             dFeatureSources.forEach(s => {
@@ -468,10 +479,11 @@ export class MapContributor extends Contributor {
         this.checkFeatures(dFeatureSources, callOrigin);
         const zoomSourcesToRemove = displayableSources[3];
         zoomSourcesToRemove.forEach(s => {
+            /**Removes the sources (topo,cluster & features) from mapcomponent that don't respect zoom rule visibility */
             this.redrawSource.next({ source: s, data: [] });
-            this.clearData(s);
-            this.aggSourcesMetrics.set(s, new Set());
-            this.abortRemovedSources(s, callOrigin);
+            /** sources are kept in the contributor to avoid recalling arlas-server.
+             * The sources are only cleaned if filters change
+             */
         });
         this.collaborativeSearcheService.ongoingSubscribe.next(1);
         const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
@@ -493,6 +505,10 @@ export class MapContributor extends Contributor {
                 topoSources[0].forEach(s => displayableTopoSources.add(s));
                 topoSources[1].forEach(s => removableTopoSources.add(s));
                 const topologyAggsBuilder = this.prepareTopologyAggregations(topoSources[0], zoom);
+                /** renders visible sources */
+                topologyAggsBuilder.forEach((aggSource, aggId) => {
+                    this.renderAggSources(aggSource.sources);
+                });
                 this.fetchAggSources(mapLoadExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
             }),
             finalize(() => {
@@ -504,10 +520,11 @@ export class MapContributor extends Contributor {
                         }
                     });
                     removableTopoSources.forEach(s => {
+                        /**Removes the topo source from mapcomponent that don't respect nbfeatures rule visibility */
                         this.redrawSource.next({ source: s, data: [] });
-                        this.clearData(s);
-                        this.aggSourcesMetrics.set(s, new Set());
-                        this.abortRemovedSources(s, callOrigin);
+                        /** sources are kept in the contributor to avoid recalling arlas-server.
+                         * The sources are only cleaned if filters change
+                         */
                     });
                     this.visibilityUpdater.next(this.visibilityStatus);
                 }
@@ -525,13 +542,21 @@ export class MapContributor extends Contributor {
                 const nbFeaturesSourcesToRemove = displayableSources[3];
                 const alreadyRemovedSources = new Set(zoomSourcesToRemove);
                 nbFeaturesSourcesToRemove.filter(s => !this.topologyLayersIndex.has(s) && !alreadyRemovedSources.has(s)).forEach(s => {
-                    this.redrawSource.next({ source: s, data: [] });
-                    this.clearData(s);
-                    this.aggSourcesMetrics.set(s, new Set());
-                    this.abortRemovedSources(s, callOrigin);
+                     /**Removes the sources (cluster, feature) from mapcomponent that don't respect nbfeatures rule visibility*/
+                     this.redrawSource.next({ source: s, data: [] });
+                     /** sources are kept in the contributor to avoid recalling arlas-server.
+                      * The sources are only cleaned if filters change
+                      */
                 });
                 const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
                 const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.visibility_rules);
+                /** renders visible sources */
+                clusterAggsBuilder.forEach((aggSource, aggId) => {
+                    this.renderAggSources(aggSource.sources);
+                });
+                featureSearchBuilder.forEach((searchSource, f) => {
+                    this.renderSearchSources(searchSource.sources);
+                });
                 this.fetchAggSources(mapLoadExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
                 this.fetchTiledSearchSources(mapLoadExtent, featureSearchBuilder);
             });
@@ -1863,7 +1888,7 @@ export class MapContributor extends Contributor {
                 aggregation = {
                     type: Aggregation.TypeEnum.Geohash,
                     field: ls.aggGeoField,
-                    interval: { value: this.getPrecision(ls.granularity, zoom) }
+                    interval: { value: this.getPrecision(ls.granularity, zoom, this.CLUSTER_SOURCE) }
                 };
                 sources = [];
             }
@@ -2175,7 +2200,7 @@ export class MapContributor extends Contributor {
                 (ls as LayerClusterSource).aggGeoField + ':' + ls.granularity.toString() + (ls as LayerClusterSource).minfeatures +
                 ':' + ls.minzoom + ':' + ls.maxzoom;
             const control = this.abortControllers.get(aggId);
-            this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom, callOrigin);
+            this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom, callOrigin, aggType);
         });
     }
 
@@ -2223,8 +2248,13 @@ export class MapContributor extends Contributor {
             }
         }
     }
-    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, zoom: number, callOrigin: string) {
-        const precisions = Object.assign({}, this.granularityFunctions.get(granularity)(zoom));
+    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, zoom: number, callOrigin: string, aggType: string) {
+        let precisions;
+        if (aggType === this.TOPOLOGY_SOURCE) {
+            precisions = Object.assign({}, this.granularityTopologyFunctions.get(granularity)(zoom));
+        } else {
+            precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom));
+        }
         let oldPrecisions;
         const p = Object.assign({}, this.sourcesPrecisions.get(s));
         if (p && p.requestsPrecision && p.tilesPrecision) {
@@ -2241,7 +2271,6 @@ export class MapContributor extends Contributor {
             cancelSubjects.set(callOrigin, new Subject());
             this.cancelSubjects.set(aggId, cancelSubjects);
             this.lastCalls.set(aggId, callOrigin);
-
             const abortController = this.abortControllers.get(aggId);
             if (abortController && !abortController.signal.aborted) {
                 /** abort pending calls of this agg id because precision changed. */
@@ -2313,8 +2342,9 @@ export class MapContributor extends Contributor {
         }
     }
 
-    private getPrecision(g: Granularity, zoom: number): number {
-        return this.granularityFunctions.get(g)(zoom).requestsPrecision;
+    private getPrecision(g: Granularity, zoom: number, aggType: string): number {
+        return aggType === this.TOPOLOGY_SOURCE ? this.granularityTopologyFunctions.get(g)(zoom).requestsPrecision :
+            this.granularityClusterFunctions.get(g)(zoom).requestsPrecision;
     }
 
     private getAbreviatedNumber(value: number): string {
@@ -2726,8 +2756,15 @@ export class MapContributor extends Contributor {
     }
 
     private getVisitedTiles(extent, zoom, granularity, aggSource, aggType) {
-        const visitedTiles = extentToGeohashes(extent, zoom, this.granularityFunctions.get(granularity));
-        const precisions = Object.assign({}, this.granularityFunctions.get(granularity)(zoom));
+        let visitedTiles;
+        let precisions;
+        if (aggType === this.TOPOLOGY_SOURCE) {
+            visitedTiles = extentToGeohashes(extent, zoom, this.granularityTopologyFunctions.get(granularity));
+            precisions = Object.assign({}, this.granularityTopologyFunctions.get(granularity)(zoom));
+        } else {
+            visitedTiles = extentToGeohashes(extent, zoom, this.granularityClusterFunctions.get(granularity));
+            precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom));
+        }
         let oldPrecisions;
         aggSource.sources.forEach(s => {
             const p = Object.assign({}, this.sourcesPrecisions.get(s));
