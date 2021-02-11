@@ -36,8 +36,8 @@ import {
     SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig
 } from '../models/models';
 import {
-    appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
-    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity,
+    appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity, removePageFromIndex,
+    ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity,
     mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity
 } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
