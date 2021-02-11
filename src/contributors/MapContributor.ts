@@ -37,7 +37,8 @@ import {
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
-    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity, mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity
+    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity,
+    mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity, superFinestGranularity
 } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
