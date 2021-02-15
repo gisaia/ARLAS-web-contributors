@@ -161,6 +161,7 @@ export interface StringifiedTimeShortcut {
 
 export interface LayerSourceConfig {
     id: string;
+    name?: string;
     source: string;
     minzoom: number;
     maxzoom: number;
