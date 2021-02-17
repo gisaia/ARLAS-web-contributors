@@ -267,6 +267,26 @@ export function finestGranularity(zoom: number): { tilesPrecision: number, reque
     }
 }
 
+export function superFinestGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+    if (zoom >= 0 && zoom < 3) {
+        return { tilesPrecision: 1, requestsPrecision: 3 };
+    } else if (zoom >= 3 && zoom < 5) {
+        return { tilesPrecision: 1, requestsPrecision: 4 };
+    } else if (zoom >= 5 && zoom < 8) {
+        return { tilesPrecision: 2, requestsPrecision: 5 };
+    } else if (zoom >= 8 && zoom < 11) {
+        return { tilesPrecision: 3, requestsPrecision: 6 };
+    } else if (zoom >= 11 && zoom < 14) {
+        return { tilesPrecision: 4, requestsPrecision: 7 };
+    } else if (zoom >= 14 && zoom < 17) {
+        return { tilesPrecision: 5, requestsPrecision: 8 };
+    } else if (zoom >= 17 && zoom < 20) {
+        return { tilesPrecision: 6, requestsPrecision: 9 };
+    } else if (zoom >= 20) {
+        return { tilesPrecision: 7, requestsPrecision: 10 };
+    }
+}
+
 
 export function featurestTilesGranularity(zoom: number): number {
     if (zoom >= 0 && zoom < 3) {
