@@ -526,7 +526,8 @@ export enum Granularity {
     coarse = 'Coarse',
     medium = 'Medium',
     fine = 'Fine',
-    finest = 'Finest'
+    finest = 'Finest',
+    superfinest= 'SuperFinest'
 }
 
 export interface MetricConfig {

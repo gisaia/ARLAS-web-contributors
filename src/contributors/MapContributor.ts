@@ -37,7 +37,7 @@ import {
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
-    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity
+    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, superFinestGranularity
 } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
@@ -246,6 +246,8 @@ export class MapContributor extends Contributor {
         this.granularityFunctions.set(Granularity.medium, mediumGranularity);
         this.granularityFunctions.set(Granularity.fine, fineGranularity);
         this.granularityFunctions.set(Granularity.finest, finestGranularity);
+        this.granularityFunctions.set(Granularity.superfinest, superFinestGranularity);
+
         // TODO check if we should include the collection reference in the collobarative search service, to avoid doing a describe
         // in this contributor
         this.collaborativeSearcheService.describe(collaborativeSearcheService.collection)
