@@ -1,5 +1,25 @@
 # Change Log
 
+## [v15.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0) (2021-02-18)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0-beta.2...v15.0.0)
+
+**New stuff:**
+
+- Add a new Granularity for cluster mode [\#354](https://github.com/gisaia/ARLAS-web-contributors/issues/354)
+
+**Fixed bugs:**
+
+- Data in Network-analytics mode are reloaded after zooming [\#355](https://github.com/gisaia/ARLAS-web-contributors/issues/355)
+
+## [v15.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0-beta.2) (2021-02-12)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0-beta.0...v15.0.0-beta.2)
+
+## [v15.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0-beta.0) (2021-02-03)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.3.1...v15.0.0-beta.0)
+
 ## [v14.3.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.3.1) (2021-02-03)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.3.0...v14.3.1)
