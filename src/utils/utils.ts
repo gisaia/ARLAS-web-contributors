@@ -215,6 +215,19 @@ export function coarseGranularity(zoom: number): { tilesPrecision: number, reque
     }
 }
 
+export function coarseTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+    return { tilesPrecision: 2, requestsPrecision: 2 };
+}
+export function mediumTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+    return { tilesPrecision: 2, requestsPrecision: 2 };
+}
+export function fineTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+    return { tilesPrecision: 2, requestsPrecision: 2 };
+}
+export function finestTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+    return { tilesPrecision: 2, requestsPrecision: 2 };
+}
+
 export function mediumGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
     if (zoom >= 0 && zoom < 3) {
         return { tilesPrecision: 1, requestsPrecision: 2 };
