@@ -2772,6 +2772,9 @@ export class MapContributor extends Contributor {
             if (p && p.requestsPrecision && p.tilesPrecision) {
                 oldPrecisions = p;
             }
+            if (!this.sourcesVisitedTiles.get(s)) {
+                this.sourcesVisitedTiles.set(s, new Set());
+            }
         });
         if (!oldPrecisions) {
             oldPrecisions = {};
