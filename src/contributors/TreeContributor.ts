@@ -114,6 +114,13 @@ export class TreeContributor extends Contributor {
         } else {
             delete this.aggregations[0].include;
         }
+        this.aggregations.forEach((agg , index) => {
+            if (agg.metrics && agg.metrics.length > 0) {
+                this.aggregations[index].on = Aggregation.OnEnum.Result;
+                this.aggregations[index].order = Aggregation.OrderEnum.Desc;
+
+            }
+        });
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.identifier, filterAgg, false, this.cacheDuration
