@@ -99,14 +99,13 @@
                         "type": "string"
                     },
                     "granularity": {
-                        "description": "Describes how precise the geo-aggregation is. Possible: Coarse, Medium, Fine, Finest, SuperFinest",
+                        "description": "Describes how precise the geo-aggregation is. Possible: Coarse, Medium, Fine, Finest",
                         "type": "string",
                         "enum": [
                             "Coarse",
                             "Fine",
                             "Finest",
-                            "Medium",
-                            "SuperFinest"
+                            "Medium"
                         ]
                     },
                     "aggregated_geometry": {
