@@ -38,7 +38,7 @@ import {
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
     removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity,
-    mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity, superFinestGranularity
+    mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity
 } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
@@ -250,8 +250,6 @@ export class MapContributor extends Contributor {
         this.granularityClusterFunctions.set(Granularity.medium, mediumGranularity);
         this.granularityClusterFunctions.set(Granularity.fine, fineGranularity);
         this.granularityClusterFunctions.set(Granularity.finest, finestGranularity);
-        this.granularityClusterFunctions.set(Granularity.superfinest, superFinestGranularity);
-
 
         this.granularityTopologyFunctions.set(Granularity.coarse, coarseTopoGranularity);
         this.granularityTopologyFunctions.set(Granularity.medium, mediumTopoGranularity);
