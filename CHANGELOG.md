@@ -1,5 +1,13 @@
 # Change Log
 
+## [v15.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.2) (2021-02-25)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.1...v15.0.2)
+
+**New stuff:**
+
+- \[TREE\] allow an order by metric [\#364](https://github.com/gisaia/ARLAS-web-contributors/issues/364)
+
 ## [v15.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.1) (2021-02-23)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0...v15.0.1)
