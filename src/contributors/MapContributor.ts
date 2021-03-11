@@ -1819,10 +1819,10 @@ export class MapContributor extends Contributor {
      */
     private setColorFieldLegend(colorField: string, feature: Feature, fieldsToKeep: Set<string>) {
         const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-        feature.properties[flattenColorField + '_color'] =
+        feature.properties[flattenColorField + '_arlas__color'] =
             this.colorGenerator.getColor(feature.properties[flattenColorField]);
         /** set the key-to-color map to be displayed on the legend. */
-        let colorLegend: LegendData = this.legendData.get(flattenColorField + '_color');
+        let colorLegend: LegendData = this.legendData.get(flattenColorField + '_arlas__color');
         if (!colorLegend) {
             colorLegend = {};
             colorLegend.keysColorsMap = new Map();
@@ -1830,9 +1830,9 @@ export class MapContributor extends Contributor {
             colorLegend.keysColorsMap = new Map();
         }
         colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
-            feature.properties[flattenColorField + '_color']);
-        fieldsToKeep.add(flattenColorField + '_color');
-        this.legendData.set(flattenColorField + '_color', colorLegend);
+            feature.properties[flattenColorField + '_arlas__color']);
+        fieldsToKeep.add(flattenColorField + '_arlas__color');
+        this.legendData.set(flattenColorField + '_arlas__color', colorLegend);
     }
 
 
@@ -1996,7 +1996,7 @@ export class MapContributor extends Contributor {
                 break;
             }
             case ReturnedField.generatedcolor: {
-                key = field.replace(/\./g, this.FLAT_CHAR) + '_color';
+                key = field.replace(/\./g, this.FLAT_CHAR) + '_arlas__color';
                 break;
             }
             case ReturnedField.normalized: {
