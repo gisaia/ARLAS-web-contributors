@@ -49,6 +49,7 @@ import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, exte
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import moment from 'moment';
+import { RawGeometry } from 'arlas-api';
 
 export enum DataMode {
     simple,
@@ -1634,7 +1635,7 @@ export class MapContributor extends Contributor {
         topologyLayer.maxzoom = ls.maxzoom;
         topologyLayer.minzoom = ls.minzoom;
         topologyLayer.maxfeatures = ls.maxfeatures;
-        topologyLayer.geometrySupport = ls.geometry_support;
+        topologyLayer.rawGeometry = ls.raw_geometry;
         topologyLayer.geometryId = ls.geometry_id;
         topologyLayer.metrics = ls.metrics;
         topologyLayer.granularity = <any>ls.granularity;
@@ -1706,11 +1707,11 @@ export class MapContributor extends Contributor {
                 });
             });
         }
-        if (ls.geometrySupport) {
+        if (ls.rawGeometry) {
             if (!aggregation.raw_geometries) {
                 aggregation.raw_geometries = [];
             }
-            aggregation.raw_geometries.push({ geometry: ls.geometrySupport });
+            aggregation.raw_geometries.push(ls.rawGeometry);
         }
 
         const fetchSet = new Set<string>();
@@ -2142,11 +2143,15 @@ export class MapContributor extends Contributor {
                     this.indexAggSourcesMetrics(cs, aggregation, m);
                 });
             }
-            if (ls.geometrySupport) {
+            if (ls.rawGeometry) {
                 if (!aggregation.raw_geometries) {
                     aggregation.raw_geometries = [];
                 }
-                aggregation.raw_geometries.push({ geometry: ls.geometrySupport, sort: '-' + this.collectionParameters.timestamp_path });
+                const sort = ls.rawGeometry.sort;
+                if (!sort || sort === undefined || sort === null || sort === '') {
+                    ls.rawGeometry.sort = '-' + this.collectionParameters.timestamp_path;
+                }
+                aggregation.raw_geometries.push(ls.rawGeometry);
             }
             if (ls.providedFields && ls.providedFields.length > 0) {
                 if (!aggregation.fetch_hits) {
