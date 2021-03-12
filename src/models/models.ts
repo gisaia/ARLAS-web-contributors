@@ -131,6 +131,7 @@ export interface TreeNode {
     size?: number;
     metricValue?: number;
     children?: Array<TreeNode>;
+    color?: string;
 }
 
 export interface SimpleNode {

@@ -47,6 +47,11 @@ export class TreeContributor extends Contributor {
     public nodeSizeMinPourcentage = (this.getConfigValue('nodeSizeMinPourcentage')) ?
         this.getConfigValue('nodeSizeMinPourcentage') : 0.01;
     /**
+     * The field to retrieve the color of the node (optional),
+     * this field must be present in the include property of the fetch_hits for all the aggregations
+     */
+    public colorField = this.getConfigValue('colorField');
+    /**
      * List of selected nodes to be returned to a component that accepts tree data as an input
      */
     public selectedNodesPathsList: Array<Array<SimpleNode>> = new Array<Array<SimpleNode>>();
@@ -114,7 +119,7 @@ export class TreeContributor extends Contributor {
         } else {
             delete this.aggregations[0].include;
         }
-        this.aggregations.forEach((agg , index) => {
+        this.aggregations.forEach((agg, index) => {
             if (agg.metrics && agg.metrics.length > 0) {
                 this.aggregations[index].on = Aggregation.OnEnum.Result;
                 this.aggregations[index].order = Aggregation.OrderEnum.Desc;
@@ -123,7 +128,7 @@ export class TreeContributor extends Contributor {
         });
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg, false, this.cacheDuration
+            this.identifier, filterAgg, !!this.colorField, this.cacheDuration
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
@@ -148,6 +153,7 @@ export class TreeContributor extends Contributor {
             node.size = aggregationResponse.totalnb;
             node.metricValue = aggregationResponse.totalnb;
         }
+
         this.populateChildren(node, aggregationResponse, 0);
         return node;
     }
@@ -270,7 +276,7 @@ export class TreeContributor extends Contributor {
         }
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg, false, this.cacheDuration
+            this.identifier, filterAgg, !!this.colorField, this.cacheDuration
         );
 
         aggregationObservable.subscribe(aggregationResponse => {
@@ -371,6 +377,12 @@ export class TreeContributor extends Contributor {
                     id: field + bucket.key + bucketMetricValue, fieldValue: bucket.key,
                     fieldName: field, isOther: false, children: []
                 };
+                if (!!this.colorField) {
+                    if ( bucket.flattened_elements !== undefined
+                        && !!bucket.flattened_elements['hits_0_'.concat(this.colorField.replaceAll('.', '_'))]) {
+                            childNode.color = bucket.flattened_elements['hits_0_'.concat(this.colorField.replaceAll('.', '_'))];
+                    }
+                }
                 relativeTotal += bucketMetricValue;
                 if (bucket.elements !== undefined && bucket.elements[0].elements !== undefined) {
                     if (bucketMetricValue / (sumOfBucketsMetrics + metricValueOfOthers) >= this.nodeSizeMinPourcentage) {
