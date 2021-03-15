@@ -81,8 +81,8 @@ export class DetailedHistogramContributor extends HistogramContributor {
                         min = Number(intervals[0]);
                         max = Number(intervals[1]);
                     } else {
-                        min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false);
-                        max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true);
+                        min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false, this.useUtc);
+                        max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true, this.useUtc);
                     }
                     const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
                     const minOffset = Math.trunc(min - offset);

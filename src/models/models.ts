@@ -233,12 +233,20 @@ export class DateExpression {
         return stringifiedExpression;
     }
 
-    public toMillisecond(roundUp: boolean): number {
+    public toMillisecond(roundUp: boolean, useUtc: boolean): number {
         let dateValue: moment.Moment;
         if (this.anchorDate === 'now') {
-            dateValue = moment().utc();
+            if (useUtc) {
+                dateValue = moment().utc();
+            } else {
+                dateValue = moment();
+            }
         } else {
-            dateValue = moment(this.anchorDate).utc();
+            if (useUtc) {
+                dateValue = moment(this.anchorDate).utc();
+            } else {
+                dateValue = moment(this.anchorDate);
+            }
         }
         if (this.translationDuration && this.translationUnit) {
             switch (this.translationUnit) {

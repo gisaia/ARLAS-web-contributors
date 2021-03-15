@@ -24,7 +24,7 @@ import { Expression, Filter, Aggregation, Interval } from 'arlas-api';
 export function getvaluesChanged(values: SelectedOutputValues[],
     field: string,
     identifier: string,
-    collaborativeSearcheService: CollaborativesearchService
+    collaborativeSearcheService: CollaborativesearchService, useUtc: boolean
 ): any[] {
     let intervalSelection;
     const filterValue: Filter = {
@@ -64,15 +64,15 @@ export function getvaluesChanged(values: SelectedOutputValues[],
     };
     intervalSelection = values[values.length - 1];
     if (Number(intervalSelection.startvalue).toString() === 'NaN') {
-        intervalSelection.startvalue = DateExpression.toDateExpression(<string>intervalSelection.startvalue).toMillisecond(false);
-        intervalSelection.endvalue = DateExpression.toDateExpression(<string>intervalSelection.endvalue).toMillisecond(true);
+        intervalSelection.startvalue = DateExpression.toDateExpression(<string>intervalSelection.startvalue).toMillisecond(false, useUtc);
+        intervalSelection.endvalue = DateExpression.toDateExpression(<string>intervalSelection.endvalue).toMillisecond(true, useUtc);
     }
     collaborativeSearcheService.setFilter(identifier, collaboration);
     return [intervalSelection, startValue, endValue];
 }
 
 export function getSelectionToSet(data: Array<{ key: number, value: number }> | Map<string, Array<{ key: number, value: number }>>,
-    collaboration: Collaboration
+    collaboration: Collaboration, useUtc: boolean
 ): any[] {
     let intervalListSelection;
     let intervalSelection;
@@ -126,8 +126,8 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
                         intervalOfSelection.startvalue = <number>parseFloat(start);
                         intervalOfSelection.endvalue = <number>parseFloat(end);
                     } else {
-                        intervalOfSelection.startvalue = DateExpression.toDateExpression(start).toMillisecond(false);
-                        intervalOfSelection.endvalue = DateExpression.toDateExpression(end).toMillisecond(true);
+                        intervalOfSelection.startvalue = DateExpression.toDateExpression(start).toMillisecond(false, useUtc);
+                        intervalOfSelection.endvalue = DateExpression.toDateExpression(end).toMillisecond(true, useUtc);
                         startValue = start;
                         endValue = end;
                     }
