@@ -94,6 +94,10 @@ export class SwimLaneContributor extends Contributor {
     * Number of buckets in the swimlane. If not specified, the interval in the aggregagtion model is used instead.
     */
     private nbBuckets: number = this.getConfigValue('numberOfBuckets');
+    /**
+    * Wether use UTC for display time
+    */
+    public useUtc = this.getConfigValue('useUtc') !== undefined ? this.getConfigValue('useUtc') : true;
 
     private INVALID_AGGREGATIONS_MESSAGE = '`aggregationmodels` should contain 2 bucket aggregations. The first one should be a `term` aggregation. The second one should be a `histogram` OR `datehistogram` aggregation.';
     private INVALID_SWIMLANES_MESSAGE = '`swimlanes` property is mandatory and should contain at least one item.';

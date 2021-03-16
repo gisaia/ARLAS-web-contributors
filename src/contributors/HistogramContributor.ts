@@ -108,6 +108,10 @@ export class HistogramContributor extends Contributor {
     */
     public timeLabel;
     /**
+    * Wether use UTC for display time
+    */
+    public useUtc = this.getConfigValue('useUtc') !== undefined ? this.getConfigValue('useUtc') : true;
+    /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
@@ -178,7 +182,7 @@ export class HistogramContributor extends Contributor {
     * @param value DateType.millisecond | DateType.second
     */
     public valueChanged(values: SelectedOutputValues[]) {
-        const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService);
+        const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService, this.useUtc);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
@@ -240,7 +244,7 @@ export class HistogramContributor extends Contributor {
     }
 
     public setSelection(data: Array<{ key: number, value: number }>, collaboration: Collaboration): any {
-        const resultList = getSelectionToSet(data, collaboration);
+        const resultList = getSelectionToSet(data, collaboration, this.useUtc);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];
@@ -256,7 +260,7 @@ export class HistogramContributor extends Contributor {
         if (this.nbBuckets) {
             const agg = this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
             <ComputationRequest>{ filter: null, field: this.field, metric: ComputationRequest.MetricEnum.SPANNING }],
-            collaborations, identifier, additionalFilter, false, this.cacheDuration)
+                collaborations, identifier, additionalFilter, false, this.cacheDuration)
                 .pipe(
                     map((computationResponse: ComputationResponse) => {
                         const dataRange = (!!computationResponse.value) ? computationResponse.value : 0;
