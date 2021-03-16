@@ -517,7 +517,7 @@ export class LayerTopologySource extends LayerSource {
     public maxfeatures: number;
     public metrics: Array<MetricConfig>;
     public geometryId: string;
-    public geometrySupport: string;
+    public rawGeometry: RawGeometry;
     public granularity: Granularity;
     public providedFields: Array<ColorConfig>;
     public colorFields: Set<string>;
