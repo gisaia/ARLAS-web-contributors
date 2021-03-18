@@ -180,7 +180,7 @@ export interface LayerSourceConfig {
     raw_geometry?: RawGeometryConfig;
     granularity?: string;
     metrics?: Array<MetricConfig>;
-    filter?: Array<any>;
+    filters?: Array<any>;
 }
 
 export interface ColorConfig {
