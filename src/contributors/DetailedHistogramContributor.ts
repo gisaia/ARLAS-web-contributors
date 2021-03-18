@@ -19,8 +19,9 @@
 
 import { HistogramContributor } from './HistogramContributor';
 import { CollaborationEvent, OperationEnum, Collaboration } from 'arlas-web-core';
-import { AggregationResponse, Filter } from 'arlas-api';
+import { AggregationResponse, Filter, Aggregation } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json';
+import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 
 import { Observable, from } from 'rxjs';
 import { DateExpression, SelectedOutputValues } from '../models/models';
@@ -97,6 +98,12 @@ export class DetailedHistogramContributor extends HistogramContributor {
         } else {
             return from([]);
         }
+    }
+
+    public init(aggregations: Array<Aggregation>, field: string, jsonPath: string) {
+        this.aggregations = aggregations;
+        this.field = field;
+        this.json_path = jsonPath;
     }
 
     private cloneAnnexedContributorFilter(annexedContributorColloaboration: Collaboration): Filter {

@@ -82,7 +82,7 @@ export class HistogramContributor extends Contributor {
     /**
     * Json path to explore element aggregation, count by default
     */
-    private json_path: string = this.getConfigValue('jsonpath') !== undefined ? this.getConfigValue('jsonpath') : '$.count';
+    protected json_path: string = this.getConfigValue('jsonpath') !== undefined ? this.getConfigValue('jsonpath') : '$.count';
     /**
     * Number of buckets in the histogram. If not specified, the interval in the aggregagtion model is used instead.
     */
@@ -90,7 +90,7 @@ export class HistogramContributor extends Contributor {
     /**
     * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
     */
-    protected field: string = (this.aggregations !== undefined) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
+    protected field: string = (!!this.aggregations) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
     /**
     * Start value of selection use to the display of filterDisplayName
     */
@@ -123,8 +123,9 @@ export class HistogramContributor extends Contributor {
         configService: ConfigService, protected isOneDimension?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
-        const lastAggregation: Aggregation = this.aggregations[this.aggregations.length - 1];
-        if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
+        const lastAggregation: Aggregation = !!this.aggregations ? this.aggregations[this.aggregations.length - 1] : undefined;
+        if (!!lastAggregation && lastAggregation.type.toString().toLocaleLowerCase() ===
+            Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
             this.timeShortcuts = getPredefinedTimeShortcuts()
                 .filter(ts => ts.type.indexOf('year') < 0);
             if (this.timeShortcutsLabels) {
@@ -143,12 +144,28 @@ export class HistogramContributor extends Contributor {
         return this.nbBuckets;
     }
 
+    public setNbBuckets(nbBuckets: number): void {
+        this.nbBuckets = nbBuckets;
+    }
+
     public getField() {
         return this.field;
     }
 
+    public setField(field) {
+        this.field = field;
+    }
+
+    public getJsonPath() {
+        return this.json_path;
+    }
+
     public getAggregations() {
         return this.aggregations;
+    }
+
+    public setAggregations(aggregations: Array<Aggregation>) {
+        this.aggregations = aggregations;
     }
 
     public static getJsonSchema(): Object {
