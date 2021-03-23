@@ -1,5 +1,17 @@
 # Change Log
 
+## [v16.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.0) (2021-03-23)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.2...v16.0.0)
+
+**New stuff:**
+
+- \[TREE\] color the node by a provided field  [\#365](https://github.com/gisaia/ARLAS-web-contributors/issues/365)
+
+**Fixed bugs:**
+
+- \[MAP\] generated colors from a field uses a suffix '\_color' that is not descriminant enough [\#366](https://github.com/gisaia/ARLAS-web-contributors/issues/366)
+
 ## [v15.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.2) (2021-02-25)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.1...v15.0.2)
