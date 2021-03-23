@@ -542,11 +542,11 @@ export class MapContributor extends Contributor {
                 const nbFeaturesSourcesToRemove = displayableSources[3];
                 const alreadyRemovedSources = new Set(zoomSourcesToRemove);
                 nbFeaturesSourcesToRemove.filter(s => !this.topologyLayersIndex.has(s) && !alreadyRemovedSources.has(s)).forEach(s => {
-                     /**Removes the sources (cluster, feature) from mapcomponent that don't respect nbfeatures rule visibility*/
-                     this.redrawSource.next({ source: s, data: [] });
-                     /** sources are kept in the contributor to avoid recalling arlas-server.
-                      * The sources are only cleaned if filters change
-                      */
+                    /**Removes the sources (cluster, feature) from mapcomponent that don't respect nbfeatures rule visibility*/
+                    this.redrawSource.next({ source: s, data: [] });
+                    /** sources are kept in the contributor to avoid recalling arlas-server.
+                     * The sources are only cleaned if filters change
+                     */
                 });
                 const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
                 const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.visibility_rules);
@@ -930,8 +930,10 @@ export class MapContributor extends Contributor {
                     delete feature.properties.feature_type;
                     delete feature.properties.md;
                     const metricsKeys = this.searchSourcesMetrics.get(s);
+                    const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
+                        this.collectionParameters.id_path;
                     Object.keys(feature.properties).forEach(k => {
-                        if (metricsKeys && !this.isBeginingOfKeyInValues(k, metricsKeys) && k !== 'id') {
+                        if (metricsKeys && !this.isBeginingOfKeyInValues(k, metricsKeys) && k !== 'id' && k !== idPath) {
                             delete feature.properties[k];
                         }
                     });
