@@ -128,7 +128,7 @@ export class TreeContributor extends Contributor {
         });
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg, !!this.colorField, this.cacheDuration
+            this.identifier, filterAgg, false, this.cacheDuration
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
@@ -276,7 +276,7 @@ export class TreeContributor extends Contributor {
         }
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg, !!this.colorField, this.cacheDuration
+            this.identifier, filterAgg, false, this.cacheDuration
         );
 
         aggregationObservable.subscribe(aggregationResponse => {
@@ -357,6 +357,15 @@ export class TreeContributor extends Contributor {
         }
     }
 
+    private  getDeeper(obj, path, def) {
+        let current = obj;
+        for (let i = 0; i < path.length; i++) {
+            if (!current[path[i]]) { return def; }
+            current = current[path[i]];
+        }
+        return current;
+    }
+
     private populateChildren(nodeToPopulate: TreeNode, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
         const nodeChildren = nodeToPopulate.children;
         const field = this.aggregations[aggregationLevel].field;
@@ -378,10 +387,7 @@ export class TreeContributor extends Contributor {
                     fieldName: field, isOther: false, children: []
                 };
                 if (!!this.colorField) {
-                    if ( bucket.flattened_elements !== undefined
-                        && !!bucket.flattened_elements['hits_0_'.concat(this.colorField.replaceAll('.', '_'))]) {
-                            childNode.color = bucket.flattened_elements['hits_0_'.concat(this.colorField.replaceAll('.', '_'))];
-                    }
+                    childNode.color = this.getDeeper(bucket.hits[0], this.colorField.split('.'), 'D3D3D3');
                 }
                 relativeTotal += bucketMetricValue;
                 if (bucket.elements !== undefined && bucket.elements[0].elements !== undefined) {
