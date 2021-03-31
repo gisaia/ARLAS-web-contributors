@@ -360,7 +360,8 @@ export function getSourceName(ls: LayerSourceConfig): string {
             break;
         case 'feature-metric':
             sourceNameComponents.push(ls.geometry_id);
-            sourceNameComponents.push(ls.geometry_support);
+            sourceNameComponents.push(ls.raw_geometry.geometry);
+            sourceNameComponents.push(ls.raw_geometry.sort);
             sourceNameComponents.push(ls.granularity);
             break;
         case 'feature':
