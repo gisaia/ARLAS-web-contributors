@@ -76,22 +76,24 @@ export class DetailedHistogramContributor extends HistogramContributor {
                     const lastValue: string = valuesList[valuesList.length - 1];
                     const lastValueWithoutBrackets = lastValue.substring(1).slice(0, -1);
                     const intervals = lastValueWithoutBrackets.split('<');
-                    let min;
-                    let max;
-                    if (Number(intervals[0]) && Number(intervals[1])) {
-                        min = Number(intervals[0]);
-                        max = Number(intervals[1]);
-                    } else {
-                        min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false, this.useUtc);
-                        max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true, this.useUtc);
+                    if (!!intervals && intervals.length === 2) {
+                        let min;
+                        let max;
+                        if (Number(intervals[0]).toString() !== 'NaN' && Number(intervals[1]).toString() !== 'NaN') {
+                            min = Number(intervals[0]);
+                            max = Number(intervals[1]);
+                        } else {
+                            min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false, this.useUtc);
+                            max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true, this.useUtc);
+                        }
+                        const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
+                        const minOffset = Math.trunc(min - offset);
+                        const maxOffset = Math.trunc(max + offset);
+                        expression.value = '[' + minOffset + '<' + maxOffset + ']';
+                        // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
+                        additionalFilter.f = [additionalFilter.f[0]];
+                        this.currentSelectedInterval = { startvalue: min, endvalue: max };
                     }
-                    const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
-                    const minOffset = Math.trunc(min - offset);
-                    const maxOffset = Math.trunc(max + offset);
-                    expression.value = '[' + minOffset + '<' + maxOffset + ']';
-                    // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
-                    additionalFilter.f = [additionalFilter.f[0]];
-                    this.currentSelectedInterval = { startvalue: min, endvalue: max };
                 }
             }
             return this.fetchDataGivenFilter(this.annexedContributorId, additionalFilter);
