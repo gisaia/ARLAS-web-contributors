@@ -1,5 +1,13 @@
 # Change Log
 
+## [v16.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.2) (2021-04-12)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.1...v16.0.2)
+
+**Fixed bugs:**
+
+- Detailed histograms doesn't show when one of the selection handles equals to 0 [\#385](https://github.com/gisaia/ARLAS-web-contributors/issues/385)
+
 ## [v16.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.1) (2021-03-31)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.0...v16.0.1)
