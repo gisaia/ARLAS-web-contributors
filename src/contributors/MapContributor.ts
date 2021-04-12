@@ -1927,7 +1927,7 @@ export class MapContributor extends Contributor {
         let metrics = this.aggSourcesMetrics.get(source);
         const key = metricConfig.field.replace(/\./g, this.FLAT_CHAR) + '_' + metricConfig.metric.toString().toLowerCase() + '_';
         let normalizeKey = metricConfig.normalize ? key + NORMALIZE : key;
-        if (!key.includes('_' + COUNT)) {
+        if (!key.endsWith('_' + COUNT)) {
             if (!metrics || (!metrics.has(key) && !metrics.has(normalizeKey))) {
                 aggregation.metrics.push({
                     collect_field: metricConfig.field,
