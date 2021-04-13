@@ -1306,15 +1306,15 @@ export class MapContributor extends Contributor {
                                 const countValue = feature.properties.count;
                                 metricsKeys.forEach(key => {
                                     const realKey = key.replace(NORMALIZE, '');
-                                    if (key.includes(SUM)) {
+                                    if (key.endsWith(SUM) || key.endsWith(SUM + NORMALIZE)) {
                                         feature.properties[realKey] += existingGeohash.properties[realKey];
-                                    } else if (key.includes(MAX)) {
+                                    } else if (key.endsWith(MAX) || key.endsWith(MAX + NORMALIZE)) {
                                         feature.properties[realKey] = (feature.properties[realKey] > existingGeohash.properties[realKey]) ?
                                             feature.properties[realKey] : existingGeohash.properties[realKey];
-                                    } else if (key.includes(MIN)) {
+                                    } else if (key.endsWith(MIN) || key.endsWith(MIN + NORMALIZE)) {
                                         feature.properties[realKey] = (feature.properties[realKey] < existingGeohash.properties[realKey]) ?
                                             feature.properties[realKey] : existingGeohash.properties[realKey];
-                                    } else if (key.includes(AVG)) {
+                                    } else if (key.endsWith(AVG) || key.endsWith(AVG + NORMALIZE)) {
                                         /** calculates a weighted average. existing geohash feature is already weighted */
                                         feature.properties[realKey] = feature.properties[realKey] *
                                             countValue + existingGeohash.properties[realKey];
@@ -1340,7 +1340,7 @@ export class MapContributor extends Contributor {
                         if (metricsKeys) {
                             const countValue = feature.properties.count;
                             metricsKeys.forEach(key => {
-                                if (key.includes(AVG)) {
+                                if (key.endsWith(AVG) || key.endsWith(AVG + NORMALIZE)) {
                                     const realKey = key.replace(NORMALIZE, '');
                                     feature.properties[realKey] = feature.properties[realKey] * countValue;
                                 }
@@ -1927,7 +1927,7 @@ export class MapContributor extends Contributor {
         let metrics = this.aggSourcesMetrics.get(source);
         const key = metricConfig.field.replace(/\./g, this.FLAT_CHAR) + '_' + metricConfig.metric.toString().toLowerCase() + '_';
         let normalizeKey = metricConfig.normalize ? key + NORMALIZE : key;
-        if (!key.endsWith('_' + COUNT)) {
+        if (!key.endsWith('_' + COUNT + '_')) {
             if (!metrics || (!metrics.has(key) && !metrics.has(normalizeKey))) {
                 aggregation.metrics.push({
                     collect_field: metricConfig.field,
@@ -1945,7 +1945,7 @@ export class MapContributor extends Contributor {
                 }
             }
         } else {
-            normalizeKey = normalizeKey.includes(NORMALIZED_COUNT) ? NORMALIZED_COUNT : COUNT;
+            normalizeKey = normalizeKey.endsWith(NORMALIZED_COUNT) ? NORMALIZED_COUNT : COUNT;
         }
         if (!metrics) { metrics = new Set(); }
         metrics.add(normalizeKey);
@@ -1970,16 +1970,15 @@ export class MapContributor extends Contributor {
         if (metricsKeys) {
             /** prepare normalization by calculating the min and max values of each metrics that is to be normalized */
             metricsKeys.forEach(key => {
-                if (key.includes(SUM) || key.includes(MAX) || key.includes(MIN) || key.includes(AVG)) {
-                    if (key.endsWith(NORMALIZE)) {
-                        const keyWithoutNormalize = key.replace(NORMALIZE, '');
-                        if (!stats[key]) { stats[key] = { min: Number.MAX_VALUE, max: Number.MIN_VALUE }; }
-                        if (stats[key].max < feature.properties[keyWithoutNormalize]) {
-                            stats[key].max = feature.properties[keyWithoutNormalize];
-                        }
-                        if (stats[key].min > feature.properties[keyWithoutNormalize]) {
-                            stats[key].min = feature.properties[keyWithoutNormalize];
-                        }
+                if (key.endsWith(SUM + NORMALIZE) || key.endsWith(MAX + NORMALIZE) ||
+                    key.endsWith(MIN + NORMALIZE) || key.endsWith(AVG + NORMALIZE)) {
+                    const keyWithoutNormalize = key.replace(NORMALIZE, '');
+                    if (!stats[key]) { stats[key] = { min: Number.MAX_VALUE, max: Number.MIN_VALUE }; }
+                    if (stats[key].max < feature.properties[keyWithoutNormalize]) {
+                        stats[key].max = feature.properties[keyWithoutNormalize];
+                    }
+                    if (stats[key].min > feature.properties[keyWithoutNormalize]) {
+                        stats[key].min = feature.properties[keyWithoutNormalize];
                     }
                 }
             });
@@ -2304,7 +2303,7 @@ export class MapContributor extends Contributor {
         }
         Object.keys(feature.properties).forEach(k => {
             const metricStats = Object.assign({}, sourceStats[k]);
-            if (k.includes(AVG) && isWeightedAverage) {
+            if ((k.endsWith(AVG) || k.endsWith(AVG + NORMALIZE)) && isWeightedAverage) {
                 /** completes the weighted average calculus by dividing by the total count */
                 feature.properties[k] = feature.properties[k] / feature.properties.count;
                 if (metricStats) {
