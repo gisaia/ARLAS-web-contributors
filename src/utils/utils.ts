@@ -19,9 +19,9 @@
 
 import * as FileSaver from 'file-saver';
 import jp from 'jsonpath/jsonpath.min';
-import { Hits } from 'arlas-api';
+import { Hits, Aggregation } from 'arlas-api';
 import { mix } from 'tinycolor2';
-import { LayerSourceConfig } from '../models/models';
+import { LayerSourceConfig, ClusterAggType } from '../models/models';
 
 
 export class ColorGeneratorLoader {
@@ -201,20 +201,6 @@ export function getFieldValue(field: string, data: Hits): any {
     return result;
 }
 
-export function coarseGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
-    if (zoom >= 0 && zoom < 4) {
-        return { tilesPrecision: 1, requestsPrecision: 2 };
-    } else if (zoom >= 4 && zoom < 7) {
-        return { tilesPrecision: 1, requestsPrecision: 3 };
-    } else if (zoom >= 7 && zoom < 10) {
-        return { tilesPrecision: 2, requestsPrecision: 4 };
-    } else if (zoom >= 10 && zoom < 13) {
-        return { tilesPrecision: 3, requestsPrecision: 5 };
-    } else if (zoom >= 13) {
-        return { tilesPrecision: 4, requestsPrecision: 6 };
-    }
-}
-
 export function coarseTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
@@ -228,57 +214,153 @@ export function finestTopoGranularity(zoom: number): { tilesPrecision: number, r
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
 
-export function mediumGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
-    if (zoom >= 0 && zoom < 3) {
-        return { tilesPrecision: 1, requestsPrecision: 2 };
-    } else if (zoom >= 3 && zoom < 6) {
-        return { tilesPrecision: 1, requestsPrecision: 3 };
-    } else if (zoom >= 6 && zoom < 9) {
-        return { tilesPrecision: 2, requestsPrecision: 4 };
-    } else if (zoom >= 9 && zoom < 12) {
-        return { tilesPrecision: 3, requestsPrecision: 5 };
-    } else if (zoom >= 12 && zoom < 15) {
-        return { tilesPrecision: 4, requestsPrecision: 6 };
-    } else if (zoom >= 15) {
-        return { tilesPrecision: 5, requestsPrecision: 7 };
+export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+    if (!type) {
+        type = Aggregation.TypeEnum.Geohash;
+    }
+    if (type === Aggregation.TypeEnum.Geohash) {
+        if (zoom >= 0 && zoom < 4) {
+            return { tilesPrecision: 1, requestsPrecision: 2 };
+        } else if (zoom >= 4 && zoom < 7) {
+            return { tilesPrecision: 1, requestsPrecision: 3 };
+        } else if (zoom >= 7 && zoom < 10) {
+            return { tilesPrecision: 2, requestsPrecision: 4 };
+        } else if (zoom >= 10 && zoom < 13) {
+            return { tilesPrecision: 3, requestsPrecision: 5 };
+        } else if (zoom >= 13) {
+            return { tilesPrecision: 4, requestsPrecision: 6 };
+        }
+    } else {
+        if (zoom >= 0 && zoom < 4) {
+            return { tilesPrecision: 2, requestsPrecision: 2 };
+        } else if (zoom >= 4 && zoom < 7) {
+            return { tilesPrecision: 5, requestsPrecision: 7 };
+        } else if (zoom >= 7 && zoom < 10) {
+            return { tilesPrecision: 8, requestsPrecision: 10 };
+        } else if (zoom >= 10 && zoom < 13) {
+            return { tilesPrecision: 11, requestsPrecision: 13 };
+        } else if (zoom >= 13) {
+            return { tilesPrecision: 14, requestsPrecision: 16 };
+        }
     }
 }
 
-export function fineGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
-    if (zoom >= 0 && zoom < 2) {
-        return { tilesPrecision: 1, requestsPrecision: 2 };
-    } else if (zoom >= 2 && zoom < 5) {
-        return { tilesPrecision: 1, requestsPrecision: 3 };
-    } else if (zoom >= 5 && zoom < 8) {
-        return { tilesPrecision: 2, requestsPrecision: 4 };
-    } else if (zoom >= 8 && zoom < 10.5) {
-        return { tilesPrecision: 3, requestsPrecision: 5 };
-    } else if (zoom >= 10.5 && zoom < 14) {
-        return { tilesPrecision: 4, requestsPrecision: 6 };
-    } else if (zoom >= 14 && zoom < 17) {
-        return { tilesPrecision: 5, requestsPrecision: 7 };
-    } else if (zoom >= 17) {
-        return { tilesPrecision: 6, requestsPrecision: 8 };
+export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+    if (!type) {
+        type = Aggregation.TypeEnum.Geohash;
+    }
+    if (type === Aggregation.TypeEnum.Geohash) {
+        if (zoom >= 0 && zoom < 3) {
+            return { tilesPrecision: 1, requestsPrecision: 2 };
+        } else if (zoom >= 3 && zoom < 6) {
+            return { tilesPrecision: 1, requestsPrecision: 3 };
+        } else if (zoom >= 6 && zoom < 9) {
+            return { tilesPrecision: 2, requestsPrecision: 4 };
+        } else if (zoom >= 9 && zoom < 12) {
+            return { tilesPrecision: 3, requestsPrecision: 5 };
+        } else if (zoom >= 12 && zoom < 15) {
+            return { tilesPrecision: 4, requestsPrecision: 6 };
+        } else if (zoom >= 15) {
+            return { tilesPrecision: 5, requestsPrecision: 7 };
+        }
+    } else {
+        if (zoom >= 0 && zoom < 3) {
+            return { tilesPrecision: 1, requestsPrecision: 4 };
+        } else if (zoom >= 3 && zoom < 6) {
+            return { tilesPrecision: 4, requestsPrecision: 7 };
+        } else if (zoom >= 6 && zoom < 9) {
+            return { tilesPrecision: 7, requestsPrecision: 10 };
+        } else if (zoom >= 9 && zoom < 12) {
+            return { tilesPrecision: 10, requestsPrecision: 13 };
+        } else if (zoom >= 12 && zoom < 15) {
+            return { tilesPrecision: 13, requestsPrecision: 16 };
+        } else if (zoom >= 15) {
+            return { tilesPrecision: 16, requestsPrecision: 19 };
+        }
+
     }
 }
 
-export function finestGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
-    if (zoom >= 0 && zoom < 3) {
-        return { tilesPrecision: 1, requestsPrecision: 3 };
-    } else if (zoom >= 3 && zoom < 5) {
-        return { tilesPrecision: 1, requestsPrecision: 4 };
-    } else if (zoom >= 5 && zoom < 8) {
-        return { tilesPrecision: 2, requestsPrecision: 5 };
-    } else if (zoom >= 8 && zoom < 11) {
-        return { tilesPrecision: 3, requestsPrecision: 6 };
-    } else if (zoom >= 11 && zoom < 14) {
-        return { tilesPrecision: 4, requestsPrecision: 7 };
-    } else if (zoom >= 14 && zoom < 17) {
-        return { tilesPrecision: 5, requestsPrecision: 8 };
-    } else if (zoom >= 17 && zoom < 20) {
-        return { tilesPrecision: 6, requestsPrecision: 9 };
-    } else if (zoom >= 20) {
-        return { tilesPrecision: 7, requestsPrecision: 10 };
+export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+    if (!type) {
+        type = Aggregation.TypeEnum.Geohash;
+    }
+    if (type === Aggregation.TypeEnum.Geohash) {
+        if (zoom >= 0 && zoom < 2) {
+            return { tilesPrecision: 1, requestsPrecision: 2 };
+        } else if (zoom >= 2 && zoom < 5) {
+            return { tilesPrecision: 1, requestsPrecision: 3 };
+        } else if (zoom >= 5 && zoom < 8) {
+            return { tilesPrecision: 2, requestsPrecision: 4 };
+        } else if (zoom >= 8 && zoom < 10.5) {
+            return { tilesPrecision: 3, requestsPrecision: 5 };
+        } else if (zoom >= 10.5 && zoom < 14) {
+            return { tilesPrecision: 4, requestsPrecision: 6 };
+        } else if (zoom >= 14 && zoom < 17) {
+            return { tilesPrecision: 5, requestsPrecision: 7 };
+        } else if (zoom >= 17) {
+            return { tilesPrecision: 6, requestsPrecision: 8 };
+        }
+    } else {
+        if (zoom >= 0 && zoom < 2) {
+            return { tilesPrecision: 1, requestsPrecision: 5 };
+        } else if (zoom >= 2 && zoom < 5) {
+            return { tilesPrecision: 2, requestsPrecision: 7 };
+        } else if (zoom >= 5 && zoom < 8) {
+            return { tilesPrecision: 5, requestsPrecision: 10 };
+        } else if (zoom >= 8 && zoom < 10.5) {
+            return { tilesPrecision: 8, requestsPrecision: 13 };
+        } else if (zoom >= 10.5 && zoom < 14) {
+            return { tilesPrecision: 11, requestsPrecision: 16 };
+        } else if (zoom >= 14 && zoom < 17) {
+            return { tilesPrecision: 14, requestsPrecision: 19 };
+        } else if (zoom >= 17) {
+            return { tilesPrecision: 17, requestsPrecision: 22 };
+        }
+    }
+}
+
+export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+    if (!type) {
+        type = Aggregation.TypeEnum.Geohash;
+    }
+    if (type === Aggregation.TypeEnum.Geohash) {
+        if (zoom >= 0 && zoom < 3) {
+            return { tilesPrecision: 1, requestsPrecision: 3 };
+        } else if (zoom >= 3 && zoom < 5) {
+            return { tilesPrecision: 1, requestsPrecision: 4 };
+        } else if (zoom >= 5 && zoom < 8) {
+            return { tilesPrecision: 2, requestsPrecision: 5 };
+        } else if (zoom >= 8 && zoom < 11) {
+            return { tilesPrecision: 3, requestsPrecision: 6 };
+        } else if (zoom >= 11 && zoom < 14) {
+            return { tilesPrecision: 4, requestsPrecision: 7 };
+        } else if (zoom >= 14 && zoom < 17) {
+            return { tilesPrecision: 5, requestsPrecision: 8 };
+        } else if (zoom >= 17 && zoom < 20) {
+            return { tilesPrecision: 6, requestsPrecision: 9 };
+        } else if (zoom >= 20) {
+            return { tilesPrecision: 7, requestsPrecision: 10 };
+        }
+    } else {
+
+        if (zoom >= 0 && zoom < 3) {
+            return { tilesPrecision: 1, requestsPrecision: 7 };
+        } else if (zoom >= 3 && zoom < 5) {
+            return { tilesPrecision: 4, requestsPrecision: 10 };
+        } else if (zoom >= 5 && zoom < 8) {
+            return { tilesPrecision: 7, requestsPrecision: 13 };
+        } else if (zoom >= 8 && zoom < 11) {
+            return { tilesPrecision: 10, requestsPrecision: 16 };
+        } else if (zoom >= 11 && zoom < 14) {
+            return { tilesPrecision: 13, requestsPrecision: 19 };
+        } else if (zoom >= 14 && zoom < 17) {
+            return { tilesPrecision: 16, requestsPrecision: 22 };
+        } else if (zoom >= 17 && zoom < 20) {
+            return { tilesPrecision: 19, requestsPrecision: 24 };
+        } else if (zoom >= 20) {
+            return { tilesPrecision: 21, requestsPrecision: 26 };
+        }
     }
 }
 
@@ -351,6 +433,7 @@ export function getSourceName(ls: LayerSourceConfig): string {
         case 'cluster':
             sourceNameComponents.push(ls.agg_geo_field);
             sourceNameComponents.push(ls.granularity);
+            sourceNameComponents.push(ls.aggType);
             if (ls.aggregated_geometry) {
                 sourceNameComponents.push(ls.aggregated_geometry);
             } else {

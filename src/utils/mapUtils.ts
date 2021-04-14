@@ -37,7 +37,7 @@ export function getBounds(elementidentifier: ElementIdentifier, collaborativeSea
 }
 
 export function extentToGeohashes(extent: Array<number>, zoom: number,
-    granularityFunction: (zoom: number) => {tilesPrecision: number, requestsPrecision: number}): Set<string> {
+    granularityFunction: (zoom: number, clusterType?) => {tilesPrecision: number, requestsPrecision: number}): Set<string> {
     let geohashList = [];
     const west = extent[1];
     const east = extent[3];

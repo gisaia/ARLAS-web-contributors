@@ -23,7 +23,7 @@ import { map, finalize, mergeAll, tap, takeUntil } from 'rxjs/operators';
 import {
     CollaborativesearchService, Contributor,
     ConfigService, Collaboration,
-    projType, GeohashAggregation, TiledSearch, CollaborationEvent
+    projType, GeohashAggregation, TiledSearch, CollaborationEvent, GeoTileAggregation
 } from 'arlas-web-core';
 import {
     Search, Expression, Hits, CollectionReferenceParameters,
@@ -33,7 +33,7 @@ import {
 import {
     OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
-    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig
+    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
@@ -49,7 +49,6 @@ import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, exte
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import moment from 'moment';
-import { RawGeometry } from 'arlas-api';
 
 export enum DataMode {
     simple,
@@ -116,8 +115,8 @@ export class MapContributor extends Contributor {
     private visibiltyRulesIndex: Map<string, { type: string, minzoom: number, maxzoom: number, nbfeatures: number }> = new Map();
 
     /**Cluster data support */
-    private geohashesPerSource: Map<string, Map<string, Feature>> = new Map();
-    private parentGeohashesPerSource: Map<string, Set<string>> = new Map();
+    private cellsPerSource: Map<string, Map<string, Feature>> = new Map();
+    private parentCellsPerSource: Map<string, Set<string>> = new Map();
 
     /**Topology data support */
     private topologyDataPerSource: Map<string, Array<Feature>> = new Map();
@@ -131,7 +130,7 @@ export class MapContributor extends Contributor {
     private searchSourcesMetrics: Map<string, Set<string>> = new Map();
     private sourcesVisitedTiles: Map<string, Set<string>> = new Map();
     private sourcesPrecisions: Map<string, { tilesPrecision?: number, requestsPrecision?: number }> = new Map();
-    private granularityClusterFunctions: Map<Granularity, (zoom: number) =>
+    private granularityClusterFunctions: Map<Granularity, (zoom: number, type: Aggregation.TypeEnum) =>
         { tilesPrecision: number, requestsPrecision: number }> = new Map();
     private granularityTopologyFunctions: Map<Granularity, (zoom: number) =>
         { tilesPrecision: number, requestsPrecision: number }> = new Map();
@@ -313,11 +312,11 @@ export class MapContributor extends Contributor {
         this.sourcesPrecisions.clear();
         this.sourcesVisitedTiles.clear();
         this.topologyDataPerSource.clear();
-        this.geohashesPerSource.clear();
+        this.cellsPerSource.clear();
         this.featureDataPerSource.clear();
         this.featuresIdsIndex.clear();
         this.featuresOldExtent.clear();
-        this.parentGeohashesPerSource.clear();
+        this.parentCellsPerSource.clear();
         this.searchNormalizations.clear();
         this.searchSourcesMetrics.clear();
         this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, this.visibleSources);
@@ -867,7 +866,6 @@ export class MapContributor extends Contributor {
                             legendData = { minValue: 'Small', maxValue: 'High' };
                         }
                         this.legendData.set(normalizeField + NORMALIZE_PER_KEY + perField, legendData);
-
                     } else {
                         const minMax = n.minMax;
                         const featureData = this.featureDataPerSource.get(s);
@@ -1011,17 +1009,19 @@ export class MapContributor extends Contributor {
     public renderClusterSources(sources: Array<string>): void {
         sources.forEach(s => {
             this.redrawSource.next({ source: s, data: [] });
-            const sourceGeohashes = this.geohashesPerSource.get(s);
+            const sourceCells = this.cellsPerSource.get(s);
             const stats = this.aggSourcesStats.get(s);
             const sourceData = [];
-            if (sourceGeohashes) {
-                sourceGeohashes.forEach((f, geohash) => {
+            if (sourceCells) {
+                sourceCells.forEach((f, key) => {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
                     delete feature.properties.geohash;
                     delete feature.properties.parent_geohash;
+                    delete feature.properties.tile;
+                    delete feature.properties.parent_tile;
                     this.cleanRenderedAggFeature(s, feature, new Set(), true);
                     sourceData.push(feature);
                 });
@@ -1088,21 +1088,37 @@ export class MapContributor extends Contributor {
     }
     public resolveAggSources(visitedTiles: Set<string>, aggId: string, aggregation: Aggregation):
         Observable<FeatureCollection> {
-        console.log('++ Fetch Agg data');
-        const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
+        const tabOfCells: Array<Observable<FeatureCollection>> = [];
         const control = this.abortControllers.get(aggId);
-        visitedTiles.forEach(geohash => {
-            const geohahsAggregation: GeohashAggregation = {
-                geohash: geohash,
-                aggregations: [aggregation]
-            };
-            const geoAggregateData: Observable<FeatureCollection> =
-                this.collaborativeSearcheService.resolveButNotFeatureCollectionWithAbort(
-                    [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
-                    this.isFlat, control.signal, null, this.additionalFilter, this.cacheDuration);
-            tabOfGeohash.push(geoAggregateData);
-        });
-        return from(tabOfGeohash).pipe(mergeAll());
+        if (aggregation.type === Aggregation.TypeEnum.Geohash) {
+            visitedTiles.forEach(geohash => {
+                const geohahsAggregation: GeohashAggregation = {
+                    geohash: geohash,
+                    aggregations: [aggregation]
+                };
+                const geoAggregateData: Observable<FeatureCollection> =
+                    this.collaborativeSearcheService.resolveButNotFeatureCollectionWithAbort(
+                        [projType.geohashgeoaggregate, geohahsAggregation], this.collaborativeSearcheService.collaborations,
+                        this.isFlat, control.signal, null, this.additionalFilter, this.cacheDuration);
+                tabOfCells.push(geoAggregateData);
+            });
+        } else {
+            visitedTiles.forEach(x_y_z => {
+                const geotileAggregation: GeoTileAggregation = {
+                    x: Number.parseFloat(x_y_z.split('_')[0]),
+                    y: Number.parseFloat(x_y_z.split('_')[1]),
+                    z: Number.parseFloat(x_y_z.split('_')[2]),
+                    aggregations: [aggregation]
+                };
+                const geoAggregateData: Observable<FeatureCollection> =
+                    this.collaborativeSearcheService.resolveButNotFeatureCollectionWithAbort(
+                        [projType.geotilegeoaggregate, geotileAggregation], this.collaborativeSearcheService.collaborations,
+                        this.isFlat, control.signal, null, this.additionalFilter, this.cacheDuration);
+                tabOfCells.push(geoAggregateData);
+            });
+        }
+
+        return from(tabOfCells).pipe(mergeAll());
     }
 
     public fetchTiledSearchSources(extent: Array<number>, searches: Map<string, SourcesSearch>) {
@@ -1172,10 +1188,10 @@ export class MapContributor extends Contributor {
             } else if (aggType === this.TOPOLOGY_SOURCE) {
                 granularity = this.topologyLayersIndex.get(aggSource.sources[0]).granularity;
             }
-            const newVisitedTiles = this.getVisitedTiles(extent, zoom, granularity, aggSource, aggType);
             let count = 0;
+            const newVisitedTiles = this.getVisitedTiles(extent, zoom, granularity, aggSource, aggType);
             const totalcount = newVisitedTiles.size;
-            if (newVisitedTiles.size > 0) {
+            if (totalcount > 0) {
                 this.collaborativeSearcheService.ongoingSubscribe.next(1);
                 const lastCall = this.lastCalls.get(aggId);
                 const renderRetries = [];
@@ -1285,56 +1301,79 @@ export class MapContributor extends Contributor {
         const source_geometry_index = new Map();
         aggSource.sources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
-            const geometryRef = ls.aggregatedGeometry ? ls.aggregatedGeometry : ls.rawGeometry.geometry + '-' + ls.rawGeometry.sort;
+            const aggType = !! ls.type ? ls.type.toString() : 'geohash';
+            const geometryRef = ls.aggregatedGeometry ? ls.aggregatedGeometry + '-' + aggType.toString() :
+                ls.rawGeometry.geometry + '-' + ls.rawGeometry.sort + '-' + aggType.toString();
             geometry_source_index.set(geometryRef, cs);
             source_geometry_index.set(cs, geometryRef);
         });
-        const parentGeohashesPerSource = new Map();
+        const parentCellsPerSource = new Map();
         if (featureCollection && featureCollection.features !== undefined) {
             featureCollection.features.forEach(feature => {
                 delete feature.properties.key;
                 delete feature.properties.key_as_string;
+                let aggType;
+                if (!!feature.properties.geohash) {
+                    aggType = 'geohash';
+                }
+                if (!!feature.properties.tile) {
+                    aggType = 'tile';
+                }
                 const geometryRef = feature.properties.geometry_sort ?
-                    feature.properties.geometry_ref + '-' + feature.properties.geometry_sort : feature.properties.geometry_ref;
-                /** Here a feature is a geohash. */
-                /** We check if the geohash is already displayed in the map */
-                const gmap = this.geohashesPerSource.get(geometry_source_index.get(geometryRef));
-                const existingGeohash = gmap ? gmap.get(feature.properties.geohash) : null;
-                if (existingGeohash) {
-                    /** parent_geohash corresponds to the geohash tile on which we applied the geoaggregation */
+                    feature.properties.geometry_ref + '-' + feature.properties.geometry_sort + '-'
+                    + aggType : feature.properties.geometry_ref + '-' + aggType;
+                /** Here a feature is a geohash or tile. */
+                /** We check if the geohash or tile is already displayed in the map */
+                const gmap = this.cellsPerSource.get(geometry_source_index.get(geometryRef));
+                let existingCells;
+                if (!!feature.properties.geohash) {
+                    existingCells = gmap ? gmap.get(feature.properties.geohash) : null;
+                }
+                if (!!feature.properties.tile) {
+                    existingCells = gmap ? gmap.get(feature.properties.tile) : null;
+                }
+                if (existingCells) {
+                    /** parent_geohash or parent_tile corresponds to the geohash or tile on which we applied the geoaggregation */
                     aggSource.sources.forEach(source => {
-                        const parentGeohashes = this.parentGeohashesPerSource.get(source);
+                        const parentCells = this.parentCellsPerSource.get(source);
                         const metricsKeys = this.aggSourcesMetrics.get(source);
-                        if (!parentGeohashes.has(feature.properties.parent_geohash)) {
-                            /** when this tile (parent_geohash) is requested for the first time we merge the counts */
+                        let parentCellsTest;
+                        if (!!feature.properties.geohash) {
+                            parentCellsTest = !parentCells.has(feature.properties.parent_geohash);
+                        }
+                        if (!!feature.properties.tile) {
+                            parentCellsTest = !parentCells.has(feature.properties.parent_tile);
+                        }
+                        if (parentCellsTest) {
+                            /** when this tile (parent_geohash or parent_tile) is requested for the first time we merge the counts */
                             if (metricsKeys) {
                                 const countValue = feature.properties.count;
                                 metricsKeys.forEach(key => {
                                     const realKey = key.replace(NORMALIZE, '');
                                     if (key.endsWith(SUM) || key.endsWith(SUM + NORMALIZE)) {
-                                        feature.properties[realKey] += existingGeohash.properties[realKey];
+                                        feature.properties[realKey] += existingCells.properties[realKey];
                                     } else if (key.endsWith(MAX) || key.endsWith(MAX + NORMALIZE)) {
-                                        feature.properties[realKey] = (feature.properties[realKey] > existingGeohash.properties[realKey]) ?
-                                            feature.properties[realKey] : existingGeohash.properties[realKey];
+                                        feature.properties[realKey] = (feature.properties[realKey] > existingCells.properties[realKey]) ?
+                                            feature.properties[realKey] : existingCells.properties[realKey];
                                     } else if (key.endsWith(MIN) || key.endsWith(MIN + NORMALIZE)) {
-                                        feature.properties[realKey] = (feature.properties[realKey] < existingGeohash.properties[realKey]) ?
-                                            feature.properties[realKey] : existingGeohash.properties[realKey];
+                                        feature.properties[realKey] = (feature.properties[realKey] < existingCells.properties[realKey]) ?
+                                            feature.properties[realKey] : existingCells.properties[realKey];
                                     } else if (key.endsWith(AVG) || key.endsWith(AVG + NORMALIZE)) {
                                         /** calculates a weighted average. existing geohash feature is already weighted */
                                         feature.properties[realKey] = feature.properties[realKey] *
-                                            countValue + existingGeohash.properties[realKey];
+                                            countValue + existingCells.properties[realKey];
                                     }
                                 });
                             }
-                            feature.properties.count = feature.properties.count + existingGeohash.properties.count;
+                            feature.properties.count = feature.properties.count + existingCells.properties.count;
                         } else {
                             /** when the tile has already been visited. (This can happen when we load the app for the first time),
                              * then we don't merge */
-                            feature.properties.count = existingGeohash.properties.count;
+                            feature.properties.count = existingCells.properties.count;
                             if (metricsKeys) {
                                 metricsKeys.forEach(key => {
                                     const realKey = key.replace(NORMALIZE, '');
-                                    feature.properties[realKey] = existingGeohash.properties[realKey];
+                                    feature.properties[realKey] = existingCells.properties[realKey];
                                 });
                             }
                         }
@@ -1355,31 +1394,41 @@ export class MapContributor extends Contributor {
                 }
                 aggSource.sources.forEach(source => {
                     if (geometryRef === source_geometry_index.get(source)) {
-                        let geohashesMap = this.geohashesPerSource.get(source);
-                        if (!geohashesMap) {
-                            geohashesMap = new Map();
+                        let cellsMap = this.cellsPerSource.get(source);
+                        if (!cellsMap) {
+                            cellsMap = new Map();
                         }
-                        geohashesMap.set(feature.properties.geohash, feature);
-                        this.geohashesPerSource.set(source, geohashesMap);
-                        parentGeohashesPerSource.set(source, feature.properties.parent_geohash);
+                        if (!!feature.properties.geohash) {
+                            cellsMap.set(feature.properties.geohash, feature);
+                        }
+                        if (!!feature.properties.tile) {
+                            cellsMap.set(feature.properties.tile, feature);
+                        }
+                        this.cellsPerSource.set(source, cellsMap);
+                        if (!!feature.properties.geohash) {
+                            parentCellsPerSource.set(source, feature.properties.parent_geohash);
+                        }
+                        if (!!feature.properties.tile) {
+                            parentCellsPerSource.set(source, feature.properties.parent_tile);
+                        }
                         this.calculateAggMetricsStats(source, feature);
                     }
                 });
             });
         }
-        if (parentGeohashesPerSource.size > 0) {
-            parentGeohashesPerSource.forEach((pgh, source) => {
-                let parentGeohashes = this.parentGeohashesPerSource.get(source);
-                if (!parentGeohashes) {
-                    parentGeohashes = new Set();
+        if (parentCellsPerSource.size > 0) {
+            parentCellsPerSource.forEach((pgh, source) => {
+                let parentCells = this.parentCellsPerSource.get(source);
+                if (!parentCells) {
+                    parentCells = new Set();
                 }
-                parentGeohashes.add(pgh);
-                this.parentGeohashesPerSource.set(source, parentGeohashes);
+                parentCells.add(pgh);
+                this.parentCellsPerSource.set(source, parentCells);
             });
         }
     }
 
-    public setDataGeohashGeoaggregate(features: Array<any>): any {
+    public setDataCellGeoaggregate(features: Array<any>): any {
         return features;
     }
     /**
@@ -1625,6 +1674,7 @@ export class MapContributor extends Contributor {
         clusterLayer.minfeatures = ls.minfeatures;
         clusterLayer.aggGeoField = ls.agg_geo_field;
         clusterLayer.granularity = <any>ls.granularity;
+        clusterLayer.type = ls.aggType;
         if (ls.raw_geometry) {
             clusterLayer.rawGeometry = ls.raw_geometry;
         }
@@ -1891,8 +1941,9 @@ export class MapContributor extends Contributor {
         const aggregationsMap: Map<string, SourcesAgg> = new Map();
         clusterSources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
-            // const raw_geo = ls.rawGeometry ? ':' + ls.rawGeometry.sort : '';
-            const aggId = ls.aggGeoField + ':' + ls.granularity.toString() + ls.minfeatures + ':' + ls.minzoom + ':' + ls.maxzoom;
+            const aggType = !! ls.type ? ls.type.toString() : 'geohash';
+            const aggId = ls.aggGeoField + ':' + ls.granularity.toString() + ls.minfeatures + ':' + ls.minzoom + ':' + ls.maxzoom
+                + ':' + aggType;
             const aggBuilder = aggregationsMap.get(aggId);
             let sources;
             let aggregation: Aggregation;
@@ -1901,10 +1952,16 @@ export class MapContributor extends Contributor {
                 aggregation = aggBuilder.agg;
                 sources = aggBuilder.sources;
             } else {
+                let type: Aggregation.TypeEnum;
+                if (ls.type === ClusterAggType.geohash || !ls.type) {
+                    type = Aggregation.TypeEnum.Geohash;
+                } else {
+                    type = Aggregation.TypeEnum.Geotile;
+                }
                 aggregation = {
-                    type: Aggregation.TypeEnum.Geohash,
+                    type: type,
                     field: ls.aggGeoField,
-                    interval: { value: this.getPrecision(ls.granularity, zoom, this.CLUSTER_SOURCE) }
+                    interval: { value: this.getPrecision(ls.granularity, zoom, this.CLUSTER_SOURCE, type) }
                 };
                 sources = [];
             }
@@ -2217,11 +2274,12 @@ export class MapContributor extends Contributor {
         aggSources.forEach(cs => {
             const aggType = this.sourcesTypesIndex.get(cs);
             const ls = aggType === this.TOPOLOGY_SOURCE ? this.topologyLayersIndex.get(cs) : this.clusterLayersIndex.get(cs);
+            const type = !!(ls as LayerClusterSource).type ? (ls as LayerClusterSource).type : ClusterAggType.geohash;
             const aggId = aggType === this.TOPOLOGY_SOURCE ? (ls as LayerTopologySource).geometryId + ':' + ls.granularity.toString() :
                 (ls as LayerClusterSource).aggGeoField + ':' + ls.granularity.toString() + (ls as LayerClusterSource).minfeatures +
-                ':' + ls.minzoom + ':' + ls.maxzoom;
+                ':' + ls.minzoom + ':' + ls.maxzoom + ':' + type.toString();
             const control = this.abortControllers.get(aggId);
-            this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom, callOrigin, aggType);
+            this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom, callOrigin, aggType, type);
         });
     }
 
@@ -2269,12 +2327,19 @@ export class MapContributor extends Contributor {
             }
         }
     }
-    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, zoom: number, callOrigin: string, aggType: string) {
+    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, zoom: number, callOrigin: string, aggType: string,
+        clusterType: ClusterAggType) {
+        let aggClusterType;
+        if (clusterType === ClusterAggType.geohash) {
+            aggClusterType = Aggregation.TypeEnum.Geohash;
+        } else {
+            aggClusterType = Aggregation.TypeEnum.Geotile;
+        }
         let precisions;
         if (aggType === this.TOPOLOGY_SOURCE) {
             precisions = Object.assign({}, this.granularityTopologyFunctions.get(granularity)(zoom));
         } else {
-            precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom));
+            precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggClusterType));
         }
         let oldPrecisions;
         const p = Object.assign({}, this.sourcesPrecisions.get(s));
@@ -2363,9 +2428,9 @@ export class MapContributor extends Contributor {
         }
     }
 
-    private getPrecision(g: Granularity, zoom: number, aggType: string): number {
+    private getPrecision(g: Granularity, zoom: number, aggType: string, clusterType: Aggregation.TypeEnum): number {
         return aggType === this.TOPOLOGY_SOURCE ? this.granularityTopologyFunctions.get(g)(zoom).requestsPrecision :
-            this.granularityClusterFunctions.get(g)(zoom).requestsPrecision;
+            this.granularityClusterFunctions.get(g)(zoom, clusterType).requestsPrecision;
     }
 
     private getAbreviatedNumber(value: number): string {
@@ -2688,8 +2753,8 @@ export class MapContributor extends Contributor {
         const sourceType = this.sourcesTypesIndex.get(s);
         switch (sourceType) {
             case this.CLUSTER_SOURCE:
-                this.parentGeohashesPerSource.set(s, new Set());
-                this.geohashesPerSource.set(s, new Map());
+                this.parentCellsPerSource.set(s, new Set());
+                this.cellsPerSource.set(s, new Map());
                 this.aggSourcesStats.set(s, { count: 0 });
                 this.sourcesPrecisions.set(s, {});
                 break;
@@ -2776,15 +2841,22 @@ export class MapContributor extends Contributor {
         return newVisitedTiles;
     }
 
-    private getVisitedTiles(extent, zoom, granularity, aggSource, aggType) {
+    private getVisitedTiles(extent, zoom, granularity, aggSource: SourcesAgg, aggType) {
         let visitedTiles;
         let precisions;
         if (aggType === this.TOPOLOGY_SOURCE) {
             visitedTiles = extentToGeohashes(extent, zoom, this.granularityTopologyFunctions.get(granularity));
             precisions = Object.assign({}, this.granularityTopologyFunctions.get(granularity)(zoom));
         } else {
-            visitedTiles = extentToGeohashes(extent, zoom, this.granularityClusterFunctions.get(granularity));
-            precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom));
+            if (aggSource.agg.type === Aggregation.TypeEnum.Geohash) {
+                visitedTiles = extentToGeohashes(extent, zoom, this.granularityClusterFunctions.get(granularity));
+                precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggSource.agg.type));
+            } else {
+                visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((zoom) - 1))
+                    .map(t => t.x + '_' + t.y + '_' + t.z));
+                precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggSource.agg.type));
+            }
+
         }
         let oldPrecisions;
         aggSource.sources.forEach(s => {

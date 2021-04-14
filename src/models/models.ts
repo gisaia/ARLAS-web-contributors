@@ -32,6 +32,13 @@ export enum SortEnum {
 export enum triggerType {
     onclick, onconsult
 }
+
+/**
+* Enum of type for cluster calculation
+*/
+export enum ClusterAggType {
+    tile = 'tile', geohash = 'geohash'
+}
 /**
  * Action trigger by a contributor through the app or another contributor.
  * - id of action.
@@ -181,6 +188,7 @@ export interface LayerSourceConfig {
     granularity?: string;
     metrics?: Array<MetricConfig>;
     filters?: Array<any>;
+    aggType?: ClusterAggType;
 }
 
 export interface ColorConfig {
@@ -519,6 +527,7 @@ export class LayerClusterSource extends LayerSource {
     public aggregatedGeometry: Aggregation.AggregatedGeometriesEnum;
     public rawGeometry: RawGeometry;
     public metrics: Array<MetricConfig>;
+    public type: ClusterAggType;
 }
 
 /** Topology = feature-metric */
