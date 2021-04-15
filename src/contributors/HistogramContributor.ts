@@ -257,6 +257,13 @@ export class HistogramContributor extends Contributor {
             });
             this.chartData = data;
         }
+
+        if (this.nbBuckets === undefined && !!data && data.length > 1) {
+            this.range = {
+                value: (+data[data.length - 1].key - +data[0].key),
+                field: this.field
+            };
+        }
         return this.chartData;
     }
 
