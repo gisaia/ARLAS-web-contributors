@@ -161,7 +161,29 @@ export class HistogramContributor extends Contributor {
     }
 
     public getAggregations() {
-        return this.aggregations;
+        const aggregations: Aggregation[] = [];
+        /** clone the aggregations to avoid side effects by external code */
+        if (!!this.aggregations) {
+            this.aggregations.forEach(agg => {
+                let interval;
+                const aggregation: Aggregation = {
+                    type: agg.type,
+                    field: agg.field,
+                    metrics: agg.metrics
+                };
+                if (!!agg.interval) {
+                    interval = {
+                        value: agg.interval.value
+                    };
+                    if (agg.interval.unit !== undefined && agg.interval.unit !== null) {
+                        interval.unit = agg.interval.unit;
+                    }
+                    aggregation.interval = interval;
+                }
+                aggregations.push(aggregation);
+            });
+        }
+        return aggregations;
     }
 
     public setAggregations(aggregations: Array<Aggregation>) {
@@ -256,6 +278,13 @@ export class HistogramContributor extends Contributor {
                 obj.value = obj.value / this.maxValue;
             });
             this.chartData = data;
+        }
+
+        if (this.nbBuckets === undefined && !!data && data.length > 1) {
+            this.range = {
+                value: (+data[data.length - 1].key - +data[0].key),
+                field: this.field
+            };
         }
         return this.chartData;
     }
