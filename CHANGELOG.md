@@ -1,5 +1,23 @@
 # Change Log
 
+## [v16.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.1.0) (2021-04-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.3...v16.1.0)
+
+**New stuff:**
+
+- \[HISTOGRAM\] Calculate range for fixed size buckets [\#391](https://github.com/gisaia/ARLAS-web-contributors/issues/391)
+- \[DETAILED-HISTOGRAM\] add the possibility to init the contributor without passing by the config service [\#375](https://github.com/gisaia/ARLAS-web-contributors/issues/375)
+
+**Fixed bugs:**
+
+- Fix field names having metrics chars in mapcontributors [\#393](https://github.com/gisaia/ARLAS-web-contributors/issues/393)
+- \[HISTOGRAM\] fixed interval is not applied to histograms [\#387](https://github.com/gisaia/ARLAS-web-contributors/issues/387)
+
+**Miscellaneous:**
+
+- Add logs for mapcontributor when data is fetched and rendered [\#394](https://github.com/gisaia/ARLAS-web-contributors/issues/394)
+
 ## [v16.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.3) (2021-04-13)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.2...v16.0.3)
