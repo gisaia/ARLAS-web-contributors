@@ -940,6 +940,7 @@ export class MapContributor extends Contributor {
                     sourceData.push(feature);
                 });
             }
+            console.log('** Render Features data');
             this.redrawSource.next({ source: s, data: sourceData });
             this.legendUpdater.next(this.legendData);
         });
@@ -997,6 +998,7 @@ export class MapContributor extends Contributor {
                     sourceData.push(feature);
                 });
             }
+            console.log('** Render Network analytics data');
             this.redrawSource.next({ source: s, data: sourceData });
             this.legendUpdater.next(this.legendData);
         });
@@ -1025,6 +1027,7 @@ export class MapContributor extends Contributor {
                 });
             }
             /** set minValue and maxValue foreach metric to be sent to the legend */
+            console.log('** Render Cluster data');
             this.redrawSource.next({ source: s, data: sourceData });
             if (!!stats) {
                 Object.keys(stats).forEach(k => {
@@ -1045,6 +1048,7 @@ export class MapContributor extends Contributor {
      * @param search Search object (from `arlas-api`) that indicates how data will be resolved
      */
     public resolveTiledSearchSources(tiles: Set<string>, searchId: string, search: Search): Observable<FeatureCollection> {
+        console.log('++ Fetch Features data');
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
         let filter: Filter = {};
         if (this.expressionFilter !== undefined) {
@@ -1084,6 +1088,7 @@ export class MapContributor extends Contributor {
     }
     public resolveAggSources(visitedTiles: Set<string>, aggId: string, aggregation: Aggregation):
         Observable<FeatureCollection> {
+        console.log('++ Fetch Agg data');
         const tabOfGeohash: Array<Observable<FeatureCollection>> = [];
         const control = this.abortControllers.get(aggId);
         visitedTiles.forEach(geohash => {
