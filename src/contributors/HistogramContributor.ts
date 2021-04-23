@@ -120,9 +120,9 @@ export class HistogramContributor extends Contributor {
     constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService, protected isOneDimension?: boolean
+        configService: ConfigService, collection: string, protected isOneDimension?: boolean
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(identifier, configService, collaborativeSearcheService, collection);
         const lastAggregation: Aggregation = !!this.aggregations ? this.aggregations[this.aggregations.length - 1] : undefined;
         if (!!lastAggregation && lastAggregation.type.toString().toLocaleLowerCase() ===
             Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
@@ -306,7 +306,7 @@ export class HistogramContributor extends Contributor {
         if (this.nbBuckets) {
             const agg = this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
             <ComputationRequest>{ filter: null, field: this.field, metric: ComputationRequest.MetricEnum.SPANNING }],
-                collaborations, identifier, additionalFilter, false, this.cacheDuration)
+                collaborations, this.collection, identifier, additionalFilter, false, this.cacheDuration)
                 .pipe(
                     map((computationResponse: ComputationResponse) => {
                         const dataRange = (!!computationResponse.value) ? computationResponse.value : 0;
@@ -323,7 +323,7 @@ export class HistogramContributor extends Contributor {
                         this.aggregations[0].interval = r.aggregationPrecision;
                         return this.collaborativeSearcheService.resolveButNotAggregation(
                             [projType.aggregate, this.aggregations], collaborations,
-                            identifier, additionalFilter, false, this.cacheDuration);
+                            this.collection, identifier, additionalFilter, false, this.cacheDuration);
                     }
                     )),
                     flatMap(a => a)
@@ -334,7 +334,7 @@ export class HistogramContributor extends Contributor {
         } else {
             return this.collaborativeSearcheService.resolveButNotAggregation(
                 [projType.aggregate, this.aggregations], collaborations,
-                identifier, additionalFilter, false, this.cacheDuration);
+                this.collection, identifier, additionalFilter, false, this.cacheDuration);
         }
     }
 }

@@ -111,7 +111,7 @@ export class SwimLaneContributor extends Contributor {
     constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService, private isOneDimension?: boolean
+        configService: ConfigService, collection: string, private isOneDimension?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService);
         if (this.getConfigValue('swimlanes')[0]['jsonpath'] !== undefined) {
@@ -160,7 +160,7 @@ export class SwimLaneContributor extends Contributor {
             if (this.nbBuckets) {
                 return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
                 <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
-                collaborations, this.identifier, {}, false, this.cacheDuration)
+                collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
                     .pipe(
                         map((computationResponse: ComputationResponse) => {
                             const dataRange = !!computationResponse.value ? computationResponse.value : 0;
@@ -170,14 +170,14 @@ export class SwimLaneContributor extends Contributor {
                         flatMap(() =>
                             this.collaborativeSearcheService.resolveButNotAggregation(
                                 [projType.aggregate, this.aggregations], collaborations,
-                                this.identifier, {}, false, this.cacheDuration)
+                                this.collection, this.identifier, {}, false, this.cacheDuration)
                         )
                     )
                 );
             } else {
                 return this.collaborativeSearcheService.resolveButNotAggregation(
                     [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-                    this.identifier, {}, false, this.cacheDuration);
+                    this.collection, this.identifier, {}, false, this.cacheDuration);
             }
         } else {
             return from([]);
