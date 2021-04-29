@@ -1642,6 +1642,7 @@ export class MapContributor extends Contributor {
         topologyLayer.maxzoom = ls.maxzoom;
         topologyLayer.minzoom = ls.minzoom;
         topologyLayer.maxfeatures = ls.maxfeatures;
+        /** retrocompatibility of Networks analytics geometry */
         if (!ls.raw_geometry && ls.geometry_support) {
             ls.raw_geometry = {geometry: ls.geometry_support, sort: '' };
         }
@@ -1830,8 +1831,10 @@ export class MapContributor extends Contributor {
      */
     private setColorFieldLegend(colorField: string, feature: Feature, fieldsToKeep: Set<string>) {
         const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-        feature.properties[flattenColorField + '_arlas__color'] =
+        /** retrocompatibility of generated colors */
+        feature.properties[flattenColorField + '_arlas__color']  =
             this.colorGenerator.getColor(feature.properties[flattenColorField]);
+            feature.properties[flattenColorField + '_color'] = this.colorGenerator.getColor(feature.properties[flattenColorField]);
         /** set the key-to-color map to be displayed on the legend. */
         let colorLegend: LegendData = this.legendData.get(flattenColorField + '_arlas__color');
         if (!colorLegend) {
@@ -1842,8 +1845,11 @@ export class MapContributor extends Contributor {
         }
         colorLegend.keysColorsMap.set(feature.properties[flattenColorField],
             feature.properties[flattenColorField + '_arlas__color']);
+        /** retrocompatibility of generated colors */
         fieldsToKeep.add(flattenColorField + '_arlas__color');
+        fieldsToKeep.add(flattenColorField + '_color');
         this.legendData.set(flattenColorField + '_arlas__color', colorLegend);
+        this.legendData.set(flattenColorField + '_color', colorLegend);
     }
 
 
@@ -2007,6 +2013,8 @@ export class MapContributor extends Contributor {
             }
             case ReturnedField.generatedcolor: {
                 key = field.replace(/\./g, this.FLAT_CHAR) + '_arlas__color';
+                /** retrocompatibility of generated colors */
+                metrics.add(field.replace(/\./g, this.FLAT_CHAR) + '_color');
                 break;
             }
             case ReturnedField.normalized: {
