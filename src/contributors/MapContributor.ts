@@ -1642,6 +1642,9 @@ export class MapContributor extends Contributor {
         topologyLayer.maxzoom = ls.maxzoom;
         topologyLayer.minzoom = ls.minzoom;
         topologyLayer.maxfeatures = ls.maxfeatures;
+        if (!ls.raw_geometry && ls.geometry_support) {
+            ls.raw_geometry = {geometry: ls.geometry_support, sort: '' };
+        }
         topologyLayer.rawGeometry = ls.raw_geometry;
         topologyLayer.geometryId = ls.geometry_id;
         topologyLayer.metrics = ls.metrics;
