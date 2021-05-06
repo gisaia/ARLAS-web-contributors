@@ -182,6 +182,8 @@ export class MapContributor extends Contributor {
     public legendData: Map<string, LegendData> = new Map();
     public visibilityUpdater: Subject<Map<string, boolean>> = new Subject();
     public visibilityStatus: Map<string, boolean> = new Map();
+    public drawingsUpdate: Subject<{ type: string, features: Array<any> }> = new Subject();
+
     /** CONSTANTS */
     private NEXT_AFTER = '_nextAfter';
     private PREVIOUS_AFTER = '_previousAfter';
@@ -710,6 +712,7 @@ export class MapContributor extends Contributor {
                 'features': []
             };
         }
+        this.drawingsUpdate.next(this.geojsondraw);
     }
     public getBoundsToFit(elementidentifier: ElementIdentifier, collection?: string): Observable<Array<Array<number>>> {
         if (!collection) {

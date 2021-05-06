@@ -113,7 +113,7 @@ export class SwimLaneContributor extends Contributor {
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, collection: string, private isOneDimension?: boolean
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(identifier, configService, collaborativeSearcheService, collection);
         if (this.getConfigValue('swimlanes')[0]['jsonpath'] !== undefined) {
             this.json_path = this.getConfigValue('swimlanes')[0]['jsonpath'];
         } else {
