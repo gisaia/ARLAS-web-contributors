@@ -42,8 +42,9 @@ export class ComputeContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(identifier: string, collaborativeSearcheService: CollaborativesearchService, configService: ConfigService) {
-        super(identifier, configService, collaborativeSearcheService);
+    constructor(identifier: string, collaborativeSearcheService: CollaborativesearchService, configService: ConfigService,
+        collection: string) {
+        super(identifier, configService, collaborativeSearcheService, collection);
     }
 
     /** return the json schem of this contributor */
@@ -56,7 +57,7 @@ export class ComputeContributor extends Contributor {
         const computationResponse: Observable<Array<ComputationResponse>> = forkJoin(this.metrics.map(m => {
             return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
             <ComputationRequest>{ field: m.field, metric: ComputationRequest.MetricEnum[m.metric.toUpperCase()] }],
-                this.collaborativeSearcheService.collaborations, this.identifier, {}, false, this.cacheDuration);
+                this.collaborativeSearcheService.collaborations, this.collection, this.identifier, {}, false, this.cacheDuration);
         }));
 
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {

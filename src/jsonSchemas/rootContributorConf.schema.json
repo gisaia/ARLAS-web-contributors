@@ -23,6 +23,10 @@
             "description": "The unique identifier for a Contributor",
             "type": "string"
         },
+        "collection": {
+            "description": "The unique collection for a Contributor",
+            "type": "string"
+        },
         "name": {
             "description": "The name of the Contributor",
             "type": "string"

@@ -75,9 +75,10 @@ export class ChipsSearchContributor extends Contributor {
     constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService
+        configService: ConfigService,
+        collection: string
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(identifier, configService, collaborativeSearcheService, collection);
     }
 
     public static getJsonSchema(): Object {
@@ -106,6 +107,7 @@ export class ChipsSearchContributor extends Contributor {
                         };
                         const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
                             [projType.count, {}], this.collaborativeSearcheService.collaborations,
+                            this.collection,
                             this.identifier,
                             filter, false, this.cacheDuration
                         );
@@ -174,6 +176,7 @@ export class ChipsSearchContributor extends Contributor {
                 };
                 const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
                     [projType.count, {}], this.collaborativeSearcheService.collaborations,
+                    this.collection,
                     this.identifier,
                     filter, false, this.cacheDuration
                 );
