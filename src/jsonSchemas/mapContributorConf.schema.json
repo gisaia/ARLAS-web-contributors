@@ -114,6 +114,8 @@
                         "enum": [
                             "bbox",
                             "centroid",
+                            "cell",
+                            "cell_center",
                             "geohash",
                             "geohash_center"
                         ]
