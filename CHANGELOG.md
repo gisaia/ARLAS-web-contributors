@@ -1,5 +1,13 @@
 # Change Log
 
+## [v17.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.0.0) (2021-05-19)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.0.0-beta.0...v17.0.0)
+
+## [v17.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.0.0-beta.0) (2021-05-10)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.1.1...v17.0.0-beta.0)
+
 ## [v16.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.1.1) (2021-04-29)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.1.0...v16.1.1)
@@ -7,6 +15,11 @@
 **New stuff:**
 
 - MAP : Add an option that alows to always return aggregated features  [\#156](https://github.com/gisaia/ARLAS-web-contributors/issues/156)
+
+**Fixed bugs:**
+
+- \[MAP\] dashboards with old geometry support for Network analytics are not handled [\#399](https://github.com/gisaia/ARLAS-web-contributors/issues/399)
+- \[MAP\] dashboards with old generated colors are not handled [\#398](https://github.com/gisaia/ARLAS-web-contributors/issues/398)
 
 ## [v16.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.1.0) (2021-04-21)
 
