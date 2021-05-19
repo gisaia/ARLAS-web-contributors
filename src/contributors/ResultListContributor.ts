@@ -89,7 +89,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         };
         searchResult = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
-            this.contributor.identifier, filterExpression, false, this.contributor.cacheDuration);
+            this.contributor.collection, this.contributor.identifier, filterExpression, false, this.contributor.cacheDuration);
         const obs: Observable<AdditionalInfo> = searchResult.pipe(map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details: Array<Detail> = this.contributor.getConfigValue('details');
@@ -254,9 +254,9 @@ export class ResultListContributor extends Contributor {
     constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService
+        configService: ConfigService, collection: string
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(identifier, configService, collaborativeSearcheService, collection);
         // Link the ResultListContributor and the detailedDataRetriever
         this.detailedDataRetriever.setContributor(this);
         this.fieldsList = [];
@@ -345,7 +345,7 @@ export class ResultListContributor extends Contributor {
         };
         searchResult = this.collaborativeSearcheService
             .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations,
-                null, filterExpression, false, this.cacheDuration);
+                this.collection, null, filterExpression, false, this.cacheDuration);
         searchResult.pipe(map(data => JSON.stringify(data))).subscribe(
             data => {
                 download(data.toString(), elementidentifier.idValue + '.json', 'text/json');
@@ -746,7 +746,7 @@ export class ResultListContributor extends Contributor {
         const searchResult = this.collaborativeSearcheService
             .resolveButNotHits([projType.search, search],
                 this.collaborativeSearcheService.collaborations,
-                null, this.filter, false, this.cacheDuration)
+                this.collection, null, this.filter, false, this.cacheDuration)
             .pipe(
                 finalize(() => this.collaborativeSearcheService.contribFilterBus.next(this))
             );
@@ -826,7 +826,7 @@ export class ResultListContributor extends Contributor {
             size: size
         });
         const result = this.collaborativeSearcheService
-            .resolveButNotAggregation([projType.aggregate, aggregations], this.collaborativeSearcheService.collaborations);
+            .resolveButNotAggregation([projType.aggregate, aggregations], this.collaborativeSearcheService.collaborations, this.collection);
         if (result) {
             return result.pipe(map(aggResponse => {
                 if (aggResponse.elements) {

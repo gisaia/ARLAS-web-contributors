@@ -73,9 +73,10 @@ export class TreeContributor extends Contributor {
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
-        title: string
+        title: string,
+        collection: string
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(identifier, configService, collaborativeSearcheService, collection);
         this.title = title;
     }
 
@@ -128,7 +129,7 @@ export class TreeContributor extends Contributor {
         });
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg, false, this.cacheDuration
+            this.collection, this.identifier, filterAgg, false, this.cacheDuration
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
@@ -276,7 +277,7 @@ export class TreeContributor extends Contributor {
         }
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, filterAgg, false, this.cacheDuration
+            this.collection, this.identifier, filterAgg, false, this.cacheDuration
         );
 
         aggregationObservable.subscribe(aggregationResponse => {

@@ -60,9 +60,10 @@ export class AnalyticsContributor extends Contributor {
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
+        collection: string,
         private groupIdToValues: Map<string, Array<string>>
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(identifier, configService, collaborativeSearcheService, collection);
     }
 
     public static getJsonSchema(): Object {
@@ -85,7 +86,7 @@ export class AnalyticsContributor extends Contributor {
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-            this.identifier, {}, false, this.cacheDuration
+            this.collection, this.identifier, {}, false, this.cacheDuration
         );
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return aggregationObservable;
