@@ -1,8 +1,21 @@
 # Change Log
 
+## [v17.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.1.0) (2021-06-04)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.0.0...v17.1.0)
+
+**New stuff:**
+
+- Add the possibility to choose the collection in the Collaborative Search [\#349](https://github.com/gisaia/ARLAS-web-contributors/issues/349)
+
 ## [v17.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.0.0) (2021-05-19)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.0.0-beta.0...v17.0.0)
+
+**New stuff:**
+
+- Add geotile aggreation in map contributor [\#404](https://github.com/gisaia/ARLAS-web-contributors/issues/404)
+- Support multi-collection for map and all widgets [\#403](https://github.com/gisaia/ARLAS-web-contributors/issues/403)
 
 ## [v17.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.0.0-beta.0) (2021-05-10)
 
