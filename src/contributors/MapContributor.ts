@@ -1099,7 +1099,7 @@ export class MapContributor extends Contributor {
         Observable<FeatureCollection> {
         const tabOfCells: Array<Observable<FeatureCollection>> = [];
         const control = this.abortControllers.get(aggId);
-        if (aggregation.type === Aggregation.TypeEnum.Geohash) {
+        if (aggregation.type === Aggregation.TypeEnum.Geohash || aggregation.type === Aggregation.TypeEnum.Term) {
             visitedTiles.forEach(geohash => {
                 const geohahsAggregation: GeohashAggregation = {
                     geohash: geohash,
