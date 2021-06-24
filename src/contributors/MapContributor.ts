@@ -114,6 +114,7 @@ export class MapContributor extends Contributor {
     private layersSourcesIndex: Map<string, string> = new Map();
     private sourcesLayersIndex: Map<string, Set<string>> = new Map();
     private visibiltyRulesIndex: Map<string, { type: string, minzoom: number, maxzoom: number, nbfeatures: number }> = new Map();
+    private layersVisibiltyRulesIndex: Map<string, { minzoom: number, maxzoom: number}> = new Map();
 
     /**Cluster data support */
     private cellsPerSource: Map<string, Map<string, Feature>> = new Map();
@@ -1678,8 +1679,10 @@ export class MapContributor extends Contributor {
         const clusterLayer = new LayerClusterSource();
         clusterLayer.id = ls.id;
         clusterLayer.source = ls.source;
-        clusterLayer.maxzoom = ls.maxzoom;
-        clusterLayer.minzoom = ls.minzoom;
+        clusterLayer.layerMaxzoom = ls.maxzoom;
+        clusterLayer.layerMinzoom = ls.minzoom;
+        clusterLayer.sourceMaxzoom = ls.maxzoom;
+        clusterLayer.sourceMinzoom = ls.minzoom;
         clusterLayer.minfeatures = ls.minfeatures;
         clusterLayer.aggGeoField = ls.agg_geo_field;
         clusterLayer.granularity = <any>ls.granularity;
@@ -1698,8 +1701,10 @@ export class MapContributor extends Contributor {
         const topologyLayer = new LayerTopologySource();
         topologyLayer.id = ls.id;
         topologyLayer.source = ls.source;
-        topologyLayer.maxzoom = ls.maxzoom;
-        topologyLayer.minzoom = ls.minzoom;
+        topologyLayer.layerMaxzoom = ls.maxzoom;
+        topologyLayer.layerMinzoom = ls.minzoom;
+        topologyLayer.sourceMaxzoom = ls.maxzoom;
+        topologyLayer.sourceMinzoom = ls.minzoom;
         topologyLayer.maxfeatures = ls.maxfeatures;
         /** retrocompatibility of Networks analytics geometry */
         if (!ls.raw_geometry && ls.geometry_support) {
@@ -1719,8 +1724,10 @@ export class MapContributor extends Contributor {
         const featureLayer = new LayerFeatureSource();
         featureLayer.id = ls.id;
         featureLayer.source = ls.source;
-        featureLayer.maxzoom = ls.maxzoom;
-        featureLayer.minzoom = ls.minzoom;
+        featureLayer.layerMaxzoom = ls.maxzoom;
+        featureLayer.layerMinzoom = ls.minzoom;
+        featureLayer.sourceMaxzoom = ls.maxzoom;
+        featureLayer.sourceMinzoom = ls.minzoom;
         featureLayer.maxfeatures = ls.maxfeatures;
         featureLayer.normalizationFields = ls.normalization_fields;
         featureLayer.includeFields = new Set(ls.include_fields || []);
@@ -1951,7 +1958,8 @@ export class MapContributor extends Contributor {
         clusterSources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
             const aggType = !! ls.type ? ls.type.toString() : 'geohash';
-            const aggId = ls.aggGeoField + ':' + ls.granularity.toString() + ls.minfeatures + ':' + ls.minzoom + ':' + ls.maxzoom
+            const aggId = ls.aggGeoField + ':' + ls.granularity.toString() + ls.minfeatures + ':' +
+                ls.sourceMinzoom + ':' + ls.sourceMaxzoom
                 + ':' + aggType;
             const aggBuilder = aggregationsMap.get(aggId);
             let sources;
@@ -2286,7 +2294,7 @@ export class MapContributor extends Contributor {
             const type = !!(ls as LayerClusterSource).type ? (ls as LayerClusterSource).type : ClusterAggType.geohash;
             const aggId = aggType === this.TOPOLOGY_SOURCE ? (ls as LayerTopologySource).geometryId + ':' + ls.granularity.toString() :
                 (ls as LayerClusterSource).aggGeoField + ':' + ls.granularity.toString() + (ls as LayerClusterSource).minfeatures +
-                ':' + ls.minzoom + ':' + ls.maxzoom + ':' + type.toString();
+                ':' + ls.sourceMinzoom + ':' + ls.sourceMaxzoom + ':' + type.toString();
             const control = this.abortControllers.get(aggId);
             this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom, callOrigin, aggType, type);
         });
@@ -2295,7 +2303,7 @@ export class MapContributor extends Contributor {
     private checkFeatures(featuresSources: Array<string>, callOrigin: string): void {
         featuresSources.forEach(cs => {
             const ls = this.featureLayersIndex.get(cs);
-            const searchId = ls.maxfeatures + ':' + ls.minzoom + ':' + ls.maxzoom;
+            const searchId = ls.maxfeatures + ':' + ls.sourceMinzoom + ':' + ls.sourceMaxzoom;
             let cancelSubjects = this.cancelSubjects.get(searchId);
             if (!cancelSubjects) { cancelSubjects = new Map(); }
             cancelSubjects.set(callOrigin, new Subject());
@@ -2462,12 +2470,17 @@ export class MapContributor extends Contributor {
      * @param minZoom
      * @param source
      */
-    private indexVisibilityRules(minzoom: number, maxzoom: number, nbfeatures: number, type: string, source: string): void {
+    private indexVisibilityRules(sourceMinzoom: number, sourceMaxzoom: number, layerMinzoom: number, layerMaxzoom: number,
+        nbfeatures: number, type: string, source: string, id: string): void {
         this.visibiltyRulesIndex.set(source, {
-            minzoom,
-            maxzoom,
+            minzoom: sourceMinzoom,
+            maxzoom: sourceMaxzoom,
             nbfeatures,
             type
+        });
+        this.layersVisibiltyRulesIndex.set(id, {
+            minzoom: layerMinzoom,
+            maxzoom: layerMaxzoom,
         });
     }
 
@@ -2482,8 +2495,8 @@ export class MapContributor extends Contributor {
             /** extends rules visibility */
             const existingClusterLayer = clusterLayers.get(clusterLayer.source);
             if (existingClusterLayer) {
-                clusterLayer.minzoom = Math.min(existingClusterLayer.minzoom, clusterLayer.minzoom);
-                clusterLayer.maxzoom = Math.max(existingClusterLayer.maxzoom, clusterLayer.maxzoom);
+                clusterLayer.sourceMinzoom = Math.min(existingClusterLayer.sourceMinzoom, clusterLayer.sourceMinzoom);
+                clusterLayer.sourceMaxzoom = Math.max(existingClusterLayer.sourceMaxzoom, clusterLayer.sourceMaxzoom);
                 clusterLayer.minfeatures = Math.min(existingClusterLayer.minfeatures, clusterLayer.minfeatures);
                 if (existingClusterLayer.metrics) {
                     clusterLayer.metrics = clusterLayer.metrics ? existingClusterLayer.metrics.concat(clusterLayer.metrics) :
@@ -2497,8 +2510,8 @@ export class MapContributor extends Contributor {
             this.sourcesLayersIndex.set(ls.source, layers);
             clusterLayers.set(clusterLayer.source, clusterLayer);
             this.dataSources.add(ls.source);
-            this.indexVisibilityRules(clusterLayer.minzoom, clusterLayer.maxzoom, clusterLayer.minfeatures,
-                this.CLUSTER_SOURCE, clusterLayer.source);
+            this.indexVisibilityRules(clusterLayer.sourceMinzoom, clusterLayer.sourceMaxzoom, clusterLayer.layerMinzoom,
+                clusterLayer.layerMaxzoom, clusterLayer.minfeatures, this.CLUSTER_SOURCE, clusterLayer.source, clusterLayer.id);
             this.sourcesTypesIndex.set(ls.source, this.CLUSTER_SOURCE);
         });
         return clusterLayers;
@@ -2515,8 +2528,8 @@ export class MapContributor extends Contributor {
             /** extends rules visibility */
             const existingTopologyLayer = topologyLayers.get(topologyLayer.source);
             if (existingTopologyLayer) {
-                topologyLayer.minzoom = Math.min(existingTopologyLayer.minzoom, topologyLayer.minzoom);
-                topologyLayer.maxzoom = Math.max(existingTopologyLayer.maxzoom, topologyLayer.maxzoom);
+                topologyLayer.sourceMinzoom = Math.min(existingTopologyLayer.sourceMinzoom, topologyLayer.sourceMinzoom);
+                topologyLayer.sourceMaxzoom = Math.max(existingTopologyLayer.sourceMaxzoom, topologyLayer.sourceMaxzoom);
                 topologyLayer.maxfeatures = Math.max(existingTopologyLayer.maxfeatures, topologyLayer.maxfeatures);
                 if (existingTopologyLayer.metrics) {
                     topologyLayer.metrics = topologyLayer.metrics ? existingTopologyLayer.metrics.concat(topologyLayer.metrics) :
@@ -2539,8 +2552,8 @@ export class MapContributor extends Contributor {
             layers.add(ls.id);
             this.sourcesLayersIndex.set(ls.source, layers);
             this.dataSources.add(ls.source);
-            this.indexVisibilityRules(topologyLayer.minzoom, topologyLayer.maxzoom, topologyLayer.maxfeatures,
-                this.TOPOLOGY_SOURCE, topologyLayer.source);
+            this.indexVisibilityRules(topologyLayer.sourceMinzoom, topologyLayer.sourceMaxzoom, topologyLayer.layerMinzoom,
+                topologyLayer.layerMaxzoom, topologyLayer.maxfeatures, this.TOPOLOGY_SOURCE, topologyLayer.source, topologyLayer.id);
             this.sourcesTypesIndex.set(ls.source, this.TOPOLOGY_SOURCE);
 
         });
@@ -2559,8 +2572,8 @@ export class MapContributor extends Contributor {
                 /** extends rules visibility */
                 const existingFeatureLayer = featureLayers.get(featureLayer.source);
                 if (existingFeatureLayer) {
-                    featureLayer.minzoom = Math.min(existingFeatureLayer.minzoom, featureLayer.minzoom);
-                    featureLayer.maxzoom = Math.max(existingFeatureLayer.maxzoom, featureLayer.maxzoom);
+                    featureLayer.sourceMinzoom = Math.min(existingFeatureLayer.sourceMinzoom, featureLayer.sourceMinzoom);
+                    featureLayer.sourceMaxzoom = Math.max(existingFeatureLayer.sourceMaxzoom, featureLayer.sourceMaxzoom);
                     featureLayer.maxfeatures = Math.max(existingFeatureLayer.maxfeatures, featureLayer.maxfeatures);
                     if (existingFeatureLayer.providedFields) {
                         featureLayer.providedFields = featureLayer.providedFields ?
@@ -2589,8 +2602,8 @@ export class MapContributor extends Contributor {
                 this.sourcesLayersIndex.set(ls.source, layers);
                 featureLayers.set(featureLayer.source, featureLayer);
                 this.dataSources.add(ls.source);
-                this.indexVisibilityRules(featureLayer.minzoom, featureLayer.maxzoom, featureLayer.maxfeatures,
-                    this.FEATURE_SOURCE, featureLayer.source);
+                this.indexVisibilityRules(featureLayer.sourceMinzoom, featureLayer.sourceMaxzoom, featureLayer.layerMinzoom,
+                    featureLayer.layerMaxzoom, featureLayer.maxfeatures, this.FEATURE_SOURCE, featureLayer.source, featureLayer.id);
                 this.sourcesTypesIndex.set(ls.source, this.FEATURE_SOURCE);
 
             });
@@ -2603,7 +2616,7 @@ export class MapContributor extends Contributor {
             case SearchStrategy.combined:
                 return 'combined_search';
             case SearchStrategy.visibility_rules:
-                return ls.maxfeatures + ':' + ls.minzoom + ':' + ls.maxzoom;
+                return ls.maxfeatures + ':' + ls.sourceMinzoom + ':' + ls.sourceMaxzoom;
         }
     }
 
@@ -2632,7 +2645,10 @@ export class MapContributor extends Contributor {
                     case this.CLUSTER_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures <= nbFeatures) {
                             clusterSources.push(k);
-                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, true));
+                            this.sourcesLayersIndex.get(k).forEach(l => {
+                                const zoomRule = this.layersVisibiltyRulesIndex.get(l);
+                                this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
+                            });
                         } else {
                             sourcesToRemove.push(k);
                             this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
@@ -2641,7 +2657,10 @@ export class MapContributor extends Contributor {
                     }
                     case this.TOPOLOGY_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
-                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, true));
+                            this.sourcesLayersIndex.get(k).forEach(l => {
+                                const zoomRule = this.layersVisibiltyRulesIndex.get(l);
+                                this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
+                            });
                             topologySources.push(k);
                         } else {
                             sourcesToRemove.push(k);
@@ -2652,7 +2671,10 @@ export class MapContributor extends Contributor {
                     case this.FEATURE_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
                             featureSources.push(k);
-                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, true));
+                            this.sourcesLayersIndex.get(k).forEach(l => {
+                                const zoomRule = this.layersVisibiltyRulesIndex.get(l);
+                                this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
+                            });
                         } else {
                             sourcesToRemove.push(k);
                             this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
@@ -2678,7 +2700,10 @@ export class MapContributor extends Contributor {
             if (v.type === this.TOPOLOGY_SOURCE) {
                 if (v.maxzoom >= zoom && v.minzoom <= zoom && visibleSources.has(k)) {
                     if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
-                        this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, true));
+                        this.sourcesLayersIndex.get(k).forEach(l => {
+                            const zoomRule = this.layersVisibiltyRulesIndex.get(l);
+                            this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
+                        });
                         topologySources.push(k);
                     } else {
                         sourcesToRemove.push(k);
@@ -2688,7 +2713,6 @@ export class MapContributor extends Contributor {
                     sourcesToRemove.push(k);
                     this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                 }
-
             }
         });
         return [topologySources, sourcesToRemove];

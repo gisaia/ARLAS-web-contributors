@@ -507,8 +507,10 @@ export class FeaturesNormalization implements NormalizationFieldConfig {
 export class LayerSource {
     public id: string;
     public source: string;
-    public minzoom: number;
-    public maxzoom: number;
+    public layerMinzoom: number;
+    public layerMaxzoom: number;
+    public sourceMinzoom: number;
+    public sourceMaxzoom: number;
 }
 
 export class LayerFeatureSource extends LayerSource {
