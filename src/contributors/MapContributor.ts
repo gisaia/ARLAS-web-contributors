@@ -2294,7 +2294,7 @@ export class MapContributor extends Contributor {
             const type = !!(ls as LayerClusterSource).type ? (ls as LayerClusterSource).type : ClusterAggType.geohash;
             const aggId = aggType === this.TOPOLOGY_SOURCE ? (ls as LayerTopologySource).geometryId + ':' + ls.granularity.toString() :
                 (ls as LayerClusterSource).aggGeoField + ':' + ls.granularity.toString() + (ls as LayerClusterSource).minfeatures +
-                ':' + ls.sourceMinzoom + ':' + ls.sourceMinzoom + ':' + type.toString();
+                ':' + ls.sourceMinzoom + ':' + ls.sourceMaxzoom + ':' + type.toString();
             const control = this.abortControllers.get(aggId);
             this.abortOldPendingCalls(aggId, cs, ls.granularity, zoom, callOrigin, aggType, type);
         });
