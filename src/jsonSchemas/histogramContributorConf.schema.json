@@ -40,6 +40,27 @@
         "jsonpath":{
             "description": "Json path to find value used in aggregation, for example  $.count or $.metrics[0].value, $.count is used by default if this property is not setted.",
             "type": "string"
+        },
+        "additionalCollections": {
+            "description": "List of collections to add in a histogram",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "collectionName": {
+                        "description": "Name of the collection",
+                        "type": "string"
+                    },
+                    "field": {
+                        "description": "Field of aggregation",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "collectionName",
+                    "field"
+                ]
+            }
         }
     },
     "required": [

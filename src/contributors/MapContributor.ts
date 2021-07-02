@@ -205,7 +205,10 @@ export class MapContributor extends Contributor {
         public collection: string,
         public colorGenerator?: ColorGeneratorLoader) {
         super(identifier, configService, collaborativeSearcheService, collection);
-
+        this.collections = [];
+        this.collections.push({
+            collectionName: collection
+        });
         const layersSourcesConfig: Array<LayerSourceConfig> = this.getConfigValue(this.LAYERS_SOURCES_KEY);
         const dataModeConfig = this.getConfigValue(this.DATA_MODE_KEY);
         const simpleModeAccumulativeConfig = this.getConfigValue(this.SIMPLE_MODE_ACCUMULATIVE_KEY);
@@ -573,21 +576,27 @@ export class MapContributor extends Contributor {
     public onChangeGeoQuery() {
         const collaboration: Collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         if (collaboration !== null) {
+            let filter: Filter;
+            if (collaboration.filters && collaboration.filters.get(this.collection)) {
+                filter = collaboration.filters.get(this.collection)[0];
+            }
+            const collabFilters = new Map<string, Filter[]>();
             switch (this.geoQueryOperation) {
                 case Expression.OpEnum.Notintersects:
                 case Expression.OpEnum.Notwithin:
                     const andFilter: Expression[][] = [];
-                    collaboration.filter.f.forEach((expressions: Expression[]) => {
+                    filter.f.forEach((expressions: Expression[]) => {
                         expressions.forEach((exp: Expression) => {
                             exp.field = this.geoQueryField;
                             exp.op = this.geoQueryOperation;
                             andFilter.push([exp]);
                         });
                     });
+                    collabFilters.set(this.collection, [{
+                        f: andFilter
+                    }]);
                     const andCollaboration: Collaboration = {
-                        filter: {
-                            f: andFilter
-                        },
+                        filters: collabFilters,
                         enabled: collaboration.enabled
                     };
                     this.collaborativeSearcheService.setFilter(this.identifier, andCollaboration);
@@ -596,7 +605,7 @@ export class MapContributor extends Contributor {
                 case Expression.OpEnum.Within:
                     const orFilter: Expression[][] = [];
                     const multiExpressions: Expression[] = [];
-                    collaboration.filter.f.forEach((expressions: Expression[]) => {
+                    filter.f.forEach((expressions: Expression[]) => {
                         expressions.forEach((exp: Expression) => {
                             exp.field = this.geoQueryField;
                             exp.op = this.geoQueryOperation;
@@ -604,10 +613,11 @@ export class MapContributor extends Contributor {
                         });
                     });
                     orFilter.push(multiExpressions);
+                    collabFilters.set(this.collection, [{
+                        f: orFilter
+                    }]);
                     const orCollaboration: Collaboration = {
-                        filter: {
-                            f: orFilter
-                        },
+                        filters: collabFilters,
                         enabled: collaboration.enabled
                     };
                     this.collaborativeSearcheService.setFilter(this.identifier, orCollaboration);
@@ -631,21 +641,25 @@ export class MapContributor extends Contributor {
 
     public setDrawings(collaboration: Collaboration): void {
         if (collaboration !== null) {
-            if (collaboration.filter && collaboration.filter.f) {
-                const operation = collaboration.filter.f[0][0].op;
-                const field = collaboration.filter.f[0][0].field;
-                this.setGeoQueryField(field);
-                this.setGeoQueryOperation(operation.toString());
+            let filter: Filter;
+            if (collaboration.filters && collaboration.filters.get(this.collection)) {
+                filter = collaboration.filters.get(this.collection)[0];
             }
             const polygonGeojsons = [];
             const aois: string[] = [];
-            collaboration.filter.f.forEach(exprs => {
-                exprs.forEach(expr => {
-                    if (expr.op === this.geoQueryOperation) {
-                        aois.push(expr.value);
-                    }
+            if (filter && filter.f) {
+                const operation = filter.f[0][0].op;
+                const field = filter.f[0][0].field;
+                this.setGeoQueryField(field);
+                this.setGeoQueryOperation(operation.toString());
+                filter.f.forEach(exprs => {
+                    exprs.forEach(expr => {
+                        if (expr.op === this.geoQueryOperation) {
+                            aois.push(expr.value);
+                        }
+                    });
                 });
-            });
+            }
             if (aois && aois.length > 0) {
                 let index = 1;
                 aois.forEach(aoi => {
@@ -818,8 +832,10 @@ export class MapContributor extends Contributor {
                     };
                     break;
             }
+            const collabFilters = new Map<string, Filter[]>();
+            collabFilters.set(this.collection, [filters]);
             const data: Collaboration = {
-                filter: filters,
+                filters: collabFilters,
                 enabled: true
             };
             this.collaborativeSearcheService.setFilter(this.identifier, data);
@@ -1590,7 +1606,11 @@ export class MapContributor extends Contributor {
         if (collaboration !== null && collaboration !== undefined) {
             if (collaboration.enabled) {
                 const aois: string[] = [];
-                collaboration.filter.f.forEach(exprs => {
+                let mapFilter: Filter;
+                if (collaboration.filters && collaboration.filters.get(this.collection)) {
+                    mapFilter = collaboration.filters.get(this.collection)[0];
+                }
+                mapFilter.f.forEach(exprs => {
                     exprs.forEach(expr => {
                         if (expr.op === this.geoQueryOperation) {
                             aois.push(expr.value);

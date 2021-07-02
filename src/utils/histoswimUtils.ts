@@ -20,23 +20,18 @@
 import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
 import { SelectedOutputValues, DateExpression } from '../models/models';
 import { Expression, Filter, Aggregation, Interval } from 'arlas-api';
+import { CollectionAggField } from 'arlas-web-core/utils/utils';
+import { filter } from 'rxjs/operators';
 
 export function getvaluesChanged(values: SelectedOutputValues[],
-    field: string,
+    collections: CollectionAggField[],
     identifier: string,
     collaborativeSearcheService: CollaborativesearchService, useUtc: boolean
 ): any[] {
-    let intervalSelection;
-    const filterValue: Filter = {
-        f: new Array<Array<Expression>>()
-    };
-    const rangeExpression: Expression = {
-        field: field,
-        op: Expression.OpEnum.Range,
-        value: ''
-    };
+    const collabFilters = new Map<string, Filter[]>();
     let startValue;
     let endValue;
+    let rangeExpressionValue = '';
     values.forEach(value => {
         let end = value.endvalue;
         let start = value.startvalue;
@@ -54,15 +49,26 @@ export function getvaluesChanged(values: SelectedOutputValues[],
             startValue = start;
             endValue = end;
         }
-        rangeExpression.value = rangeExpression.value + '[' + start.toString() + '<' + end.toString() + '],';
+        rangeExpressionValue = rangeExpressionValue + '[' + start.toString() + '<' + end.toString() + '],';
     });
-    rangeExpression.value = rangeExpression.value.substring(0, rangeExpression.value.length - 1);
-    filterValue.f.push([rangeExpression]);
+    rangeExpressionValue = rangeExpressionValue.substring(0, rangeExpressionValue.length - 1);
+    collections.forEach(c => {
+        const filterValue: Filter = {
+            f: new Array<Array<Expression>>()
+        };
+        const rangeExpression: Expression = {
+            field: c.field,
+            op: Expression.OpEnum.Range,
+            value: rangeExpressionValue
+        };
+        filterValue.f.push([rangeExpression]);
+        collabFilters.set(c.collectionName, [filterValue]);
+    });
     const collaboration: Collaboration = {
-        filter: filterValue,
+        filters: collabFilters,
         enabled: true
     };
-    intervalSelection = values[values.length - 1];
+    const intervalSelection = values[values.length - 1];
     if (Number(intervalSelection.startvalue).toString() === 'NaN') {
         intervalSelection.startvalue = DateExpression.toDateExpression(<string>intervalSelection.startvalue).toMillisecond(false, useUtc);
         intervalSelection.endvalue = DateExpression.toDateExpression(<string>intervalSelection.endvalue).toMillisecond(true, useUtc);
@@ -72,14 +78,14 @@ export function getvaluesChanged(values: SelectedOutputValues[],
 }
 
 export function getSelectionToSet(data: Array<{ key: number, value: number }> | Map<string, Array<{ key: number, value: number }>>,
-    collaboration: Collaboration, useUtc: boolean
+    collection: string, collaboration: Collaboration, useUtc: boolean
 ): any[] {
     let intervalListSelection;
     let intervalSelection;
     let startValue;
     let endValue;
     let isArray: boolean;
-
+    data = !!data ? data : [];
     if (data instanceof Array) {
         isArray = true;
     } else {
@@ -90,8 +96,11 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
         endvalue: null
     };
     if (collaboration) {
-        const f = collaboration.filter;
-        if (f === null) {
+        let f: Filter;
+        if (collaboration.filters && collaboration.filters.get(collection)) {
+            f = collaboration.filters.get(collection)[0];
+        }
+        if (!f) {
             if (isArray) {
                 if ((<Array<{ key: number, value: number }>>data).length > 0) {
                     currentIntervalSelected.startvalue = <number>data[0].key;
@@ -181,6 +190,7 @@ function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Ar
     let min;
     let max;
     let dataInterval;
+    data = !!data ? data : new Map();
     data.forEach((k, v) => {
         if (min === undefined) {
             min = k.map(kv => kv.key).sort()[0];

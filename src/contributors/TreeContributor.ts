@@ -77,6 +77,10 @@ export class TreeContributor extends Contributor {
         collection: string
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
+        this.collections = [];
+        this.collections.push({
+            collectionName: collection
+        });
         this.title = title;
     }
 
@@ -166,7 +170,10 @@ export class TreeContributor extends Contributor {
 
     public setSelection(data: TreeNode, collaboration: Collaboration): any {
         if (collaboration) {
-            const filter = collaboration.filter;
+            let filter: Filter;
+            if (collaboration.filters && collaboration.filters.get(this.collection)) {
+                filter = collaboration.filters.get(this.collection)[0];
+            }
             if (filter) {
                 const fFilters = filter.f;
                 const fieldsList = [];
@@ -247,8 +254,10 @@ export class TreeContributor extends Contributor {
                     filter.f.push([equalExpression]);
                 }
             });
+            const collabFilters = new Map<string, Filter[]>();
+            collabFilters.set(this.collection, [filter]);
             const collaboration: Collaboration = {
-                filter: filter,
+                filters: collabFilters,
                 enabled: true
             };
             this.collaborativeSearcheService.setFilter(this.identifier, collaboration);

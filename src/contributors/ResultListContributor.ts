@@ -35,6 +35,7 @@ import {
     PageEnum, AdditionalInfo, Attachment, AttachmentConfig
 } from '../models/models';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
+import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
 
 /**
 * Interface defined in Arlas-web-components
@@ -257,6 +258,10 @@ export class ResultListContributor extends Contributor {
         configService: ConfigService, collection: string
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
+        this.collections = [];
+        this.collections.push({
+            collectionName: collection
+        });
         // Link the ResultListContributor and the detailedDataRetriever
         this.detailedDataRetriever.setContributor(this);
         this.fieldsList = [];
@@ -453,8 +458,9 @@ export class ResultListContributor extends Contributor {
         if (filterMap.size === 0) {
             this.collaborativeSearcheService.removeFilter(this.identifier);
         } else {
-            const filterValue: Filter = {
-                f: []
+            const filterValue: FilterOnCollection = {
+                f: [],
+                collection: this.collection
             };
             filterMap.forEach((k, v) => {
                 let op;
@@ -502,8 +508,9 @@ export class ResultListContributor extends Contributor {
                     }
                 }
             });
-
-            const collaboration: Collaboration = { filter: filterValue, enabled: true };
+            const collabFilters = new Map<string, Filter[]>();
+            collabFilters.set(this.collection, [filterValue]);
+            const collaboration: Collaboration = { filters: collabFilters, enabled: true };
             this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
         }
     }
@@ -686,7 +693,11 @@ export class ResultListContributor extends Contributor {
     public setSelection(listResult: Array<Map<string, string | number | Date>>, collaboration: Collaboration): any {
         if (collaboration !== null) {
             const fieldValueMap = new Map<string, string | number | Date>();
-            collaboration.filter.f.forEach(e => {
+            let filterValue: Filter;
+            if (collaboration.filters && collaboration.filters.get(this.collection)) {
+                filterValue = collaboration.filters.get(this.collection)[0];
+            }
+            filterValue.f.forEach(e => {
                 e.forEach(f => {
                     if (fieldValueMap.get(f.field) === undefined) {
                         fieldValueMap.set(f.field, f.value);
