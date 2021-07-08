@@ -33,6 +33,7 @@ import { Aggregation, AggregationResponse, ComputationRequest, ComputationRespon
 import { getAggregationPrecision } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
+import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
 
 export interface LaneStats {
     min?: number;
@@ -114,6 +115,10 @@ export class SwimLaneContributor extends Contributor {
         configService: ConfigService, collection: string, private isOneDimension?: boolean
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
+        this.collections = [];
+        this.collections.push({
+            collectionName: collection
+        });
         if (this.getConfigValue('swimlanes')[0]['jsonpath'] !== undefined) {
             this.json_path = this.getConfigValue('swimlanes')[0]['jsonpath'];
         } else {
@@ -141,8 +146,10 @@ export class SwimLaneContributor extends Contributor {
             });
             equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
             filterValue.f.push([equalExpression]);
+            const collabFilters = new Map<string, Filter[]>();
+            collabFilters.set(this.collection, [filterValue]);
             const collaboration: Collaboration = {
-                filter: filterValue,
+                filters: collabFilters,
                 enabled: true
             };
             this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
@@ -232,8 +239,11 @@ export class SwimLaneContributor extends Contributor {
 
     public setSelection(data: SwimlaneData, collaboration: Collaboration): any {
         if (collaboration) {
-            const f = collaboration.filter;
-            if (f === null) {
+            let f: Filter;
+            if (collaboration.filters && collaboration.filters.get(this.collection)) {
+                f = collaboration.filters.get(this.collection)[0];
+            }
+            if (!f) {
                 this.selectedSwimlanes = new Set();
             } else {
                 const selectedSwimlanesAsArray = f.f[0];

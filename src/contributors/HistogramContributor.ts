@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, from } from 'rxjs';
+import { Observable, from, zip, Subject } from 'rxjs';
 import {
     Collaboration,
     CollaborativesearchService,
@@ -44,7 +44,10 @@ export class HistogramContributor extends Contributor {
     * New data need to be draw on the histogram (could be set to
     @Input() data of HistogramComponent
     */
-    public chartData: Array<{ key: number, value: number }> = new Array<{ key: number, value: number }>();
+    public chartData: Array<{ key: number, value: number, chartId?: string }> =
+        new Array<{ key: number, value: number, chartId?: string }>();
+
+    public chartDataEvent: Subject<{ key: number, value: number, chartId?: string }[]> = new Subject();
     /**
     * New selection current need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
@@ -74,7 +77,7 @@ export class HistogramContributor extends Contributor {
     /**
      * Histogram's range
     */
-    public range: ComputationResponse;
+    public range: number;
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
@@ -111,6 +114,8 @@ export class HistogramContributor extends Contributor {
     * Wether use UTC for display time
     */
     public useUtc = this.getConfigValue('useUtc') !== undefined ? this.getConfigValue('useUtc') : true;
+
+
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -120,7 +125,8 @@ export class HistogramContributor extends Contributor {
     constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService, collection: string, protected isOneDimension?: boolean
+        configService: ConfigService, collection: string, protected isOneDimension?: boolean,
+        public additionalCollections?: Array<{ collectionName: string, field: string }>
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
         const lastAggregation: Aggregation = !!this.aggregations ? this.aggregations[this.aggregations.length - 1] : undefined;
@@ -138,6 +144,11 @@ export class HistogramContributor extends Contributor {
                         .filter(s => this.yearShortcutsLabels.indexOf(s.label) >= 0));
             }
         }
+        this.collections = (!!this.additionalCollections ? this.additionalCollections : []).concat({
+            collectionName: collection,
+            field: this.field
+        });
+
     }
 
     public getNbBuckets() {
@@ -221,7 +232,7 @@ export class HistogramContributor extends Contributor {
     * @param value DateType.millisecond | DateType.second
     */
     public valueChanged(values: SelectedOutputValues[]) {
-        const resultList = getvaluesChanged(values, this.field, this.identifier, this.collaborativeSearcheService, this.useUtc);
+        const resultList = getvaluesChanged(values, this.collections, this.identifier, this.collaborativeSearcheService, this.useUtc);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
@@ -247,7 +258,7 @@ export class HistogramContributor extends Contributor {
         }
     }
 
-    public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
+    public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse[]> {
         this.maxValue = 0;
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return this.fetchDataGivenFilter(this.identifier);
@@ -256,21 +267,24 @@ export class HistogramContributor extends Contributor {
         }
     }
 
-    public computeData(aggResponse: AggregationResponse): Array<{ key: number, value: number }> {
-        const dataTab = new Array<{ key: number, value: number }>();
-        if (aggResponse.elements !== undefined) {
-            aggResponse.elements.forEach(element => {
-                const value = jp.query(element, this.json_path)[0];
-                if (this.maxValue <= value) {
-                    this.maxValue = value;
-                }
-                dataTab.push({ key: element.key, value: value });
-            });
-        }
-        return dataTab;
+    public computeData(aggResponses: AggregationResponse[]): Array<{ key: number, value: number, chartId: string }> {
+        const dataTab = new Array<{ key: number, value: number, chartId: string }>();
+        aggResponses.forEach(aggResponse => {
+            if (aggResponse.elements !== undefined) {
+                aggResponse.elements.forEach(element => {
+                    const value = jp.query(element, this.json_path)[0];
+                    if (this.maxValue <= value) {
+                        this.maxValue = value;
+                    }
+                    dataTab.push({ key: element.key, value: value, chartId: aggResponse['collection'] });
+                });
+            }
+        });
+
+        return dataTab.sort((a, b) => a.key < b.key ? -1 : (a.key > b.key ? 1 : 0));
     }
 
-    public setData(data: Array<{ key: number, value: number }>): Array<{ key: number, value: number }> {
+    public setData(data: Array<{ key: number, value: number, chartId?: string }>): Array<{ key: number, value: number, chartId?: string }> {
         if (!this.isOneDimension || this.isOneDimension === undefined) {
             this.chartData = data;
         } else {
@@ -281,60 +295,72 @@ export class HistogramContributor extends Contributor {
         }
 
         if (this.nbBuckets === undefined && !!data && data.length > 1) {
-            this.range = {
-                value: (+data[data.length - 1].key - +data[0].key),
-                field: this.field
-            };
+            this.range = (+data[data.length - 1].key - +data[0].key);
         }
+
+        this.chartDataEvent.next(this.chartData);
         return this.chartData;
     }
 
-    public setSelection(data: Array<{ key: number, value: number }>, collaboration: Collaboration): any {
-        const resultList = getSelectionToSet(data, collaboration, this.useUtc);
+    public setSelection(data: Array<{ key: number, value: number, chartId?: string }>, collaboration: Collaboration): any {
+        const resultList = getSelectionToSet(data, this.collection, collaboration, this.useUtc);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];
         this.endValue = resultList[3];
         this.timeLabel = this.getShortcutLabel(this.intervalSelection, this.startValue, this.endValue);
         return from([]);
-
     }
 
-    protected fetchDataGivenFilter(identifier: string, additionalFilter?: Filter): Observable<AggregationResponse> {
+    protected fetchDataGivenFilter(identifier: string, additionalFilters?: Map<string, Filter>): Observable<AggregationResponse[]> {
         const collaborations = new Map<string, Collaboration>();
         this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
         if (this.nbBuckets) {
-            const agg = this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-            <ComputationRequest>{ filter: null, field: this.field, metric: ComputationRequest.MetricEnum.SPANNING }],
-                collaborations, this.collection, identifier, additionalFilter, false, this.cacheDuration)
+            const agg = zip(...Array.from(this.collections)
+                .map(ac => {
+                    const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
+                    return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+                <ComputationRequest>{ filter: null, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
+                    collaborations, ac.collectionName, identifier, additionalFilter, false, this.cacheDuration); }))
                 .pipe(
-                    map((computationResponse: ComputationResponse) => {
-                        const dataRange = (!!computationResponse.value) ? computationResponse.value : 0;
-                        const range: ComputationResponse = (!!computationResponse.value) ? computationResponse : null;
+                    map((computationResponses: ComputationResponse[]) => {
+                        const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
                         const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
                         const result = {
-                            range,
+                            dataRange,
                             aggregationPrecision
                         };
                         return result;
                     }),
                     map((r => {
-                        this.range = r.range;
+                        this.range = r.dataRange;
                         this.aggregations[0].interval = r.aggregationPrecision;
-                        return this.collaborativeSearcheService.resolveButNotAggregation(
-                            [projType.aggregate, this.aggregations], collaborations,
-                            this.collection, identifier, additionalFilter, false, this.cacheDuration);
-                    }
-                    )),
+                        return zip(...Array.from(this.collections).map(ac => {
+                            const aggregation = this.aggregations;
+                            aggregation[0].interval = r.aggregationPrecision;
+                            aggregation[0].field = ac.field;
+                            const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
+                            return this.collaborativeSearcheService.resolveButNotAggregation(
+                                [projType.aggregate, aggregation], collaborations,
+                                ac.collectionName, identifier, additionalFilter, false, this.cacheDuration).pipe(map(d => {
+                                    d['collection'] = ac.collectionName;
+                                    return d;
+                                }));
+                        }));
+                    })),
                     flatMap(a => a)
                 );
 
             return agg;
-
         } else {
-            return this.collaborativeSearcheService.resolveButNotAggregation(
-                [projType.aggregate, this.aggregations], collaborations,
-                this.collection, identifier, additionalFilter, false, this.cacheDuration);
+            return zip(...Array.from(this.collections).map(ac => {
+                const aggregation = Object.assign({}, this.aggregations);
+                aggregation[0].field = ac.field;
+                const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
+                return this.collaborativeSearcheService.resolveButNotAggregation(
+                    [projType.aggregate, aggregation], collaborations,
+                    ac.collectionName, identifier, additionalFilter, false, this.cacheDuration);
+            }));
         }
     }
 }

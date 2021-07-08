@@ -25,6 +25,7 @@ import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 
 import { Observable, from } from 'rxjs';
 import { DateExpression, SelectedOutputValues } from '../models/models';
+import { CollectionAggField } from 'arlas-web-core/utils/utils';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -60,68 +61,93 @@ export class DetailedHistogramContributor extends HistogramContributor {
         return jsonSchema;
     }
 
-    public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse> {
+    public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse[]> {
         this.maxValue = 0;
+        let additionalFilters;
+
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            let additionalFilter;
-            const annexedContributorColloaboration = this.collaborativeSearcheService.collaborations.get(this.annexedContributorId);
-            if (this.annexedContributorId && annexedContributorColloaboration) {
-                additionalFilter = this.cloneAnnexedContributorFilter(annexedContributorColloaboration);
-                if (additionalFilter && additionalFilter.f && additionalFilter.f.length === 1) {
-                    // IN HISTOGRAM CONTRIBUTOR, THERE IS ONLY ONE F FILTER
-                    // FOR THIS F, THERE IS ONE EXPRESSION
-                    const expression = additionalFilter.f[0][0];
-                    // THE EXPRESSION VALUE CONTAINS COMMA SEPARATED RANGES '[MIN1<MAX1],[MIN2<MAX2]'
-                    const valuesList = expression.value.split(',');
-                    const lastValue: string = valuesList[valuesList.length - 1];
-                    const lastValueWithoutBrackets = lastValue.substring(1).slice(0, -1);
-                    const intervals = lastValueWithoutBrackets.split('<');
-                    if (!!intervals && intervals.length === 2) {
-                        let min;
-                        let max;
-                        if (Number(intervals[0]).toString() !== 'NaN' && Number(intervals[1]).toString() !== 'NaN') {
-                            min = Number(intervals[0]);
-                            max = Number(intervals[1]);
-                        } else {
-                            min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false, this.useUtc);
-                            max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true, this.useUtc);
+            const annexedContributorCollaboration = this.collaborativeSearcheService.collaborations.get(this.annexedContributorId);
+            if (this.annexedContributorId && annexedContributorCollaboration) {
+                additionalFilters = this.cloneAnnexedContributorFilter(annexedContributorCollaboration);
+                if (!!additionalFilters) {
+                    additionalFilters.forEach((additionalFilter, collection) => {
+                        if (additionalFilter && additionalFilter.f && additionalFilter.f.length === 1) {
+                            // IN HISTOGRAM CONTRIBUTOR, THERE IS ONLY ONE F FILTER
+                            // FOR THIS F, THERE IS ONE EXPRESSION
+                            const expression = additionalFilter.f[0][0];
+                            // THE EXPRESSION VALUE CONTAINS COMMA SEPARATED RANGES '[MIN1<MAX1],[MIN2<MAX2]'
+                            const valuesList = expression.value.split(',');
+                            const lastValue: string = valuesList[valuesList.length - 1];
+                            const lastValueWithoutBrackets = lastValue.substring(1).slice(0, -1);
+                            const intervals = lastValueWithoutBrackets.split('<');
+                            if (!!intervals && intervals.length === 2) {
+                                let min;
+                                let max;
+                                if (Number(intervals[0]).toString() !== 'NaN' && Number(intervals[1]).toString() !== 'NaN') {
+                                    min = Number(intervals[0]);
+                                    max = Number(intervals[1]);
+                                } else {
+                                    min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false, this.useUtc);
+                                    max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true, this.useUtc);
+                                }
+                                const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
+                                const minOffset = Math.trunc(min - offset);
+                                const maxOffset = Math.trunc(max + offset);
+                                expression.value = '[' + minOffset + '<' + maxOffset + ']';
+                                // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
+                                additionalFilter.f = [additionalFilter.f[0]];
+                                this.currentSelectedInterval = { startvalue: min, endvalue: max };
+                            }
                         }
-                        const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
-                        const minOffset = Math.trunc(min - offset);
-                        const maxOffset = Math.trunc(max + offset);
-                        expression.value = '[' + minOffset + '<' + maxOffset + ']';
-                        // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
-                        additionalFilter.f = [additionalFilter.f[0]];
-                        this.currentSelectedInterval = { startvalue: min, endvalue: max };
-                    }
+                    });
                 }
             }
-            return this.fetchDataGivenFilter(this.annexedContributorId, additionalFilter);
+            return this.fetchDataGivenFilter(this.annexedContributorId, additionalFilters);
         } else {
             return from([]);
         }
     }
 
-    public init(aggregations: Array<Aggregation>, field: string, jsonPath: string) {
+    public init(aggregations: Array<Aggregation>, field: string, jsonPath: string, additionalCollections: CollectionAggField[]) {
         this.aggregations = aggregations;
         this.field = field;
         this.json_path = jsonPath;
+        if (!!additionalCollections) {
+            if (!!this.collections) {
+                this.collections = this.collections.concat(additionalCollections);
+            }
+        }
+        this.collections.forEach(c => {
+            if (c.collectionName === this.collection && !c.field) {
+                c.field = field;
+            }
+        });
     }
 
-    private cloneAnnexedContributorFilter(annexedContributorColloaboration: Collaboration): Filter {
-        let filter: Filter;
-        if (annexedContributorColloaboration.filter && annexedContributorColloaboration.filter.f) {
-            filter = { f: [] };
-            const temporaryF = annexedContributorColloaboration.filter.f;
-            temporaryF.forEach(f => {
-                const expressionsList = [];
-                f.forEach(expression => {
-                    expressionsList.push({ field: expression.field, op: expression.op, value: expression.value });
-                });
-                filter.f.push(expressionsList);
+    private cloneAnnexedContributorFilter(annexedContributorColloaboration: Collaboration): Map<string, Filter> {
+        const filters = new Map<string, Filter>();
+        if (!!annexedContributorColloaboration.filters) {
+            this.collections.forEach(c => {
+                let collabFilter: Filter;
+                const collabFilters = annexedContributorColloaboration.filters.get(c.collectionName);
+                if (!!collabFilters && collabFilters.length > 0) {
+                    collabFilter = annexedContributorColloaboration.filters.get(c.collectionName)[0];
+                    if (collabFilter && collabFilter.f) {
+                        const filter = { f: [] };
+                        const temporaryF = collabFilter.f;
+                        temporaryF.forEach(f => {
+                            const expressionsList = [];
+                            f.forEach(expression => {
+                                expressionsList.push({ field: expression.field, op: expression.op, value: expression.value });
+                            });
+                            filter.f.push(expressionsList);
+                        });
+                        filters.set(c.collectionName, filter);
+                    }
+                }
             });
         }
-        return filter;
+        return filters;
     }
 
 }

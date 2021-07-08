@@ -45,6 +45,10 @@ export class ComputeContributor extends Contributor {
     constructor(identifier: string, collaborativeSearcheService: CollaborativesearchService, configService: ConfigService,
         collection: string) {
         super(identifier, configService, collaborativeSearcheService, collection);
+        this.collections = [];
+        this.collections.push({
+            collectionName: collection
+        });
     }
 
     /** return the json schem of this contributor */

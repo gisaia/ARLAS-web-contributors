@@ -64,6 +64,10 @@ export class AnalyticsContributor extends Contributor {
         private groupIdToValues: Map<string, Array<string>>
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
+        this.collections = [];
+        this.collections.push({
+            collectionName: collection
+        });
     }
 
     public static getJsonSchema(): Object {

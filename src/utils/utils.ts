@@ -311,7 +311,7 @@ export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
         }
     } else {
 
-        return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.trunc(zoom) + 6 };
+        return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.trunc(zoom) + 7 };
 
     }
 }

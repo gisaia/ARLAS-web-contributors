@@ -31,6 +31,7 @@ import {
 } from 'arlas-web-core';
 import { Hits, Filter } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/chipssearchContributorConf.schema.json';
+import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.
@@ -79,6 +80,10 @@ export class ChipsSearchContributor extends Contributor {
         collection: string
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
+        this.collections = [];
+        this.collections.push({
+            collectionName: collection
+        });
     }
 
     public static getJsonSchema(): Object {
@@ -89,15 +94,19 @@ export class ChipsSearchContributor extends Contributor {
         const tabOfCount: Array<Observable<{ label: string, hits: Hits }>> = [];
         if (collaborationEvent.id !== this.identifier) {
             let f = new Array<string>();
-            const fil = this.collaborativeSearcheService.getCollaboration(this.identifier);
-            if (fil != null) {
+            const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
+            if (collaboration != null) {
+                let filter: Filter;
+                if (collaboration.filters && collaboration.filters.get(this.collection)) {
+                    filter = collaboration.filters.get(this.collection)[0];
+                }
                 f = Array.from(this.chipMapData.keys());
                 f.forEach(k => {
-                    if (fil.filter.q[0].indexOf(k) < 0) {
+                    if (filter.q[0].indexOf(k) < 0) {
                         this.chipMapData.delete((k));
                     }
                 });
-                f = fil.filter.q[0];
+                f = filter.q[0];
             }
             if (f.length > 0) {
                 f.forEach((k) => {
@@ -239,8 +248,10 @@ export class ChipsSearchContributor extends Contributor {
             q: [tabquery]
         };
         if (this.query.trim().length > 0) {
+            const collabFilters = new Map<string, Filter[]>();
+            collabFilters.set(this.collection, [filters]);
             const data: Collaboration = {
-                filter: filters,
+                filters: collabFilters,
                 enabled: true
             };
             this.collaborativeSearcheService.setFilter(this.identifier, data);
