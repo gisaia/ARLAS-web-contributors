@@ -1,5 +1,13 @@
 # Change Log
 
+## [v18.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.0.0) (2021-07-08)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.2.0...v18.0.0)
+
+**New stuff:**
+
+- Support multiple-collection data in Histograms [\#410](https://github.com/gisaia/ARLAS-web-contributors/issues/410)
+
 ## [v17.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.2.0) (2021-06-24)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.1.1...v17.2.0)
