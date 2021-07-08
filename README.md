@@ -19,7 +19,7 @@ $ npm install --save arlas-web-contributors
 
 ## Documentation
 
-Please find the documentation of all the contributors [here](http://docs.arlas.io/arlas-tech/current/classes/_contributors_donutcontributor_.donutcontributor/)
+Please find the documentation of all the contributors [here](http://docs.arlas.io/arlas-tech/current/classes/_contributors_treecontributor_.treecontributor/)
 
 ## Build
 
