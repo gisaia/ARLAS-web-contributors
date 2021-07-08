@@ -106,7 +106,7 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
                     currentIntervalSelected.startvalue = <number>data[0].key;
                     currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
                     if ((<Array<{ key: number, value: number }>>data).length > 1) {
-                        const dataInterval = (<number>data[1].key - <number>data[0].key);
+                        const dataInterval = getDataInterval(<Array<{ key: number, value: number }>>data);
                         currentIntervalSelected.endvalue += dataInterval;
                     }
                 }
@@ -163,7 +163,7 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
                 currentIntervalSelected.startvalue = <number>data[0].key;
                 currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
                 if ((<Array<{ key: number, value: number }>>data).length > 1) {
-                    const dataInterval = (<number>data[1].key - <number>data[0].key);
+                    const dataInterval = getDataInterval(<Array<{ key: number, value: number }>>data);
                     currentIntervalSelected.endvalue += dataInterval;
                 }
             }
@@ -215,6 +215,26 @@ function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Ar
     }
     return [min, max];
 }
+
+function getDataInterval(data: Array<{ key: number, value: number }>): number {
+    let interval = Number.MAX_VALUE;
+    if (data.length > 1) {
+      /** We need to get the smallest difference between 2 buckets that is different from 0 */
+      for (let i = 0; i < data.length - 1; i++) {
+        const diff = +data[i + 1].key - +data[i].key;
+        if (diff > 0) {
+          interval = Math.min(interval, diff);
+        }
+      }
+      /** this means that all the buckets have the same key (with different chart ids) */
+      if (interval === Number.MAX_VALUE) {
+        interval = 0;
+      }
+    } else {
+      interval = 0;
+    }
+    return interval;
+  }
 
 export function getAggregationPrecision(nbBuckets: number, range: number, aggregationType: Aggregation.TypeEnum): Interval {
     const bucketInterval = range / nbBuckets;
