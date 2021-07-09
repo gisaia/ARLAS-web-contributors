@@ -1701,6 +1701,30 @@ export class MapContributor extends Contributor {
         return filter;
     }
 
+    public clearData(s: string) {
+        const sourceType = this.sourcesTypesIndex.get(s);
+        switch (sourceType) {
+            case this.CLUSTER_SOURCE:
+                this.parentCellsPerSource.set(s, new Set());
+                this.cellsPerSource.set(s, new Map());
+                this.aggSourcesStats.set(s, { count: 0 });
+                this.sourcesPrecisions.set(s, {});
+                break;
+            case this.TOPOLOGY_SOURCE:
+                this.topologyDataPerSource.set(s, new Array());
+                this.aggSourcesStats.set(s, { count: 0 });
+                this.sourcesPrecisions.set(s, {});
+                break;
+            case this.FEATURE_SOURCE:
+                this.featureDataPerSource.set(s, []);
+                this.featuresIdsIndex.set(s, new Set());
+                this.featuresOldExtent.set(s, undefined);
+                this.searchNormalizations.set(s, new Map());
+                this.searchSourcesMetrics.set(s, new Set());
+                break;
+        }
+        this.sourcesVisitedTiles.set(s, new Set());
+    }
 
     public static getClusterSource(ls: LayerSourceConfig): LayerClusterSource {
         const clusterLayer = new LayerClusterSource();
@@ -2816,31 +2840,6 @@ export class MapContributor extends Contributor {
             }
             f.properties[normalizeField + NORMALIZE] = normalizedValue;
         }
-    }
-
-    private clearData(s: string) {
-        const sourceType = this.sourcesTypesIndex.get(s);
-        switch (sourceType) {
-            case this.CLUSTER_SOURCE:
-                this.parentCellsPerSource.set(s, new Set());
-                this.cellsPerSource.set(s, new Map());
-                this.aggSourcesStats.set(s, { count: 0 });
-                this.sourcesPrecisions.set(s, {});
-                break;
-            case this.TOPOLOGY_SOURCE:
-                this.topologyDataPerSource.set(s, new Array());
-                this.aggSourcesStats.set(s, { count: 0 });
-                this.sourcesPrecisions.set(s, {});
-                break;
-            case this.FEATURE_SOURCE:
-                this.featureDataPerSource.set(s, []);
-                this.featuresIdsIndex.set(s, new Set());
-                this.featuresOldExtent.set(s, undefined);
-                this.searchNormalizations.set(s, new Map());
-                this.searchSourcesMetrics.set(s, new Set());
-                break;
-        }
-        this.sourcesVisitedTiles.set(s, new Set());
     }
 
     private getVisitedXYZTiles(extent, sources: Array<string>): Set<string> {
