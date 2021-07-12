@@ -33,7 +33,7 @@ import {
 import {
     OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
-    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType
+    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
@@ -70,12 +70,6 @@ export const MAX = '_max_';
  */
 export class MapContributor extends Contributor {
 
-    /**
-     * By default the contributor computes the data in a dynamic way (`Dynamic mode`): it switches between
-     * `clusters` and `features` mode according to the zoom level and the number of features.
-     * In the `Simple mode` the contributor returns just the features (with a given sort and size and an optional filter)
-     */
-    public dataMode: DataMode;
     public isSimpleModeAccumulative: boolean;
     public geoQueryOperation: Expression.OpEnum;
     public geoQueryField: string;
@@ -91,7 +85,6 @@ export class MapContributor extends Contributor {
     private FEATURE_SOURCE = 'feature';
 
     private LAYERS_SOURCES_KEY = 'layers_sources';
-    private DATA_MODE_KEY = 'data_mode';
     private SIMPLE_MODE_ACCUMULATIVE_KEY = 'simple_mode_accumulative';
     private GEO_QUERY_OP_KEY = 'geo_query_op';
     private GEO_QUERY_FIELD_KEY = 'geo_query_field';
@@ -108,11 +101,11 @@ export class MapContributor extends Contributor {
 
     private clusterLayersIndex: Map<string, LayerClusterSource>;
     private topologyLayersIndex: Map<string, LayerTopologySource>;
-    private featureLayersIndex: Map<string, LayerFeatureSource>;
+    private featureLayerSourcesIndex: Map<string, LayerFeatureSource>;
 
     private sourcesTypesIndex: Map<string, string> = new Map();
-    private layersSourcesIndex: Map<string, string> = new Map();
-    private sourcesLayersIndex: Map<string, Set<string>> = new Map();
+    private layerToSourceIndex: Map<string, string> = new Map();
+    private sourceToLayerIndex: Map<string, Set<string>> = new Map();
     private visibiltyRulesIndex: Map<string, { type: string, minzoom: number, maxzoom: number, nbfeatures: number }> = new Map();
     private layersVisibiltyRulesIndex: Map<string, { minzoom: number, maxzoom: number}> = new Map();
 
@@ -210,7 +203,6 @@ export class MapContributor extends Contributor {
             collectionName: collection
         });
         const layersSourcesConfig: Array<LayerSourceConfig> = this.getConfigValue(this.LAYERS_SOURCES_KEY);
-        const dataModeConfig = this.getConfigValue(this.DATA_MODE_KEY);
         const simpleModeAccumulativeConfig = this.getConfigValue(this.SIMPLE_MODE_ACCUMULATIVE_KEY);
         const geoQueryOpConfig = this.getConfigValue(this.GEO_QUERY_OP_KEY);
         const geoQueryFieldConfig = this.getConfigValue(this.GEO_QUERY_FIELD_KEY);
@@ -225,17 +217,12 @@ export class MapContributor extends Contributor {
         if (layersSourcesConfig) {
             this.clusterLayersIndex = this.getClusterLayersIndex(layersSourcesConfig);
             this.topologyLayersIndex = this.getTopologyLayersIndex(layersSourcesConfig);
-            this.featureLayersIndex = this.getFeatureLayersIndex(layersSourcesConfig);
+            this.featureLayerSourcesIndex = this.getFeatureLayersIndex(layersSourcesConfig);
         }
-        if (dataModeConfig !== undefined && DataMode[dataModeConfig].toString() === DataMode.simple.toString()) {
-            this.dataMode = DataMode.simple;
-            if (simpleModeAccumulativeConfig !== undefined) {
-                this.isSimpleModeAccumulative = simpleModeAccumulativeConfig;
-            } else {
-                this.isSimpleModeAccumulative = true;
-            }
+        if (simpleModeAccumulativeConfig !== undefined) {
+            this.isSimpleModeAccumulative = simpleModeAccumulativeConfig;
         } else {
-            this.dataMode = DataMode.dynamic;
+            this.isSimpleModeAccumulative = true;
         }
         if (geoQueryOpConfig !== undefined) {
             if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Within.toString()) {
@@ -289,32 +276,6 @@ export class MapContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<any> {
-        switch (this.dataMode) {
-            case DataMode.simple: {
-                return this.fetchDataSimpleMode(collaborationEvent);
-            }
-            case DataMode.dynamic: {
-                this.legendData.clear();
-                return this.fetchDataDynamicMode(collaborationEvent);
-            }
-        }
-    }
-
-    public fetchDataSimpleMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
-        const wrapExtent = extentToString(this.mapTestExtent);
-        const rawExtent = extentToString(this.mapTestRawExtent);
-        this.searchNormalizations.clear();
-        this.searchSourcesMetrics.clear();
-        this.featureDataPerSource.clear();
-        this.featuresIdsIndex.clear();
-        this.featuresOldExtent.clear();
-        this.getSimpleModeData(wrapExtent, rawExtent, this.searchSort, this.isSimpleModeAccumulative);
-        return of();
-    }
-
-    public fetchDataDynamicMode(collaborationEvent: CollaborationEvent): Observable<FeatureCollection> {
-        const wrapExtent = extentToString(this.mapTestExtent);
-        const rawExtent = extentToString(this.mapTestRawExtent);
         this.aggSourcesMetrics.clear();
         this.aggSourcesStats.clear();
         this.sourcesPrecisions.clear();
@@ -327,67 +288,79 @@ export class MapContributor extends Contributor {
         this.parentCellsPerSource.clear();
         this.searchNormalizations.clear();
         this.searchSourcesMetrics.clear();
-        this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, this.visibleSources);
+        const wrapExtent = extentToString(this.mapTestExtent);
+        const rawExtent = extentToString(this.mapTestRawExtent);
+        const windowVisibleSources = new Set<string>();
+        const wideVisibleSources = new Set<string>();
+        this.visibleSources.forEach(visibleSource => {
+            if (this.featureLayerSourcesIndex.has(visibleSource)
+                && this.featureLayerSourcesIndex.get(visibleSource).renderMode === FeatureRenderMode.window) {
+                    windowVisibleSources.add(visibleSource);
+            } else {
+                wideVisibleSources.add(visibleSource);
+            }
+        });
+
+        this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
+        this.getWideModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, wideVisibleSources);
         return of();
     }
 
-    public onMoveSimpleMode(newMove: OnMoveResult) {
-        this.zoom = newMove.zoom;
-        this.center = newMove.center;
-        this.mapLoadExtent = newMove.extendForLoad;
-        this.mapTestExtent = newMove.extendForTest;
-        this.mapTestRawExtent = newMove.rawExtendForTest;
+
+
+    /** This method is triggered after the map has been moved by the user. Its aim is
+     * - Verify if there new data to fetch on the new map extent
+     * - Verify if the zoom has changed and therefore verify if there is a need to fetch more/less precise data
+     * - Update the state variables of this contributor instance used for: zoom, center, loadextent, testextent,...
+     */
+    public onMapMoved(moveParams: OnMoveResult): void {
+        this.zoom = moveParams.zoom;
+        this.center = moveParams.center;
+        this.mapLoadExtent = moveParams.extendForLoad;
+        this.mapTestExtent = moveParams.extendForTest;
+        this.mapTestRawExtent = moveParams.rawExtendForTest;
         const wrapExtent = extentToString(this.mapTestExtent);
         const rawExtent = extentToString(this.mapTestRawExtent);
         if (this.updateData) {
-            this.getSimpleModeData(wrapExtent, rawExtent, this.searchSort, this.isSimpleModeAccumulative);
+            this.visibleSources.clear();
+            const windowVisibleSources = new Set<string>();
+            const wideVisibleSources = new Set<string>();
+            moveParams.visibleLayers.forEach(l => {
+                const visibleSource = this.layerToSourceIndex.get(l);
+                this.visibleSources.add(visibleSource);
+                if (this.featureLayerSourcesIndex.has(visibleSource)
+                    && this.featureLayerSourcesIndex.get(visibleSource).renderMode === FeatureRenderMode.window) {
+                        windowVisibleSources.add(visibleSource);
+                } else {
+                    wideVisibleSources.add(visibleSource);
+                }
+            });
+            this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
+            this.getWideModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, wideVisibleSources);
         }
     }
 
     public changeVisualisation(visibleLayers: Set<string>) {
-        const visibleSources = new Set<string>();
-        visibleLayers.forEach(l => {
-            visibleSources.add(this.layersSourcesIndex.get(l));
-        });
-        this.visibleSources = visibleSources;
-        if (this.dataMode === DataMode.dynamic) {
-            const wrapExtent = extentToString(this.mapTestExtent);
-            const rawExtent = extentToString(this.mapTestRawExtent);
-            /** Call getDynamicModeData method without clearing the sources because we didn't change the precision*/
-            this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, this.visibleSources);
-        } else {
-            const dFeatureSources = Array.from(this.featureLayersIndex.keys());
-            dFeatureSources.forEach(s => {
-                this.sourcesLayersIndex.get(s).forEach(l => this.visibilityStatus.set(l, false));
-            });
-            /** SWITCH TO VISIBLE MODE ONLY FEATURE SOURCES */
-            [...visibleLayers]
-                .filter(l => this.layersSourcesIndex.get(l).startsWith(this.FEATURE_SOURCE) &&
-                    !this.layersSourcesIndex.get(l).startsWith(this.TOPOLOGY_SOURCE))
-                .forEach(l => this.visibilityStatus.set(l, true));
-            this.visibilityUpdater.next(this.visibilityStatus);
-
-        }
-    }
-    /**
-    * Function called on onMove event
-    */
-    public onMoveDynamicMode(newMove: OnMoveResult) {
-        this.zoom = newMove.zoom;
-        this.mapLoadExtent = newMove.extendForLoad;
-        this.mapTestExtent = newMove.extendForTest;
-        this.mapTestRawExtent = newMove.rawExtendForTest;
         const wrapExtent = extentToString(this.mapTestExtent);
         const rawExtent = extentToString(this.mapTestRawExtent);
         const visibleSources = new Set<string>();
-        this.visibleSources.clear();
-        newMove.visibleLayers.forEach(l => {
-            this.visibleSources.add(this.layersSourcesIndex.get(l)); visibleSources.add(this.layersSourcesIndex.get(l));
+        const windowVisibleSources = new Set<string>();
+        const wideVisibleSources = new Set<string>();
+        visibleLayers.forEach(l => {
+            const visibleSource = this.layerToSourceIndex.get(l);
+            visibleSources.add(visibleSource);
+            if (this.featureLayerSourcesIndex.has(visibleSource)
+                && this.featureLayerSourcesIndex.get(visibleSource).renderMode === FeatureRenderMode.window) {
+                    windowVisibleSources.add(visibleSource);
+            } else {
+                wideVisibleSources.add(visibleSource);
+            }
         });
-        if (this.updateData) {
-            this.getDynamicModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, visibleSources);
-        }
+        this.visibleSources = visibleSources;
+        this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
+        this.getWideModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, wideVisibleSources);
     }
+
     public computeData(data: any) {
     }
 
@@ -428,50 +401,58 @@ export class MapContributor extends Contributor {
      * @param whichPage Whether to fetch next or previous set.
      * @param fromParam (page.from in arlas api) an offset from which fetching hits starts. It's ignored if `afterParam` is set.
      */
-    public getSimpleModeData(wrapExtent, rawExtent, sort: string, keepOldData = true,
+    public getWindowModeData(wrapExtent, rawExtent, visibleSources: Set<string>, sort: string, keepOldData = true,
         afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?): void {
-        const countFilter: Filter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
-        if (this.expressionFilter !== undefined) {
-            countFilter.f.push([this.expressionFilter]);
-        }
-        this.addFilter(countFilter, this.additionalFilter);
-        const dFeatureSources = Array.from(this.featureLayersIndex.keys());
-        dFeatureSources.forEach(s => {
-            this.sourcesLayersIndex.get(s).forEach(l => this.visibilityStatus.set(l, true));
-        });
-        const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.combined);
-        const search: Search = featureSearchBuilder.get(this.getSearchId(SearchStrategy.combined)).search;
-        if (!keepOldData) {
-            const sources = featureSearchBuilder.get(this.getSearchId(SearchStrategy.combined)).sources;
-            sources.forEach(s => {
-                this.featureDataPerSource.set(s, []);
+        if (!!visibleSources && visibleSources.size > 0) {
+            const countFilter: Filter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
+            if (this.expressionFilter !== undefined) {
+                countFilter.f.push([this.expressionFilter]);
+            }
+            this.addFilter(countFilter, this.additionalFilter);
+            /** Retrieve the list of all window sources to apply ONE search request to the server
+             * This serach request will contain all the geometries, and additional info needed for each window source
+             * to be properly displayed
+            */
+            const allWindowSources = [];
+            this.featureLayerSourcesIndex.forEach((ls, s) => {
+                if (ls.renderMode === FeatureRenderMode.window) {
+                    allWindowSources.push(s);
+                }
             });
-        }
-        if (sort && sort.length > 0) {
-            search.page.sort = sort;
-        } else {
-            search.page.sort = 'geodistance:' + this.center.lat.toString() + ' ' + this.center.lng.toString() + ',' +
-                this.collectionParameters.id_path;
-        }
-        let renderStrategy: RenderStrategy;
-        if (afterParam) {
-            if (whichPage === PageEnum.next) {
-                search.page.after = afterParam;
+            const featureSearchBuilder = this.prepareFeaturesSearch(allWindowSources, SearchStrategy.combined);
+            const search: Search = featureSearchBuilder.get(this.getSearchId(SearchStrategy.combined)).search;
+            if (!keepOldData) {
+                const sources = featureSearchBuilder.get(this.getSearchId(SearchStrategy.combined)).sources;
+                sources.forEach(s => {
+                    this.featureDataPerSource.set(s, []);
+                });
+            }
+            if (sort && sort.length > 0) {
+                search.page.sort = sort;
             } else {
-                search.page.before = afterParam;
+                search.page.sort = 'geodistance:' + this.center.lat.toString() + ' ' + this.center.lng.toString() + ',' +
+                    this.collectionParameters.id_path;
             }
-            renderStrategy = RenderStrategy.scroll;
-        } else {
-            if (fromParam !== undefined) {
-                search.page.from = fromParam;
+            let renderStrategy: RenderStrategy;
+            if (afterParam) {
+                if (whichPage === PageEnum.next) {
+                    search.page.after = afterParam;
+                } else {
+                    search.page.before = afterParam;
+                }
+                renderStrategy = RenderStrategy.scroll;
+            } else {
+                if (fromParam !== undefined) {
+                    search.page.from = fromParam;
+                }
+                renderStrategy = RenderStrategy.accumulative;
             }
-            renderStrategy = RenderStrategy.accumulative;
+            featureSearchBuilder.set(this.getSearchId(SearchStrategy.combined), { search, sources: allWindowSources });
+            this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy, maxPages, whichPage);
         }
-        featureSearchBuilder.set(this.getSearchId(SearchStrategy.combined), { search, sources: dFeatureSources });
-        this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy, maxPages, whichPage);
     }
 
-    public getDynamicModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, zoom: number, visibleSources: Set<string>): void {
+    public getWideModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, zoom: number, visibleSources: Set<string>): void {
         const countFilter = this.getFilterForCount(rawTestExtent, wrapTestExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
@@ -523,7 +504,7 @@ export class MapContributor extends Contributor {
                     this.topologyLayersIndex.forEach((v, k) => {
                         if (!displayableTopoSources.has(k)) {
                             removableTopoSources.add(k);
-                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                            this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                         }
                     });
                     removableTopoSources.forEach(s => {
@@ -847,16 +828,7 @@ export class MapContributor extends Contributor {
     }
 
     public onMove(newMove: OnMoveResult) {
-        switch (this.dataMode) {
-            case DataMode.simple: {
-                this.onMoveSimpleMode(newMove);
-                break;
-            }
-            case DataMode.dynamic: {
-                this.onMoveDynamicMode(newMove);
-                break;
-            }
-        }
+        this.onMapMoved(newMove);
     }
 
     /**
@@ -926,7 +898,7 @@ export class MapContributor extends Contributor {
                     if (normalizations) {
                         normalizations.forEach(n => this.normalize(feature, n));
                     }
-                    const colorFields = this.featureLayersIndex.get(s).colorFields;
+                    const colorFields = this.featureLayerSourcesIndex.get(s).colorFields;
                     const fieldsToKeep = new Set<string>();
                     if (colorFields) {
                         colorFields.forEach(colorField => {
@@ -935,7 +907,7 @@ export class MapContributor extends Contributor {
                             this.setColorFieldLegend(colorField, feature, fieldsToKeep);
                         });
                     }
-                    const providedFields = this.featureLayersIndex.get(s).providedFields;
+                    const providedFields = this.featureLayerSourcesIndex.get(s).providedFields;
                     if (providedFields) {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
@@ -1267,7 +1239,7 @@ export class MapContributor extends Contributor {
         const geometry_source_index = new Map();
         const source_geometry_index = new Map();
         sources.forEach(cs => {
-            const ls = this.featureLayersIndex.get(cs);
+            const ls = this.featureLayerSourcesIndex.get(cs);
             const geometryPath = ls.returnedGeometry;
             geometry_source_index.set(geometryPath, cs);
             source_geometry_index.set(cs, geometryPath);
@@ -1476,7 +1448,14 @@ export class MapContributor extends Contributor {
         const sortWithId = appendIdToSort(sort, ASC, this.collectionParameters.id_path);
         const keepOldData = true;
         if (after !== undefined) {
-            this.getSimpleModeData(wrapExtent, rawExtent, sortWithId, keepOldData, after, whichPage, maxPages);
+            const windowVisibleSources = new Set<string>();
+            this.visibleSources.forEach(visibleSource => {
+                if (this.featureLayerSourcesIndex.has(visibleSource)
+                    && this.featureLayerSourcesIndex.get(visibleSource).renderMode === FeatureRenderMode.window) {
+                        windowVisibleSources.add(visibleSource);
+                }
+            });
+            this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, sortWithId, keepOldData, after, whichPage, maxPages);
         }
     }
 
@@ -1485,7 +1464,7 @@ export class MapContributor extends Contributor {
         const geometry_source_index = new Map();
         const source_geometry_index = new Map();
         sources.forEach(cs => {
-            const ls = this.featureLayersIndex.get(cs);
+            const ls = this.featureLayerSourcesIndex.get(cs);
             const geometryPath = ls.returnedGeometry;
             geometry_source_index.set(geometryPath, cs);
             source_geometry_index.set(cs, geometryPath);
@@ -1558,7 +1537,14 @@ export class MapContributor extends Contributor {
         const rawExtent = extentToString(this.mapTestRawExtent);
         const sort = appendId ? appendIdToSort(this.searchSort, ASC, this.collectionParameters.id_path) : this.searchSort;
         const keepOldData = false;
-        this.getSimpleModeData(wrapExtent, rawExtent, sort, keepOldData, null, null, null, fromParam);
+        const windowVisibleSources = new Set<string>();
+        this.visibleSources.forEach(visibleSource => {
+            if (this.featureLayerSourcesIndex.has(visibleSource)
+                && this.featureLayerSourcesIndex.get(visibleSource).renderMode === FeatureRenderMode.window) {
+                    windowVisibleSources.add(visibleSource);
+            }
+        });
+        this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, sort, keepOldData, null, null, null, fromParam);
     }
 
     public getFilterForCount(rawExtend: string, wrapExtend: string, countGeoField: string): Filter {
@@ -1765,20 +1751,21 @@ export class MapContributor extends Contributor {
     }
 
     public static getFeatureSource(ls: LayerSourceConfig): LayerFeatureSource {
-        const featureLayer = new LayerFeatureSource();
-        featureLayer.id = ls.id;
-        featureLayer.source = ls.source;
-        featureLayer.layerMaxzoom = ls.maxzoom;
-        featureLayer.layerMinzoom = ls.minzoom;
-        featureLayer.sourceMaxzoom = ls.maxzoom;
-        featureLayer.sourceMinzoom = ls.minzoom;
-        featureLayer.maxfeatures = ls.maxfeatures;
-        featureLayer.normalizationFields = ls.normalization_fields;
-        featureLayer.includeFields = new Set(ls.include_fields || []);
-        featureLayer.returnedGeometry = ls.returned_geometry;
-        featureLayer.providedFields = ls.provided_fields;
-        featureLayer.colorFields = new Set(ls.colors_from_fields || []);
-        return featureLayer;
+        const featureLayerSource = new LayerFeatureSource();
+        featureLayerSource.id = ls.id;
+        featureLayerSource.source = ls.source;
+        featureLayerSource.renderMode = ls.render_mode;
+        featureLayerSource.layerMaxzoom = ls.maxzoom;
+        featureLayerSource.layerMinzoom = ls.minzoom;
+        featureLayerSource.sourceMaxzoom = ls.maxzoom;
+        featureLayerSource.sourceMinzoom = ls.minzoom;
+        featureLayerSource.maxfeatures = ls.maxfeatures;
+        featureLayerSource.normalizationFields = ls.normalization_fields;
+        featureLayerSource.includeFields = new Set(ls.include_fields || []);
+        featureLayerSource.returnedGeometry = ls.returned_geometry;
+        featureLayerSource.providedFields = ls.provided_fields;
+        featureLayerSource.colorFields = new Set(ls.colors_from_fields || []);
+        return featureLayerSource;
     }
 
     public static getClusterAggregration(source: LayerSourceConfig): Aggregation {
@@ -2178,7 +2165,7 @@ export class MapContributor extends Contributor {
         const includePerSearch = new Map<string, Set<string>>();
         const geometriesPerSearch = new Map<string, Set<string>>();
         featureSources.forEach(cs => {
-            const ls = this.featureLayersIndex.get(cs);
+            const ls = this.featureLayerSourcesIndex.get(cs);
             /** the split of search requests is done thanks to this id.
              * change the id construction to change the 'granularity' of this split
              */
@@ -2346,7 +2333,7 @@ export class MapContributor extends Contributor {
 
     private checkFeatures(featuresSources: Array<string>, callOrigin: string): void {
         featuresSources.forEach(cs => {
-            const ls = this.featureLayersIndex.get(cs);
+            const ls = this.featureLayerSourcesIndex.get(cs);
             const searchId = ls.maxfeatures + ':' + ls.sourceMinzoom + ':' + ls.sourceMaxzoom;
             let cancelSubjects = this.cancelSubjects.get(searchId);
             if (!cancelSubjects) { cancelSubjects = new Map(); }
@@ -2370,7 +2357,7 @@ export class MapContributor extends Contributor {
                 fetchId = ls.geometryId + ':' + ls.granularity.toString();
                 break;
             case this.FEATURE_SOURCE:
-                ls = this.featureLayersIndex.get(s);
+                ls = this.featureLayerSourcesIndex.get(s);
                 fetchId = ls.maxfeatures + ':' + ls.minzoom + ':' + ls.maxzoom;
                 break;
         }
@@ -2547,11 +2534,11 @@ export class MapContributor extends Contributor {
                         existingClusterLayer.metrics;
                 }
             }
-            this.layersSourcesIndex.set(ls.id, ls.source);
-            let layers = this.sourcesLayersIndex.get(ls.source);
+            this.layerToSourceIndex.set(ls.id, ls.source);
+            let layers = this.sourceToLayerIndex.get(ls.source);
             if (!layers) { layers = new Set(); }
             layers.add(ls.id);
-            this.sourcesLayersIndex.set(ls.source, layers);
+            this.sourceToLayerIndex.set(ls.source, layers);
             clusterLayers.set(clusterLayer.source, clusterLayer);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(clusterLayer.sourceMinzoom, clusterLayer.sourceMaxzoom, clusterLayer.layerMinzoom,
@@ -2590,11 +2577,11 @@ export class MapContributor extends Contributor {
                 }
             }
             topologyLayers.set(topologyLayer.source, topologyLayer);
-            this.layersSourcesIndex.set(ls.id, ls.source);
-            let layers = this.sourcesLayersIndex.get(ls.source);
+            this.layerToSourceIndex.set(ls.id, ls.source);
+            let layers = this.sourceToLayerIndex.get(ls.source);
             if (!layers) { layers = new Set(); }
             layers.add(ls.id);
-            this.sourcesLayersIndex.set(ls.source, layers);
+            this.sourceToLayerIndex.set(ls.source, layers);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(topologyLayer.sourceMinzoom, topologyLayer.sourceMaxzoom, topologyLayer.layerMinzoom,
                 topologyLayer.layerMaxzoom, topologyLayer.maxfeatures, this.TOPOLOGY_SOURCE, topologyLayer.source, topologyLayer.id);
@@ -2612,42 +2599,44 @@ export class MapContributor extends Contributor {
         const featureLayers = new Map<string, LayerFeatureSource>();
         layersSourcesConfig.filter(ls => ls.source.startsWith(this.FEATURE_SOURCE) &&
             !ls.source.startsWith(this.TOPOLOGY_SOURCE)).forEach(ls => {
-                const featureLayer = MapContributor.getFeatureSource(ls);
+                const featureLayerSource = MapContributor.getFeatureSource(ls);
                 /** extends rules visibility */
-                const existingFeatureLayer = featureLayers.get(featureLayer.source);
+                const existingFeatureLayer = featureLayers.get(featureLayerSource.source);
                 if (existingFeatureLayer) {
-                    featureLayer.sourceMinzoom = Math.min(existingFeatureLayer.sourceMinzoom, featureLayer.sourceMinzoom);
-                    featureLayer.sourceMaxzoom = Math.max(existingFeatureLayer.sourceMaxzoom, featureLayer.sourceMaxzoom);
-                    featureLayer.maxfeatures = Math.max(existingFeatureLayer.maxfeatures, featureLayer.maxfeatures);
+                    featureLayerSource.sourceMinzoom = Math.min(existingFeatureLayer.sourceMinzoom, featureLayerSource.sourceMinzoom);
+                    featureLayerSource.sourceMaxzoom = Math.max(existingFeatureLayer.sourceMaxzoom, featureLayerSource.sourceMaxzoom);
+                    featureLayerSource.maxfeatures = Math.max(existingFeatureLayer.maxfeatures, featureLayerSource.maxfeatures);
                     if (existingFeatureLayer.providedFields) {
-                        featureLayer.providedFields = featureLayer.providedFields ?
-                            existingFeatureLayer.providedFields.concat(featureLayer.providedFields) : existingFeatureLayer.providedFields;
+                        featureLayerSource.providedFields = featureLayerSource.providedFields ?
+                            existingFeatureLayer.providedFields.concat(featureLayerSource.providedFields) :
+                            existingFeatureLayer.providedFields;
                     }
                     if (existingFeatureLayer.colorFields) {
-                        featureLayer.colorFields = featureLayer.colorFields ?
-                            new Set([...existingFeatureLayer.colorFields].concat([...featureLayer.colorFields]))
+                        featureLayerSource.colorFields = featureLayerSource.colorFields ?
+                            new Set([...existingFeatureLayer.colorFields].concat([...featureLayerSource.colorFields]))
                             : existingFeatureLayer.colorFields;
                     }
                     if (existingFeatureLayer.includeFields) {
-                        featureLayer.includeFields = featureLayer.includeFields ?
-                            new Set([...existingFeatureLayer.includeFields].concat([...featureLayer.includeFields])) :
+                        featureLayerSource.includeFields = featureLayerSource.includeFields ?
+                            new Set([...existingFeatureLayer.includeFields].concat([...featureLayerSource.includeFields])) :
                             existingFeatureLayer.includeFields;
                     }
                     if (existingFeatureLayer.normalizationFields) {
-                        featureLayer.normalizationFields = featureLayer.normalizationFields ?
-                            existingFeatureLayer.normalizationFields.concat(featureLayer.normalizationFields) :
+                        featureLayerSource.normalizationFields = featureLayerSource.normalizationFields ?
+                            existingFeatureLayer.normalizationFields.concat(featureLayerSource.normalizationFields) :
                             existingFeatureLayer.normalizationFields;
                     }
                 }
-                this.layersSourcesIndex.set(ls.id, ls.source);
-                let layers = this.sourcesLayersIndex.get(ls.source);
+                this.layerToSourceIndex.set(ls.id, ls.source);
+                let layers = this.sourceToLayerIndex.get(ls.source);
                 if (!layers) { layers = new Set(); }
                 layers.add(ls.id);
-                this.sourcesLayersIndex.set(ls.source, layers);
-                featureLayers.set(featureLayer.source, featureLayer);
+                this.sourceToLayerIndex.set(ls.source, layers);
+                featureLayers.set(featureLayerSource.source, featureLayerSource);
                 this.dataSources.add(ls.source);
-                this.indexVisibilityRules(featureLayer.sourceMinzoom, featureLayer.sourceMaxzoom, featureLayer.layerMinzoom,
-                    featureLayer.layerMaxzoom, featureLayer.maxfeatures, this.FEATURE_SOURCE, featureLayer.source, featureLayer.id);
+                this.indexVisibilityRules(featureLayerSource.sourceMinzoom, featureLayerSource.sourceMaxzoom,
+                    featureLayerSource.layerMinzoom, featureLayerSource.layerMaxzoom, featureLayerSource.maxfeatures,
+                    this.FEATURE_SOURCE, featureLayerSource.source, featureLayerSource.id);
                 this.sourcesTypesIndex.set(ls.source, this.FEATURE_SOURCE);
 
             });
@@ -2689,46 +2678,46 @@ export class MapContributor extends Contributor {
                     case this.CLUSTER_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures <= nbFeatures) {
                             clusterSources.push(k);
-                            this.sourcesLayersIndex.get(k).forEach(l => {
+                            this.sourceToLayerIndex.get(k).forEach(l => {
                                 const zoomRule = this.layersVisibiltyRulesIndex.get(l);
                                 this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
                             });
                         } else {
                             sourcesToRemove.push(k);
-                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                            this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                         }
                         break;
                     }
                     case this.TOPOLOGY_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
-                            this.sourcesLayersIndex.get(k).forEach(l => {
+                            this.sourceToLayerIndex.get(k).forEach(l => {
                                 const zoomRule = this.layersVisibiltyRulesIndex.get(l);
                                 this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
                             });
                             topologySources.push(k);
                         } else {
                             sourcesToRemove.push(k);
-                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                            this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                         }
                         break;
                     }
                     case this.FEATURE_SOURCE: {
                         if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
                             featureSources.push(k);
-                            this.sourcesLayersIndex.get(k).forEach(l => {
+                            this.sourceToLayerIndex.get(k).forEach(l => {
                                 const zoomRule = this.layersVisibiltyRulesIndex.get(l);
                                 this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
                             });
                         } else {
                             sourcesToRemove.push(k);
-                            this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                            this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                         }
                         break;
                     }
                 }
             } else if (visibleSources.has(k)) {
                 sourcesToRemove.push(k);
-                this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
             } else {
                 sourcesToRemove.push(k);
             }
@@ -2744,18 +2733,18 @@ export class MapContributor extends Contributor {
             if (v.type === this.TOPOLOGY_SOURCE) {
                 if (v.maxzoom >= zoom && v.minzoom <= zoom && visibleSources.has(k)) {
                     if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
-                        this.sourcesLayersIndex.get(k).forEach(l => {
+                        this.sourceToLayerIndex.get(k).forEach(l => {
                             const zoomRule = this.layersVisibiltyRulesIndex.get(l);
                             this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
                         });
                         topologySources.push(k);
                     } else {
                         sourcesToRemove.push(k);
-                        this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                        this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                     }
                 } else if (visibleSources.has(k)) {
                     sourcesToRemove.push(k);
-                    this.sourcesLayersIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                    this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
                 }
             }
         });

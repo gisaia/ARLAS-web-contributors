@@ -167,10 +167,25 @@ export interface StringifiedTimeShortcut {
     type: string;
 }
 
+/** The render mode of a `Feature` layersource
+ * Only layersource of type `Feature` are concerned
+*/
+export enum FeatureRenderMode {
+    /** This mode fetches data that fit a window of explorat°. This window has a size and a sort both defined at the MapContributor level.
+     * maxfeature/minfeatures are ignored in this mode
+     */
+    window = 'window',
+    /** This mode fetches data globally. In this case the data undergoes the visibilty rules imposed by maxzoom/maxfeatures */
+    // todo: choose a name validated by all the team
+    wide = 'wide'
+
+}
+
 export interface LayerSourceConfig {
     id: string;
     name?: string;
     source: string;
+    render_mode: FeatureRenderMode;
     minzoom: number;
     maxzoom: number;
     minfeatures?: number;
@@ -514,6 +529,7 @@ export class LayerSource {
 }
 
 export class LayerFeatureSource extends LayerSource {
+    public renderMode: FeatureRenderMode;
     public maxfeatures: number;
     public normalizationFields: Array<NormalizationFieldConfig>;
     public includeFields: Set<string>;
