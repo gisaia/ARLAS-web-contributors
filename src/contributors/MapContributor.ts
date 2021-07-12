@@ -321,12 +321,12 @@ export class MapContributor extends Contributor {
         this.mapTestRawExtent = moveParams.rawExtendForTest;
         const wrapExtent = extentToString(this.mapTestExtent);
         const rawExtent = extentToString(this.mapTestRawExtent);
-        if (this.updateData) {
-            this.visibleSources.clear();
-            const windowVisibleSources = new Set<string>();
-            const wideVisibleSources = new Set<string>();
-            moveParams.visibleLayers.forEach(l => {
-                const visibleSource = this.layerToSourceIndex.get(l);
+        this.visibleSources.clear();
+        const windowVisibleSources = new Set<string>();
+        const wideVisibleSources = new Set<string>();
+        moveParams.visibleLayers.forEach(l => {
+            const visibleSource = this.layerToSourceIndex.get(l);
+            if (visibleSource) {
                 this.visibleSources.add(visibleSource);
                 if (this.featureLayerSourcesIndex.has(visibleSource)
                     && this.featureLayerSourcesIndex.get(visibleSource).renderMode === FeatureRenderMode.window) {
@@ -334,7 +334,10 @@ export class MapContributor extends Contributor {
                 } else {
                     wideVisibleSources.add(visibleSource);
                 }
-            });
+
+            }
+        });
+        if (this.updateData) {
             this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
             this.getWideModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, wideVisibleSources);
         }
@@ -348,12 +351,14 @@ export class MapContributor extends Contributor {
         const wideVisibleSources = new Set<string>();
         visibleLayers.forEach(l => {
             const visibleSource = this.layerToSourceIndex.get(l);
-            visibleSources.add(visibleSource);
-            if (this.featureLayerSourcesIndex.has(visibleSource)
-                && this.featureLayerSourcesIndex.get(visibleSource).renderMode === FeatureRenderMode.window) {
-                    windowVisibleSources.add(visibleSource);
-            } else {
-                wideVisibleSources.add(visibleSource);
+            if (visibleSource) {
+                visibleSources.add(visibleSource);
+                if (this.featureLayerSourcesIndex.has(visibleSource)
+                    && this.featureLayerSourcesIndex.get(visibleSource).renderMode === FeatureRenderMode.window) {
+                        windowVisibleSources.add(visibleSource);
+                } else {
+                    wideVisibleSources.add(visibleSource);
+                }
             }
         });
         this.visibleSources = visibleSources;
@@ -424,7 +429,9 @@ export class MapContributor extends Contributor {
             if (!keepOldData) {
                 const sources = featureSearchBuilder.get(this.getSearchId(SearchStrategy.combined)).sources;
                 sources.forEach(s => {
+                    // todo: check if we should clear all data
                     this.featureDataPerSource.set(s, []);
+                    this.featuresIdsIndex.set(s, new Set());
                 });
             }
             if (sort && sort.length > 0) {
@@ -449,6 +456,15 @@ export class MapContributor extends Contributor {
             }
             featureSearchBuilder.set(this.getSearchId(SearchStrategy.combined), { search, sources: allWindowSources });
             this.fetchSearchSources(countFilter, featureSearchBuilder, renderStrategy, maxPages, whichPage);
+        } else {
+            this.featureLayerSourcesIndex.forEach((ls, s) => {
+                if (ls.renderMode === FeatureRenderMode.window) {
+                    this.sourceToLayerIndex.get(s).forEach(l => {
+                        this.visibilityStatus.set(l, false);
+                    });
+                }
+            });
+            this.visibilityUpdater.next(this.visibilityStatus);
         }
     }
 
@@ -473,15 +489,12 @@ export class MapContributor extends Contributor {
              * The sources are only cleaned if filters change
              */
         });
-        this.collaborativeSearcheService.ongoingSubscribe.next(1);
-        const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
-            this.collaborativeSearcheService.collaborations, this.collection, this.identifier, countFilter, false, this.cacheDuration);
         const geo_ids = new Set(dTopologySources.map(s => this.topologyLayersIndex.get(s).geometryId));
-        const topoCounts: Array<Observable<ComputationResponse>> = [];
         geo_ids.forEach(geo_id => {
             const topoCount = this.getTopoCardinality(geo_id, countFilter);
             topoCounts.push(topoCount);
         });
+        const topoCounts: Array<Observable<ComputationResponse>> = [];
         const displayableTopoSources = new Set<string>();
         const removableTopoSources = new Set<string>();
         from(topoCounts).pipe(mergeAll()).pipe(
@@ -518,36 +531,41 @@ export class MapContributor extends Contributor {
                 }
             })
         ).subscribe(d => d);
-        if (count) {
-            count.subscribe(countResponse => {
-                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
-                const nbFeatures = countResponse.totalnb;
-                const nottopoVisbleSources = new Set(Array.from(visibleSources).filter(s => !this.topologyLayersIndex.has(s)));
-                displayableSources = this.getDisplayableSources(zoom, nottopoVisbleSources, nbFeatures);
-                this.visibilityUpdater.next(this.visibilityStatus);
-                dClusterSources = displayableSources[0];
-                dFeatureSources = displayableSources[2];
-                const nbFeaturesSourcesToRemove = displayableSources[3];
-                const alreadyRemovedSources = new Set(zoomSourcesToRemove);
-                nbFeaturesSourcesToRemove.filter(s => !this.topologyLayersIndex.has(s) && !alreadyRemovedSources.has(s)).forEach(s => {
-                    /**Removes the sources (cluster, feature) from mapcomponent that don't respect nbfeatures rule visibility*/
-                    this.redrawSource.next({ source: s, data: [] });
-                    /** sources are kept in the contributor to avoid recalling arlas-server.
-                     * The sources are only cleaned if filters change
-                     */
+        if (visibleSources.size >= 0) {
+            this.collaborativeSearcheService.ongoingSubscribe.next(1);
+            const count: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
+            this.collaborativeSearcheService.collaborations, this.collection, this.identifier, countFilter, false, this.cacheDuration);
+            if (count) {
+                count.subscribe(countResponse => {
+                    this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                    const nbFeatures = countResponse.totalnb;
+                    const nottopoVisbleSources = new Set(Array.from(visibleSources).filter(s => !this.topologyLayersIndex.has(s)));
+                    displayableSources = this.getDisplayableSources(zoom, nottopoVisbleSources, nbFeatures);
+                    this.visibilityUpdater.next(this.visibilityStatus);
+                    dClusterSources = displayableSources[0];
+                    dFeatureSources = displayableSources[2];
+                    const nbFeaturesSourcesToRemove = displayableSources[3];
+                    const alreadyRemovedSources = new Set(zoomSourcesToRemove);
+                    nbFeaturesSourcesToRemove.filter(s => !this.topologyLayersIndex.has(s) && !alreadyRemovedSources.has(s)).forEach(s => {
+                        /**Removes the sources (cluster, feature) from mapcomponent that don't respect nbfeatures rule visibility*/
+                        this.redrawSource.next({ source: s, data: [] });
+                        /** sources are kept in the contributor to avoid recalling arlas-server.
+                         * The sources are only cleaned if filters change
+                         */
+                    });
+                    const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
+                    const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.visibility_rules);
+                    /** renders visible sources */
+                    clusterAggsBuilder.forEach((aggSource, aggId) => {
+                        this.renderAggSources(aggSource.sources);
+                    });
+                    featureSearchBuilder.forEach((searchSource, f) => {
+                        this.renderSearchSources(searchSource.sources);
+                    });
+                    this.fetchAggSources(mapLoadExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
+                    this.fetchTiledSearchSources(mapLoadExtent, featureSearchBuilder);
                 });
-                const clusterAggsBuilder = this.prepareClusterAggregations(dClusterSources, zoom);
-                const featureSearchBuilder = this.prepareFeaturesSearch(dFeatureSources, SearchStrategy.visibility_rules);
-                /** renders visible sources */
-                clusterAggsBuilder.forEach((aggSource, aggId) => {
-                    this.renderAggSources(aggSource.sources);
-                });
-                featureSearchBuilder.forEach((searchSource, f) => {
-                    this.renderSearchSources(searchSource.sources);
-                });
-                this.fetchAggSources(mapLoadExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
-                this.fetchTiledSearchSources(mapLoadExtent, featureSearchBuilder);
-            });
+            }
         }
     }
 
@@ -935,7 +953,6 @@ export class MapContributor extends Contributor {
                     sourceData.push(feature);
                 });
             }
-            console.log('** Render Features data');
             this.redrawSource.next({ source: s, data: sourceData });
             this.legendUpdater.next(this.legendData);
         });
@@ -993,7 +1010,6 @@ export class MapContributor extends Contributor {
                     sourceData.push(feature);
                 });
             }
-            console.log('** Render Network analytics data');
             this.redrawSource.next({ source: s, data: sourceData });
             this.legendUpdater.next(this.legendData);
         });
@@ -1024,7 +1040,6 @@ export class MapContributor extends Contributor {
                 });
             }
             /** set minValue and maxValue foreach metric to be sent to the legend */
-            console.log('** Render Cluster data');
             this.redrawSource.next({ source: s, data: sourceData });
             if (!!stats) {
                 Object.keys(stats).forEach(k => {
@@ -1045,7 +1060,6 @@ export class MapContributor extends Contributor {
      * @param search Search object (from `arlas-api`) that indicates how data will be resolved
      */
     public resolveTiledSearchSources(tiles: Set<string>, searchId: string, search: Search): Observable<FeatureCollection> {
-        console.log('++ Fetch Features data');
         const tabOfTile: Array<Observable<FeatureCollection>> = [];
         let filter: Filter = {};
         if (this.expressionFilter !== undefined) {
@@ -1170,6 +1184,14 @@ export class MapContributor extends Contributor {
                 .pipe(
                     map(f => this.computeSimpleModeFeature(f, searchSource.sources, renderStrategy, maxPages, whichPage)),
                     finalize(() => {
+                        // todo manage same source but in different visualisation set
+                        searchSource.sources.forEach(s => {
+                            this.sourceToLayerIndex.get(s).forEach(
+                              l => {
+                                this.visibilityStatus.set(l, true);
+                              }
+                            );
+                          });
                         this.visibilityUpdater.next(this.visibilityStatus);
                         this.renderSearchSources(searchSource.sources);
                         this.collaborativeSearcheService.ongoingSubscribe.next(-1);
