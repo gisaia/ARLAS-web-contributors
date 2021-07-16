@@ -189,6 +189,7 @@ export interface LayerSourceConfig {
     metrics?: Array<MetricConfig>;
     filters?: Array<any>;
     aggType?: ClusterAggType;
+    windowed?: boolean;
 }
 
 export interface ColorConfig {
