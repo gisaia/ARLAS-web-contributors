@@ -239,6 +239,8 @@ export class ResultListContributor extends Contributor {
 
     public cacheDuration = this.cacheDuration;
 
+    public highlightItems = new Set();
+
     private includesvalues = new Array<string>();
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
@@ -327,6 +329,10 @@ export class ResultListContributor extends Contributor {
     }
     public static getJsonSchema(): Object {
         return jsonSchema;
+    }
+
+    public setHighlightItems(items: Array<string>) {
+        this.highlightItems = new Set(items);
     }
     /**
     * Download item information as json
