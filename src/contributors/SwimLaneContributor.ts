@@ -189,7 +189,9 @@ export class SwimLaneContributor extends Contributor {
         const responseStats: SwimlaneStats = {
             columnStats: new Map<number, LaneStats>(),
             globalStats: {
+                /** the min is placed at the greatest number at first to be replaced step by step by the min value in data */
                 min: Number.MAX_VALUE,
+                /** the max is placed at the lowest number at first to be replaced step by step by the max value in data */
                 max: -Number.MAX_VALUE,
                 sum: 0,
                 count: 0
@@ -352,6 +354,6 @@ export class SwimLaneContributor extends Contributor {
     }
 
     private isValueValid(value: number): boolean {
-        return value !== undefined ? !Number.isNaN(Number(value)) && !(value + '' === 'Infinity') && !(value + '' === '-Infinity'): false;
+        return value !== undefined ? !Number.isNaN(Number(value)) && !(value + '' === 'Infinity') && !(value + '' === '-Infinity') : false;
     }
 }
