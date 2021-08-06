@@ -196,8 +196,10 @@ export class SwimLaneContributor extends Contributor {
         const responseStats: SwimlaneStats = {
             columnStats: new Map<number, LaneStats>(),
             globalStats: {
+                /** the min is placed at the greatest number at first to be replaced step by step by the min value in data */
                 min: Number.MAX_VALUE,
-                max: Number.MIN_VALUE,
+                /** the max is placed at the lowest number at first to be replaced step by step by the max value in data */
+                max: -Number.MAX_VALUE,
                 sum: 0,
                 count: 0
             },
@@ -329,15 +331,16 @@ export class SwimLaneContributor extends Contributor {
 
     private updateStats(stat: SwimlaneStats, key: number, value: number): void {
         const columnStat = stat.columnStats.get(key);
+        const isValueValid = this.isValueValid(value);
         if (!columnStat) {
             const stats = {
-                max: value,
-                min: value,
-                sum: value
+                max: isValueValid ? value : -Number.MAX_VALUE,
+                min: isValueValid ? value : Number.MAX_VALUE,
+                sum: isValueValid ? value : 0
             };
             stat.columnStats.set(key, stats);
         } else {
-            if (value !== undefined) {
+            if (isValueValid) {
                 if (value < columnStat.min) {
                     columnStat.min = value;
                 }
@@ -348,7 +351,7 @@ export class SwimLaneContributor extends Contributor {
             }
             stat.columnStats.set(key, columnStat);
         }
-        if (value !== undefined) {
+        if (isValueValid) {
             if (value < stat.globalStats.min) {
                 stat.globalStats.min = value;
             }
@@ -358,5 +361,9 @@ export class SwimLaneContributor extends Contributor {
             stat.globalStats.sum += value;
             stat.globalStats.count++;
         }
+    }
+
+    private isValueValid(value: number): boolean {
+        return value !== undefined ? !Number.isNaN(Number(value)) && !(value + '' === 'Infinity') && !(value + '' === '-Infinity') : false;
     }
 }
