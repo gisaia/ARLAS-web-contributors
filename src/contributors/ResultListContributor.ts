@@ -61,7 +61,8 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 id: action.id,
                 label: action.label,
                 tooltip: action.tooltip,
-                cssClass: ''
+                cssClass: '',
+                collection: this.contributor.collection
             };
             const cssClass = item.itemData ? item.itemData.get(action.cssClass) : undefined;
             // cssClass = false is a valid possibiliy
@@ -144,7 +145,8 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                     id: action.id,
                     label: action.label,
                     tooltip: action.tooltip,
-                    cssClass: ''
+                    cssClass: '',
+                    collection: this.contributor.collection
                 };
                 const stylePath = action.cssClass;
                 if (stylePath) {
