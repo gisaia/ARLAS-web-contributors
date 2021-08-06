@@ -49,6 +49,7 @@ export interface Action {
     label: string;
     tooltip?: string;
     cssClass?: string;
+    collection?: string;
 }
 /**
  * Couple of field/value id product, use to retrieve the product.
