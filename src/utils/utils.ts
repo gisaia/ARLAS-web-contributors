@@ -214,6 +214,11 @@ export function finestTopoGranularity(zoom: number): { tilesPrecision: number, r
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
 
+
+export function networkFetchingPrecisionGranularity(precision): { tilesPrecision: number, requestsPrecision: number } {
+    return { tilesPrecision: precision, requestsPrecision: precision };
+}
+
 export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;

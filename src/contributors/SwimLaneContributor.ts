@@ -33,7 +33,6 @@ import { Aggregation, AggregationResponse, ComputationRequest, ComputationRespon
 import { getAggregationPrecision } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
-import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
 
 export interface LaneStats {
     min?: number;

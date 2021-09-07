@@ -177,6 +177,7 @@ export interface LayerSourceConfig {
     maxfeatures?: number;
     returned_geometry?: string;
     geometry_id?: string;
+    /** @deprecated */
     geometry_support?: string;
     agg_geo_field?: string;
     colors_from_fields?: Array<string>;
@@ -189,6 +190,7 @@ export interface LayerSourceConfig {
     metrics?: Array<MetricConfig>;
     filters?: Array<any>;
     aggType?: ClusterAggType;
+    network_fetching_precision?: number;
 }
 
 export interface ColorConfig {
@@ -542,6 +544,7 @@ export class LayerTopologySource extends LayerSource {
     public providedFields: Array<ColorConfig>;
     public colorFields: Set<string>;
     public includeFields: Set<string>;
+    public networkFetchingPrecision: number;
 }
 
 export enum Granularity {
