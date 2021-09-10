@@ -1,5 +1,18 @@
 # Change Log
 
+## [v18.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.1.0) (2021-09-10)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.0.1...v18.1.0)
+
+**New stuff:**
+
+- Fetch network analytics data using xyz tiles [\#422](https://github.com/gisaia/ARLAS-web-contributors/issues/422)
+
+**Fixed bugs:**
+
+- Swimlane doesn't handle Infinity values [\#417](https://github.com/gisaia/ARLAS-web-contributors/issues/417)
+- \[Network analytics\] a source contain features \(geometries\) of another source if the aggregation request is mutualised [\#397](https://github.com/gisaia/ARLAS-web-contributors/issues/397)
+
 ## [v18.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.0.1) (2021-08-06)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.2.1...v18.0.1)
