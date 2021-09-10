@@ -1310,7 +1310,12 @@ export class MapContributor extends Contributor {
             featureCollection.features.forEach(feature => {
                 delete feature.properties.key;
                 delete feature.properties.key_as_string;
-                aggSource.sources.forEach(source => {
+                aggSource.sources.filter(source => {
+                    const topologySource = this.topologyLayersIndex.get(source);
+                    return !!topologySource && !!topologySource.rawGeometry &&
+                        topologySource.rawGeometry.geometry === feature.properties.geometry_ref;
+
+                }).forEach(source => {
                     let topologyData = this.topologyDataPerSource.get(source);
                     if (!topologyData) {
                         topologyData = new Array();
