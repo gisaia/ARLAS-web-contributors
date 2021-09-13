@@ -21,7 +21,7 @@ import * as FileSaver from 'file-saver';
 import jp from 'jsonpath/jsonpath.min';
 import { Hits, Aggregation } from 'arlas-api';
 import { mix } from 'tinycolor2';
-import { LayerSourceConfig, ClusterAggType } from '../models/models';
+import { LayerSourceConfig } from '../models/models';
 
 
 export class ColorGeneratorLoader {
@@ -215,7 +215,7 @@ export function finestTopoGranularity(zoom: number): { tilesPrecision: number, r
 }
 
 
-export function networkFetchingPrecisionGranularity(precision): { tilesPrecision: number, requestsPrecision: number } {
+export function networkFetchingLevelGranularity(precision): { tilesPrecision: number, requestsPrecision: number } {
     return { tilesPrecision: precision, requestsPrecision: precision };
 }
 
