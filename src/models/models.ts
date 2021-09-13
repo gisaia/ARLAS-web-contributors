@@ -190,7 +190,7 @@ export interface LayerSourceConfig {
     metrics?: Array<MetricConfig>;
     filters?: Array<any>;
     aggType?: ClusterAggType;
-    network_fetching_precision?: number;
+    network_fetching_level?: number;
 }
 
 export interface ColorConfig {
@@ -544,7 +544,7 @@ export class LayerTopologySource extends LayerSource {
     public providedFields: Array<ColorConfig>;
     public colorFields: Set<string>;
     public includeFields: Set<string>;
-    public networkFetchingPrecision: number;
+    public networkFetchingLevel: number;
 }
 
 export enum Granularity {

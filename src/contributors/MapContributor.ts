@@ -38,7 +38,7 @@ import {
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
     removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity,
-    mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity, networkFetchingPrecisionGranularity
+    mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity, networkFetchingLevelGranularity
 } from '../utils/utils';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
@@ -63,6 +63,7 @@ export const AVG = '_avg_';
 export const SUM = '_sum_';
 export const MIN = '_min_';
 export const MAX = '_max_';
+export const DEFAULT_FETCH_NETWORK_LEVEL = 3;
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -1209,14 +1210,14 @@ export class MapContributor extends Contributor {
     public fetchAggSources(extent: Array<number>, zoom: number, aggs: Map<string, SourcesAgg>, aggType: string): void {
         aggs.forEach((aggSource, aggId) => {
             let granularity: Granularity;
-            let networkFetchingPrecision: number;
+            let networkFetchingLevel: number;
             if (aggType === this.CLUSTER_SOURCE) {
                 granularity = this.clusterLayersIndex.get(aggSource.sources[0]).granularity;
             } else if (aggType === this.TOPOLOGY_SOURCE) {
-                networkFetchingPrecision = this.topologyLayersIndex.get(aggSource.sources[0]).networkFetchingPrecision;
+                networkFetchingLevel = this.topologyLayersIndex.get(aggSource.sources[0]).networkFetchingLevel;
             }
             let count = 0;
-            const newVisitedTiles = this.getVisitedTiles(extent, zoom, granularity, networkFetchingPrecision, aggSource, aggType);
+            const newVisitedTiles = this.getVisitedTiles(extent, zoom, granularity, networkFetchingLevel, aggSource, aggType);
             const totalcount = newVisitedTiles.size;
             if (totalcount > 0) {
                 this.collaborativeSearcheService.ongoingSubscribe.next(1);
@@ -1743,7 +1744,10 @@ export class MapContributor extends Contributor {
         topologyLayer.includeFields = new Set(ls.include_fields || []);
         topologyLayer.providedFields = ls.provided_fields;
         topologyLayer.colorFields = new Set(ls.colors_from_fields || []);
-        topologyLayer.networkFetchingPrecision = ls.network_fetching_precision;
+        topologyLayer.networkFetchingLevel = ls.network_fetching_level;
+        if (topologyLayer.networkFetchingLevel === undefined) {
+            topologyLayer.networkFetchingLevel = DEFAULT_FETCH_NETWORK_LEVEL;
+        }
         return topologyLayer;
     }
 
@@ -2238,7 +2242,7 @@ export class MapContributor extends Contributor {
         const aggregationsMap: Map<string, SourcesAgg> = new Map();
         topologySources.forEach(cs => {
             const ls = this.topologyLayersIndex.get(cs);
-            const aggId = ls.geometryId + ':' + ls.networkFetchingPrecision;
+            const aggId = ls.geometryId + ':' + ls.networkFetchingLevel;
             const aggBuilder = aggregationsMap.get(aggId);
             let sources;
             let aggregation: Aggregation;
@@ -2320,13 +2324,13 @@ export class MapContributor extends Contributor {
             const ls = aggType === this.TOPOLOGY_SOURCE ? this.topologyLayersIndex.get(cs) : this.clusterLayersIndex.get(cs);
             const type = !!(ls as LayerClusterSource).type ? (ls as LayerClusterSource).type : ClusterAggType.geohash;
             const aggId = aggType === this.TOPOLOGY_SOURCE ? (ls as LayerTopologySource).geometryId + ':'
-                + (ls as LayerTopologySource).networkFetchingPrecision :
+                + (ls as LayerTopologySource).networkFetchingLevel :
                 (ls as LayerClusterSource).aggGeoField + ':' + ls.granularity.toString() + (ls as LayerClusterSource).minfeatures +
                 ':' + ls.sourceMinzoom + ':' + ls.sourceMaxzoom + ':' + type.toString();
             const control = this.abortControllers.get(aggId);
-            const networkFetchingPrecision = aggType === this.TOPOLOGY_SOURCE ?
-                (ls as LayerTopologySource).networkFetchingPrecision : undefined;
-            this.abortOldPendingCalls(aggId, cs, ls.granularity, networkFetchingPrecision, zoom, callOrigin, aggType, type);
+            const networkFetchingLevel = aggType === this.TOPOLOGY_SOURCE ?
+                (ls as LayerTopologySource).networkFetchingLevel : undefined;
+            this.abortOldPendingCalls(aggId, cs, ls.granularity, networkFetchingLevel, zoom, callOrigin, aggType, type);
         });
     }
 
@@ -2353,7 +2357,7 @@ export class MapContributor extends Contributor {
                 break;
             case this.TOPOLOGY_SOURCE:
                 ls = this.topologyLayersIndex.get(s);
-                fetchId = ls.geometryId + ':' + ls.networkFetchingPrecision;
+                fetchId = ls.geometryId + ':' + ls.networkFetchingLevel;
                 break;
             case this.FEATURE_SOURCE:
                 ls = this.featureLayersIndex.get(s);
@@ -2375,7 +2379,7 @@ export class MapContributor extends Contributor {
         }
     }
 
-    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, networkFetchingPrecision: number,
+    private abortOldPendingCalls(aggId: string, s: string, granularity: Granularity, networkFetchingLevel: number,
         zoom: number, callOrigin: string, aggType: string,
         clusterType: ClusterAggType) {
         let aggClusterType;
@@ -2386,7 +2390,7 @@ export class MapContributor extends Contributor {
         }
         let precisions;
         if (aggType === this.TOPOLOGY_SOURCE) {
-            precisions = Object.assign({}, networkFetchingPrecisionGranularity(networkFetchingPrecision));
+            precisions = Object.assign({}, networkFetchingLevelGranularity(networkFetchingLevel));
         } else {
             precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggClusterType));
         }
@@ -2907,13 +2911,13 @@ export class MapContributor extends Contributor {
     }
 
     private getVisitedTiles(extent, zoom: number, granularity: Granularity,
-        networkFetchingPrecision: number, aggSource: SourcesAgg, aggType) {
+        networkFetchingLevel: number, aggSource: SourcesAgg, aggType) {
         let visitedTiles;
         let precisions;
         if (aggType === this.TOPOLOGY_SOURCE) {
-            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((networkFetchingPrecision)))
+            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((networkFetchingLevel)))
                     .map(t => t.x + '_' + t.y + '_' + t.z));
-            precisions = Object.assign({}, networkFetchingPrecisionGranularity(networkFetchingPrecision));
+            precisions = Object.assign({}, networkFetchingLevelGranularity(networkFetchingLevel));
         } else {
             if (aggSource.agg.type === Aggregation.TypeEnum.Geohash) {
                 visitedTiles = extentToGeohashes(extent, zoom, this.granularityClusterFunctions.get(granularity));

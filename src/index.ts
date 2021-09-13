@@ -29,7 +29,7 @@ import { ComputeContributor } from './contributors/ComputeContributor';
 export { TreeContributor } from './contributors/TreeContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
 export { ResultListContributor } from './contributors/ResultListContributor';
-export { MapContributor } from './contributors/MapContributor';
+export { MapContributor, DEFAULT_FETCH_NETWORK_LEVEL } from './contributors/MapContributor';
 export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 export { SwimLaneContributor } from './contributors/SwimLaneContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';

@@ -214,8 +214,8 @@
             "description": "Number of  features return by a geosearch",
             "type": "number"
         },
-        "network_fetching_precision": {
-            "description": "Precision of the grid used to fetch network analytics data",
+        "network_fetching_level": {
+            "description": "Zoom level 'Z' of the XYZ grid, used to fetch network analytics data",
             "type": "number"
         }
     },
