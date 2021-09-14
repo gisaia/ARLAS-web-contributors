@@ -402,7 +402,7 @@ export function getSourceName(ls: LayerSourceConfig): string {
             sourceNameComponents.push(ls.geometry_id);
             sourceNameComponents.push(ls.raw_geometry.geometry);
             sourceNameComponents.push(ls.raw_geometry.sort);
-            sourceNameComponents.push(ls.granularity);
+            sourceNameComponents.push(ls.network_fetching_level);
             break;
         case 'feature':
             sourceNameComponents.push(ls.returned_geometry);
