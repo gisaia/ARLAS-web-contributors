@@ -406,6 +406,7 @@ export function getSourceName(ls: LayerSourceConfig): string {
             break;
         case 'feature':
             sourceNameComponents.push(ls.returned_geometry);
+            sourceNameComponents.push(ls.render_mode);
             break;
     }
     return sourceNameComponents.join('-');
