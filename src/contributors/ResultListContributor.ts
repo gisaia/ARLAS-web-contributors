@@ -62,10 +62,17 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 tooltip: action.tooltip,
                 cssClass: ''
             };
-            const cssClass = item.itemData ? item.itemData.get(action.cssClass) : undefined;
-            // cssClass = false is a valid possibiliy
-            if (cssClass !== undefined) {
-                ac.cssClass = String(cssClass);
+            const cssFields = action.cssClass;
+            if (cssFields && item.itemData) {
+                if (typeof cssFields === 'string') {
+                    const cssClass = item.itemData ? item.itemData.get(cssFields) : undefined;
+                    ac.cssClass = String(cssClass);
+                } else {
+                    // array case
+                    let css = '';
+                    cssFields.forEach((field, index) => css += (index > 0 ? '-' : '') + item.itemData.get(field).trim().replace(' ', '-'));
+                    ac.cssClass = css;
+                }
             }
             actions.push(ac);
         });
@@ -145,9 +152,17 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                     tooltip: action.tooltip,
                     cssClass: ''
                 };
-                const stylePath = action.cssClass;
-                if (stylePath) {
-                    ac.cssClass = getElementFromJsonObject(searchData.hits[0].data, stylePath);
+                const cssFields = action.cssClass;
+                if (cssFields) {
+                    if (typeof cssFields === 'string') {
+                        ac.cssClass = getElementFromJsonObject(searchData.hits[0].data, cssFields);
+                    } else {
+                        // array case
+                        let css = '';
+                        cssFields.forEach((field, index) => css += (index > 0 ? '-' : '')
+                            + getElementFromJsonObject(searchData.hits[0].data, field).trim().replace(' ', '-'));
+                        ac.cssClass = css;
+                    }
                 }
                 actions.push(ac);
 
