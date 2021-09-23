@@ -1,5 +1,226 @@
 # Change Log
 
+## [v12.7.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.3) (2021-09-23)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.0-beta.3...v12.7.3)
+
+## [v19.0.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.0-beta.3) (2021-09-20)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.1.2...v19.0.0-beta.3)
+
+## [v18.1.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.1.2) (2021-09-14)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.1.1...v18.1.2)
+
+## [v18.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.1.1) (2021-09-13)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.1.0...v18.1.1)
+
+## [v18.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.1.0) (2021-09-10)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.0.1...v18.1.0)
+
+**New stuff:**
+
+- Fetch network analytics data using xyz tiles [\#422](https://github.com/gisaia/ARLAS-web-contributors/issues/422)
+
+**Fixed bugs:**
+
+- Swimlane doesn't handle Infinity values [\#417](https://github.com/gisaia/ARLAS-web-contributors/issues/417)
+- \[Network analytics\] a source contain features \(geometries\) of another source if the aggregation request is mutualised [\#397](https://github.com/gisaia/ARLAS-web-contributors/issues/397)
+
+## [v18.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.0.1) (2021-08-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.2.1...v18.0.1)
+
+## [v17.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.2.1) (2021-08-03)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.2.1...v17.2.1)
+
+## [v18.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.2.1) (2021-08-03)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.0.0...v18.2.1)
+
+## [v18.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.0.0) (2021-07-08)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.2.0...v18.0.0)
+
+**New stuff:**
+
+- Support multiple-collection data in Histograms [\#410](https://github.com/gisaia/ARLAS-web-contributors/issues/410)
+
+**Fixed bugs:**
+
+- Fix link to Contributor documentation in README [\#405](https://github.com/gisaia/ARLAS-web-contributors/issues/405) [[documentation](https://github.com/gisaia/ARLAS-web-contributors/labels/documentation)]
+
+## [v17.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.2.0) (2021-06-24)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.1.1...v17.2.0)
+
+## [v17.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.1.1) (2021-06-18)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.1.0...v17.1.1)
+
+## [v17.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.1.0) (2021-06-04)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.0.0...v17.1.0)
+
+**New stuff:**
+
+- Add the possibility to choose the collection in the Collaborative Search [\#349](https://github.com/gisaia/ARLAS-web-contributors/issues/349)
+
+## [v17.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.0.0) (2021-05-19)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.0.0-beta.0...v17.0.0)
+
+**New stuff:**
+
+- Add geotile aggreation in map contributor [\#404](https://github.com/gisaia/ARLAS-web-contributors/issues/404)
+- Support multi-collection for map and all widgets [\#403](https://github.com/gisaia/ARLAS-web-contributors/issues/403)
+
+## [v17.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.0.0-beta.0) (2021-05-10)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.1.1...v17.0.0-beta.0)
+
+## [v16.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.1.1) (2021-04-29)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.1.0...v16.1.1)
+
+**New stuff:**
+
+- MAP : Add an option that alows to always return aggregated features  [\#156](https://github.com/gisaia/ARLAS-web-contributors/issues/156)
+
+**Fixed bugs:**
+
+- \[MAP\] dashboards with old geometry support for Network analytics are not handled [\#399](https://github.com/gisaia/ARLAS-web-contributors/issues/399)
+- \[MAP\] dashboards with old generated colors are not handled [\#398](https://github.com/gisaia/ARLAS-web-contributors/issues/398)
+
+## [v16.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.1.0) (2021-04-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.3...v16.1.0)
+
+**New stuff:**
+
+- \[HISTOGRAM\] Calculate range for fixed size buckets [\#391](https://github.com/gisaia/ARLAS-web-contributors/issues/391)
+- \[DETAILED-HISTOGRAM\] add the possibility to init the contributor without passing by the config service [\#375](https://github.com/gisaia/ARLAS-web-contributors/issues/375)
+
+**Fixed bugs:**
+
+- Fix field names having metrics chars in mapcontributors [\#393](https://github.com/gisaia/ARLAS-web-contributors/issues/393)
+- \[HISTOGRAM\] fixed interval is not applied to histograms [\#387](https://github.com/gisaia/ARLAS-web-contributors/issues/387)
+
+**Miscellaneous:**
+
+- Add logs for mapcontributor when data is fetched and rendered [\#394](https://github.com/gisaia/ARLAS-web-contributors/issues/394)
+
+## [v16.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.3) (2021-04-13)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.2...v16.0.3)
+
+## [v16.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.2) (2021-04-12)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.1...v16.0.2)
+
+**Fixed bugs:**
+
+- Detailed histograms doesn't show when one of the selection handles equals to 0 [\#385](https://github.com/gisaia/ARLAS-web-contributors/issues/385)
+
+## [v16.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.1) (2021-03-31)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.0...v16.0.1)
+
+## [v16.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.0) (2021-03-23)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.2...v16.0.0)
+
+**New stuff:**
+
+- \[TREE\] color the node by a provided field  [\#365](https://github.com/gisaia/ARLAS-web-contributors/issues/365)
+
+**Fixed bugs:**
+
+- \[MAP\] generated colors from a field uses a suffix '\_color' that is not descriminant enough [\#366](https://github.com/gisaia/ARLAS-web-contributors/issues/366)
+
+## [v15.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.2) (2021-02-25)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.1...v15.0.2)
+
+**New stuff:**
+
+- \[TREE\] allow an order by metric [\#364](https://github.com/gisaia/ARLAS-web-contributors/issues/364)
+
+## [v15.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.1) (2021-02-23)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0...v15.0.1)
+
+## [v15.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0) (2021-02-18)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0-beta.2...v15.0.0)
+
+**New stuff:**
+
+- Add a new Granularity for cluster mode [\#354](https://github.com/gisaia/ARLAS-web-contributors/issues/354)
+
+**Fixed bugs:**
+
+- Data in Network-analytics mode are reloaded after zooming [\#355](https://github.com/gisaia/ARLAS-web-contributors/issues/355)
+
+## [v15.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0-beta.2) (2021-02-12)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0-beta.0...v15.0.0-beta.2)
+
+## [v15.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0-beta.0) (2021-02-03)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.3.1...v15.0.0-beta.0)
+
+## [v14.3.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.3.1) (2021-02-03)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.3.0...v14.3.1)
+
+## [v14.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.3.0) (2021-01-29)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.2.0...v14.3.0)
+
+## [v14.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.2.0) (2021-01-18)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.1.1...v14.2.0)
+
+## [v14.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.1.1) (2020-12-18)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.1.0...v14.1.1)
+
+**New stuff:**
+
+- \[MapContributors\] return last geometry in topology aggregation [\#351](https://github.com/gisaia/ARLAS-web-contributors/issues/351)
+
+## [v14.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.1.0) (2020-12-07)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.1.0-beta.0...v14.1.0)
+
+## [v14.1.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.1.0-beta.0) (2020-12-01)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.0.0...v14.1.0-beta.0)
+
+**New stuff:**
+
+- Enhance mapping the zoom levels to aggregation precision [\#345](https://github.com/gisaia/ARLAS-web-contributors/issues/345)
+
+**Fixed bugs:**
+
+- Fix sortColum list function [\#335](https://github.com/gisaia/ARLAS-web-contributors/issues/335)
+
+## [v14.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.0.0) (2020-11-09)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v13.0.1...v14.0.0)
+
+## [v13.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v13.0.1) (2020-07-10)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.2...v13.0.1)
+
+**Fixed bugs:**
+
+- \[MAP\] included metrics/properties in rendered geometries can be absent  [\#340](https://github.com/gisaia/ARLAS-web-contributors/issues/340)
+
 ## [v12.7.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.2) (2020-06-30)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v13.0.0...v12.7.2)
@@ -163,13 +384,10 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.1.0...v12.2.0)
 
-**Breaking changes:**
-
-- MAP : specify which fields are concerned by color generation [\#245](https://github.com/gisaia/ARLAS-web-contributors/issues/245)
-
 **New stuff:**
 
 - MAP: normalize numeric and date values [\#251](https://github.com/gisaia/ARLAS-web-contributors/issues/251)
+- MAP : specify which fields are concerned by color generation [\#245](https://github.com/gisaia/ARLAS-web-contributors/issues/245)
 - \[CONTRIBUTOR\] disable cache by configuration [\#224](https://github.com/gisaia/ARLAS-web-contributors/issues/224)
 
 **Miscellaneous:**
@@ -213,10 +431,10 @@
 **Breaking changes:**
 
 - Remove \[Powerbars\] & \[Donut\] contributors. They're replaced by \[Tree\] Contributor  [\#228](https://github.com/gisaia/ARLAS-web-contributors/issues/228)
-- \[MAP\] & \[TOPOMAP\] remove redrawTile attribute from constructor params [\#225](https://github.com/gisaia/ARLAS-web-contributors/issues/225)
 
 **New stuff:**
 
+- \[MAP\] & \[TOPOMAP\] remove redrawTile attribute from constructor params [\#225](https://github.com/gisaia/ARLAS-web-contributors/issues/225)
 - \[MAP\] Generate a  color code based on the value of a field set in config [\#222](https://github.com/gisaia/ARLAS-web-contributors/issues/222)
 - \[Map\] & \[TopoMap\] add optional filter in fetchData request [\#221](https://github.com/gisaia/ARLAS-web-contributors/issues/221)
 - \[Map\] Update to arlas v12 and add multigéometry [\#214](https://github.com/gisaia/ARLAS-web-contributors/issues/214)
@@ -234,13 +452,10 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.3.0...v11.4.0)
 
-**Breaking changes:**
-
-- \[MAP\] Use WKT polygon  for pwithin operator [\#203](https://github.com/gisaia/ARLAS-web-contributors/issues/203)
-
 **New stuff:**
 
 - \[MAP\] Check if WKT is clockwise [\#204](https://github.com/gisaia/ARLAS-web-contributors/issues/204)
+- \[MAP\] Use WKT polygon  for pwithin operator [\#203](https://github.com/gisaia/ARLAS-web-contributors/issues/203)
 - \[MAP\] Enhance SetSelection method [\#188](https://github.com/gisaia/ARLAS-web-contributors/issues/188)
 - \[MAP\] Add a method to transform geojson to WKT [\#184](https://github.com/gisaia/ARLAS-web-contributors/issues/184)
 - MapContributor: generalize setFilter [\#180](https://github.com/gisaia/ARLAS-web-contributors/issues/180)
@@ -349,7 +564,7 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.0.0...v9.2.2)
 
-**Fixed bugs:**
+**New stuff:**
 
 - Active process in detail of list [\#153](https://github.com/gisaia/ARLAS-web-contributors/issues/153)
 
@@ -359,9 +574,12 @@
 
 **Breaking changes:**
 
+- Update contributors to v10.0.0 of arlas-api [\#161](https://github.com/gisaia/ARLAS-web-contributors/pull/161) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
+
+**New stuff:**
+
 - Remove $ from configuration package name [\#130](https://github.com/gisaia/ARLAS-web-contributors/issues/130)
 - Remove unused \[dataType\] attribute from Histogram contributor [\#126](https://github.com/gisaia/ARLAS-web-contributors/issues/126)
-- Update contributors to v10.0.0 of arlas-api [\#161](https://github.com/gisaia/ARLAS-web-contributors/pull/161) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [10.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/10.0.0-beta.0) (2019-03-06)
 
@@ -371,7 +589,7 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0...v9.2.1)
 
-**Fixed bugs:**
+**New stuff:**
 
 - Active process in detail [\#154](https://github.com/gisaia/ARLAS-web-contributors/pull/154) ([mbarbet](https://github.com/mbarbet))
 
@@ -379,14 +597,11 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.3...v9.2.0)
 
-**Breaking changes:**
-
-- Refactor the DonutContributor data type to make it generic to any tree structure data [\#139](https://github.com/gisaia/ARLAS-web-contributors/issues/139)
-- Implement a tree contributor that is generic to DonutContributor and PowerbarsContributors [\#137](https://github.com/gisaia/ARLAS-web-contributors/issues/137)
-
 **New stuff:**
 
+- Refactor the DonutContributor data type to make it generic to any tree structure data [\#139](https://github.com/gisaia/ARLAS-web-contributors/issues/139)
 - Adapt fieldsList attribute of ResultListContributor to specify whether to apply color service on a field value  [\#138](https://github.com/gisaia/ARLAS-web-contributors/issues/138)
+- Implement a tree contributor that is generic to DonutContributor and PowerbarsContributors [\#137](https://github.com/gisaia/ARLAS-web-contributors/issues/137)
 - MapContributor : emit current extent count info [\#128](https://github.com/gisaia/ARLAS-web-contributors/issues/128)
 
 **Fixed bugs:**
@@ -458,7 +673,7 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.0.0...v9.0.1)
 
-**Breaking changes:**
+**New stuff:**
 
 - Upgrade rxjs to 6 [\#123](https://github.com/gisaia/ARLAS-web-contributors/issues/123)
 
@@ -478,15 +693,12 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.4.1...v8.0.0)
 
-**Breaking changes:**
-
-- Map : implement contributor for display topology agg [\#115](https://github.com/gisaia/ARLAS-web-contributors/issues/115)
-- Add TopoMapContributor [\#120](https://github.com/gisaia/ARLAS-web-contributors/pull/120) ([mbarbet](https://github.com/mbarbet))
-- Replace drawType by geomStrategy [\#119](https://github.com/gisaia/ARLAS-web-contributors/pull/119) ([mbarbet](https://github.com/mbarbet))
-
 **New stuff:**
 
+- Map : implement contributor for display topology agg [\#115](https://github.com/gisaia/ARLAS-web-contributors/issues/115)
 - MAP : enhance computeDataGeohashGeoaggregate [\#114](https://github.com/gisaia/ARLAS-web-contributors/issues/114)
+- Add TopoMapContributor [\#120](https://github.com/gisaia/ARLAS-web-contributors/pull/120) ([mbarbet](https://github.com/mbarbet))
+- Replace drawType by geomStrategy [\#119](https://github.com/gisaia/ARLAS-web-contributors/pull/119) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.4.1) (2018-10-17)
 
@@ -504,12 +716,9 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.5...v7.4.0)
 
-**Breaking changes:**
-
-- SWIMLANE : Remove brush selection and include selection by lanes [\#106](https://github.com/gisaia/ARLAS-web-contributors/issues/106)
-
 **New stuff:**
 
+- SWIMLANE : Remove brush selection and include selection by lanes [\#106](https://github.com/gisaia/ARLAS-web-contributors/issues/106)
 - HISTOGRAMS: Include decimals in interval calculation [\#98](https://github.com/gisaia/ARLAS-web-contributors/issues/98)
 - MAP : Manage include bbox [\#88](https://github.com/gisaia/ARLAS-web-contributors/issues/88)
 - Manage include bbox [\#93](https://github.com/gisaia/ARLAS-web-contributors/pull/93) ([mbarbet](https://github.com/mbarbet))
@@ -524,12 +733,12 @@
 
 **New stuff:**
 
+- MAP: enhance getBoundsTofit with all geomtry type [\#95](https://github.com/gisaia/ARLAS-web-contributors/issues/95)
 - Detailed Histogram: Add an attribute of the current selection in the main contributor to avoid board effect [\#94](https://github.com/gisaia/ARLAS-web-contributors/issues/94)
 
 **Fixed bugs:**
 
 - Histograms: use utc as date locale [\#100](https://github.com/gisaia/ARLAS-web-contributors/issues/100)
-- MAP: enhance getBoundsTofit with all geomtry type [\#95](https://github.com/gisaia/ARLAS-web-contributors/issues/95)
 
 ## [v7.0.7](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.7) (2018-08-06)
 
@@ -658,14 +867,11 @@
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.4...v7.0.1)
 
-**Breaking changes:**
-
-- HISTOGRAM : Add time shortcuts [\#57](https://github.com/gisaia/ARLAS-web-contributors/issues/57)
-
 **New stuff:**
 
 - MapContributor: Add isFlat option. [\#61](https://github.com/gisaia/ARLAS-web-contributors/issues/61)
 - Swimlane Contributor : enhance display name [\#58](https://github.com/gisaia/ARLAS-web-contributors/issues/58)
+- HISTOGRAM : Add time shortcuts [\#57](https://github.com/gisaia/ARLAS-web-contributors/issues/57)
 - Add a set/get for the DRAWTYPE of the MapContributor \(CIRCLE/RECTANGLE\) [\#50](https://github.com/gisaia/ARLAS-web-contributors/issues/50)
 - Handle time shortcuts in Histogram Contributor [\#46](https://github.com/gisaia/ARLAS-web-contributors/issues/46)
 - Feature/improve map cont [\#52](https://github.com/gisaia/ARLAS-web-contributors/pull/52) ([mbarbet](https://github.com/mbarbet))
