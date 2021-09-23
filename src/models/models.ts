@@ -39,7 +39,7 @@ export interface Action {
     id: string;
     label: string;
     tooltip?: string;
-    cssClass?: string;
+    cssClass?: string | string[];
 }
 /**
  * Couple of field/value id product, use to retrieve the product.
