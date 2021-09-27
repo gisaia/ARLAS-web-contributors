@@ -48,8 +48,8 @@ export interface Action {
     id: string;
     label: string;
     tooltip?: string;
-    cssClass?: string;
     collection?: string;
+    cssClass?: string | string[];
 }
 /**
  * Couple of field/value id product, use to retrieve the product.
