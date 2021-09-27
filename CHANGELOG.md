@@ -1,5 +1,21 @@
 # Change Log
 
+## [v19.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.0) (2021-09-27)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.3...v19.0.0)
+
+**New stuff:**
+
+- Declare if a layer source is "window" or "wide" [\#415](https://github.com/gisaia/ARLAS-web-contributors/issues/415)
+
+## [v12.7.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.3) (2021-09-23)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.0-beta.3...v12.7.3)
+
+## [v19.0.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.0-beta.3) (2021-09-20)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.1.2...v19.0.0-beta.3)
+
 ## [v18.1.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.1.2) (2021-09-14)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.1.1...v18.1.2)
