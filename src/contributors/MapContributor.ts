@@ -491,11 +491,11 @@ export class MapContributor extends Contributor {
              */
         });
         const geo_ids = new Set(dTopologySources.map(s => this.topologyLayersIndex.get(s).geometryId));
+        const topoCounts: Array<Observable<ComputationResponse>> = [];
         geo_ids.forEach(geo_id => {
             const topoCount = this.getTopoCardinality(geo_id, countFilter);
             topoCounts.push(topoCount);
         });
-        const topoCounts: Array<Observable<ComputationResponse>> = [];
         const displayableTopoSources = new Set<string>();
         const removableTopoSources = new Set<string>();
         from(topoCounts).pipe(mergeAll()).pipe(
