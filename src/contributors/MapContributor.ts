@@ -107,7 +107,7 @@ export class MapContributor extends Contributor {
     private sourcesTypesIndex: Map<string, string> = new Map();
     private layerToSourceIndex: Map<string, string> = new Map();
     private sourceToLayerIndex: Map<string, Set<string>> = new Map();
-    private visibiltyRulesIndex: Map<string, { type: string, minzoom: number, maxzoom: number, nbfeatures: number }> = new Map();
+    private visibiltyRulesIndex: Map<string, { type: string, minzoom: number, maxzoom: number, nbfeatures: number, rendermode: FeatureRenderMode }> = new Map();
     private layersVisibiltyRulesIndex: Map<string, { minzoom: number, maxzoom: number}> = new Map();
 
     /**Cluster data support */
@@ -314,7 +314,7 @@ export class MapContributor extends Contributor {
      * - Verify if the zoom has changed and therefore verify if there is a need to fetch more/less precise data
      * - Update the state variables of this contributor instance used for: zoom, center, loadextent, testextent,...
      */
-    public onMapMoved(moveParams: OnMoveResult): void {
+    public onMapMoved(moveParams: OnMoveResult, recalculateWindow: boolean): void {
         this.zoom = moveParams.zoom;
         this.center = moveParams.center;
         this.mapLoadExtent = moveParams.extendForLoad;
@@ -339,7 +339,9 @@ export class MapContributor extends Contributor {
             }
         });
         if (this.updateData) {
-            this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
+            if (recalculateWindow) {
+                this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
+            }
             this.getWideModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, wideVisibleSources);
         }
     }
@@ -846,8 +848,8 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public onMove(newMove: OnMoveResult) {
-        this.onMapMoved(newMove);
+    public onMove(newMove: OnMoveResult, recalculateWindow: boolean) {
+        this.onMapMoved(newMove, recalculateWindow);
     }
 
     /**
@@ -2534,18 +2536,26 @@ export class MapContributor extends Contributor {
         return abbreviatedValue;
     }
     /**
-     * This method indexes all the minimum zooms configured. For each minzoom value, we set the list of layers that have it.
+     * This method indexes all the visibility rules for a given source and a given layer.
      * This index will be used to get which layers to display
-     * @param minZoom
-     * @param source
+     * @param sourceMinzoom minimum zoom to display the source
+     * @param sourceMaxzoom maximum zoom to display the source
+     * @param layerMinzoom minimum zoom to display the layer. A shared source can be visible in layer1 but not with layer2
+     * @param layerMaxzoom maximum zoom to display the layer. A shared source can be visible in layer1 but not with layer2
+     * @param nbfeatures number of features that triggers the display/hide of the source
+     * @param type feature, feature-metric, cluster
+     * @param source source name
+     * @param id id of the layer
+     * @param renderMode rendermode for 'feature' layers
      */
     private indexVisibilityRules(sourceMinzoom: number, sourceMaxzoom: number, layerMinzoom: number, layerMaxzoom: number,
-        nbfeatures: number, type: string, source: string, id: string): void {
+        nbfeatures: number, type: string, source: string, id: string, renderMode?: FeatureRenderMode): void {
         this.visibiltyRulesIndex.set(source, {
             minzoom: sourceMinzoom,
             maxzoom: sourceMaxzoom,
             nbfeatures,
-            type
+            type,
+            rendermode: renderMode
         });
         this.layersVisibiltyRulesIndex.set(id, {
             minzoom: layerMinzoom,
@@ -2622,7 +2632,8 @@ export class MapContributor extends Contributor {
             this.sourceToLayerIndex.set(ls.source, layers);
             this.dataSources.add(ls.source);
             this.indexVisibilityRules(topologyLayer.sourceMinzoom, topologyLayer.sourceMaxzoom, topologyLayer.layerMinzoom,
-                topologyLayer.layerMaxzoom, topologyLayer.maxfeatures, this.TOPOLOGY_SOURCE, topologyLayer.source, topologyLayer.id);
+                topologyLayer.layerMaxzoom, topologyLayer.maxfeatures, this.TOPOLOGY_SOURCE, topologyLayer.source,
+                topologyLayer.id);
             this.sourcesTypesIndex.set(ls.source, this.TOPOLOGY_SOURCE);
 
         });
@@ -2674,7 +2685,7 @@ export class MapContributor extends Contributor {
                 this.dataSources.add(ls.source);
                 this.indexVisibilityRules(featureLayerSource.sourceMinzoom, featureLayerSource.sourceMaxzoom,
                     featureLayerSource.layerMinzoom, featureLayerSource.layerMaxzoom, featureLayerSource.maxfeatures,
-                    this.FEATURE_SOURCE, featureLayerSource.source, featureLayerSource.id);
+                    this.FEATURE_SOURCE, featureLayerSource.source, featureLayerSource.id, featureLayerSource.renderMode);
                 this.sourcesTypesIndex.set(ls.source, this.FEATURE_SOURCE);
 
             });
@@ -2711,53 +2722,55 @@ export class MapContributor extends Contributor {
         const featureSources = [];
         const sourcesToRemove = [];
         this.visibiltyRulesIndex.forEach((v, k) => {
-            if (v.maxzoom >= zoom && v.minzoom <= zoom && visibleSources.has(k)) {
-                switch (v.type) {
-                    case this.CLUSTER_SOURCE: {
-                        if (nbFeatures === undefined || v.nbfeatures <= nbFeatures) {
-                            clusterSources.push(k);
-                            this.sourceToLayerIndex.get(k).forEach(l => {
-                                const zoomRule = this.layersVisibiltyRulesIndex.get(l);
-                                this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
-                            });
-                        } else {
-                            sourcesToRemove.push(k);
-                            this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+            if (v.rendermode !== FeatureRenderMode.window) {
+                if (v.maxzoom >= zoom && v.minzoom <= zoom && visibleSources.has(k)) {
+                    switch (v.type) {
+                        case this.CLUSTER_SOURCE: {
+                            if (nbFeatures === undefined || v.nbfeatures <= nbFeatures) {
+                                clusterSources.push(k);
+                                this.sourceToLayerIndex.get(k).forEach(l => {
+                                    const zoomRule = this.layersVisibiltyRulesIndex.get(l);
+                                    this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
+                                });
+                            } else {
+                                sourcesToRemove.push(k);
+                                this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    case this.TOPOLOGY_SOURCE: {
-                        if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
-                            this.sourceToLayerIndex.get(k).forEach(l => {
-                                const zoomRule = this.layersVisibiltyRulesIndex.get(l);
-                                this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
-                            });
-                            topologySources.push(k);
-                        } else {
-                            sourcesToRemove.push(k);
-                            this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                        case this.TOPOLOGY_SOURCE: {
+                            if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
+                                this.sourceToLayerIndex.get(k).forEach(l => {
+                                    const zoomRule = this.layersVisibiltyRulesIndex.get(l);
+                                    this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
+                                });
+                                topologySources.push(k);
+                            } else {
+                                sourcesToRemove.push(k);
+                                this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    case this.FEATURE_SOURCE: {
-                        if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
-                            featureSources.push(k);
-                            this.sourceToLayerIndex.get(k).forEach(l => {
-                                const zoomRule = this.layersVisibiltyRulesIndex.get(l);
-                                this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
-                            });
-                        } else {
-                            sourcesToRemove.push(k);
-                            this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                        case this.FEATURE_SOURCE: {
+                            if (nbFeatures === undefined || v.nbfeatures >= nbFeatures) {
+                                featureSources.push(k);
+                                this.sourceToLayerIndex.get(k).forEach(l => {
+                                    const zoomRule = this.layersVisibiltyRulesIndex.get(l);
+                                    this.visibilityStatus.set(l, (zoom >= zoomRule.minzoom && zoom <= zoomRule.maxzoom));
+                                });
+                            } else {
+                                sourcesToRemove.push(k);
+                                this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                            }
+                            break;
                         }
-                        break;
                     }
+                } else if (visibleSources.has(k)) {
+                    sourcesToRemove.push(k);
+                    this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
+                } else {
+                    sourcesToRemove.push(k);
                 }
-            } else if (visibleSources.has(k)) {
-                sourcesToRemove.push(k);
-                this.sourceToLayerIndex.get(k).forEach(l => this.visibilityStatus.set(l, false));
-            } else {
-                sourcesToRemove.push(k);
             }
         });
         return [clusterSources, topologySources, featureSources, sourcesToRemove];
