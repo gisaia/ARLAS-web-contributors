@@ -1,5 +1,38 @@
 # Change Log
 
+## [v11.5.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.2) (2020-01-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.1...v11.5.2)
+
+**Fixed bugs:**
+
+- Fix bug filter aoi wkt [\#271](https://github.com/gisaia/ARLAS-web-contributors/pull/271)
+
+## [v11.5.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.1) (2020-01-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.0...v11.5.1)
+
+**New stuff:**
+
+- Make filtering data with a WKT optional [\#270](https://github.com/gisaia/ARLAS-web-contributors/issues/270)
+
+## [v11.5.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.0) (2020-01-17)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.0...v11.5.0)
+
+**Breaking changes:**
+
+- Centralize all the fields configuration \(for search\) in ChipsSearchContributor [\#257](https://github.com/gisaia/ARLAS-web-contributors/issues/257)
+
+**New stuff:**
+
+- Remove redundant configurable fields in Swimlane [\#253](https://github.com/gisaia/ARLAS-web-contributors/issues/253)
+
+**Miscellaneous:**
+
+- Resultlist : Check if sortOutput is defined before applying sort [\#259](https://github.com/gisaia/ARLAS-web-contributors/issues/259)
+- Check validity of aggregationsmodel in swimlanes [\#255](https://github.com/gisaia/ARLAS-web-contributors/issues/255)
+
 ## [v11.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.4.1) (2019-10-23)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.0...v11.4.1)
