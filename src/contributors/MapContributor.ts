@@ -107,7 +107,8 @@ export class MapContributor extends Contributor {
     private sourcesTypesIndex: Map<string, string> = new Map();
     private layerToSourceIndex: Map<string, string> = new Map();
     private sourceToLayerIndex: Map<string, Set<string>> = new Map();
-    private visibiltyRulesIndex: Map<string, { type: string, minzoom: number, maxzoom: number, nbfeatures: number, rendermode: FeatureRenderMode }> = new Map();
+    private visibiltyRulesIndex: Map<string, { type: string, minzoom: number, maxzoom: number,
+        nbfeatures: number, rendermode: FeatureRenderMode }> = new Map();
     private layersVisibiltyRulesIndex: Map<string, { minzoom: number, maxzoom: number}> = new Map();
 
     /**Cluster data support */
