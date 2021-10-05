@@ -1,5 +1,13 @@
 # Change Log
 
+## [v19.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.2) (2021-10-05)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.1...v19.0.2)
+
+**New stuff:**
+
+- Add an option to decide whether to refetch window data  [\#432](https://github.com/gisaia/ARLAS-web-contributors/issues/432)
+
 ## [v19.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.1) (2021-09-30)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.0...v19.0.1)
