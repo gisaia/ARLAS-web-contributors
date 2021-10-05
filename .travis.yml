@@ -13,6 +13,7 @@ cache:
   - node_modules/
 
 before_script:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - ./script/prebuild.sh
 
 jobs:
@@ -25,4 +26,5 @@ jobs:
       script: npm run build-release
     - env:
         - job=generate_documentation
-      script: ./mkDocs.sh
+      script: 
+        - ./mkDocs.sh

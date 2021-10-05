@@ -115,7 +115,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
                 field: agg.field,
                 metrics: agg.metrics,
                 type: agg.type
-            }
+            };
             if (agg.interval) {
                 aggregationCopy.interval = {
                    value: agg.interval.value
@@ -125,7 +125,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
                 }
             }
             aggs.push(aggregationCopy);
-        })
+        });
         this.aggregations = aggs;
         this.field = field;
         this.json_path = jsonPath;
