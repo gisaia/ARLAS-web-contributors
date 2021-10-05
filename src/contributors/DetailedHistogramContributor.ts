@@ -109,7 +109,24 @@ export class DetailedHistogramContributor extends HistogramContributor {
     }
 
     public init(aggregations: Array<Aggregation>, field: string, jsonPath: string, additionalCollections: CollectionAggField[]) {
-        this.aggregations = aggregations;
+        const aggs = [];
+        aggregations.forEach(agg => {
+            const aggregationCopy: Aggregation = {
+                field: agg.field,
+                metrics: agg.metrics,
+                type: agg.type
+            }
+            if (agg.interval) {
+                aggregationCopy.interval = {
+                   value: agg.interval.value
+                };
+                if (agg.interval.unit) {
+                    aggregationCopy.interval.unit = agg.interval.unit;
+                }
+            }
+            aggs.push(aggregationCopy);
+        })
+        this.aggregations = aggs;
         this.field = field;
         this.json_path = jsonPath;
         if (!!additionalCollections) {
