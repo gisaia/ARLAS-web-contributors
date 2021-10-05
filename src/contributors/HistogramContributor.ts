@@ -354,11 +354,11 @@ export class HistogramContributor extends Contributor {
             return agg;
         } else {
             return zip(...Array.from(this.collections).map(ac => {
-                const aggregation = Object.assign({}, this.aggregations);
-                aggregation[0].field = ac.field;
+                const aggregations = this.aggregations;
+                aggregations[0].field = ac.field;
                 const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
                 return this.collaborativeSearcheService.resolveButNotAggregation(
-                    [projType.aggregate, aggregation], collaborations,
+                    [projType.aggregate, aggregations], collaborations,
                     ac.collectionName, identifier, additionalFilter, false, this.cacheDuration);
             }));
         }
