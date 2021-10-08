@@ -380,8 +380,8 @@ export class TreeContributor extends Contributor {
         const nodeChildren = nodeToPopulate.children;
         const field = this.aggregations[aggregationLevel].field;
         const metricValueOfOthers = (this.json_path === '$.count') ? aggregationResponse.sumotherdoccounts : 0;
-        if (aggregationResponse.elements !== undefined && aggregationResponse.name !== undefined) {
-            const aggregationBuckets = aggregationResponse.elements;
+        const aggregationBuckets = aggregationResponse.elements;
+        if (aggregationBuckets !== undefined && aggregationBuckets.length > 0 && aggregationResponse.name !== undefined) {
             let sumOfBucketsMetrics = 0;
             aggregationBuckets.forEach(bucket => {
                 const value = jp.query(bucket, this.json_path)[0];
@@ -400,7 +400,8 @@ export class TreeContributor extends Contributor {
                     childNode.color = this.getDeeper(bucket.hits[0], this.colorField.split('.'), 'D3D3D3');
                 }
                 relativeTotal += bucketMetricValue;
-                if (bucket.elements !== undefined && bucket.elements[0].elements !== undefined) {
+                if (bucket.elements !== undefined && bucket.elements.length > 0 &&
+                    bucket.elements[0].elements !== undefined && bucket.elements[0].elements.length > 0) {
                     if (bucketMetricValue / (sumOfBucketsMetrics + metricValueOfOthers) >= this.nodeSizeMinPourcentage) {
                         childNode.isOther = false;
                         if (sumOfBucketsMetrics > nodeToPopulate.size) {
