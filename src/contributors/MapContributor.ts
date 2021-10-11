@@ -995,7 +995,7 @@ export class MapContributor extends Contributor {
                                 || this.colorGenerator.getColor('UNKNOWN');
                             if (pf.label && pf.label.length > 0) {
                                 const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                                feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenColorField] || 'UNKNOWN';
+                                feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] || 'UNKNOWN';
                             }
                             /** set the key-to-color map to be displayed on the legend. */
                             this.setProvidedFieldLegend(pf, feature, fieldsToKeep);

@@ -186,7 +186,7 @@ export interface LayerSourceConfig {
     id: string;
     name?: string;
     source: string;
-    render_mode: FeatureRenderMode;
+    render_mode?: FeatureRenderMode;
     minzoom: number;
     maxzoom: number;
     minfeatures?: number;
