@@ -1,5 +1,15 @@
 # Change Log
 
+## [v19.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.3) (2021-10-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.2...v19.0.3)
+
+**Fixed bugs:**
+
+- Layers with Provided colors have wrong labels in the legend  [\#439](https://github.com/gisaia/ARLAS-web-contributors/issues/439)
+- render_mode should not be a mandatory attribute in LayerSourceConfig [\#438](https://github.com/gisaia/ARLAS-web-contributors/issues/438)
+- Donuts and Powerbars are wrongly populated due to change of tree structure  [\#436](https://github.com/gisaia/ARLAS-web-contributors/issues/436)
+
 ## [v19.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.2) (2021-10-05)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.1...v19.0.2)
