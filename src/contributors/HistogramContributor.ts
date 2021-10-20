@@ -33,6 +33,7 @@ import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import jp from 'jsonpath/jsonpath.min';
 import { map, flatMap } from 'rxjs/operators';
+import { CollectionAggField } from 'arlas-web-core/utils/utils';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -336,16 +337,11 @@ export class HistogramContributor extends Contributor {
                         this.range = r.dataRange;
                         this.aggregations[0].interval = r.aggregationPrecision;
                         return zip(...Array.from(this.collections).map(ac => {
-                            const aggregation = this.aggregations;
-                            aggregation[0].interval = r.aggregationPrecision;
-                            aggregation[0].field = ac.field;
+                            const aggregations = this.aggregations;
+                            aggregations[0].interval = r.aggregationPrecision;
+                            aggregations[0].field = ac.field;
                             const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                            return this.collaborativeSearcheService.resolveButNotAggregation(
-                                [projType.aggregate, aggregation], collaborations,
-                                ac.collectionName, identifier, additionalFilter, false, this.cacheDuration).pipe(map(d => {
-                                    d['collection'] = ac.collectionName;
-                                    return d;
-                                }));
+                            return this.resolveHistogramAgg(identifier, aggregations, collaborations, additionalFilter, ac);
                         }));
                     })),
                     flatMap(a => a)
@@ -357,10 +353,18 @@ export class HistogramContributor extends Contributor {
                 const aggregations = this.aggregations;
                 aggregations[0].field = ac.field;
                 const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                return this.collaborativeSearcheService.resolveButNotAggregation(
-                    [projType.aggregate, aggregations], collaborations,
-                    ac.collectionName, identifier, additionalFilter, false, this.cacheDuration);
+                return this.resolveHistogramAgg(identifier, aggregations, collaborations, additionalFilter, ac);
             }));
         }
+    }
+
+    protected resolveHistogramAgg(identifier: string, aggregations: Array<Aggregation>, collaborations: Map<string, Collaboration>,
+        additionalFilter: Filter, ac: CollectionAggField): Observable<AggregationResponse> {
+        return this.collaborativeSearcheService.resolveButNotAggregation(
+            [projType.aggregate, aggregations], collaborations,
+            ac.collectionName, identifier, additionalFilter, false, this.cacheDuration).pipe(map(d => {
+                d['collection'] = ac.collectionName;
+                return d;
+            }));
     }
 }
