@@ -423,7 +423,7 @@ export class TreeContributor extends Contributor {
                     } else {
                         childNode.size = bucketMetricValue;
                     }
-                    childNode.metricValue = Math.round(bucketMetricValue * 1000) / 1000;
+                    childNode.metricValue = bucketMetricValue;
                     nodeChildren.push(childNode);
                 }
             }
