@@ -534,6 +534,7 @@ export class LayerSource {
 export class LayerFeatureSource extends LayerSource {
     public renderMode: FeatureRenderMode;
     public maxfeatures: number;
+    public sourceMaxFeatures: number;
     public normalizationFields: Array<NormalizationFieldConfig>;
     public includeFields: Set<string>;
     public providedFields: Array<ColorConfig>;
@@ -543,6 +544,7 @@ export class LayerFeatureSource extends LayerSource {
 
 export class LayerClusterSource extends LayerSource {
     public minfeatures: number;
+    public sourceMinFeatures: number;
     public aggGeoField: string;
     public granularity: Granularity;
     public aggregatedGeometry: Aggregation.AggregatedGeometriesEnum;
@@ -554,6 +556,7 @@ export class LayerClusterSource extends LayerSource {
 /** Topology = feature-metric */
 export class LayerTopologySource extends LayerSource {
     public maxfeatures: number;
+    public sourceMaxFeatures: number;
     public metrics: Array<MetricConfig>;
     public geometryId: string;
     public rawGeometry: RawGeometry;
