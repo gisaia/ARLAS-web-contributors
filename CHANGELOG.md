@@ -1,14 +1,24 @@
 # Change Log
 
+## [v19.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.1.0) (2021-10-25)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.3...v19.1.0)
+
+**Fixed bugs:**
+
+- layers nbfeatures visibilityRules is leaded by the source only [\#445](https://github.com/gisaia/ARLAS-web-contributors/issues/445)
+- Tree contributor rounds metrics while it shouldn't [\#443](https://github.com/gisaia/ARLAS-web-contributors/issues/443)
+- Histogram data doesn't contain chartId when having a fixed size bucket [\#441](https://github.com/gisaia/ARLAS-web-contributors/issues/441)
+
 ## [v19.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.3) (2021-10-11)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.2...v19.0.3)
 
 **Fixed bugs:**
 
-- Layers with Provided colors have wrong labels in the legend  [\#439](https://github.com/gisaia/ARLAS-web-contributors/issues/439)
-- render_mode should not be a mandatory attribute in LayerSourceConfig [\#438](https://github.com/gisaia/ARLAS-web-contributors/issues/438)
-- Donuts and Powerbars are wrongly populated due to change of tree structure  [\#436](https://github.com/gisaia/ARLAS-web-contributors/issues/436)
+- Layers with Provided colors have wrong labels in the legend [\#439](https://github.com/gisaia/ARLAS-web-contributors/issues/439)
+- render\_mode should not be a mandatory attribute in LayerSourceConfig [\#438](https://github.com/gisaia/ARLAS-web-contributors/issues/438)
+- Donuts and Powerbars are wrongly populated due to change of tree structure [\#436](https://github.com/gisaia/ARLAS-web-contributors/issues/436)
 
 ## [v19.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.2) (2021-10-05)
 
@@ -17,6 +27,10 @@
 **New stuff:**
 
 - Add an option to decide whether to refetch window data  [\#432](https://github.com/gisaia/ARLAS-web-contributors/issues/432)
+
+**Fixed bugs:**
+
+- fixed interval size does not work in histograms [\#435](https://github.com/gisaia/ARLAS-web-contributors/issues/435)
 
 ## [v19.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.1) (2021-09-30)
 
