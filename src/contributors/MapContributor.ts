@@ -44,7 +44,7 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString } from './../utils/mapUtils';
+import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString, getCanonicalExtends } from './../utils/mapUtils';
 
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
@@ -1579,46 +1579,47 @@ export class MapContributor extends Contributor {
         this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, sort, keepOldData, null, null, null, fromParam);
     }
 
+
+    /**
+     * Static method that returns an ARLAS geographical filter, given the map extend and the geo_query field
+     */
+    public static getFilterFromExtent(rawExtend: string, wrapExtend: string, geoQueryField: string): Filter {
+        const finalExtends = getCanonicalExtends(rawExtend, wrapExtend);
+        const defaultQueryExpressions: Array<Expression> = [];
+        defaultQueryExpressions.push({
+            field: geoQueryField,
+            op: Expression.OpEnum.Within,
+            value: finalExtends[0]
+        });
+        if (finalExtends[1]) {
+            defaultQueryExpressions.push({
+                field: geoQueryField,
+                op: Expression.OpEnum.Within,
+                value: finalExtends[1]
+            });
+        }
+
+        return {
+            f: [defaultQueryExpressions]
+        };
+    }
+
     public getFilterForCount(rawExtend: string, wrapExtend: string, countGeoField: string): Filter {
         // west, south, east, north
-        const finalExtend = [];
-        const wrapExtentTab = wrapExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
-        const rawExtentTab = rawExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
-        const rawExtentForTest = rawExtentTab.join(',');
-        const wrapExtentForTest = wrapExtentTab.join(',');
-        if (rawExtentTab[0] < -180 && rawExtentTab[2] > 180) {
-            finalExtend.push('-180' + ',' + '-90' + ',' + '180' + ',' + '90');
-        } else if (rawExtentForTest === wrapExtentForTest) {
-            finalExtend.push(wrapExtend.trim());
-        } else {
-            let west = wrapExtentTab[0];
-            let east = wrapExtentTab[2];
-            if (west < 0 && east < 0) {
-                west = west * -1;
-                east = east * -1;
-            }
-            if (west > east) {
-                const firstExtent = wrapExtentTab[0] + ',' + wrapExtentTab[1] + ',' + '180' + ',' + wrapExtentTab[3];
-                const secondExtent = '-180' + ',' + wrapExtentTab[1] + ',' + wrapExtentTab[2] + ',' + wrapExtentTab[3];
-                finalExtend.push(firstExtent.trim());
-                finalExtend.push(secondExtent.trim());
-            } else {
-                finalExtend.push(wrapExtend.trim());
-            }
-        }
+        const finalExtends = getCanonicalExtends(rawExtend, wrapExtend);
         let filter: Filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         const defaultQueryExpressions: Array<Expression> = [];
         defaultQueryExpressions.push({
             field: countGeoField,
             op: Expression.OpEnum.Within,
-            value: finalExtend[0]
+            value: finalExtends[0]
         });
-        if (finalExtend[1]) {
+        if (finalExtends[1]) {
             defaultQueryExpressions.push({
                 field: countGeoField,
                 op: Expression.OpEnum.Within,
-                value: finalExtend[1]
+                value: finalExtends[1]
             });
         }
         if (collaboration !== null && collaboration !== undefined) {
@@ -1660,13 +1661,13 @@ export class MapContributor extends Contributor {
                         extendForCountExpressions.push({
                             field: this.geoQueryField,
                             op: geoQueryOperationForCount,
-                            value: finalExtend[0]
+                            value: finalExtends[0]
                         });
-                        if (finalExtend[1]) {
+                        if (finalExtends[1]) {
                             extendForCountExpressions.push({
                                 field: this.geoQueryField,
                                 op: geoQueryOperationForCount,
-                                value: finalExtend[1]
+                                value: finalExtends[1]
                             });
                         }
                         andFilter.push(extendForCountExpressions);
@@ -1680,13 +1681,13 @@ export class MapContributor extends Contributor {
                         queryExpressions.push({
                             field: this.geoQueryField,
                             op: this.geoQueryOperation,
-                            value: finalExtend[0]
+                            value: finalExtends[0]
                         });
-                        if (finalExtend[1]) {
+                        if (finalExtends[1]) {
                             queryExpressions.push({
                                 field: this.geoQueryField,
                                 op: this.geoQueryOperation,
-                                value: finalExtend[1]
+                                value: finalExtends[1]
                             });
                         }
                         filter = {
