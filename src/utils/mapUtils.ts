@@ -226,3 +226,33 @@ export function isClockwise(poly) {
     }
     return sum > 0;
 }
+
+
+export function getCanonicalExtends(rawExtend: string, wrapExtend: string): string[] {
+    const finalExtends = [];
+    const wrapExtentTab = wrapExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
+    const rawExtentTab = rawExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
+    const rawExtentForTest = rawExtentTab.join(',');
+    const wrapExtentForTest = wrapExtentTab.join(',');
+    if (rawExtentTab[0] < -180 && rawExtentTab[2] > 180) {
+        finalExtends.push('-180' + ',' + '-90' + ',' + '180' + ',' + '90');
+    } else if (rawExtentForTest === wrapExtentForTest) {
+        finalExtends.push(wrapExtend.trim());
+    } else {
+        let west = wrapExtentTab[0];
+        let east = wrapExtentTab[2];
+        if (west < 0 && east < 0) {
+            west = west * -1;
+            east = east * -1;
+        }
+        if (west > east) {
+            const firstExtent = wrapExtentTab[0] + ',' + wrapExtentTab[1] + ',' + '180' + ',' + wrapExtentTab[3];
+            const secondExtent = '-180' + ',' + wrapExtentTab[1] + ',' + wrapExtentTab[2] + ',' + wrapExtentTab[3];
+            finalExtends.push(firstExtent.trim());
+            finalExtends.push(secondExtent.trim());
+        } else {
+            finalExtends.push(wrapExtend.trim());
+        }
+    }
+    return finalExtends;
+}
