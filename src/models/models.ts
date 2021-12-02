@@ -99,10 +99,6 @@ export interface FieldsConfiguration {
     titleFieldNames?: Array<Field>;
     /** List of fields which values are used as tooltips in the resultlist. Values are joined with a space ' ' */
     tooltipFieldNames?: Array<Field>;
-    /** Field which value indicates whether there is a image for a row (tile) or not */
-    imageFieldName?: string;
-    /** Field which value indicates whether there is a thumbnail image for a row (tile) or not */
-    thumbnailFieldName?: string;
     /** Name of a Material icon */
     icon?: string;
     /** Field which value is used as a css class name => allows data driven styling of the resultlist rows/tiles */

@@ -134,11 +134,23 @@
         "process": {
             "urlImageTemplate": {
                 "description": "Process transformation for urlImageTemplate",
-                "type": "string"
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "description": "Process transformation for urlImageTemplate",
+                        "type": "string"
+                    }
+                }
             },
             "urlThumbnailTemplate": {
                 "description": "Process transformation for urlThumbnailTemplate",
-                "type": "string"
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "description": "Process transformation for urlThumbnailTemplate",
+                        "type": "string"
+                    }
+                }
             }
         },
         "details": {

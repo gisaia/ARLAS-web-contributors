@@ -259,6 +259,8 @@ export class ResultListContributor extends Contributor {
     public highlightItems = new Set();
 
     private includesvalues = new Array<string>();
+    private isImageEnabled = false;
+    private isThumbnailEnabled = false;
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
     /** CONSTANTS */
@@ -300,19 +302,13 @@ export class ResultListContributor extends Contributor {
         });
         this.includesvalues.push(this.fieldsConfiguration.idFieldName);
         if (this.fieldsConfiguration.titleFieldNames) {
-            this.includesvalues.concat(this.fieldsConfiguration.titleFieldNames.map(field => field.fieldPath));
+            this.includesvalues = this.includesvalues.concat(this.fieldsConfiguration.titleFieldNames.map(field => field.fieldPath));
         }
         if (this.fieldsConfiguration.urlImageTemplate) {
-            this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlImageTemplate));
+            this.includesvalues = this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlImageTemplate));
         }
         if (this.fieldsConfiguration.urlThumbnailTemplate) {
-            this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate));
-        }
-        if (this.fieldsConfiguration.imageFieldName) {
-            this.includesvalues.push(this.fieldsConfiguration.imageFieldName);
-        }
-        if (this.fieldsConfiguration.thumbnailFieldName) {
-            this.includesvalues.push(this.fieldsConfiguration.thumbnailFieldName);
+            this.includesvalues = this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate));
         }
         if (this.fieldsConfiguration.iconCssClass) {
             this.includesvalues.push(this.fieldsConfiguration.iconCssClass);
@@ -681,26 +677,13 @@ export class ResultListContributor extends Contributor {
                     fieldValueMap.set(this.fieldsConfiguration.iconColorFieldName.concat('_title'), resultValue);
                 }
                 if (this.fieldsConfiguration.urlImageTemplate) {
-                    this.setUrlField('urlImageTemplate', h, fieldValueMap);
+                    this.isImageEnabled = this.setUrlField('urlImageTemplate', h, fieldValueMap);
+                    fieldValueMap.set('imageEnabled', this.isImageEnabled.toString());
+
                 }
                 if (this.fieldsConfiguration.urlThumbnailTemplate) {
-                    this.setUrlField('urlThumbnailTemplate', h, fieldValueMap);
-                }
-                if (this.fieldsConfiguration.imageFieldName) {
-                    const imageEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.imageFieldName);
-                    if (imageEnabled != null) {
-                        fieldValueMap.set('imageEnabled', imageEnabled.toString());
-                    } else {
-                        fieldValueMap.set('imageEnabled', '');
-                    }
-                }
-                if (this.fieldsConfiguration.thumbnailFieldName) {
-                    const thumbnailEnabled = getElementFromJsonObject(h.data, this.fieldsConfiguration.thumbnailFieldName);
-                    if (thumbnailEnabled != null) {
-                        fieldValueMap.set('thumbnailEnabled', thumbnailEnabled.toString());
-                    } else {
-                        fieldValueMap.set('thumbnailEnabled', '');
-                    }
+                    this.isThumbnailEnabled = this.setUrlField('urlThumbnailTemplate', h, fieldValueMap);
+                    fieldValueMap.set('thumbnailEnabled', this.isThumbnailEnabled.toString());
                 }
                 listResult.push(fieldValueMap);
             });
@@ -786,26 +769,24 @@ export class ResultListContributor extends Contributor {
             );
         return searchResult;
     }
+
+
     private fieldsFromUrlTemplate(urlTemplate: string): Array<string> {
-        return urlTemplate
-            .split('/')
-            .filter(f => f.indexOf('{') >= 0)
-            .map(f => f.slice(1, -1))
-            .map(m => {
-                let t;
-                if (m.indexOf('$') >= 0) {
-                    t = m.split('$')[0];
-                } else {
-                    t = m;
-                }
-                return t;
-            });
+        return urlTemplate.match(/(?<={)(.+?)(?=})/g).map(f => f.split('$')[0]);
     }
-    private setUrlField(urlField: string, h: Hit, fieldValueMap: Map<string, string | number | Date>) {
-        this.fieldsConfiguration[urlField]
-            .split('/')
-            .filter(f => f.indexOf('{') >= 0).map(f => f.slice(1, -1)).forEach(f => {
-                if (f.indexOf('$') >= 0) {
+
+
+    /**
+     *
+     * @param urlField 'urlThumbnailTemplate' | 'urlImageTemplate'
+     * @param h Arlas hit containing the data
+     * @param fieldValueMap [fieldName - fieldValue] map that is set inside this method
+     * @returns Returns true if all the fields in the template exist in 'h.data', false if at least one doesn't exist
+     */
+    private setUrlField(urlField: string, h: Hit, fieldValueMap: Map<string, string | number | Date>): boolean {
+        let allFieldsExist = true;
+        this.fieldsConfiguration[urlField].match(/(?<={)(.+?)(?=})/g).forEach((f: string) => {
+                if (f.includes('$')) {
                     const tree = f.split('$');
                     let v = h.data;
                     for (const t of tree) {
@@ -813,6 +794,7 @@ export class ResultListContributor extends Contributor {
                             v = v[t];
                         } else {
                             v = undefined;
+                            allFieldsExist = false;
                             break;
                         }
                     }
@@ -832,12 +814,17 @@ export class ResultListContributor extends Contributor {
                         fieldValueMap.set(f, urlTemplate);
                     } else {
                         fieldValueMap.set(f, urlTemplate);
+                        allFieldsExist = false;
                     }
                 } else {
-                    fieldValueMap.set(f,
-                        getElementFromJsonObject(h.data, f));
+                    const fieldValue = getElementFromJsonObject(h.data, f);
+                    if (fieldValue === undefined || fieldValue === null) {
+                        allFieldsExist = false;
+                    }
+                    fieldValueMap.set(f, fieldValue);
                 }
             });
+        return allFieldsExist;
     }
 
     private setProcessFieldData(h: Hit, field: Field, fieldValueMap: Map<string, string | number | Date>, dataType: string): void {

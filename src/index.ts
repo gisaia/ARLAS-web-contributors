@@ -37,6 +37,7 @@ export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
 export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpression, DateUnitEnum, LayerSourceConfig, ColorConfig } from './models/models';
 export { getSourceName } from './utils/utils';
+export { FieldsConfiguration } from './models/models';
 
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);
