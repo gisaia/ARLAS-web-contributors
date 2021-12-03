@@ -676,12 +676,11 @@ export class ResultListContributor extends Contributor {
                     const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.iconColorFieldName);
                     fieldValueMap.set(this.fieldsConfiguration.iconColorFieldName.concat('_title'), resultValue);
                 }
-                if (this.fieldsConfiguration.urlImageTemplate) {
+                if (this.fieldsConfiguration.urlImageTemplate && this.fieldsConfiguration.urlImageTemplate !== '') {
                     this.isImageEnabled = this.setUrlField('urlImageTemplate', h, fieldValueMap);
                     fieldValueMap.set('imageEnabled', this.isImageEnabled.toString());
-
                 }
-                if (this.fieldsConfiguration.urlThumbnailTemplate) {
+                if (this.fieldsConfiguration.urlThumbnailTemplate && this.fieldsConfiguration.urlThumbnailTemplate !== '') {
                     this.isThumbnailEnabled = this.setUrlField('urlThumbnailTemplate', h, fieldValueMap);
                     fieldValueMap.set('thumbnailEnabled', this.isThumbnailEnabled.toString());
                 }
