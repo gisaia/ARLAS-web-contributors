@@ -149,7 +149,7 @@ export class HistogramContributor extends Contributor {
             collectionName: collection,
             field: this.field
         });
-
+        this.collaborativeSearcheService.registerCollections(this);
     }
 
     public getNbBuckets() {
