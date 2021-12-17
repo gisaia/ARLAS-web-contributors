@@ -33,7 +33,7 @@
         "yearShortcuts":{
             "description": "",
             "type":"array",
-            "itesms":{
+            "items":{
                 "type":"string"
             }
         },
