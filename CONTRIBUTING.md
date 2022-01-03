@@ -41,7 +41,7 @@ You will need to fork the main ARLAS-web-components repository and clone it to y
 When your code is ready, you will have to :
 
 - rebase your repository.
-- run `npm run build-release`, `npm run tslint` and `mkdocs.sh` and make sure they all pass.
+- run `npm run build-release`, `npm run lint` and `mkdocs.sh` and make sure they all pass.
 - [submit a pull request](https://help.github.com/articles/using-pull-requests) with a proper title and a mention to
 the corresponding issue (eg "fix #1234").
 - never force push your branch after submitting, if you need to sync with official repository, you should better merge
