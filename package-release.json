@@ -1,5 +1,5 @@
 {
-  "name": "***update during release***/arlas-web-contributors",
+  "name": "arlas-web-contributors",
   "version": "***update during release***",
   "description": "Contributors Library for ARLAS Components",
   "main": "./index.js",
