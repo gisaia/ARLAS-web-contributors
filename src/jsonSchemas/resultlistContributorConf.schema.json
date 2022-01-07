@@ -132,23 +132,27 @@
             }
         },
         "process": {
-            "urlImageTemplate": {
-                "description": "Process transformation for urlImageTemplate",
-                "type": "object",
-                "properties": {
-                    "process": {
-                        "description": "Process transformation for urlImageTemplate",
-                        "type": "string"
+            "description": "Process",
+            "type": "object",
+            "properties": {
+                "urlImageTemplate": {
+                    "description": "Process transformation for urlImageTemplate",
+                    "type": "object",
+                    "properties": {
+                        "process": {
+                            "description": "Process transformation for urlImageTemplate",
+                            "type": "string"
+                        }
                     }
-                }
-            },
-            "urlThumbnailTemplate": {
-                "description": "Process transformation for urlThumbnailTemplate",
-                "type": "object",
-                "properties": {
-                    "process": {
-                        "description": "Process transformation for urlThumbnailTemplate",
-                        "type": "string"
+                },
+                "urlThumbnailTemplate": {
+                    "description": "Process transformation for urlThumbnailTemplate",
+                    "type": "object",
+                    "properties": {
+                        "process": {
+                            "description": "Process transformation for urlThumbnailTemplate",
+                            "type": "string"
+                        }
                     }
                 }
             }
@@ -158,6 +162,7 @@
             "type": "array",
             "items": {
                 "description": "Theme configuration",
+                "type":"object",
                 "properties": {
                     "name": {
                         "description": "Name of theme",
@@ -214,6 +219,7 @@
             "description": "Attachments for one item, list of attachments",
             "type": "array",
             "items": {
+                "type":"object",
                 "properties": {
                     "attachmentsField": {
                         "description": "Field path to attachements list",

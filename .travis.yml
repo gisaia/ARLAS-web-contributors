@@ -3,7 +3,7 @@ sudo: required
 language: node_js
 
 node_js:
-  - "8"
+  - "12"
 
 services:
   - docker
@@ -20,7 +20,7 @@ jobs:
   include:
     - env:
         - job=lint
-      script: npm run tslint
+      script: npm run lint
     - env:
         - job=build_release
       script: npm run build-release
