@@ -1,5 +1,9 @@
 # Change Log
 
+## [v20.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.0.0-rc.1) (2022-01-07)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.0.0-beta.7...v20.0.0-rc.1)
+
 ## [v20.0.0-beta.7](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.0.0-beta.7) (2022-01-03)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.2.0...v20.0.0-beta.7)
