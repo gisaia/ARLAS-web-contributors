@@ -771,7 +771,7 @@ export class ResultListContributor extends Contributor {
 
 
     private fieldsFromUrlTemplate(urlTemplate: string): Array<string> {
-        return urlTemplate.match(/(?<={)(.+?)(?=})/g).map(f => f.split('$')[0]);
+        return urlTemplate.match(/{(?:[a-zA-Z0-9_$.]*)}/g).map(f => f.replace('{', '').replace('}', '').split('$')[0]);
     }
 
 
@@ -784,7 +784,8 @@ export class ResultListContributor extends Contributor {
      */
     private setUrlField(urlField: string, h: Hit, fieldValueMap: Map<string, string | number | Date>): boolean {
         let allFieldsExist = true;
-        this.fieldsConfiguration[urlField].match(/(?<={)(.+?)(?=})/g).forEach((f: string) => {
+        this.fieldsConfiguration[urlField].match(/{(?:[a-zA-Z0-9_$.]*)}/g)
+          .map(f => f.replace('{', '').replace('}', '')).forEach((f: string) => {
                 if (f.includes('$')) {
                     const tree = f.split('$');
                     let v = h.data;
