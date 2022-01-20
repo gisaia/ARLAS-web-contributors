@@ -1290,7 +1290,11 @@ export class MapContributor extends Contributor {
                     }
                     const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
                         this.collectionParameters.id_path;
-                    feature.properties.id = feature.properties[idPath];
+                    let idValue = feature.properties[idPath];
+                    if (idValue !== undefined) {
+                        idValue = idValue.toString();
+                    }
+                    feature.properties.id = idValue;
                     if (!ids.has(feature.properties.id + '-' + feature.properties.geometry_path)) {
                         const normalizations = this.searchNormalizations.get(source);
                         if (normalizations) {
@@ -1512,7 +1516,11 @@ export class MapContributor extends Contributor {
                 sources.forEach(source => {
                     const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
                         this.collectionParameters.id_path;
-                    feature.properties.id = feature.properties[idPath];
+                    let idValue = feature.properties[idPath];
+                    if (idValue !== undefined) {
+                        idValue = idValue.toString();
+                    }
+                    feature.properties.id = idValue;
                     const normalizations = this.searchNormalizations.get(source);
                     if (normalizations) {
                         normalizations.forEach(n => {
