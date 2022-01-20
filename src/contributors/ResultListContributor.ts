@@ -655,7 +655,10 @@ export class ResultListContributor extends Contributor {
                     fieldValueMap.set(element.fieldName, resultValue);
                 });
                 if (this.fieldsConfiguration.idFieldName) {
-                    const resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.idFieldName);
+                    let resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.idFieldName);
+                    if (resultValue !== undefined) {
+                        resultValue = resultValue.toString();
+                    }
                     fieldValueMap.set(this.fieldsConfiguration.idFieldName, resultValue);
                 }
                 if (this.fieldsConfiguration.titleFieldNames) {
