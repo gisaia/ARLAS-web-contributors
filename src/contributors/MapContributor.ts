@@ -44,11 +44,13 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString, getCanonicalExtends } from './../utils/mapUtils';
+import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString,
+     getCanonicalExtents } from './../utils/mapUtils';
 
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import moment from 'moment';
+import { stringToExtent } from '../utils/mapUtils';
 
 export enum DataMode {
     simple,
@@ -159,8 +161,9 @@ export class MapContributor extends Contributor {
 
     public zoom;
     public center;
-    public mapLoadExtent = [90, -180, -90, 180];
-    public mapTestExtent = [90, -180, -90, 180];
+    public mapLoadWrappedExtent = [90, -180, -90, 180];
+    public mapLoadRawExtent = [90, -180, -90, 180];
+    public mapTestWrappedExtent = [90, -180, -90, 180];
     public mapTestRawExtent = [90, -180, -90, 180];
     public visibleSources: Set<string> = new Set();
     public geoPointFields = new Array<string>();
@@ -292,8 +295,8 @@ export class MapContributor extends Contributor {
         this.parentCellsPerSource.clear();
         this.searchNormalizations.clear();
         this.searchSourcesMetrics.clear();
-        const wrapExtent = extentToString(this.mapTestExtent);
-        const rawExtent = extentToString(this.mapTestRawExtent);
+        const wrappedTestExtent = extentToString(this.mapTestWrappedExtent);
+        const rawTestExtent = extentToString(this.mapTestRawExtent);
         const windowVisibleSources = new Set<string>();
         const wideVisibleSources = new Set<string>();
         this.visibleSources.forEach(visibleSource => {
@@ -305,8 +308,9 @@ export class MapContributor extends Contributor {
             }
         });
 
-        this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
-        this.getWideModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, wideVisibleSources);
+        this.getWindowModeData(wrappedTestExtent, rawTestExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
+        this.getWideModeData(rawTestExtent, wrappedTestExtent, this.mapLoadWrappedExtent,
+            this.mapLoadRawExtent, this.zoom, wideVisibleSources);
         return of();
     }
 
@@ -320,11 +324,12 @@ export class MapContributor extends Contributor {
     public onMapMoved(moveParams: OnMoveResult, recalculateWindow: boolean): void {
         this.zoom = moveParams.zoom;
         this.center = moveParams.center;
-        this.mapLoadExtent = moveParams.extendForLoad;
-        this.mapTestExtent = moveParams.extendForTest;
+        this.mapLoadWrappedExtent = moveParams.extendForLoad;
+        this.mapTestWrappedExtent = moveParams.extendForTest;
         this.mapTestRawExtent = moveParams.rawExtendForTest;
-        const wrapExtent = extentToString(this.mapTestExtent);
-        const rawExtent = extentToString(this.mapTestRawExtent);
+        this.mapLoadRawExtent = moveParams.rawExtendForLoad;
+        const wrappedTestExtent = extentToString(this.mapTestWrappedExtent);
+        const rawTestExtent = extentToString(this.mapTestRawExtent);
         this.visibleSources.clear();
         const windowVisibleSources = new Set<string>();
         const wideVisibleSources = new Set<string>();
@@ -343,15 +348,17 @@ export class MapContributor extends Contributor {
         });
         if (this.updateData) {
             if (recalculateWindow) {
-                this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
+                this.getWindowModeData(wrappedTestExtent, rawTestExtent, windowVisibleSources,
+                    this.searchSort, this.isSimpleModeAccumulative);
             }
-            this.getWideModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, wideVisibleSources);
+            this.getWideModeData(rawTestExtent, wrappedTestExtent, this.mapLoadWrappedExtent,
+                this.mapLoadRawExtent, this.zoom, wideVisibleSources);
         }
     }
 
     public changeVisualisation(visibleLayers: Set<string>) {
-        const wrapExtent = extentToString(this.mapTestExtent);
-        const rawExtent = extentToString(this.mapTestRawExtent);
+        const wrappedTestExtent = extentToString(this.mapTestWrappedExtent);
+        const rawTestExtent = extentToString(this.mapTestRawExtent);
         const visibleSources = new Set<string>();
         const windowVisibleSources = new Set<string>();
         const wideVisibleSources = new Set<string>();
@@ -368,8 +375,9 @@ export class MapContributor extends Contributor {
             }
         });
         this.visibleSources = visibleSources;
-        this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
-        this.getWideModeData(rawExtent, wrapExtent, this.mapLoadExtent, this.zoom, wideVisibleSources);
+        this.getWindowModeData(wrappedTestExtent, rawTestExtent, windowVisibleSources, this.searchSort, this.isSimpleModeAccumulative);
+        this.getWideModeData(rawTestExtent, wrappedTestExtent, this.mapLoadWrappedExtent,
+            this.mapLoadRawExtent, this.zoom, wideVisibleSources);
     }
 
     public computeData(data: any) {
@@ -474,7 +482,8 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public getWideModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, zoom: number, visibleSources: Set<string>): void {
+    public getWideModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, mapLoadRawExtent,
+        zoom: number, visibleSources: Set<string>): void {
         const countFilter = this.getFilterForCount(rawTestExtent, wrapTestExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
@@ -516,7 +525,7 @@ export class MapContributor extends Contributor {
                 topologyAggsBuilder.forEach((aggSource, aggId) => {
                     this.renderAggSources(aggSource.sources);
                 });
-                this.fetchAggSources(mapLoadExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
+                this.fetchAggSources(mapLoadExtent, mapLoadRawExtent, zoom, topologyAggsBuilder, this.TOPOLOGY_SOURCE);
             }),
             finalize(() => {
                 if (!!topoCounts && topoCounts.length > 0) {
@@ -568,8 +577,8 @@ export class MapContributor extends Contributor {
                     featureSearchBuilder.forEach((searchSource, f) => {
                         this.renderSearchSources(searchSource.sources);
                     });
-                    this.fetchAggSources(mapLoadExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
-                    this.fetchTiledSearchSources(mapLoadExtent, featureSearchBuilder);
+                    this.fetchAggSources(mapLoadExtent, mapLoadRawExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
+                    this.fetchTiledSearchSources(mapLoadExtent, mapLoadRawExtent, featureSearchBuilder);
                 });
             }
         }
@@ -1143,9 +1152,9 @@ export class MapContributor extends Contributor {
         return from(tabOfCells).pipe(mergeAll());
     }
 
-    public fetchTiledSearchSources(extent: Array<number>, searches: Map<string, SourcesSearch>) {
+    public fetchTiledSearchSources(extent: Array<number>, rawExtent: Array<number>, searches: Map<string, SourcesSearch>) {
         searches.forEach((searchSource, searchId) => {
-            const newVisitedTiles = this.getVisitedXYZTiles(extent, searchSource.sources);
+            const newVisitedTiles = this.getVisitedXYZTiles(extent, rawExtent, searchSource.sources);
             let count = 0;
             const totalcount = newVisitedTiles.size;
             if (newVisitedTiles.size > 0 && searchSource.sources.length > 0) {
@@ -1210,7 +1219,8 @@ export class MapContributor extends Contributor {
 
         });
     }
-    public fetchAggSources(extent: Array<number>, zoom: number, aggs: Map<string, SourcesAgg>, aggType: string): void {
+    public fetchAggSources(extent: Array<number>, rawExtent: Array<number>,
+        zoom: number, aggs: Map<string, SourcesAgg>, aggType: string): void {
         aggs.forEach((aggSource, aggId) => {
             let granularity: Granularity;
             let networkFetchingLevel: number;
@@ -1220,7 +1230,7 @@ export class MapContributor extends Contributor {
                 networkFetchingLevel = this.topologyLayersIndex.get(aggSource.sources[0]).networkFetchingLevel;
             }
             let count = 0;
-            const newVisitedTiles = this.getVisitedTiles(extent, zoom, granularity, networkFetchingLevel, aggSource, aggType);
+            const newVisitedTiles = this.getVisitedTiles(extent, rawExtent, zoom, granularity, networkFetchingLevel, aggSource, aggType);
             const totalcount = newVisitedTiles.size;
             if (totalcount > 0) {
                 this.collaborativeSearcheService.ongoingSubscribe.next(1);
@@ -1479,7 +1489,7 @@ export class MapContributor extends Contributor {
      * @param maxPages The maxumum number of set features.
      */
     public getPage(reference: Map<string, string | number | Date>, sort: string, whichPage: PageEnum, maxPages: number): void {
-        const wrapExtent = extentToString(this.mapTestExtent);
+        const wrapExtent = extentToString(this.mapTestWrappedExtent);
         const rawExtent = extentToString(this.mapTestRawExtent);
         let after;
         if (whichPage === PageEnum.previous) {
@@ -1579,8 +1589,8 @@ export class MapContributor extends Contributor {
      * @param appendId Whether to append the id field name to the sort string. Default to 'false'
      */
     public drawGeoSearch(fromParam?: number, appendId?: boolean) {
-        const wrapExtent = extentToString(this.mapTestExtent);
-        const rawExtent = extentToString(this.mapTestRawExtent);
+        const wrappedTestExtent = extentToString(this.mapTestWrappedExtent);
+        const rawTestExtent = extentToString(this.mapTestRawExtent);
         const sort = appendId ? appendIdToSort(this.searchSort, ASC, this.collectionParameters.id_path) : this.searchSort;
         const keepOldData = false;
         const windowVisibleSources = new Set<string>();
@@ -1590,15 +1600,15 @@ export class MapContributor extends Contributor {
                 windowVisibleSources.add(visibleSource);
             }
         });
-        this.getWindowModeData(wrapExtent, rawExtent, windowVisibleSources, sort, keepOldData, null, null, null, fromParam);
+        this.getWindowModeData(wrappedTestExtent, rawTestExtent, windowVisibleSources, sort, keepOldData, null, null, null, fromParam);
     }
 
 
     /**
-     * Static method that returns an ARLAS geographical filter, given the map extend and the geo_query field
+     * Static method that returns an ARLAS geographical filter, given the map extent and the geo_query field
      */
-    public static getFilterFromExtent(rawExtend: string, wrapExtend: string, geoQueryField: string): Filter {
-        const finalExtends = getCanonicalExtends(rawExtend, wrapExtend);
+    public static getFilterFromExtent(rawExtent: string, wrappedExtent: string, geoQueryField: string): Filter {
+        const finalExtends = getCanonicalExtents(rawExtent, wrappedExtent);
         const defaultQueryExpressions: Array<Expression> = [];
         defaultQueryExpressions.push({
             field: geoQueryField,
@@ -1618,9 +1628,9 @@ export class MapContributor extends Contributor {
         };
     }
 
-    public getFilterForCount(rawExtend: string, wrapExtend: string, countGeoField: string): Filter {
+    public getFilterForCount(rawExtent: string, wrappedExtent: string, countGeoField: string): Filter {
         // west, south, east, north
-        const finalExtends = getCanonicalExtends(rawExtend, wrapExtend);
+        const finalExtends = getCanonicalExtents(rawExtent, wrappedExtent);
         let filter: Filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         const defaultQueryExpressions: Array<Expression> = [];
@@ -2913,7 +2923,7 @@ export class MapContributor extends Contributor {
         }
     }
 
-    private getVisitedXYZTiles(extent, sources: Array<string>): Set<string> {
+    private getVisitedXYZTiles(extent: Array<number>, rawExtent: Array<number>, sources: Array<string>): Set<string> {
         /** we will check if in the given sources, there a source with 0 visited tiles
          * this means a new geometry is requested ==> we clean all the visited tiles and re fetch data from scratch
          *
@@ -2934,7 +2944,17 @@ export class MapContributor extends Contributor {
         }
 
         const newVisitedTiles: Set<string> = new Set();
-        const visitedTiles = xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((this.zoom) - 1));
+        const finalExtents = getCanonicalExtents(extentToString(rawExtent), extentToString(extent));
+        let visitedTiles;
+        if (finalExtents.length === 1) {
+            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((this.zoom) - 1)));
+        } else {
+            const e1 = stringToExtent(finalExtents[0]);
+            const e2 = stringToExtent(finalExtents[1]);
+            const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.ceil((this.zoom) - 1)));
+            const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.ceil((this.zoom) - 1)));
+            visitedTiles = new Set([...v1, ...v2]);
+        }
         let tiles = new Set<string>();
         let start = true;
         sources.forEach(s => {
@@ -2959,44 +2979,72 @@ export class MapContributor extends Contributor {
         });
         const oldMapExtent = this.featuresOldExtent.get(sources[0]);
         if (oldMapExtent) {
-            if (extent[0] > oldMapExtent[0]
-                || extent[2] < oldMapExtent[2]
-                || extent[1] < oldMapExtent[1]
-                || extent[3] > oldMapExtent[3]
+            if (rawExtent[0] > oldMapExtent[0]
+                || rawExtent[2] < oldMapExtent[2]
+                || rawExtent[1] < oldMapExtent[1]
+                || rawExtent[3] > oldMapExtent[3]
             ) {
                 sources.forEach(s => {
-                    this.featuresOldExtent.set(s, extent);
+                    this.featuresOldExtent.set(s, rawExtent);
                 });
                 return newVisitedTiles;
             }
             sources.forEach(s => {
-                this.featuresOldExtent.set(s, extent);
+                this.featuresOldExtent.set(s, rawExtent);
             });
             return new Set();
         }
         sources.forEach(s => {
-            this.featuresOldExtent.set(s, extent);
+            this.featuresOldExtent.set(s, rawExtent);
         });
         return newVisitedTiles;
     }
 
-    private getVisitedTiles(extent, zoom: number, granularity: Granularity,
+    private getVisitedTiles(extent, rawExtent, zoom: number, granularity: Granularity,
         networkFetchingLevel: number, aggSource: SourcesAgg, aggType) {
         let visitedTiles;
         let precisions;
+        const finalExtents = getCanonicalExtents(extentToString(rawExtent), extentToString(extent));
         if (aggType === this.TOPOLOGY_SOURCE) {
-            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((networkFetchingLevel)))
-                .map(t => t.x + '_' + t.y + '_' + t.z));
+            if (finalExtents.length === 1) {
+                visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((networkFetchingLevel)))
+                    .map(t => t.x + '_' + t.y + '_' + t.z));
+            } else {
+                const e1 = stringToExtent(finalExtents[0]);
+                const e2 = stringToExtent(finalExtents[1]);
+                const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.ceil((networkFetchingLevel)))
+                    .map(t => t.x + '_' + t.y + '_' + t.z));
+                const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.ceil((networkFetchingLevel)))
+                    .map(t => t.x + '_' + t.y + '_' + t.z));
+                visitedTiles = new Set([...v1, ...v2]);
+            }
             precisions = Object.assign({}, networkFetchingLevelGranularity(networkFetchingLevel));
         } else {
             if (aggSource.agg.type === Aggregation.TypeEnum.Geohash) {
-                visitedTiles = extentToGeohashes(extent, zoom, this.granularityClusterFunctions.get(granularity));
-                precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggSource.agg.type));
+                if (finalExtents.length === 1) {
+                    visitedTiles = extentToGeohashes(extent, zoom, this.granularityClusterFunctions.get(granularity));
+                } else {
+                    const e1 = stringToExtent(finalExtents[0]);
+                    const e2 = stringToExtent(finalExtents[1]);
+                    const v1 = extentToGeohashes(e1, zoom, this.granularityClusterFunctions.get(granularity));
+                    const v2 = extentToGeohashes(e2, zoom, this.granularityClusterFunctions.get(granularity));
+                    visitedTiles = new Set([...v1, ...v2]);
+                }
             } else {
-                visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((zoom) - 1))
-                    .map(t => t.x + '_' + t.y + '_' + t.z));
-                precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggSource.agg.type));
+                if (finalExtents.length === 1) {
+                    visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((zoom) - 1))
+                        .map(t => t.x + '_' + t.y + '_' + t.z));
+                } else {
+                    const e1 = stringToExtent(finalExtents[0]);
+                    const e2 = stringToExtent(finalExtents[1]);
+                    const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.ceil((zoom) - 1))
+                        .map(t => t.x + '_' + t.y + '_' + t.z));
+                    const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.ceil((zoom) - 1))
+                        .map(t => t.x + '_' + t.y + '_' + t.z));
+                    visitedTiles = new Set([...v1, ...v2]);
+                }
             }
+            precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggSource.agg.type));
 
         }
         let oldPrecisions;
