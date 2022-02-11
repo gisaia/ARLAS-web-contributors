@@ -67,7 +67,11 @@ export class TreeContributor extends Contributor {
      * searched term in the text input filter
      */
     private search = '';
-
+    /**
+     * Type of operator for the filter : equal or not equal
+     */
+    private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
+        Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
 
     constructor(
         identifier: string,
@@ -97,6 +101,14 @@ export class TreeContributor extends Contributor {
 
     public setAggregations(aggregations: Array<Aggregation>) {
         this.aggregations = aggregations;
+    }
+
+    public getFilterOperator() {
+        return this.filterOperator;
+    }
+
+    public setFilterOperator(operator: Expression.OpEnum) {
+        this.filterOperator = operator;
     }
 
     /**
@@ -234,7 +246,7 @@ export class TreeContributor extends Contributor {
             this.aggregations.forEach(aggregation => {
                 const equalExpression: Expression = {
                     field: aggregation.field,
-                    op: Expression.OpEnum.Eq,
+                    op: this.filterOperator,
                     value: ''
                 };
                 const valuesSet = new Set<string>();
@@ -367,7 +379,7 @@ export class TreeContributor extends Contributor {
         }
     }
 
-    private  getDeeper(obj, path, def) {
+    private getDeeper(obj, path, def) {
         let current = obj;
         for (let i = 0; i < path.length; i++) {
             if (!current[path[i]]) { return def; }
