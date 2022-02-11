@@ -85,6 +85,11 @@ export function extentToString(extent: Array<number>): string {
     return extent[1] + ',' + extent[2] + ',' + extent[3] + ',' + extent[0];
 }
 
+export function stringToExtent(s: string): Array<number> {
+    const ss = s.split(',');
+    return [+ss[3], +ss[0], +ss[1], +ss[2]];
+}
+
 export function stringToTile(tileString: string): { x: number, y: number, z: number } {
     const numbers = tileString.split('_');
     return { x: +numbers[0], y: +numbers[1], z: +numbers[2] };
@@ -227,17 +232,23 @@ export function isClockwise(poly) {
     return sum > 0;
 }
 
-
-export function getCanonicalExtends(rawExtend: string, wrapExtend: string): string[] {
+/**
+ *
+ * @param rawExtent Raw extent of the map. eg : -200,-10,-120,10
+ * @param wrappedExtent Wrapped extent of the map. eg : 160,-10,-120,10
+ * @returns Splits the rawExtent into 2 extents if the rawExtent crosses the anti-meridean :
+ * eg : rawExtent=-200,-10,-120,10 && wrappedExtent=160,-10,-120,10 ==> Returns ["160,-10,180,10" , "-180,-10,-120,10" ]
+ */
+export function getCanonicalExtents(rawExtent: string, wrappedExtent: string): string[] {
     const finalExtends = [];
-    const wrapExtentTab = wrapExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
-    const rawExtentTab = rawExtend.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
+    const wrapExtentTab = wrappedExtent.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
+    const rawExtentTab = rawExtent.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
     const rawExtentForTest = rawExtentTab.join(',');
     const wrapExtentForTest = wrapExtentTab.join(',');
     if (rawExtentTab[0] < -180 && rawExtentTab[2] > 180) {
         finalExtends.push('-180' + ',' + '-90' + ',' + '180' + ',' + '90');
     } else if (rawExtentForTest === wrapExtentForTest) {
-        finalExtends.push(wrapExtend.trim());
+        finalExtends.push(wrappedExtent.trim());
     } else {
         let west = wrapExtentTab[0];
         let east = wrapExtentTab[2];
@@ -251,7 +262,8 @@ export function getCanonicalExtends(rawExtend: string, wrapExtend: string): stri
             finalExtends.push(firstExtent.trim());
             finalExtends.push(secondExtent.trim());
         } else {
-            finalExtends.push(wrapExtend.trim());
+            finalExtends.push(('0' + ',' + wrapExtentTab[1] + ',180,' + wrapExtentTab[3]).trim());
+            finalExtends.push(('-180' + ',' + wrapExtentTab[1] + ',0,' + wrapExtentTab[3]).trim());
         }
     }
     return finalExtends;
