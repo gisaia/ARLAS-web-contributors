@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, from } from 'rxjs';
+import { Observable, from, Subject } from 'rxjs';
 
 import {
     Contributor, ConfigService, CollaborativesearchService, CollaborationEvent,
@@ -72,6 +72,8 @@ export class TreeContributor extends Contributor {
      */
     private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
         Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
+    public allowOperatorChange = this.getConfigValue('allowOperatorChange');
+    public opertorChangedEvent: Subject<Expression.OpEnum> = new Subject();
 
     constructor(
         identifier: string,
@@ -107,8 +109,11 @@ export class TreeContributor extends Contributor {
         return this.filterOperator;
     }
 
-    public setFilterOperator(operator: Expression.OpEnum) {
+    public setFilterOperator(operator: Expression.OpEnum, emit = false) {
         this.filterOperator = operator;
+        if (emit) {
+            this.opertorChangedEvent.next(operator);
+        }
     }
 
     /**
