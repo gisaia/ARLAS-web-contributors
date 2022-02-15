@@ -73,7 +73,7 @@ export class TreeContributor extends Contributor {
     private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
         Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
     public allowOperatorChange = this.getConfigValue('allowOperatorChange');
-    public opertorChangedEvent: Subject<Expression.OpEnum> = new Subject();
+    public operatorChangedEvent: Subject<Expression.OpEnum> = new Subject();
 
     constructor(
         identifier: string,
@@ -112,7 +112,7 @@ export class TreeContributor extends Contributor {
     public setFilterOperator(operator: Expression.OpEnum, emit = false) {
         this.filterOperator = operator;
         if (emit) {
-            this.opertorChangedEvent.next(operator);
+            this.operatorChangedEvent.next(operator);
         }
     }
 
