@@ -3121,8 +3121,14 @@ export class MapContributor extends Contributor {
             } else {
                 value = f.properties[flattenedField];
             }
+            return value;
+        } else {
+            if (this.dateFieldFormatMap.has(field)) {
+                return value;
+            } else {
+                return f.properties[flattenedField];
+            }
         }
-        return value;
     }
     private getBboxsForQuery(newBbox: Array<Object>) {
         const bboxArray: Array<string> = [];
