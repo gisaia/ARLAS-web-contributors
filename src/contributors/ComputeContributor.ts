@@ -21,14 +21,23 @@
 import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json';
 import { Contributor, CollaborativesearchService, ConfigService, CollaborationEvent, projType, OperationEnum, Collaboration } from 'arlas-web-core';
 import { Observable, from, forkJoin } from 'rxjs';
-import { ComputationRequest, ComputationResponse } from 'arlas-api';
+import { ComputationRequest, ComputationResponse, Filter } from 'arlas-api';
+
+
+
+export interface MetricConfig {
+    field: string;
+    metric: string;
+    filter?: Filter;
+}
+
 /**
  * This contributor computes a metric on the given field, given the filters
  */
 export class ComputeContributor extends Contributor {
 
-    /** Array of which metrics will be computed*/
-    public metrics: Array<{ field: string, metric: string }> = this.getConfigValue('metrics');
+    /** Array of which metrics & filters will be computed*/
+    public metrics: Array<MetricConfig> = this.getConfigValue('metrics');
     /** Function to apply to the results of computation metrics*/
     public function: string = this.getConfigValue('function');
     /** Title of the contributor*/
@@ -61,7 +70,8 @@ export class ComputeContributor extends Contributor {
         const computationResponse: Observable<Array<ComputationResponse>> = forkJoin(this.metrics.map(m => {
             return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
             <ComputationRequest>{ field: m.field, metric: ComputationRequest.MetricEnum[m.metric.toUpperCase()] }],
-                this.collaborativeSearcheService.collaborations, this.collection, this.identifier, {}, false, this.cacheDuration);
+                this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
+                false, this.cacheDuration);
         }));
 
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
