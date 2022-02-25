@@ -1068,7 +1068,7 @@ export class MapContributor extends Contributor {
                             if (key.endsWith(AVG + NORMALIZE)) {
                                 stats[key] = { min: Number.MAX_VALUE, max: -Number.MAX_VALUE };
                                 /** getting the min max average values of all cells */
-                                /** looping on sourceData that contains cloned features and not original ones in order to keep orignal 
+                                /** looping on sourceData that contains cloned features and not original ones in order to keep orignal
                                  * values intact
                                  */
                                 sourceData.forEach((feature, k) => {
@@ -1090,7 +1090,7 @@ export class MapContributor extends Contributor {
                                     if (metricStats.min === metricStats.max) {
                                         feature.properties[key] = 1;
                                     } else {
-                                        feature.properties[key] = (feature.properties[key] - metricStats.min) 
+                                        feature.properties[key] = (feature.properties[key] - metricStats.min)
                                             / (metricStats.max - metricStats.min);
                                     }
                                 });
@@ -1420,14 +1420,14 @@ export class MapContributor extends Contributor {
                 /** Here a feature is a geohash or tile. */
                 /** We check if the geohash or tile is already displayed in the map */
                 const gmap = this.cellsPerSource.get(geometry_source_index.get(geometryRef));
-                let existingCells;
+                let existingCell;
                 if (!!feature.properties.geohash) {
-                    existingCells = gmap ? gmap.get(feature.properties.geohash) : null;
+                    existingCell = gmap ? gmap.get(feature.properties.geohash) : null;
                 }
                 if (!!feature.properties.tile) {
-                    existingCells = gmap ? gmap.get(feature.properties.tile) : null;
+                    existingCell = gmap ? gmap.get(feature.properties.tile) : null;
                 }
-                if (existingCells) {
+                if (existingCell) {
                     /** parent_geohash or parent_tile corresponds to the geohash or tile on which we applied the geoaggregation */
                     aggSource.sources.forEach(source => {
                         const parentCells = this.parentCellsPerSource.get(source);
@@ -1443,32 +1443,33 @@ export class MapContributor extends Contributor {
                             /** when this tile (parent_geohash or parent_tile) is requested for the first time we merge the counts */
                             if (metricsKeys) {
                                 const countValue = feature.properties.count;
-                                metricsKeys.forEach(key => {
-                                    const realKey = key.replace(NORMALIZE, '');
-                                    if (key.endsWith(SUM) || key.endsWith(SUM + NORMALIZE)) {
-                                        feature.properties[realKey] += existingCells.properties[realKey];
-                                    } else if (key.endsWith(MAX) || key.endsWith(MAX + NORMALIZE)) {
-                                        feature.properties[realKey] = (feature.properties[realKey] > existingCells.properties[realKey]) ?
-                                            feature.properties[realKey] : existingCells.properties[realKey];
-                                    } else if (key.endsWith(MIN) || key.endsWith(MIN + NORMALIZE)) {
-                                        feature.properties[realKey] = (feature.properties[realKey] < existingCells.properties[realKey]) ?
-                                            feature.properties[realKey] : existingCells.properties[realKey];
-                                    } else if (key.endsWith(AVG) || key.endsWith(AVG + NORMALIZE)) {
+                                // filter keys to merge once : for example if we have SUM & SUM + NORMALIZE; we should merge one time
+                                const uniqueMetrics = new Set(Array.from(metricsKeys).map(key => key.replace(NORMALIZE, '')));
+                                uniqueMetrics.forEach(realKey => {
+                                    if (realKey.endsWith(SUM)) {
+                                        feature.properties[realKey] += existingCell.properties[realKey];
+                                    } else if (realKey.endsWith(MAX)) {
+                                        feature.properties[realKey] = (feature.properties[realKey] > existingCell.properties[realKey]) ?
+                                            feature.properties[realKey] : existingCell.properties[realKey];
+                                    } else if (realKey.endsWith(MIN)) {
+                                        feature.properties[realKey] = (feature.properties[realKey] < existingCell.properties[realKey]) ?
+                                            feature.properties[realKey] : existingCell.properties[realKey];
+                                    } else if (realKey.endsWith(AVG)) {
                                         /** calculates a weighted average. existing geohash feature is already weighted */
                                         feature.properties[realKey] = feature.properties[realKey] *
-                                            countValue + existingCells.properties[realKey];
+                                            countValue + existingCell.properties[realKey];
                                     }
                                 });
                             }
-                            feature.properties.count = feature.properties.count + existingCells.properties.count;
+                            feature.properties.count = feature.properties.count + existingCell.properties.count;
                         } else {
                             /** when the tile has already been visited. (This can happen when we load the app for the first time),
                              * then we don't merge */
-                            feature.properties.count = existingCells.properties.count;
+                            feature.properties.count = existingCell.properties.count;
                             if (metricsKeys) {
                                 metricsKeys.forEach(key => {
                                     const realKey = key.replace(NORMALIZE, '');
-                                    feature.properties[realKey] = existingCells.properties[realKey];
+                                    feature.properties[realKey] = existingCell.properties[realKey];
                                 });
                             }
                         }
@@ -1478,10 +1479,11 @@ export class MapContributor extends Contributor {
                         const metricsKeys = this.aggSourcesMetrics.get(source);
                         if (metricsKeys) {
                             const countValue = feature.properties.count;
-                            metricsKeys.forEach(key => {
-                                if (key.endsWith(AVG) || key.endsWith(AVG + NORMALIZE)) {
-                                    const realKey = key.replace(NORMALIZE, '');
-                                    feature.properties[realKey] = feature.properties[realKey] * countValue;
+                            // filter keys to merge once : for example if we have SUM & SUM + NORMALIZE; we should merge one time
+                            const uniqueMetrics = new Set(Array.from(metricsKeys).map(key => key.replace(NORMALIZE, '')));
+                            uniqueMetrics.forEach(key => {
+                                if (key.endsWith(AVG)) {
+                                    feature.properties[key] = feature.properties[key] * countValue;
                                 }
                             });
                         }
@@ -2193,10 +2195,9 @@ export class MapContributor extends Contributor {
         if (metricsKeys) {
             /** prepare normalization by calculating the min and max values of each metrics that is to be normalized */
             metricsKeys.forEach(key => {
-                /** Because AVG calculation has a weight, the min & max should be calculated at the end */
                 if (key.endsWith(SUM + NORMALIZE) || key.endsWith(MAX + NORMALIZE) || key.endsWith(MIN + NORMALIZE)) {
                     const keyWithoutNormalize = key.replace(NORMALIZE, '');
-                    if (!stats[key]) { stats[key] = { min: Number.MAX_VALUE, max: Number.MIN_VALUE }; }
+                    if (!stats[key]) { stats[key] = { min: Number.MAX_VALUE, max: -Number.MAX_VALUE }; }
                     if (stats[key].max < feature.properties[keyWithoutNormalize]) {
                         stats[key].max = feature.properties[keyWithoutNormalize];
                     }
@@ -2204,6 +2205,7 @@ export class MapContributor extends Contributor {
                         stats[key].min = feature.properties[keyWithoutNormalize];
                     }
                 }
+                /** !!!! Because AVG calculation has a weight, the min & max should be calculated at the end */
             });
         }
         this.aggSourcesStats.set(source, stats);
@@ -2569,11 +2571,15 @@ export class MapContributor extends Contributor {
             }
         });
         if (metricsKeys) {
-            // Object.keys(feature.properties).forEach(k => {
-            //     if (!metricsKeys.has(k) && !this.isBeginingOfKeyInValues(k, providedFields)) {
-            //         delete feature.properties[k];
-            //     }
-            // });
+            const hasAvg = Array.from(metricsKeys).find(key => key.endsWith(AVG));
+            const hasAvgNormalized = Array.from(metricsKeys).find(key => key.endsWith(AVG + NORMALIZE));
+            if (!hasAvg && !hasAvgNormalized) {
+                Object.keys(feature.properties).forEach(k => {
+                    if (!metricsKeys.has(k) && !this.isBeginingOfKeyInValues(k, providedFields)) {
+                        delete feature.properties[k];
+                    }
+                });
+            }
         }
     }
 
@@ -3244,6 +3250,7 @@ export class MapContributor extends Contributor {
             this.collaborativeSearcheService.collaborations, this.collection, null, filter, false, this.cacheDuration);
 
     }
+
 
     private isBeginingOfKeyInValues(value: string, values: Set<string>): boolean {
         let isInSet = false;
