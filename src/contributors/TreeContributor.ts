@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, from, Subject } from 'rxjs';
+import { Observable, from, Subject, of, zip, map } from 'rxjs';
 
 import {
     Contributor, ConfigService, CollaborativesearchService, CollaborationEvent,
@@ -27,6 +27,7 @@ import { TreeNode, SimpleNode } from '../models/models';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
+import { equals } from 'tinycolor2';
 
 /**
  * This contributor fetches data from multiple term aggregations and format the data as a tree.
@@ -75,6 +76,9 @@ export class TreeContributor extends Contributor {
     public allowOperatorChange = this.getConfigValue('allowOperatorChange') !== undefined ?
         this.getConfigValue('allowOperatorChange') : true;
     public operatorChangedEvent: Subject<Expression.OpEnum> = new Subject();
+
+    public emitMissingLeaf: Subject<any[]> = new Subject();
+
 
     constructor(
         identifier: string,
@@ -187,6 +191,8 @@ export class TreeContributor extends Contributor {
     }
 
     public setSelection(data: TreeNode, collaboration: Collaboration): any {
+        const fieldsList = [];
+        const mapFiledValues = new Map();
         if (collaboration) {
             let filter: Filter;
             if (collaboration.filters && collaboration.filters.get(this.collection)) {
@@ -194,8 +200,6 @@ export class TreeContributor extends Contributor {
             }
             if (filter) {
                 const fFilters = filter.f;
-                const fieldsList = [];
-                const mapFiledValues = new Map<string, Set<string>>();
                 fFilters.forEach(fFilter => {
                     const values = fFilter[0].value.split(',');
                     const valuesAsSet = new Set<string>();
@@ -243,6 +247,60 @@ export class TreeContributor extends Contributor {
         } else {
             this.selectedNodesPathsList = new Array<Array<SimpleNode>>();
         }
+
+        // This part of code is only used for the powerbars utilisation of the tree contributor
+        if (fieldsList.length > 0 && this.selectedNodesPathsList.length === 0) {
+            this.selectedNodesPathsList = new Array();
+            fieldsList.forEach(f => {
+                [...mapFiledValues.get(f)].forEach(m => {
+                    this.selectedNodesPathsList.push([{
+                        fieldName: f,
+                        fieldValue: m
+                    }]);
+                });
+            });
+        }
+        const selectedNodesPaths = this.selectedNodesPathsList.map(s => s.map(n => n.fieldValue)).flat();
+        const missingLeaf = [];
+        selectedNodesPaths.forEach(f => {
+            if (data.children.map(d => d.fieldValue).indexOf(f) < 0) {
+                missingLeaf.push(f);
+            }
+        });
+        const obs = missingLeaf.map(g => {
+            if (this.search.length === 0) {
+                const filterAgg: Filter = {};
+                const agg = Object.assign([], this.aggregations);
+                agg[0].include = g;
+                const expression: Expression = {};
+                expression.field = this.aggregations[0].field;
+                expression.op = Expression.OpEnum.Eq;
+                expression.value = g;
+                filterAgg.f = [[expression]];
+                return this.collaborativeSearcheService.resolveButNotAggregation(
+                    [projType.aggregate, agg], this.collaborativeSearcheService.collaborations,
+                    this.collection, this.identifier, {}, false, this.cacheDuration
+                ).pipe(map(aggResponse => {
+                    let value;
+                    if (aggResponse && aggResponse.elements && aggResponse.elements.length > 0) {
+                        if (this.json_path !== '$.count') {
+                            value = jp.query(aggResponse.elements[0], this.json_path)[0];
+                        } else {
+                            value = aggResponse.elements[0].count;
+                        }
+                        return {
+                            value,
+                            key: aggResponse.elements[0].key
+                        };
+                    } else {
+                        return {};
+                    }
+                }));
+            } else {
+                return of([]);
+            }
+        });
+        zip(obs).subscribe(d => this.emitMissingLeaf.next(d));
         return from([]);
     }
 
