@@ -22,14 +22,8 @@ import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json';
 import { Contributor, CollaborativesearchService, ConfigService, CollaborationEvent, projType, OperationEnum, Collaboration } from 'arlas-web-core';
 import { Observable, from, forkJoin } from 'rxjs';
 import { ComputationRequest, ComputationResponse, Filter } from 'arlas-api';
+import { ComputeConfig } from '../models/models';
 
-
-
-export interface MetricConfig {
-    field: string;
-    metric: string;
-    filter?: Filter;
-}
 
 /**
  * This contributor computes a metric on the given field, given the filters
@@ -37,7 +31,7 @@ export interface MetricConfig {
 export class ComputeContributor extends Contributor {
 
     /** Array of which metrics & filters will be computed*/
-    public metrics: Array<MetricConfig> = this.getConfigValue('metrics');
+    public metrics: Array<ComputeConfig> = this.getConfigValue('metrics');
     /** Function to apply to the results of computation metrics*/
     public function: string = this.getConfigValue('function');
     /** Title of the contributor*/

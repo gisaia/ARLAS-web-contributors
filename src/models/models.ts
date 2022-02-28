@@ -18,7 +18,7 @@
  */
 
 import moment from 'moment';
-import { Metric, RawGeometry, Aggregation, Search } from 'arlas-api';
+import { Metric, RawGeometry, Aggregation, Search, Filter } from 'arlas-api';
 
 /**
 * Enum of sorting value define in Arlas-web-components
@@ -585,4 +585,10 @@ export interface SourcesAgg {
 export interface SourcesSearch {
     search: Search;
     sources: Array<string>;
+}
+
+export interface ComputeConfig {
+    field: string;
+    metric: string;
+    filter?: Filter;
 }
