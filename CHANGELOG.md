@@ -1,5 +1,50 @@
 # Change Log
 
+## [v19.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.1.1) (2022-02-28)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.0...v19.1.1)
+
+## [v20.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.1.0) (2022-02-18)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.0-beta.1...v20.1.0)
+
+## [v20.1.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.1.0-beta.1) (2022-02-15)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.0.0...v20.1.0-beta.1)
+
+## [v20.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.0.0) (2022-02-01)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.0.0-rc.1...v20.0.0)
+
+**New stuff:**
+
+- \[MAP\] \[List\] use global Message bus to communicate [\#189](https://github.com/gisaia/ARLAS-web-contributors/issues/189)
+
+**Fixed bugs:**
+
+- Stringify values of identifiers field in map and resultlist contributors [\#463](https://github.com/gisaia/ARLAS-web-contributors/issues/463)
+- Using regex with Lookbehind causes the application to crash on Safari [\#461](https://github.com/gisaia/ARLAS-web-contributors/issues/461)
+
+## [v20.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.0.0-rc.1) (2022-01-07)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.0.0-beta.7...v20.0.0-rc.1)
+
+**Miscellaneous:**
+
+- Upgrade dependencies [\#457](https://github.com/gisaia/ARLAS-web-contributors/issues/457)
+
+## [v20.0.0-beta.7](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.0.0-beta.7) (2022-01-03)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.2.0...v20.0.0-beta.7)
+
+## [v19.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.2.0) (2021-12-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.1.0...v19.2.0)
+
+**Fixed bugs:**
+
+- Fix quickloock/thumbnail enabling [\#452](https://github.com/gisaia/ARLAS-web-contributors/issues/452)
+
 ## [v19.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.1.0) (2021-10-25)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.3...v19.1.0)
