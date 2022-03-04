@@ -1047,6 +1047,7 @@ export class MapContributor extends Contributor {
             const sourceData = [];
             if (sourceCells) {
                 sourceCells.forEach((f, key) => {
+                    const fieldsToKeep = new Set<string>();
                     /** cloning features in order to keep the original features intact */
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
@@ -1056,7 +1057,16 @@ export class MapContributor extends Contributor {
                     delete feature.properties.parent_geohash;
                     delete feature.properties.tile;
                     delete feature.properties.parent_tile;
-                    this.cleanRenderedAggFeature(s, feature, new Set(), true);
+                    const fetchHits = this.clusterLayersIndex.get(s).fetchedHits;
+
+                    if (fetchHits) {
+                        fetchHits.fields.forEach(field => {
+                            const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                            fieldsToKeep.add(flattenField);
+                        });
+                    }
+                    this.cleanRenderedAggFeature(s, feature, fieldsToKeep, true);
                     sourceData.push(feature);
                 });
                 const hasAvg = Array.from(metricsKeys).find(key => key.endsWith(AVG));
@@ -1829,6 +1839,7 @@ export class MapContributor extends Contributor {
             clusterLayer.aggregatedGeometry = <any>ls.aggregated_geometry;
         }
         clusterLayer.metrics = ls.metrics;
+        clusterLayer.fetchedHits = ls.fetched_hits;
         return clusterLayer;
     }
 
@@ -1857,6 +1868,7 @@ export class MapContributor extends Contributor {
         if (topologyLayer.networkFetchingLevel === undefined) {
             topologyLayer.networkFetchingLevel = DEFAULT_FETCH_NETWORK_LEVEL;
         }
+        topologyLayer.fetchedHits = ls.fetched_hits;
         return topologyLayer;
     }
 
@@ -1932,13 +1944,20 @@ export class MapContributor extends Contributor {
             }
             aggregation.raw_geometries.push(ls.rawGeometry);
         }
-
-        const fetchSet = new Set<string>();
+        let fetchSet = new Set<string>();
+        if (aggregation.fetch_hits && aggregation.fetch_hits.include) {
+            fetchSet = new Set(aggregation.fetch_hits.include.filter(i => !i.includes('+') && !i.includes('-')));
+        }
+        if (!ls.fetchedHits) {
+            ls.fetchedHits = {
+                sorts: [],
+                fields: []
+            };
+        }
+        if (!!ls.fetchedHits && !!ls.fetchedHits.fields) {
+            ls.fetchedHits.fields.forEach(f => fetchSet.add(f));
+        }
         if (ls.providedFields && ls.providedFields.length > 0) {
-            if (!aggregation.fetch_hits) {
-                aggregation.fetch_hits = { size: 1 };
-                aggregation.fetch_hits.include = [];
-            }
             ls.providedFields.forEach(pf => {
                 fetchSet.add(pf.color);
                 if (pf.label && pf.label.length > 0) {
@@ -1947,25 +1966,23 @@ export class MapContributor extends Contributor {
             });
         }
         if (ls.colorFields && ls.colorFields.size > 0) {
-            if (!aggregation.fetch_hits) {
-                aggregation.fetch_hits = { size: 1 };
-                aggregation.fetch_hits.include = [];
-            }
             ls.colorFields.forEach(cf => {
                 fetchSet.add(cf);
             });
         }
         if (ls.includeFields && ls.includeFields.size > 0) {
-            if (!aggregation.fetch_hits) {
-                aggregation.fetch_hits = { size: 1 };
-                aggregation.fetch_hits.include = [];
-            }
             ls.includeFields.forEach(cf => {
                 fetchSet.add(cf);
             });
         }
-        if (!!aggregation.fetch_hits) {
-            aggregation.fetch_hits.include = Array.from(fetchSet);
+        if (fetchSet.size > 0 ) {
+            if (!aggregation.fetch_hits) {
+                aggregation.fetch_hits = { size: 1 };
+                aggregation.fetch_hits.include = [];
+            }
+            if (!!aggregation.fetch_hits) {
+                aggregation.fetch_hits.include = ls.fetchedHits.sorts.concat(Array.from(fetchSet));
+            }
         }
         return aggregation;
     }
@@ -2100,9 +2117,11 @@ export class MapContributor extends Contributor {
         clusterSources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
             const aggType = !!ls.type ? ls.type.toString() : 'geohash';
+            const hasHitsToFetch = !!ls.fetchedHits && !!ls.fetchedHits.sorts && ls.fetchedHits.sorts.length > 0;
+            const fetchHitsId = hasHitsToFetch ? `:${ls.fetchedHits.sorts.join('_')}` : '';
             const aggId = ls.aggGeoField + ':' + ls.granularity.toString() + ':' + ls.minfeatures + ':' +
                 ls.sourceMinzoom + ':' + ls.sourceMaxzoom
-                + ':' + aggType;
+                + ':' + aggType + fetchHitsId;
             const aggBuilder = aggregationsMap.get(aggId);
             let sources;
             let aggregation: Aggregation;
@@ -2124,6 +2143,10 @@ export class MapContributor extends Contributor {
                 };
                 sources = [];
             }
+            let fetchSet = new Set<string>();
+            if (aggregation.fetch_hits && aggregation.fetch_hits.include) {
+                fetchSet = new Set(aggregation.fetch_hits.include.filter(i => !i.includes('+') && !i.includes('-')));
+            }
             if (ls.metrics) {
                 if (!aggregation.metrics) { aggregation.metrics = []; }
                 ls.metrics.forEach(m => {
@@ -2141,6 +2164,18 @@ export class MapContributor extends Contributor {
                     aggregation.raw_geometries = [];
                 }
                 aggregation.raw_geometries.push(ls.rawGeometry);
+            }
+            if (ls.fetchedHits) {
+                ls.fetchedHits.fields.forEach(f => fetchSet.add(f));
+            }
+            if (fetchSet.size > 0 ) {
+                if (!aggregation.fetch_hits) {
+                    aggregation.fetch_hits = { size: 1 };
+                    aggregation.fetch_hits.include = [];
+                }
+                if (!!aggregation.fetch_hits) {
+                    aggregation.fetch_hits.include = ls.fetchedHits.sorts.concat(Array.from(fetchSet));
+                }
             }
             sources.push(cs);
             aggregationsMap.set(aggId, { agg: aggregation, sources });
@@ -2348,7 +2383,9 @@ export class MapContributor extends Contributor {
         const aggregationsMap: Map<string, SourcesAgg> = new Map();
         topologySources.forEach(cs => {
             const ls = this.topologyLayersIndex.get(cs);
-            const aggId = ls.geometryId + ':' + ls.networkFetchingLevel;
+            const hasHitsToFetch = !!ls.fetchedHits && !!ls.fetchedHits.sorts && ls.fetchedHits.sorts.length > 0;
+            const fetchHitsId = hasHitsToFetch ? `:${ls.fetchedHits.sorts.join('_')}` : '';
+            const aggId = ls.geometryId + ':' + ls.networkFetchingLevel + fetchHitsId;
             const aggBuilder = aggregationsMap.get(aggId);
             let sources;
             let aggregation: Aggregation;
@@ -2381,41 +2418,45 @@ export class MapContributor extends Contributor {
                 }
                 aggregation.raw_geometries.push(ls.rawGeometry);
             }
+            let fetchSet = new Set<string>();
+            if (aggregation.fetch_hits && aggregation.fetch_hits.include) {
+                fetchSet = new Set(aggregation.fetch_hits.include.filter(i => !i.includes('+') && !i.includes('-')));
+            }
+            if (!ls.fetchedHits) {
+                ls.fetchedHits = {
+                    sorts: [],
+                    fields: []
+                };
+            }
+            if (!!ls.fetchedHits && !!ls.fetchedHits.fields) {
+                ls.fetchedHits.fields.forEach(f => fetchSet.add(f));
+            }
             if (ls.providedFields && ls.providedFields.length > 0) {
-                if (!aggregation.fetch_hits) {
-                    aggregation.fetch_hits = { size: 1 };
-                    aggregation.fetch_hits.include = [];
-                }
-                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
                 ls.providedFields.forEach(pf => {
                     fetchSet.add(pf.color);
                     if (pf.label && pf.label.length > 0) {
                         fetchSet.add(pf.label);
                     }
                 });
-                aggregation.fetch_hits.include = Array.from(fetchSet);
             }
             if (ls.colorFields && ls.colorFields.size > 0) {
-                if (!aggregation.fetch_hits) {
-                    aggregation.fetch_hits = { size: 1 };
-                    aggregation.fetch_hits.include = [];
-                }
-                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
                 ls.colorFields.forEach(cf => {
                     fetchSet.add(cf);
                 });
-                aggregation.fetch_hits.include = Array.from(fetchSet);
             }
             if (ls.includeFields && ls.includeFields.size > 0) {
+                ls.includeFields.forEach(cf => {
+                    fetchSet.add(cf);
+                });
+            }
+            if (fetchSet.size > 0 ) {
                 if (!aggregation.fetch_hits) {
                     aggregation.fetch_hits = { size: 1 };
                     aggregation.fetch_hits.include = [];
                 }
-                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
-                ls.includeFields.forEach(cf => {
-                    fetchSet.add(cf);
-                });
-                aggregation.fetch_hits.include = Array.from(fetchSet);
+                if (!!aggregation.fetch_hits) {
+                    aggregation.fetch_hits.include = ls.fetchedHits.sorts.concat(Array.from(fetchSet));
+                }
             }
             sources.push(cs);
             aggregationsMap.set(aggId, { agg: aggregation, sources });
