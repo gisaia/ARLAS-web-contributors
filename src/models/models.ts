@@ -595,6 +595,7 @@ export interface MetricConfig {
     field: string;
     metric: Metric.CollectFctEnum | string;
     normalize: boolean;
+    short_format?: boolean;
 }
 
 export interface SourcesAgg {

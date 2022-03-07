@@ -50,7 +50,7 @@ import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, exte
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import moment from 'moment';
-import { stringToExtent } from '../utils/mapUtils';
+import { stringToExtent, numToString } from '../utils/mapUtils';
 
 export enum DataMode {
     simple,
@@ -58,6 +58,8 @@ export enum DataMode {
 }
 
 export const NORMALIZE = ':normalized';
+export const SHORT_VALUE = ':_arlas__short_format';
+export const COUNT_SHORT_VALUE = 'count_:_arlas__short_format';
 export const NORMALIZE_PER_KEY = ':normalized:';
 export const COUNT = 'count';
 export const NORMALIZED_COUNT = 'count_:normalized';
@@ -1026,6 +1028,7 @@ export class MapContributor extends Contributor {
                     }
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
+                    console.log(feature)
                     sourceData.push(feature);
                 });
             }
@@ -1067,6 +1070,7 @@ export class MapContributor extends Contributor {
                         });
                     }
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep, true);
+                    console.log(feature)
                     sourceData.push(feature);
                 });
                 const hasAvg = Array.from(metricsKeys).find(key => key.endsWith(AVG));
@@ -2192,6 +2196,8 @@ export class MapContributor extends Contributor {
      */
     private indexAggSourcesMetrics(source: string, aggregation: Aggregation, metricConfig: MetricConfig): void {
         let metrics = this.aggSourcesMetrics.get(source);
+        if (!metrics) { metrics = new Set(); }
+
         const key = metricConfig.field.replace(/\./g, this.FLAT_CHAR) + '_' + metricConfig.metric.toString().toLowerCase() + '_';
         let normalizeKey = metricConfig.normalize ? key + NORMALIZE : key;
         if (!key.endsWith('_' + COUNT + '_')) {
@@ -2204,10 +2210,13 @@ export class MapContributor extends Contributor {
                     collect_fct: <Metric.CollectFctEnum>metricConfig.metric
                 });
             }
+            if (metricConfig.short_format) {
+                metrics.add(key + SHORT_VALUE);
+            }
         } else {
             normalizeKey = normalizeKey.endsWith(NORMALIZED_COUNT) ? NORMALIZED_COUNT : COUNT;
+            metrics.add(COUNT_SHORT_VALUE);
         }
-        if (!metrics) { metrics = new Set(); }
         metrics.add(normalizeKey);
         this.aggSourcesMetrics.set(source, metrics);
     }
@@ -2579,6 +2588,15 @@ export class MapContributor extends Contributor {
                     if (mk === NORMALIZED_COUNT) {
                         feature.properties[mk] = Math.round(feature.properties.count / sourceStats.count * 100000) / 100000;
                     }
+                }
+                if (mk.endsWith(SHORT_VALUE)) {
+                    if (mk === COUNT_SHORT_VALUE) {
+                        feature.properties[mk] = numToString(feature.properties.count);
+                    } else {
+                        const kWithoutN = mk.replace(SHORT_VALUE, '');
+                        feature.properties[mk] = numToString(feature.properties[kWithoutN]);
+                    }
+
                 }
             });
         }
