@@ -3247,7 +3247,7 @@ export class MapContributor extends Contributor {
     private getTopoCardinality(collectField: string, filter: Filter): Observable<ComputationResponse> {
         const computationRequest: ComputationRequest = { field: collectField, metric: ComputationRequest.MetricEnum.CARDINALITY };
         return this.collaborativeSearcheService.resolveButNotComputation([projType.compute, computationRequest],
-            this.collaborativeSearcheService.collaborations, this.collection, null, filter, false, this.cacheDuration);
+            this.collaborativeSearcheService.collaborations, this.collection, this.identifier, filter, false, this.cacheDuration);
 
     }
 
