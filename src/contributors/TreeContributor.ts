@@ -148,9 +148,10 @@ export class TreeContributor extends Contributor {
         }
         this.aggregations.forEach((agg, index) => {
             if (agg.metrics && agg.metrics.length > 0) {
-                this.aggregations[index].on = Aggregation.OnEnum.Result;
-                this.aggregations[index].order = Aggregation.OrderEnum.Desc;
-
+                this.aggregations[index].on = this.aggregations[index].on !== undefined ?
+                    this.aggregations[index].on : Aggregation.OnEnum.Result;
+                this.aggregations[index].order = this.aggregations[index].order !== undefined ?
+                    this.aggregations[index].order : Aggregation.OrderEnum.Desc;
             }
         });
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
