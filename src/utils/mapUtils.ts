@@ -271,13 +271,16 @@ export function getCanonicalExtents(rawExtent: string, wrappedExtent: string): s
 }
 
 
-export function numberToShortValue(num: number, p?: number): string {
+export function numToString(num: number, p?: number): string {
     // what tier? (determines SI symbol)
     const suffixes = ['', 'k', 'M', 'b', 't'];
     const suffixNum = Math.log10(Math.abs(num)) / 3 | 0;
 
     if (suffixNum === 0) {
-        return num.toString();
+        if (Math.abs(num) < 0.1) {
+            return formatNumber(+num);
+        }
+        return formatNumber(+num, ' ', 0);
     }
     // get suffix and determine scale
     const suffix = suffixes[suffixNum];
@@ -285,7 +288,7 @@ export function numberToShortValue(num: number, p?: number): string {
     // scale the number
     const scaled = num / scale;
     // format number and add suffix
-    return scaled.toFixed(p) + suffix;
+    return scaled.toFixed(1) + suffix;
 }
 
 export function formatNumber(x, formatChar = ' ', roundPrecision?: number): string {
@@ -324,27 +327,4 @@ export function formatNumber(x, formatChar = ' ', roundPrecision?: number): stri
         }
     }
     return x;
-}
-
-  export function numToString(value: number): string {
-    let newValue = value.toString();
-    if (value >= 1000) {
-        const suffixes = ['', 'k', 'M', 'b', 't'];
-        const suffixNum = Math.floor(('' + value).length / 4);
-        let shortValue: number;
-        for (let precision = 3; precision >= 1; precision--) {
-            shortValue = shortValue = Math.round(parseFloat((suffixNum !== 0 ? (value / Math.pow(1000, suffixNum)) : value)
-                .toPrecision(precision)));
-            const dotLessShortValue = (shortValue + '').replace(/[^a-zA-Z]+/g, '');
-            if (dotLessShortValue.length <= 2) { break; }
-        }
-        let shortNum = shortValue.toString();
-        if (shortValue % 1 !== 0) {
-            shortNum = shortValue.toFixed(1);
-        }
-        newValue = shortNum + suffixes[suffixNum];
-        return newValue;
-    } else {
-        return formatNumber(value);
-    }
 }

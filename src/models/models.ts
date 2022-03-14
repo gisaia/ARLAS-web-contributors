@@ -191,6 +191,7 @@ export interface LayerSourceConfig {
     /** feature (Geometric-features) only */
     returned_geometry?: string;
     normalization_fields?: Array<NormalizationFieldConfig>;
+    short_form_fields?: Array<string>;
     render_mode?: FeatureRenderMode;
     /****************************************** */
     /** feature-metric (Network-analytics only) */
@@ -222,6 +223,7 @@ export interface LayerSourceConfig {
 export interface FetchedHitsConfig {
     sorts?: string[];
     fields?: string[];
+    short_form_fields?: string[];
 }
 
 export interface ColorConfig {
@@ -551,6 +553,7 @@ export class LayerFeatureSource extends LayerSource {
     public maxfeatures: number;
     public sourceMaxFeatures: number;
     public normalizationFields: Array<NormalizationFieldConfig>;
+    public shortFormLabels: Array<string>;
     public includeFields: Set<string>;
     public providedFields: Array<ColorConfig>;
     public colorFields: Set<string>;
