@@ -1,5 +1,18 @@
 # Change Log
 
+## [v21.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v21.0.0-beta.1) (2022-03-14)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.1.1...v21.0.0-beta.1)
+
+**Fixed bugs:**
+
+- Fix average merging in mapcontributors [\#478](https://github.com/gisaia/ARLAS-web-contributors/issues/478)
+- \[MapContributors\] Geograhical filters are duplicated in the case of Feature-metric layers [\#343](https://github.com/gisaia/ARLAS-web-contributors/issues/343)
+
+## [v19.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.1.1) (2022-02-28)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.0...v19.1.1)
+
 ## [v20.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.1.0) (2022-02-18)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.0-beta.1...v20.1.0)
