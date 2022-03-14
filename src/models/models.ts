@@ -180,30 +180,50 @@ export enum FeatureRenderMode {
 }
 
 export interface LayerSourceConfig {
+    /** common config to all types */
     id: string;
     name?: string;
     source: string;
-    render_mode?: FeatureRenderMode;
     minzoom: number;
     maxzoom: number;
-    minfeatures?: number;
-    maxfeatures?: number;
+    filters?: Array<any>;
+    /****************************************** */
+    /** feature (Geometric-features) only */
     returned_geometry?: string;
+    normalization_fields?: Array<NormalizationFieldConfig>;
+    short_form_fields?: Array<string>;
+    render_mode?: FeatureRenderMode;
+    /****************************************** */
+    /** feature-metric (Network-analytics only) */
     geometry_id?: string;
+    network_fetching_level?: number;
     /** @deprecated */
     geometry_support?: string;
+    /****************************************** */
+    /** cluster only */
     agg_geo_field?: string;
+    aggregated_geometry?: string;
+    aggType?: ClusterAggType;
+    minfeatures?: number;
+    /****************************************** */
+    /** feature & feature-metric only */
+    maxfeatures?: number;
     colors_from_fields?: Array<string>;
     include_fields?: Array<string>;
     provided_fields?: Array<ColorConfig>;
-    normalization_fields?: Array<NormalizationFieldConfig>;
-    aggregated_geometry?: string;
+    /****************************************** */
+    /** cluster & feature-metric only */
     raw_geometry?: RawGeometryConfig;
     granularity?: string;
     metrics?: Array<MetricConfig>;
-    filters?: Array<any>;
-    aggType?: ClusterAggType;
-    network_fetching_level?: number;
+    fetched_hits?: FetchedHitsConfig;
+    /****************************************** */
+}
+
+export interface FetchedHitsConfig {
+    sorts?: string[];
+    fields?: string[];
+    short_form_fields?: string[];
 }
 
 export interface ColorConfig {
@@ -533,6 +553,7 @@ export class LayerFeatureSource extends LayerSource {
     public maxfeatures: number;
     public sourceMaxFeatures: number;
     public normalizationFields: Array<NormalizationFieldConfig>;
+    public shortFormLabels: Array<string>;
     public includeFields: Set<string>;
     public providedFields: Array<ColorConfig>;
     public colorFields: Set<string>;
@@ -548,6 +569,7 @@ export class LayerClusterSource extends LayerSource {
     public rawGeometry: RawGeometry;
     public metrics: Array<MetricConfig>;
     public type: ClusterAggType;
+    public fetchedHits: FetchedHitsConfig;
 }
 
 /** Topology = feature-metric */
@@ -562,6 +584,7 @@ export class LayerTopologySource extends LayerSource {
     public colorFields: Set<string>;
     public includeFields: Set<string>;
     public networkFetchingLevel: number;
+    public fetchedHits: FetchedHitsConfig;
 }
 
 export enum Granularity {
@@ -575,6 +598,7 @@ export interface MetricConfig {
     field: string;
     metric: Metric.CollectFctEnum | string;
     normalize: boolean;
+    short_format?: boolean;
 }
 
 export interface SourcesAgg {

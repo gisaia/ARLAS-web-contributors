@@ -397,12 +397,18 @@ export function getSourceName(ls: LayerSourceConfig): string {
                 sourceNameComponents.push(ls.raw_geometry.geometry);
                 sourceNameComponents.push(ls.raw_geometry.sort);
             }
+            if (ls.fetched_hits && ls.fetched_hits.sorts) {
+                sourceNameComponents.push(ls.fetched_hits.sorts.join('_'));
+            }
             break;
         case 'feature-metric':
             sourceNameComponents.push(ls.geometry_id);
             sourceNameComponents.push(ls.raw_geometry.geometry);
             sourceNameComponents.push(ls.raw_geometry.sort);
             sourceNameComponents.push(ls.network_fetching_level);
+            if (ls.fetched_hits && ls.fetched_hits.sorts) {
+                sourceNameComponents.push(ls.fetched_hits.sorts.join('_'));
+            }
             break;
         case 'feature':
             sourceNameComponents.push(ls.returned_geometry);

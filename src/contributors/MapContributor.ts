@@ -50,7 +50,7 @@ import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, exte
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import moment from 'moment';
-import { stringToExtent } from '../utils/mapUtils';
+import { stringToExtent, numToString } from '../utils/mapUtils';
 
 export enum DataMode {
     simple,
@@ -58,6 +58,8 @@ export enum DataMode {
 }
 
 export const NORMALIZE = ':normalized';
+export const SHORT_VALUE = ':_arlas__short_format';
+export const COUNT_SHORT_VALUE = 'count_:_arlas__short_format';
 export const NORMALIZE_PER_KEY = ':normalized:';
 export const COUNT = 'count';
 export const NORMALIZED_COUNT = 'count_:normalized';
@@ -958,6 +960,13 @@ export class MapContributor extends Contributor {
                             this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
                         });
                     }
+                    const shortFormatLabels = this.featureLayerSourcesIndex.get(s).shortFormLabels;
+                    if (shortFormatLabels) {
+                        shortFormatLabels.forEach(sfl => {
+                            const flattenShortField = sfl.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenShortField + SHORT_VALUE] = numToString(+feature.properties[flattenShortField]);
+                        });
+                    }
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
                     delete feature.properties.md;
@@ -1024,6 +1033,21 @@ export class MapContributor extends Contributor {
                             fieldsToKeep.add(flattenField);
                         });
                     }
+                    const fetchHits = this.topologyLayersIndex.get(s).fetchedHits;
+                    if (fetchHits) {
+                        fetchHits.fields.forEach(field => {
+                            const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                            fieldsToKeep.add(flattenField);
+                        });
+                        if (fetchHits.short_form_fields) {
+                            fetchHits.short_form_fields.forEach(field => {
+                                const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                                feature.properties[flattenField + SHORT_VALUE] = numToString(+feature.properties[flattenField]);
+                                fieldsToKeep.add(flattenField + SHORT_VALUE);
+                            });
+                        }
+                    }
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
                     sourceData.push(feature);
@@ -1047,6 +1071,7 @@ export class MapContributor extends Contributor {
             const sourceData = [];
             if (sourceCells) {
                 sourceCells.forEach((f, key) => {
+                    const fieldsToKeep = new Set<string>();
                     /** cloning features in order to keep the original features intact */
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
@@ -1056,12 +1081,28 @@ export class MapContributor extends Contributor {
                     delete feature.properties.parent_geohash;
                     delete feature.properties.tile;
                     delete feature.properties.parent_tile;
-                    this.cleanRenderedAggFeature(s, feature, new Set(), true);
+                    const fetchHits = this.clusterLayersIndex.get(s).fetchedHits;
+
+                    if (fetchHits) {
+                        fetchHits.fields.forEach(field => {
+                            const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                            fieldsToKeep.add(flattenField);
+                        });
+                        if (fetchHits.short_form_fields) {
+                            fetchHits.short_form_fields.forEach(field => {
+                                const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                                feature.properties[flattenField + SHORT_VALUE] = numToString(feature.properties[flattenField]);
+                                fieldsToKeep.add(flattenField + SHORT_VALUE);
+                            });
+                        }
+                    }
+                    this.cleanRenderedAggFeature(s, feature, fieldsToKeep, true);
                     sourceData.push(feature);
                 });
-                const hasAvg = Array.from(metricsKeys).find(key => key.endsWith(AVG));
-                const hasAvgNormalized = Array.from(metricsKeys).find(key => key.endsWith(AVG + NORMALIZE));
                 if (metricsKeys && isLastCall) {
+                    const hasAvg = Array.from(metricsKeys).find(key => key.endsWith(AVG));
+                    const hasAvgNormalized = Array.from(metricsKeys).find(key => key.endsWith(AVG + NORMALIZE));
                     /** prepare normalization of average by calculating the min and max values of each metrics that is to be normalized */
                     if (hasAvgNormalized || hasAvg) {
                         metricsKeys.forEach(key => {
@@ -1829,6 +1870,7 @@ export class MapContributor extends Contributor {
             clusterLayer.aggregatedGeometry = <any>ls.aggregated_geometry;
         }
         clusterLayer.metrics = ls.metrics;
+        clusterLayer.fetchedHits = ls.fetched_hits;
         return clusterLayer;
     }
 
@@ -1857,6 +1899,7 @@ export class MapContributor extends Contributor {
         if (topologyLayer.networkFetchingLevel === undefined) {
             topologyLayer.networkFetchingLevel = DEFAULT_FETCH_NETWORK_LEVEL;
         }
+        topologyLayer.fetchedHits = ls.fetched_hits;
         return topologyLayer;
     }
 
@@ -1872,6 +1915,7 @@ export class MapContributor extends Contributor {
         featureLayerSource.maxfeatures = ls.maxfeatures;
         featureLayerSource.sourceMaxFeatures = ls.maxfeatures;
         featureLayerSource.normalizationFields = ls.normalization_fields;
+        featureLayerSource.shortFormLabels = ls.short_form_fields;
         featureLayerSource.includeFields = new Set(ls.include_fields || []);
         featureLayerSource.returnedGeometry = ls.returned_geometry;
         featureLayerSource.providedFields = ls.provided_fields;
@@ -1932,13 +1976,20 @@ export class MapContributor extends Contributor {
             }
             aggregation.raw_geometries.push(ls.rawGeometry);
         }
-
-        const fetchSet = new Set<string>();
+        let fetchSet = new Set<string>();
+        if (aggregation.fetch_hits && aggregation.fetch_hits.include) {
+            fetchSet = new Set(aggregation.fetch_hits.include.filter(i => !i.includes('+') && !i.includes('-')));
+        }
+        if (!ls.fetchedHits) {
+            ls.fetchedHits = {
+                sorts: [],
+                fields: []
+            };
+        }
+        if (!!ls.fetchedHits && !!ls.fetchedHits.fields) {
+            ls.fetchedHits.fields.forEach(f => fetchSet.add(f));
+        }
         if (ls.providedFields && ls.providedFields.length > 0) {
-            if (!aggregation.fetch_hits) {
-                aggregation.fetch_hits = { size: 1 };
-                aggregation.fetch_hits.include = [];
-            }
             ls.providedFields.forEach(pf => {
                 fetchSet.add(pf.color);
                 if (pf.label && pf.label.length > 0) {
@@ -1947,25 +1998,23 @@ export class MapContributor extends Contributor {
             });
         }
         if (ls.colorFields && ls.colorFields.size > 0) {
-            if (!aggregation.fetch_hits) {
-                aggregation.fetch_hits = { size: 1 };
-                aggregation.fetch_hits.include = [];
-            }
             ls.colorFields.forEach(cf => {
                 fetchSet.add(cf);
             });
         }
         if (ls.includeFields && ls.includeFields.size > 0) {
-            if (!aggregation.fetch_hits) {
-                aggregation.fetch_hits = { size: 1 };
-                aggregation.fetch_hits.include = [];
-            }
             ls.includeFields.forEach(cf => {
                 fetchSet.add(cf);
             });
         }
-        if (!!aggregation.fetch_hits) {
-            aggregation.fetch_hits.include = Array.from(fetchSet);
+        if (fetchSet.size > 0 ) {
+            if (!aggregation.fetch_hits) {
+                aggregation.fetch_hits = { size: 1 };
+                aggregation.fetch_hits.include = [];
+            }
+            if (!!aggregation.fetch_hits) {
+                aggregation.fetch_hits.include = ls.fetchedHits.sorts.concat(Array.from(fetchSet));
+            }
         }
         return aggregation;
     }
@@ -1995,6 +2044,9 @@ export class MapContributor extends Contributor {
                     includes.add(nf.per);
                 }
             });
+        }
+        if (ls.shortFormLabels) {
+            ls.shortFormLabels.forEach(sfl => includes.add(sfl));
         }
         search.projection = {
             includes: Array.from(includes).join(',')
@@ -2100,9 +2152,11 @@ export class MapContributor extends Contributor {
         clusterSources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
             const aggType = !!ls.type ? ls.type.toString() : 'geohash';
+            const hasHitsToFetch = !!ls.fetchedHits && !!ls.fetchedHits.sorts && ls.fetchedHits.sorts.length > 0;
+            const fetchHitsId = hasHitsToFetch ? `:${ls.fetchedHits.sorts.join('_')}` : '';
             const aggId = ls.aggGeoField + ':' + ls.granularity.toString() + ':' + ls.minfeatures + ':' +
                 ls.sourceMinzoom + ':' + ls.sourceMaxzoom
-                + ':' + aggType;
+                + ':' + aggType + fetchHitsId;
             const aggBuilder = aggregationsMap.get(aggId);
             let sources;
             let aggregation: Aggregation;
@@ -2124,6 +2178,10 @@ export class MapContributor extends Contributor {
                 };
                 sources = [];
             }
+            let fetchSet = new Set<string>();
+            if (aggregation.fetch_hits && aggregation.fetch_hits.include) {
+                fetchSet = new Set(aggregation.fetch_hits.include.filter(i => !i.includes('+') && !i.includes('-')));
+            }
             if (ls.metrics) {
                 if (!aggregation.metrics) { aggregation.metrics = []; }
                 ls.metrics.forEach(m => {
@@ -2142,6 +2200,18 @@ export class MapContributor extends Contributor {
                 }
                 aggregation.raw_geometries.push(ls.rawGeometry);
             }
+            if (ls.fetchedHits) {
+                ls.fetchedHits.fields.forEach(f => fetchSet.add(f));
+            }
+            if (fetchSet.size > 0 ) {
+                if (!aggregation.fetch_hits) {
+                    aggregation.fetch_hits = { size: 1 };
+                    aggregation.fetch_hits.include = [];
+                }
+                if (!!aggregation.fetch_hits) {
+                    aggregation.fetch_hits.include = ls.fetchedHits.sorts.concat(Array.from(fetchSet));
+                }
+            }
             sources.push(cs);
             aggregationsMap.set(aggId, { agg: aggregation, sources });
         });
@@ -2157,6 +2227,8 @@ export class MapContributor extends Contributor {
      */
     private indexAggSourcesMetrics(source: string, aggregation: Aggregation, metricConfig: MetricConfig): void {
         let metrics = this.aggSourcesMetrics.get(source);
+        if (!metrics) { metrics = new Set(); }
+
         const key = metricConfig.field.replace(/\./g, this.FLAT_CHAR) + '_' + metricConfig.metric.toString().toLowerCase() + '_';
         let normalizeKey = metricConfig.normalize ? key + NORMALIZE : key;
         if (!key.endsWith('_' + COUNT + '_')) {
@@ -2169,10 +2241,13 @@ export class MapContributor extends Contributor {
                     collect_fct: <Metric.CollectFctEnum>metricConfig.metric
                 });
             }
+            if (metricConfig.short_format) {
+                metrics.add(key + SHORT_VALUE);
+            }
         } else {
             normalizeKey = normalizeKey.endsWith(NORMALIZED_COUNT) ? NORMALIZED_COUNT : COUNT;
+            metrics.add(COUNT_SHORT_VALUE);
         }
-        if (!metrics) { metrics = new Set(); }
         metrics.add(normalizeKey);
         this.aggSourcesMetrics.set(source, metrics);
     }
@@ -2253,6 +2328,10 @@ export class MapContributor extends Contributor {
                 }
                 break;
             }
+            case ReturnedField.shortform: {
+                key = field.replace(/\./g, this.FLAT_CHAR) + SHORT_VALUE;
+                break;
+            }
         }
         metrics.add(key);
         this.searchSourcesMetrics.set(source, metrics);
@@ -2330,6 +2409,11 @@ export class MapContributor extends Contributor {
                     }
                 });
             }
+            if (ls.shortFormLabels) {
+                ls.shortFormLabels.forEach(sfl => {
+                    this.indexSearchSourcesMetrics(cs, sfl, ReturnedField.shortform);
+                });
+            }
             includePerSearch.set(searchId, includes);
             search.projection = {
                 includes: Array.from(includes).join(',')
@@ -2348,7 +2432,9 @@ export class MapContributor extends Contributor {
         const aggregationsMap: Map<string, SourcesAgg> = new Map();
         topologySources.forEach(cs => {
             const ls = this.topologyLayersIndex.get(cs);
-            const aggId = ls.geometryId + ':' + ls.networkFetchingLevel;
+            const hasHitsToFetch = !!ls.fetchedHits && !!ls.fetchedHits.sorts && ls.fetchedHits.sorts.length > 0;
+            const fetchHitsId = hasHitsToFetch ? `:${ls.fetchedHits.sorts.join('_')}` : '';
+            const aggId = ls.geometryId + ':' + ls.networkFetchingLevel + fetchHitsId;
             const aggBuilder = aggregationsMap.get(aggId);
             let sources;
             let aggregation: Aggregation;
@@ -2381,41 +2467,45 @@ export class MapContributor extends Contributor {
                 }
                 aggregation.raw_geometries.push(ls.rawGeometry);
             }
+            let fetchSet = new Set<string>();
+            if (aggregation.fetch_hits && aggregation.fetch_hits.include) {
+                fetchSet = new Set(aggregation.fetch_hits.include.filter(i => !i.includes('+') && !i.includes('-')));
+            }
+            if (!ls.fetchedHits) {
+                ls.fetchedHits = {
+                    sorts: [],
+                    fields: []
+                };
+            }
+            if (!!ls.fetchedHits && !!ls.fetchedHits.fields) {
+                ls.fetchedHits.fields.forEach(f => fetchSet.add(f));
+            }
             if (ls.providedFields && ls.providedFields.length > 0) {
-                if (!aggregation.fetch_hits) {
-                    aggregation.fetch_hits = { size: 1 };
-                    aggregation.fetch_hits.include = [];
-                }
-                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
                 ls.providedFields.forEach(pf => {
                     fetchSet.add(pf.color);
                     if (pf.label && pf.label.length > 0) {
                         fetchSet.add(pf.label);
                     }
                 });
-                aggregation.fetch_hits.include = Array.from(fetchSet);
             }
             if (ls.colorFields && ls.colorFields.size > 0) {
-                if (!aggregation.fetch_hits) {
-                    aggregation.fetch_hits = { size: 1 };
-                    aggregation.fetch_hits.include = [];
-                }
-                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
                 ls.colorFields.forEach(cf => {
                     fetchSet.add(cf);
                 });
-                aggregation.fetch_hits.include = Array.from(fetchSet);
             }
             if (ls.includeFields && ls.includeFields.size > 0) {
+                ls.includeFields.forEach(cf => {
+                    fetchSet.add(cf);
+                });
+            }
+            if (fetchSet.size > 0 ) {
                 if (!aggregation.fetch_hits) {
                     aggregation.fetch_hits = { size: 1 };
                     aggregation.fetch_hits.include = [];
                 }
-                const fetchSet = new Set<string>(aggregation.fetch_hits.include);
-                ls.includeFields.forEach(cf => {
-                    fetchSet.add(cf);
-                });
-                aggregation.fetch_hits.include = Array.from(fetchSet);
+                if (!!aggregation.fetch_hits) {
+                    aggregation.fetch_hits.include = ls.fetchedHits.sorts.concat(Array.from(fetchSet));
+                }
             }
             sources.push(cs);
             aggregationsMap.set(aggId, { agg: aggregation, sources });
@@ -2538,6 +2628,15 @@ export class MapContributor extends Contributor {
                     if (mk === NORMALIZED_COUNT) {
                         feature.properties[mk] = Math.round(feature.properties.count / sourceStats.count * 100000) / 100000;
                     }
+                }
+                if (mk.endsWith(SHORT_VALUE)) {
+                    if (mk === COUNT_SHORT_VALUE) {
+                        feature.properties[mk] = numToString(feature.properties.count);
+                    } else {
+                        const kWithoutN = mk.replace(SHORT_VALUE, '');
+                        feature.properties[mk] = numToString(feature.properties[kWithoutN]);
+                    }
+
                 }
             });
         }
@@ -3265,7 +3364,7 @@ export class MapContributor extends Contributor {
 
 
 export enum ReturnedField {
-    flat, generatedcolor, providedcolor, normalized, normalizedwithkey
+    flat, generatedcolor, providedcolor, normalized, normalizedwithkey, shortform
 }
 
 export enum SearchStrategy {
