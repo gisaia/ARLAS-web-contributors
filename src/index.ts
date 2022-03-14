@@ -35,7 +35,8 @@ export { SwimLaneContributor } from './contributors/SwimLaneContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
 export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
-export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpression, DateUnitEnum, LayerSourceConfig, ColorConfig } from './models/models';
+export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpression, DateUnitEnum,
+    LayerSourceConfig, ColorConfig, MetricConfig } from './models/models';
 export { getSourceName } from './utils/utils';
 export { FieldsConfiguration, ComputeConfig } from './models/models';
 const contributors = new Map<string, any>();

@@ -50,7 +50,7 @@ import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, exte
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import moment from 'moment';
-import { stringToExtent } from '../utils/mapUtils';
+import { stringToExtent, numToString } from '../utils/mapUtils';
 
 export enum DataMode {
     simple,
@@ -58,6 +58,8 @@ export enum DataMode {
 }
 
 export const NORMALIZE = ':normalized';
+export const SHORT_VALUE = ':_arlas__short_format';
+export const COUNT_SHORT_VALUE = 'count_:_arlas__short_format';
 export const NORMALIZE_PER_KEY = ':normalized:';
 export const COUNT = 'count';
 export const NORMALIZED_COUNT = 'count_:normalized';
@@ -958,6 +960,13 @@ export class MapContributor extends Contributor {
                             this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
                         });
                     }
+                    const shortFormatLabels = this.featureLayerSourcesIndex.get(s).shortFormLabels;
+                    if (shortFormatLabels) {
+                        shortFormatLabels.forEach(sfl => {
+                            const flattenShortField = sfl.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenShortField + SHORT_VALUE] = numToString(+feature.properties[flattenShortField]);
+                        });
+                    }
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
                     delete feature.properties.md;
@@ -1024,6 +1033,21 @@ export class MapContributor extends Contributor {
                             fieldsToKeep.add(flattenField);
                         });
                     }
+                    const fetchHits = this.topologyLayersIndex.get(s).fetchedHits;
+                    if (fetchHits) {
+                        fetchHits.fields.forEach(field => {
+                            const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                            fieldsToKeep.add(flattenField);
+                        });
+                        if (fetchHits.short_form_fields) {
+                            fetchHits.short_form_fields.forEach(field => {
+                                const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                                feature.properties[flattenField + SHORT_VALUE] = numToString(+feature.properties[flattenField]);
+                                fieldsToKeep.add(flattenField + SHORT_VALUE);
+                            });
+                        }
+                    }
                     // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
                     sourceData.push(feature);
@@ -1065,13 +1089,20 @@ export class MapContributor extends Contributor {
                             feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
                             fieldsToKeep.add(flattenField);
                         });
+                        if (fetchHits.short_form_fields) {
+                            fetchHits.short_form_fields.forEach(field => {
+                                const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                                feature.properties[flattenField + SHORT_VALUE] = numToString(feature.properties[flattenField]);
+                                fieldsToKeep.add(flattenField + SHORT_VALUE);
+                            });
+                        }
                     }
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep, true);
                     sourceData.push(feature);
                 });
-                const hasAvg = Array.from(metricsKeys).find(key => key.endsWith(AVG));
-                const hasAvgNormalized = Array.from(metricsKeys).find(key => key.endsWith(AVG + NORMALIZE));
                 if (metricsKeys && isLastCall) {
+                    const hasAvg = Array.from(metricsKeys).find(key => key.endsWith(AVG));
+                    const hasAvgNormalized = Array.from(metricsKeys).find(key => key.endsWith(AVG + NORMALIZE));
                     /** prepare normalization of average by calculating the min and max values of each metrics that is to be normalized */
                     if (hasAvgNormalized || hasAvg) {
                         metricsKeys.forEach(key => {
@@ -1884,6 +1915,7 @@ export class MapContributor extends Contributor {
         featureLayerSource.maxfeatures = ls.maxfeatures;
         featureLayerSource.sourceMaxFeatures = ls.maxfeatures;
         featureLayerSource.normalizationFields = ls.normalization_fields;
+        featureLayerSource.shortFormLabels = ls.short_form_fields;
         featureLayerSource.includeFields = new Set(ls.include_fields || []);
         featureLayerSource.returnedGeometry = ls.returned_geometry;
         featureLayerSource.providedFields = ls.provided_fields;
@@ -2012,6 +2044,9 @@ export class MapContributor extends Contributor {
                     includes.add(nf.per);
                 }
             });
+        }
+        if (ls.shortFormLabels) {
+            ls.shortFormLabels.forEach(sfl => includes.add(sfl));
         }
         search.projection = {
             includes: Array.from(includes).join(',')
@@ -2192,6 +2227,8 @@ export class MapContributor extends Contributor {
      */
     private indexAggSourcesMetrics(source: string, aggregation: Aggregation, metricConfig: MetricConfig): void {
         let metrics = this.aggSourcesMetrics.get(source);
+        if (!metrics) { metrics = new Set(); }
+
         const key = metricConfig.field.replace(/\./g, this.FLAT_CHAR) + '_' + metricConfig.metric.toString().toLowerCase() + '_';
         let normalizeKey = metricConfig.normalize ? key + NORMALIZE : key;
         if (!key.endsWith('_' + COUNT + '_')) {
@@ -2204,10 +2241,13 @@ export class MapContributor extends Contributor {
                     collect_fct: <Metric.CollectFctEnum>metricConfig.metric
                 });
             }
+            if (metricConfig.short_format) {
+                metrics.add(key + SHORT_VALUE);
+            }
         } else {
             normalizeKey = normalizeKey.endsWith(NORMALIZED_COUNT) ? NORMALIZED_COUNT : COUNT;
+            metrics.add(COUNT_SHORT_VALUE);
         }
-        if (!metrics) { metrics = new Set(); }
         metrics.add(normalizeKey);
         this.aggSourcesMetrics.set(source, metrics);
     }
@@ -2288,6 +2328,10 @@ export class MapContributor extends Contributor {
                 }
                 break;
             }
+            case ReturnedField.shortform: {
+                key = field.replace(/\./g, this.FLAT_CHAR) + SHORT_VALUE;
+                break;
+            }
         }
         metrics.add(key);
         this.searchSourcesMetrics.set(source, metrics);
@@ -2363,6 +2407,11 @@ export class MapContributor extends Contributor {
                     } else {
                         this.indexSearchSourcesMetrics(cs, nf.on, ReturnedField.normalized);
                     }
+                });
+            }
+            if (ls.shortFormLabels) {
+                ls.shortFormLabels.forEach(sfl => {
+                    this.indexSearchSourcesMetrics(cs, sfl, ReturnedField.shortform);
                 });
             }
             includePerSearch.set(searchId, includes);
@@ -2579,6 +2628,15 @@ export class MapContributor extends Contributor {
                     if (mk === NORMALIZED_COUNT) {
                         feature.properties[mk] = Math.round(feature.properties.count / sourceStats.count * 100000) / 100000;
                     }
+                }
+                if (mk.endsWith(SHORT_VALUE)) {
+                    if (mk === COUNT_SHORT_VALUE) {
+                        feature.properties[mk] = numToString(feature.properties.count);
+                    } else {
+                        const kWithoutN = mk.replace(SHORT_VALUE, '');
+                        feature.properties[mk] = numToString(feature.properties[kWithoutN]);
+                    }
+
                 }
             });
         }
@@ -3306,7 +3364,7 @@ export class MapContributor extends Contributor {
 
 
 export enum ReturnedField {
-    flat, generatedcolor, providedcolor, normalized, normalizedwithkey
+    flat, generatedcolor, providedcolor, normalized, normalizedwithkey, shortform
 }
 
 export enum SearchStrategy {

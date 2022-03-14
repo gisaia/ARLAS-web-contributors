@@ -8,6 +8,7 @@ import { CollaborativesearchService } from 'arlas-web-core/services/collaborativ
 import { map } from 'rxjs/internal/operators/map';
 import * as meta from '@turf/meta';
 import { bboxes } from 'ngeohash';
+import { isNumber } from 'util';
 
 export function getBounds(elementidentifier: ElementIdentifier, collaborativeSearcheService: CollaborativesearchService, collection: string)
     : Observable<Array<Array<number>>> {
@@ -37,7 +38,7 @@ export function getBounds(elementidentifier: ElementIdentifier, collaborativeSea
 }
 
 export function extentToGeohashes(extent: Array<number>, zoom: number,
-    granularityFunction: (zoom: number, clusterType?) => {tilesPrecision: number, requestsPrecision: number}): Set<string> {
+    granularityFunction: (zoom: number, clusterType?) => { tilesPrecision: number, requestsPrecision: number }): Set<string> {
     let geohashList = [];
     const west = extent[1];
     const east = extent[3];
@@ -267,4 +268,63 @@ export function getCanonicalExtents(rawExtent: string, wrappedExtent: string): s
         }
     }
     return finalExtends;
+}
+
+
+export function numToString(num: number, p?: number): string {
+    // what tier? (determines SI symbol)
+    const suffixes = ['', 'k', 'M', 'b', 't'];
+    const suffixNum = Math.log10(Math.abs(num)) / 3 | 0;
+
+    if (suffixNum === 0) {
+        if (Math.abs(num) < 0.1) {
+            return formatNumber(+num);
+        }
+        return formatNumber(+num, ' ', 0);
+    }
+    // get suffix and determine scale
+    const suffix = suffixes[suffixNum];
+    const scale = Math.pow(10, suffixNum * 3);
+    // scale the number
+    const scaled = num / scale;
+    // format number and add suffix
+    return scaled.toFixed(1) + suffix;
+}
+
+export function formatNumber(x, formatChar = ' ', roundPrecision?: number): string {
+    if (isNumber(x)) {
+        const trunc = Math.trunc(x);
+        const integerFraction = (x + '').split('.');
+        const spacedNumber = Math.abs(trunc).toString().replace(/\B(?=(\d{3})+(?!\d))/g, formatChar);
+        const spacedNumberString = x < 0 ? '-' + spacedNumber : spacedNumber;
+        if (integerFraction.length === 2) {
+            const fraction: string = integerFraction[1];
+            let precision = 0;
+            if (roundPrecision === undefined) {
+                let numberOfZeros = 0;
+                for (let i = 0; i < fraction.length; i++) {
+                    if (fraction.charAt(i) === '0') {
+                        numberOfZeros++;
+                    } else {
+                        break;
+                    }
+                }
+                /** number of zeros + 1 (before comma) + 2 for precision */
+                precision = numberOfZeros + 1 + 2;
+            } else {
+                precision = roundPrecision + 1;
+            }
+            const roundedNumber = Math.round(x * Math.pow(10, precision)) /
+                Math.pow(10, precision);
+            const roundedIntergerFraction = (roundedNumber + '').split('.');
+            if (roundedIntergerFraction.length === 2) {
+                return spacedNumberString + '.' + roundedIntergerFraction[1];
+            } else {
+                return spacedNumberString;
+            }
+        } else {
+            return spacedNumberString;
+        }
+    }
+    return x;
 }
