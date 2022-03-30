@@ -51,6 +51,7 @@ import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import moment from 'moment';
 import { stringToExtent, numToString } from '../utils/mapUtils';
+import { notInfinity } from '../utils/utils';
 
 export enum DataMode {
     simple,
@@ -1114,30 +1115,38 @@ export class MapContributor extends Contributor {
                                  */
                                 sourceData.forEach((feature, k) => {
                                     const keyWithoutNormalize = key.replace(NORMALIZE, '');
-                                    feature.properties[key] = feature.properties[keyWithoutNormalize];
-                                    feature.properties[keyWithoutNormalize] = feature.properties[keyWithoutNormalize]
-                                        / feature.properties.count;
-                                    feature.properties[key] = feature.properties[key] / feature.properties.count;
-                                    if (stats[key].max < feature.properties[keyWithoutNormalize]) {
-                                        stats[key].max = feature.properties[keyWithoutNormalize];
-                                    }
-                                    if (stats[key].min > feature.properties[keyWithoutNormalize]) {
-                                        stats[key].min = feature.properties[keyWithoutNormalize];
+                                    if (notInfinity(feature.properties[keyWithoutNormalize])) {
+                                        feature.properties[key] = feature.properties[keyWithoutNormalize];
+                                        feature.properties[keyWithoutNormalize] = feature.properties[keyWithoutNormalize]
+                                            / feature.properties.count;
+                                        feature.properties[key] = feature.properties[key] / feature.properties.count;
+                                        if (stats[key].max < feature.properties[keyWithoutNormalize]) {
+                                            stats[key].max = feature.properties[keyWithoutNormalize];
+                                        }
+                                        if (stats[key].min > feature.properties[keyWithoutNormalize]) {
+                                            stats[key].min = feature.properties[keyWithoutNormalize];
+                                        }
+                                    } else {
+                                        /** nothing is done, the feature will not be displayed */
                                     }
                                 });
                                 /** normalizing */
                                 sourceData.forEach((feature, k) => {
                                     const metricStats = stats[key];
-                                    if (metricStats.min === metricStats.max) {
-                                        feature.properties[key] = 1;
-                                    } else {
-                                        feature.properties[key] = (feature.properties[key] - metricStats.min)
-                                            / (metricStats.max - metricStats.min);
+                                    if (notInfinity(feature.properties[key])) {
+                                        if (metricStats.min === metricStats.max) {
+                                            feature.properties[key] = 1;
+                                        } else {
+                                            feature.properties[key] = (feature.properties[key] - metricStats.min)
+                                                / (metricStats.max - metricStats.min);
+                                        }
                                     }
                                 });
                             } else if (key.endsWith(AVG) && !hasAvgNormalized) {
                                 sourceData.forEach((feature, k) => {
-                                    feature.properties[key] = feature.properties[key] / feature.properties.count;
+                                    if (notInfinity(feature.properties[key])) {
+                                        feature.properties[key] = feature.properties[key] / feature.properties.count;
+                                    }
                                 });
                             }
                         });
@@ -2273,11 +2282,13 @@ export class MapContributor extends Contributor {
                 if (key.endsWith(SUM + NORMALIZE) || key.endsWith(MAX + NORMALIZE) || key.endsWith(MIN + NORMALIZE)) {
                     const keyWithoutNormalize = key.replace(NORMALIZE, '');
                     if (!stats[key]) { stats[key] = { min: Number.MAX_VALUE, max: -Number.MAX_VALUE }; }
-                    if (stats[key].max < feature.properties[keyWithoutNormalize]) {
-                        stats[key].max = feature.properties[keyWithoutNormalize];
-                    }
-                    if (stats[key].min > feature.properties[keyWithoutNormalize]) {
-                        stats[key].min = feature.properties[keyWithoutNormalize];
+                    if (notInfinity(feature.properties[keyWithoutNormalize])) {
+                        if (stats[key].max < feature.properties[keyWithoutNormalize]) {
+                            stats[key].max = feature.properties[keyWithoutNormalize];
+                        }
+                        if (stats[key].min > feature.properties[keyWithoutNormalize]) {
+                            stats[key].min = feature.properties[keyWithoutNormalize];
+                        }
                     }
                 }
                 /** !!!! Because AVG calculation has a weight, the min & max should be calculated at the end */

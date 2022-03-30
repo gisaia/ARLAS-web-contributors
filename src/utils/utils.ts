@@ -417,3 +417,7 @@ export function getSourceName(ls: LayerSourceConfig): string {
     }
     return sourceNameComponents.join('-');
 }
+
+export function notInfinity(value: any) {
+    return value !== 'Infinity' && value !== '-Infinity' && value !== Infinity && value !== -Infinity;
+}
