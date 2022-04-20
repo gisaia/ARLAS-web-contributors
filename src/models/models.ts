@@ -37,7 +37,7 @@ export enum triggerType {
 * Enum of type for cluster calculation
 */
 export enum ClusterAggType {
-    tile = 'tile', geohash = 'geohash'
+    tile = 'tile', geohash = 'geohash', h3 = 'h3'
 }
 /**
  * Action trigger by a contributor through the app or another contributor.

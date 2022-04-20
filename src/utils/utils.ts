@@ -235,9 +235,17 @@ export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
         } else if (zoom >= 13) {
             return { tilesPrecision: 4, requestsPrecision: 6 };
         }
-    } else {
+    } else if (type === Aggregation.TypeEnum.Geotile) {
         const tilesPrecision = Math.trunc(zoom) % 2 === 0 ? Math.trunc(zoom) + 1 : Math.trunc(zoom);
         return { tilesPrecision: tilesPrecision, requestsPrecision: tilesPrecision + 2 };
+    } else if (type === Aggregation.TypeEnum.H3) {
+        if (zoom >= 0 && zoom < 3) {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 1, 0)), 15) };
+        } else if (zoom >= 3 && zoom < 5) {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 2, 0)), 15) };
+        } else {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 3, 0)), 15) };
+        }
     }
 }
 
@@ -260,9 +268,15 @@ export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
         } else if (zoom >= 15) {
             return { tilesPrecision: 5, requestsPrecision: 7 };
         }
-    } else {
+    } else if (type === Aggregation.TypeEnum.Geotile) {
         const tilesPrecision = Math.trunc(zoom) % 2 === 0 ? Math.trunc(zoom) + 1 : Math.trunc(zoom);
         return { tilesPrecision: tilesPrecision, requestsPrecision: tilesPrecision + 3 };
+    } else if (type === Aggregation.TypeEnum.H3) {
+        if (zoom >= 0 && zoom < 5) {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 1, 0)), 15) };
+        } else {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 2, 0)), 15) };
+        }
     }
 }
 
@@ -286,9 +300,14 @@ export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { ti
         } else if (zoom >= 17) {
             return { tilesPrecision: 6, requestsPrecision: 8 };
         }
-    } else {
+    } else if (type === Aggregation.TypeEnum.Geotile) {
         return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.trunc(zoom) + 5 };
-
+    } else if (type === Aggregation.TypeEnum.H3) {
+        if (zoom >= 0 && zoom < 5) {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(zoom), 15) };
+        } else {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 1, 0)), 15) };
+        }
     }
 }
 
@@ -314,10 +333,14 @@ export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
         } else if (zoom >= 20) {
             return { tilesPrecision: 7, requestsPrecision: 10 };
         }
-    } else {
-
+    } else if (type === Aggregation.TypeEnum.Geotile) {
         return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.trunc(zoom) + 7 };
-
+    } else if (type === Aggregation.TypeEnum.H3) {
+        if (zoom >= 0 && zoom < 5) {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(zoom + 1), 15) };
+        } else {
+            return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(zoom), 15) };
+        }
     }
 }
 
