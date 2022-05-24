@@ -1,5 +1,9 @@
 # Change Log
 
+## [v22.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.0) (2022-05-24)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v21.0.0...v22.0.0)
+
 ## [v21.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v21.0.0) (2022-04-05)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v21.0.0-beta.1...v21.0.0)
@@ -7,6 +11,10 @@
 ## [v21.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v21.0.0-beta.1) (2022-03-14)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.1.1...v21.0.0-beta.1)
+
+**New stuff:**
+
+- Support 'sort' in powerbars [\#459](https://github.com/gisaia/ARLAS-web-contributors/issues/459)
 
 **Fixed bugs:**
 
