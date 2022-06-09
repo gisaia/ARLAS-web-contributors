@@ -32,7 +32,7 @@ import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '..
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import jp from 'jsonpath/jsonpath.min';
-import { map, flatMap } from 'rxjs/operators';
+import { map, flatMap, filter } from 'rxjs/operators';
 import { CollectionAggField } from 'arlas-web-core/utils/utils';
 
 /**
@@ -145,10 +145,7 @@ export class HistogramContributor extends Contributor {
                         .filter(s => this.yearShortcutsLabels.indexOf(s.label) >= 0));
             }
         }
-        this.collections = (!!this.additionalCollections ? this.additionalCollections : []).concat({
-            collectionName: collection,
-            field: this.field
-        });
+        this.collections = this.getAllCollections();
         this.collaborativeSearcheService.registerCollections(this);
     }
 
@@ -228,12 +225,31 @@ export class HistogramContributor extends Contributor {
     public getPackageName(): string {
         return 'arlas.web.contributors.histogram';
     }
+
     /**
-    * Set filter on value change, use in output of component
-    * @param value DateType.millisecond | DateType.second
-    */
-    public valueChanged(values: SelectedOutputValues[]) {
-        const resultList = getvaluesChanged(values, this.collections, this.identifier, this.collaborativeSearcheService, this.useUtc);
+     * Triggers the collaboration of this contributor on the given intervals and for the given collections
+     * @param values List of selected intervals in the histogram
+     * @param collections List of collections to declare in the collaboration. This list should be a subset of
+     * collections declared in this contributor.
+     */
+    public valueChanged(values: SelectedOutputValues[], collections?: CollectionAggField[]) {
+        if (collections) {
+            const paramCollections = collections.map(c => c.collectionName);
+            const allCollectionsSet = new Set(this.getAllCollections().map(c => c.collectionName));
+            /** collections given as parameters should be in the `allCollections` list, otherwise an error is thrown */
+            const strangerCollections = paramCollections.filter(c => !allCollectionsSet.has(c));
+            if (strangerCollections.length > 0) {
+                const is = strangerCollections.length > 1 ? 'are' : 'is';
+                const plural = strangerCollections.length > 1 ? 's' : '';
+                throw Error(`Collection${plural} '${strangerCollections.join(' ')}'
+                    ${is} not declared in the ${this.getName()} contributor `);
+            }
+
+        }
+        if (!collections) {
+            collections = this.getAllCollections();
+        }
+        const resultList = getvaluesChanged(values, collections, this.identifier, this.collaborativeSearcheService, this.useUtc);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
@@ -266,6 +282,14 @@ export class HistogramContributor extends Contributor {
         } else {
             return from([]);
         }
+    }
+
+
+    public getAllCollections() {
+        return (!!this.additionalCollections ? this.additionalCollections : []).concat({
+            collectionName: this.collection,
+            field: this.field
+          });
     }
 
     public computeData(aggResponses: AggregationResponse[]): Array<{ key: number, value: number, chartId: string }> {
