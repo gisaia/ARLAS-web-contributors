@@ -26,9 +26,9 @@ import {
     OperationEnum,
     projType, CollaborationEvent
 } from 'arlas-web-core';
-import { Filter, Aggregation, AggregationResponse, ComputationRequest, ComputationResponse } from 'arlas-api';
+import { Filter, Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Interval } from 'arlas-api';
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
-import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
+import { getSelectionToSet, getvaluesChanged, getAggregationPrecision, adjustHistogramInterval } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import jp from 'jsonpath/jsonpath.min';
@@ -116,7 +116,8 @@ export class HistogramContributor extends Contributor {
     */
     public useUtc = this.getConfigValue('useUtc') !== undefined ? this.getConfigValue('useUtc') : true;
 
-
+    /** to be set in the toolkit when creating the contributor */
+    public maxBuckets = 200;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -340,46 +341,47 @@ export class HistogramContributor extends Contributor {
     protected fetchDataGivenFilter(identifier: string, additionalFilters?: Map<string, Filter>): Observable<AggregationResponse[]> {
         const collaborations = new Map<string, Collaboration>();
         this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
-        if (this.nbBuckets) {
-            const agg = zip(...Array.from(this.collections)
-                .map(ac => {
-                    const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                    return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-                <ComputationRequest>{ filter: null, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
-                    collaborations, ac.collectionName, identifier, additionalFilter, false, this.cacheDuration); }))
-                .pipe(
-                    map((computationResponses: ComputationResponse[]) => {
-                        const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
-                        const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
-                        const result = {
-                            dataRange,
-                            aggregationPrecision
-                        };
-                        return result;
-                    }),
-                    map((r => {
-                        this.range = r.dataRange;
-                        this.aggregations[0].interval = r.aggregationPrecision;
-                        return zip(...Array.from(this.collections).map(ac => {
-                            const aggregations = this.aggregations;
-                            aggregations[0].interval = r.aggregationPrecision;
-                            aggregations[0].field = ac.field;
-                            const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                            return this.resolveHistogramAgg(identifier, aggregations, collaborations, additionalFilter, ac);
-                        }));
-                    })),
-                    flatMap(a => a)
-                );
+        const aggregations = this.aggregations;
+        /** We calculate the range all the time */
+        const agg = zip(...Array.from(this.collections)
+                    .map(ac => {
+                        const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
+                        return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+                    <ComputationRequest>{ filter: null, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
+                        collaborations, ac.collectionName, identifier, additionalFilter, false, this.cacheDuration); }))
+                    .pipe(
+                        map((computationResponses: ComputationResponse[]) => {
+                            const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
+                            let histogramInterval;
+                            /** if nbBuckets is defined, we calculate the needed precision to obtain this number. */
+                            if (this.nbBuckets) {
+                                histogramInterval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
+                            } else {
+                                /** Otherwise */
+                                const initialInterval = aggregations[0].interval;
+                                histogramInterval = adjustHistogramInterval(this.aggregations[0].type,
+                                     this.maxBuckets, initialInterval, dataRange);
+                            }
+                            const result = {
+                                dataRange,
+                                aggregationPrecision: histogramInterval
+                            };
+                            return result;
+                        }),
+                        map((r => {
+                            this.range = r.dataRange;
+                            this.aggregations[0].interval = r.aggregationPrecision;
+                            return zip(...Array.from(this.collections).map(ac => {
+                                aggregations[0].interval = r.aggregationPrecision;
+                                aggregations[0].field = ac.field;
+                                const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
+                                return this.resolveHistogramAgg(identifier, aggregations, collaborations, additionalFilter, ac);
+                            }));
+                        })),
+                        flatMap(a => a)
+                    );
 
-            return agg;
-        } else {
-            return zip(...Array.from(this.collections).map(ac => {
-                const aggregations = this.aggregations;
-                aggregations[0].field = ac.field;
-                const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                return this.resolveHistogramAgg(identifier, aggregations, collaborations, additionalFilter, ac);
-            }));
-        }
+                return agg;
     }
 
     protected resolveHistogramAgg(identifier: string, aggregations: Array<Aggregation>, collaborations: Map<string, Collaboration>,
@@ -391,4 +393,5 @@ export class HistogramContributor extends Contributor {
                 return d;
             }));
     }
+
 }
