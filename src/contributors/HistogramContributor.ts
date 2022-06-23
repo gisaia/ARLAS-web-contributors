@@ -353,11 +353,11 @@ export class HistogramContributor extends Contributor {
                         map((computationResponses: ComputationResponse[]) => {
                             const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
                             let histogramInterval;
-                            /** if nbBuckets is defined, we calculate the needed precision to obtain this number. */
+                            /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
                             if (this.nbBuckets) {
                                 histogramInterval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
                             } else {
-                                /** Otherwise */
+                                /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
                                 const initialInterval = aggregations[0].interval;
                                 histogramInterval = adjustHistogramInterval(this.aggregations[0].type,
                                      this.maxBuckets, initialInterval, dataRange);
@@ -370,12 +370,14 @@ export class HistogramContributor extends Contributor {
                         }),
                         map((r => {
                             this.range = r.dataRange;
-                            this.aggregations[0].interval = r.aggregationPrecision;
+                            const aggregation: Aggregation = {
+                                type: aggregations[0].type,
+                                interval:  r.aggregationPrecision
+                            };
                             return zip(...Array.from(this.collections).map(ac => {
-                                aggregations[0].interval = r.aggregationPrecision;
-                                aggregations[0].field = ac.field;
+                                aggregation.field = ac.field;
                                 const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                                return this.resolveHistogramAgg(identifier, aggregations, collaborations, additionalFilter, ac);
+                                return this.resolveHistogramAgg(identifier, [aggregation], collaborations, additionalFilter, ac);
                             }));
                         })),
                         flatMap(a => a)
