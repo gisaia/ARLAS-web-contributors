@@ -1,5 +1,13 @@
 # Change Log
 
+## [v22.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.1) (2022-07-05)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.0...v22.0.1)
+
+**New stuff:**
+
+- Histogram: make configurable the list of collections included in the histogram collaboration [\#489](https://github.com/gisaia/ARLAS-web-contributors/issues/489)
+
 ## [v22.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.0) (2022-05-24)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v21.0.0...v22.0.0)
