@@ -1,5 +1,13 @@
 # Change Log
 
+## [v23.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.1) (2022-07-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.1...v23.0.0-beta.1)
+
+**New stuff:**
+
+- Protect histograms from generating oversized number of buckets [\#492](https://github.com/gisaia/ARLAS-web-contributors/issues/492)
+
 ## [v22.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.1) (2022-07-05)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.0...v22.0.1)
