@@ -236,6 +236,14 @@ function getDataInterval(data: Array<{ key: number, value: number }>): number {
     return interval;
   }
 
+  /**
+   *
+   * @param nbBuckets Preferred number of buckets to be displayed on the histogram
+   * @param range The range of x-axis values
+   * @param aggregationType Datehistgram or Histogram
+   * @returns Given the desired number of buckets and the range of data, the function calculates the best histogram Interval in order
+   * to generate the closest number of buckets to `nbBuckets`
+   */
 export function getAggregationPrecision(nbBuckets: number, range: number, aggregationType: Aggregation.TypeEnum): Interval {
     const bucketInterval = range / nbBuckets;
     const DAY_IN_MILLISECOND = 86400000;
@@ -344,4 +352,44 @@ export function getAggregationPrecision(nbBuckets: number, range: number, aggreg
 
 function roundToNearestMultiple(i, multiple) {
     return ((i % multiple) > multiple / 2) ? i + multiple - i % multiple : i - i % multiple;
+}
+
+/**
+ * Checks if the `initialInterval` won't generate more than `maxBuckets` buckets. If so the function recalculates the interval
+ * in order to respect the `maxBuckets` limit
+ * @param histogramType Datehistogram or Histogram
+ * @param maxBuckets Maximum number of buckets allowed in the histogram
+ * @param initialInterval Initial interval of the histogram buckets
+ * @param range The range of x-axis values
+ * @returns a histogram `Interval` that respects the `maxBuckets` limit.
+ */
+export function adjustHistogramInterval(histogramType: Aggregation.TypeEnum,
+    maxBuckets: number, initialInterval: Interval, range: number): Interval {
+        if (histogramType === Aggregation.TypeEnum.Datehistogram) {
+            const unitToTimestamp = new Map<Interval.UnitEnum, number>();
+            unitToTimestamp.set(Interval.UnitEnum.Second,  1000);
+            unitToTimestamp.set(Interval.UnitEnum.Minute,  1000 * 60);
+            unitToTimestamp.set(Interval.UnitEnum.Hour,    1000 * 60 * 60);
+            unitToTimestamp.set(Interval.UnitEnum.Day,     1000 * 60 * 60 * 24);
+            unitToTimestamp.set(Interval.UnitEnum.Week,    1000 * 60 * 60 * 24 * 7);
+            unitToTimestamp.set(Interval.UnitEnum.Month,   1000 * 60 * 60 * 24 * 30);
+            unitToTimestamp.set(Interval.UnitEnum.Quarter, 1000 * 60 * 60 * 24 * 30 * 3);
+            unitToTimestamp.set(Interval.UnitEnum.Year,    1000 * 60 * 60 * 24 * 365);
+            const initialTimestampInterval = +initialInterval.value * unitToTimestamp.get(initialInterval.unit);
+            const maxTimestampInterval = range / maxBuckets;
+            if (initialTimestampInterval > 0.9 * maxTimestampInterval) {
+                return initialInterval;
+            } else {
+                /** the initial interval will generate more than maxBuckets; we need to enlarge it  */
+                return getAggregationPrecision(maxBuckets, range, histogramType);
+            }
+        } else {
+            const initialIntervalValue = +initialInterval.value;
+            const maxIntervalValue = range / maxBuckets;
+            if (initialIntervalValue > 0.9 * maxIntervalValue) {
+                return initialInterval;
+            } else {
+                return getAggregationPrecision(maxBuckets, range, histogramType);
+            }
+        }
 }
