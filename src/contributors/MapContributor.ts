@@ -44,14 +44,17 @@ import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
 
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import { getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString,
-     getCanonicalExtents } from './../utils/mapUtils';
+import {
+    getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString,
+    getCanonicalExtents
+} from './../utils/mapUtils';
 
 import * as helpers from '@turf/helpers';
 import { stringify, parse } from 'wellknown';
 import moment from 'moment';
 import { stringToExtent, numToString } from '../utils/mapUtils';
-import { notInfinity } from '../utils/utils';
+import { notInfinity, download } from '../utils/utils';
+import * as FileSaver from 'file-saver';
 
 export enum DataMode {
     simple,
@@ -987,6 +990,39 @@ export class MapContributor extends Contributor {
         });
     }
 
+    public donwloadLayerSource(source, layerName, downloadType) {
+        let sourceData = [];
+        if (this.cellsPerSource.has(source)) {
+            sourceData = this.downloadClusterSource(source);
+        } else if (this.topologyDataPerSource.has(source)) {
+            sourceData = this.downloadTopologySource(source);
+        } else {
+            sourceData = this.downloadSearchSource(source);
+        }
+
+        if (downloadType === 'csv') {
+            const contentType = 'text/csv';
+            const a = document.createElement('a');
+            a.download = layerName
+                .concat(new Date().getTime().toString())
+                .concat('.csv');
+            a.href = window.URL.createObjectURL(this.exportSourceAsCSV(sourceData));
+            a.dataset.downloadurl = [contentType, a.download, a.href].join(':');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } else {
+            const geojson = {
+                type: 'FeatureCollection',
+                features: sourceData
+            };
+
+            this.saveJson(geojson, layerName
+                .concat(new Date().getTime().toString())
+                .concat('-geojson.json'));
+
+        }
+    }
 
     /**
      * Renders the data of the given topology sources.
@@ -1059,6 +1095,50 @@ export class MapContributor extends Contributor {
         });
     }
 
+
+    public exportSourceAsCSV(features): Blob {
+        const csvData = new Array<Array<string>>();
+        const header = new Array<string>();
+        /** Header */
+        const f = features[0];
+        Array.from(Object.keys(f.properties)).sort().forEach(k => header.push(k));
+        header.push('geometry');
+        csvData.push(header);
+        features.forEach(feature => {
+            const csvLine = new Array<string>();
+            Array.from(Object.keys(feature.properties)).sort().forEach(k => csvLine.push(feature.properties[k]));
+            csvLine.push(JSON.stringify(feature.geometry));
+            csvData.push(csvLine);
+        });
+        const CSV = csvData.map(l => l.join(';')).join('\n');
+        const contentType = 'text/csv';
+        const csvFile = new Blob([CSV], { type: contentType });
+        return csvFile;
+    }
+
+    public saveJson(json: any, filename: string, separator?: string) {
+        const blob = new Blob([JSON.stringify(json, (key, value) => {
+          if (!!separator && value && typeof value === 'object' && !Array.isArray(value)) {
+            // convert keys to snake- or kebab-case (eventually other) according to the separator.
+            // In fact we cannot declare a property with a snake-cased name,
+            // (so in models interfaces properties are are camel case)
+            const replacement = {};
+            for (const k in value) {
+              if (Object.hasOwnProperty.call(value, k)) {
+                replacement[
+                  k.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
+                    .map(x => x.toLowerCase())
+                    .join(separator)
+                ] = value[k];
+              }
+            }
+            return replacement;
+          }
+          return value;
+        }, 2)], { type: 'application/json;charset=utf-8' });
+        FileSaver.saveAs(blob, filename);
+      }
+
     /**
      * Renders the data of the given cluster sources.
      * @param sources List of sources names (sources must be of the same type : cluster)
@@ -1077,7 +1157,6 @@ export class MapContributor extends Contributor {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
-                    // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
                     delete feature.properties.geohash;
                     delete feature.properties.parent_geohash;
                     delete feature.properties.tile;
@@ -1165,6 +1244,160 @@ export class MapContributor extends Contributor {
                 this.legendUpdater.next(this.legendData);
             }
         });
+    }
+
+    public downloadClusterSource(source: string) {
+        const sourceCells = this.cellsPerSource.get(source);
+        const sourceData = [];
+        const metricsKeys = this.aggSourcesMetrics.get(source);
+        if (sourceCells) {
+            sourceCells.forEach((f, key) => {
+                /** cloning features in order to keep the original features intact */
+                const properties = Object.assign({}, f.properties);
+                const feature = Object.assign({}, f);
+                feature.properties = properties;
+                // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
+                // delete feature.properties.geohash;
+                delete feature.properties.parent_geohash;
+                // delete feature.properties.tile;
+                delete feature.properties.parent_tile;
+                const fetchHits = this.clusterLayersIndex.get(source).fetchedHits;
+
+                if (fetchHits) {
+                    fetchHits.fields.forEach(field => {
+                        const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                    });
+                    if (fetchHits.short_form_fields) {
+                        fetchHits.short_form_fields.forEach(field => {
+                            const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenField + SHORT_VALUE] = numToString(feature.properties[flattenField]);
+                        });
+                    }
+                }
+                sourceData.push(feature);
+            });
+            if (metricsKeys) {
+                const avgKeys = Array.from(metricsKeys).filter(key => key.endsWith(AVG));
+                /** prepare normalization of average by calculating the min and max values of each metrics that is to be normalized */
+                if (!!avgKeys) {
+                    avgKeys.forEach(key => {
+                        sourceData.forEach((feature, k) => {
+                            if (notInfinity(feature.properties[key])) {
+                                feature.properties[key] = feature.properties[key] / feature.properties.count;
+                            }
+                        });
+                    });
+                }
+            }
+        }
+        return sourceData;
+    }
+
+    public downloadTopologySource(s: string) {
+        const topologyRawData = this.topologyDataPerSource.get(s);
+        const sourceData = [];
+        if (topologyRawData) {
+            topologyRawData.forEach((f) => {
+                const properties = Object.assign({}, f.properties);
+                const feature = Object.assign({}, f);
+                feature.properties = properties;
+                /** set the key-to-color map to be displayed on the legend. */
+                const colorFields = this.topologyLayersIndex.get(s).colorFields;
+                if (colorFields) {
+                    colorFields.forEach(colorField => {
+                        const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] || 'UNKNOWN';
+                    });
+                }
+                const providedFields = this.topologyLayersIndex.get(s).providedFields;
+                if (providedFields) {
+                    providedFields.forEach(pf => {
+                        const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField]
+                            || this.colorGenerator.getColor('UNKNOWN');
+                        if (pf.label && pf.label.length > 0) {
+                            const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] || 'UNKNOWN';
+                        }
+                        /** set the key-to-color map to be displayed on the legend. */
+                    });
+                }
+                const includeFields = this.topologyLayersIndex.get(s).includeFields;
+                if (includeFields) {
+                    includeFields.forEach(includeField => {
+                        const flattenField = includeField.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                    });
+                }
+                const fetchHits = this.topologyLayersIndex.get(s).fetchedHits;
+                if (fetchHits) {
+                    fetchHits.fields.forEach(field => {
+                        const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                    });
+                    if (fetchHits.short_form_fields) {
+                        fetchHits.short_form_fields.forEach(field => {
+                            const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenField + SHORT_VALUE] = numToString(+feature.properties[flattenField]);
+                        });
+                    }
+                }
+                // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
+                sourceData.push(feature);
+            });
+        }
+        return sourceData;
+    }
+
+
+    public downloadSearchSource(s: string) {
+        const featureRawData = this.featureDataPerSource.get(s);
+        const sourceData = [];
+        if (featureRawData) {
+            featureRawData.forEach(f => {
+                const properties = Object.assign({}, f.properties);
+                const feature = Object.assign({}, f);
+                feature.properties = properties;
+                // Loop through all the feature to transform string date to number date to interpolate colot ticket #410
+                Object.keys(feature.properties).forEach(k => {
+                    feature.properties[k] = this.getValueFromFeature(feature, k.replace(/\_/g, '.'), k);
+                });
+                const colorFields = this.featureLayerSourcesIndex.get(s).colorFields;
+                if (colorFields) {
+                    colorFields.forEach(colorField => {
+                        const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenColorField] = feature.properties[flattenColorField] || 'UNKOWN';
+                    });
+                }
+                const providedFields = this.featureLayerSourcesIndex.get(s).providedFields;
+                if (providedFields) {
+                    providedFields.forEach(pf => {
+                        const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenColorField] = feature.properties[flattenColorField]
+                            || this.colorGenerator.getColor('UNKNOWN');
+                        if (pf.label && pf.label.length > 0) {
+                            const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenLabelField] = feature.properties[flattenLabelField]
+                                || 'UNKNOWN';
+                        }
+                    });
+                }
+                const shortFormatLabels = this.featureLayerSourcesIndex.get(s).shortFormLabels;
+                if (shortFormatLabels) {
+                    shortFormatLabels.forEach(sfl => {
+                        const flattenShortField = sfl.replace(/\./g, this.FLAT_CHAR);
+                        feature.properties[flattenShortField + SHORT_VALUE] = numToString(+feature.properties[flattenShortField]);
+                    });
+                }
+                delete feature.properties.md;
+                const metricsKeys = this.searchSourcesMetrics.get(s);
+                const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
+                    this.collectionParameters.id_path;
+                sourceData.push(feature);
+            });
+        }
+        return sourceData;
     }
 
     /**
@@ -2016,7 +2249,7 @@ export class MapContributor extends Contributor {
                 fetchSet.add(cf);
             });
         }
-        if (fetchSet.size > 0 ) {
+        if (fetchSet.size > 0) {
             if (!aggregation.fetch_hits) {
                 aggregation.fetch_hits = { size: 1 };
                 aggregation.fetch_hits.include = [];
@@ -2212,7 +2445,7 @@ export class MapContributor extends Contributor {
             if (ls.fetchedHits) {
                 ls.fetchedHits.fields.forEach(f => fetchSet.add(f));
             }
-            if (fetchSet.size > 0 ) {
+            if (fetchSet.size > 0) {
                 if (!aggregation.fetch_hits) {
                     aggregation.fetch_hits = { size: 1 };
                     aggregation.fetch_hits.include = [];
@@ -2509,7 +2742,7 @@ export class MapContributor extends Contributor {
                     fetchSet.add(cf);
                 });
             }
-            if (fetchSet.size > 0 ) {
+            if (fetchSet.size > 0) {
                 if (!aggregation.fetch_hits) {
                     aggregation.fetch_hits = { size: 1 };
                     aggregation.fetch_hits.include = [];

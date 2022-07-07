@@ -29,7 +29,8 @@
                             "max",
                             "min",
                             "spanning",
-                            "sum"
+                            "sum",
+                            "count"
                         ]
                     }
                 }
