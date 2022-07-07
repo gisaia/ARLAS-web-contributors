@@ -288,7 +288,7 @@ export function getAggregationPrecision(nbBuckets: number, range: number, aggreg
     timestampToInterval.set(2 * Y_2_MS, { value: 730, unit: Interval.UnitEnum.Day });
     timestampToInterval.set(5 * Y_2_MS, { value: 1825, unit: Interval.UnitEnum.Day });
     timestampToInterval.set(10 * Y_2_MS, { value: 3650, unit: Interval.UnitEnum.Day });
-    const allIntervals = Object.keys(timestampToInterval).map(i => +i).sort();
+    const allIntervals = Array.from(timestampToInterval.keys()).map(i => +i).sort((a, b) => a - b);
     if (range > 0) {
         if (aggregationType === Aggregation.TypeEnum.Datehistogram) {
             let value = allIntervals[0];
