@@ -1,5 +1,14 @@
 # Change Log
 
+## [v23.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.2) (2022-07-07)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-beta.1...v23.0.0-beta.2)
+
+**New stuff:**
+
+- Add 'Count' metric [\#497](https://github.com/gisaia/ARLAS-web-contributors/issues/497)
+- Limit number of fetched buckets when bucket are units. [\#496](https://github.com/gisaia/ARLAS-web-contributors/issues/496)
+
 ## [v23.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.1) (2022-07-06)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.1...v23.0.0-beta.1)
