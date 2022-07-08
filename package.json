@@ -1,6 +1,6 @@
 {
   "name": "arlas-web-contributors",
-  "version": "23.0.0-beta.2",
+  "version": "23.1.0-dev0",
   "description": "Contributors Library for ARLAS Components",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
