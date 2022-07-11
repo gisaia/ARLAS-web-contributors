@@ -1,5 +1,34 @@
 # Change Log
 
+## [v22.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.2) (2022-07-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0...v22.0.2)
+
+## [v23.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0) (2022-07-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-rc.1...v23.0.0)
+
+## [v23.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-rc.1) (2022-07-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-beta.2...v23.0.0-rc.1)
+
+## [v23.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.2) (2022-07-08)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-beta.1...v23.0.0-beta.2)
+
+**New stuff:**
+
+- Add 'Count' metric [\#497](https://github.com/gisaia/ARLAS-web-contributors/issues/497)
+- Limit number of fetched buckets when bucket are units. [\#496](https://github.com/gisaia/ARLAS-web-contributors/issues/496)
+
+## [v23.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.1) (2022-07-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.1...v23.0.0-beta.1)
+
+**New stuff:**
+
+- Protect histograms from generating oversized number of buckets [\#492](https://github.com/gisaia/ARLAS-web-contributors/issues/492)
+
 ## [v22.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.1) (2022-07-05)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.0...v22.0.1)
