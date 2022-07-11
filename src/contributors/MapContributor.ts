@@ -1032,6 +1032,7 @@ export class MapContributor extends Contributor {
         sources.forEach(s => {
             this.redrawSource.next({ source: s, data: [] });
             const topologyRawData = this.topologyDataPerSource.get(s);
+            const stats = this.aggSourcesStats.get(s);
             const sourceData = [];
             if (topologyRawData) {
                 topologyRawData.forEach((f) => {
@@ -1085,13 +1086,21 @@ export class MapContributor extends Contributor {
                             });
                         }
                     }
-                    // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
+                    this.normalizeAvgForTopology(s, feature);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
                     sourceData.push(feature);
                 });
             }
             this.redrawSource.next({ source: s, data: sourceData });
-            this.legendUpdater.next(this.legendData);
+            if (!!stats) {
+                Object.keys(stats).forEach(k => {
+                    this.legendData.set(k, {
+                        minValue: this.getAbreviatedNumber(stats[k].min),
+                        maxValue: this.getAbreviatedNumber(stats[k].max)
+                    });
+                });
+                this.legendUpdater.next(this.legendData);
+            }
         });
     }
 
@@ -1118,26 +1127,26 @@ export class MapContributor extends Contributor {
 
     public saveJson(json: any, filename: string, separator?: string) {
         const blob = new Blob([JSON.stringify(json, (key, value) => {
-          if (!!separator && value && typeof value === 'object' && !Array.isArray(value)) {
-            // convert keys to snake- or kebab-case (eventually other) according to the separator.
-            // In fact we cannot declare a property with a snake-cased name,
-            // (so in models interfaces properties are are camel case)
-            const replacement = {};
-            for (const k in value) {
-              if (Object.hasOwnProperty.call(value, k)) {
-                replacement[
-                  k.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
-                    .map(x => x.toLowerCase())
-                    .join(separator)
-                ] = value[k];
-              }
+            if (!!separator && value && typeof value === 'object' && !Array.isArray(value)) {
+                // convert keys to snake- or kebab-case (eventually other) according to the separator.
+                // In fact we cannot declare a property with a snake-cased name,
+                // (so in models interfaces properties are are camel case)
+                const replacement = {};
+                for (const k in value) {
+                    if (Object.hasOwnProperty.call(value, k)) {
+                        replacement[
+                            k.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
+                                .map(x => x.toLowerCase())
+                                .join(separator)
+                        ] = value[k];
+                    }
+                }
+                return replacement;
             }
-            return replacement;
-          }
-          return value;
+            return value;
         }, 2)], { type: 'application/json;charset=utf-8' });
         FileSaver.saveAs(blob, filename);
-      }
+    }
 
     /**
      * Renders the data of the given cluster sources.
@@ -1667,7 +1676,8 @@ export class MapContributor extends Contributor {
                     if (!topologyData) {
                         topologyData = new Array();
                     }
-                    this.calculateAggMetricsStats(source, feature);
+                    this.calculateAggMetricsStatsExceptAvg(source, feature);
+                    this.calculatesAvgStatsForTopology(source, feature);
                     topologyData.push(feature);
                     this.topologyDataPerSource.set(source, topologyData);
                 });
@@ -1791,7 +1801,7 @@ export class MapContributor extends Contributor {
                         if (!!feature.properties.tile) {
                             parentCellsPerSource.set(source, feature.properties.parent_tile);
                         }
-                        this.calculateAggMetricsStats(source, feature);
+                        this.calculateAggMetricsStatsExceptAvg(source, feature);
                     }
                 });
             });
@@ -2500,7 +2510,7 @@ export class MapContributor extends Contributor {
      * @param source
      * @param feature
      */
-    private calculateAggMetricsStats(source: string, feature: Feature): void {
+    private calculateAggMetricsStatsExceptAvg(source: string, feature: Feature): void {
         const metricsKeys = this.aggSourcesMetrics.get(source);
         let stats = this.aggSourcesStats.get(source);
         if (!stats) {
@@ -2525,6 +2535,35 @@ export class MapContributor extends Contributor {
                     }
                 }
                 /** !!!! Because AVG calculation has a weight, the min & max should be calculated at the end */
+            });
+        }
+        this.aggSourcesStats.set(source, stats);
+    }
+
+    private calculatesAvgStatsForTopology(source: string, feature: Feature): void {
+        const metricsKeys = this.aggSourcesMetrics.get(source);
+        let stats = this.aggSourcesStats.get(source);
+        if (!stats) {
+            stats = { count: 0 };
+        }
+        if (stats.count < feature.properties.count) {
+            stats.count = feature.properties.count;
+        }
+        if (metricsKeys) {
+            /** prepare normalization by calculating the min and max values of each metrics that is to be normalized */
+            metricsKeys.forEach(key => {
+                if (key.endsWith(AVG + NORMALIZE)) {
+                    const keyWithoutNormalize = key.replace(NORMALIZE, '');
+                    if (!stats[key]) { stats[key] = { min: Number.MAX_VALUE, max: -Number.MAX_VALUE }; }
+                    if (notInfinity(feature.properties[keyWithoutNormalize])) {
+                        if (stats[key].max < feature.properties[keyWithoutNormalize]) {
+                            stats[key].max = feature.properties[keyWithoutNormalize];
+                        }
+                        if (stats[key].min > feature.properties[keyWithoutNormalize]) {
+                            stats[key].min = feature.properties[keyWithoutNormalize];
+                        }
+                    }
+                }
             });
         }
         this.aggSourcesStats.set(source, stats);
@@ -2924,6 +2963,24 @@ export class MapContributor extends Contributor {
                 });
             }
         }
+    }
+
+    private normalizeAvgForTopology(s: string, feature: Feature) {
+        const metricsKeys = this.aggSourcesMetrics.get(s);
+        const sourceStats = this.aggSourcesStats.get(s);
+        Object.keys(feature.properties).forEach(k => {
+            const metricStats = Object.assign({}, sourceStats[k]);
+            if (metricsKeys) {
+                /** normalizing; the avg, should not be normalized at this stage, because of the weight */
+                if (k.endsWith(AVG + NORMALIZE)) {
+                    if (metricStats.min === metricStats.max) {
+                        feature.properties[k] = 1;
+                    } else {
+                        feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
+                    }
+                }
+            }
+        });
     }
 
     private getPrecision(g: Granularity, zoom: number, aggType: string, clusterType: Aggregation.TypeEnum): number {
