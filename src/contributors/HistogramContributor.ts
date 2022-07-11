@@ -374,6 +374,9 @@ export class HistogramContributor extends Contributor {
                                 type: aggregations[0].type,
                                 interval:  r.aggregationPrecision
                             };
+                            if (aggregations[0].metrics) {
+                                aggregation.metrics = aggregations[0].metrics;
+                            }
                             return zip(...Array.from(this.collections).map(ac => {
                                 aggregation.field = ac.field;
                                 const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
