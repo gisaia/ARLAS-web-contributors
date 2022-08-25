@@ -1086,8 +1086,8 @@ export class MapContributor extends Contributor {
                             });
                         }
                     }
-                    this.normalizeAvgForTopology(s, feature);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
+                    this.normalizeAvgForTopology(s, feature);
                     sourceData.push(feature);
                 });
             }
