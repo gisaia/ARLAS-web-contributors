@@ -171,7 +171,8 @@ export function getFieldValue(field: string, data: Hits): any {
     let result = '';
     if (field) {
         if (field.indexOf('.') < 0) {
-            result = jp.query(data, '$.' + field);
+            const query = jp.stringify(['$', field ]);
+            result = jp.query(data, query);
         } else {
             let query = '$.';
             let composePath = '';
