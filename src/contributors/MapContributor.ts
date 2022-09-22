@@ -2186,10 +2186,20 @@ export class MapContributor extends Contributor {
         if (ls.metrics) {
             if (!aggregation.metrics) { aggregation.metrics = []; }
             ls.metrics.forEach(m => {
-                aggregation.metrics.push({
-                    collect_field: m.field,
-                    collect_fct: <Metric.CollectFctEnum>m.metric
-                });
+
+                // Same value as FLAT_CHAR but in a static method
+                // BTW FLAT_CHAR could be configurable in the server side, so it should not be hardcoded..in theory
+                const flatChar = '_';
+                const key = m.field.replace(/\./g, flatChar) + '_' + m.metric.toString().toLowerCase() + '_';
+                const existingMetric = aggregation.metrics
+                    .map(me => me.collect_field.replace(/\./g, flatChar) + '_' + me.collect_fct.toString().toLowerCase() + '_')
+                    .find(k => k === key);
+                if (!existingMetric) {
+                    aggregation.metrics.push({
+                        collect_field: m.field,
+                        collect_fct: <Metric.CollectFctEnum>m.metric
+                    });
+                }
             });
         }
         if (ls.aggregatedGeometry) {
@@ -2211,15 +2221,24 @@ export class MapContributor extends Contributor {
         aggregation = {
             type: Aggregation.TypeEnum.Term,
             field: ls.geometryId,
-            size: '' + 1000,
+            size: '' + 10000,
         };
         if (ls.metrics) {
             if (!aggregation.metrics) { aggregation.metrics = []; }
             ls.metrics.forEach(m => {
-                aggregation.metrics.push({
-                    collect_field: m.field,
-                    collect_fct: <Metric.CollectFctEnum>m.metric
-                });
+                // Same value as FLAT_CHAR but in a static method
+                // BTW FLAT_CHAR could be configurable in the server side, so it should not be hardcoded..in theory
+                const flatChar = '_';
+                const key = m.field.replace(/\./g, flatChar) + '_' + m.metric.toString().toLowerCase() + '_';
+                const existingMetric = aggregation.metrics
+                    .map(me => me.collect_field.replace(/\./g, flatChar) + '_' + me.collect_fct.toString().toLowerCase() + '_')
+                    .find(k => k === key);
+                if (!existingMetric) {
+                    aggregation.metrics.push({
+                        collect_field: m.field,
+                        collect_fct: <Metric.CollectFctEnum>m.metric
+                    });
+                }
             });
         }
         if (ls.rawGeometry) {
