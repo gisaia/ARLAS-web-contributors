@@ -1,8 +1,20 @@
 # Change Log
 
-## [v23.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.1) (2022-08-25)
+## [v23.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.2) (2022-09-22)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.1...v23.0.2)
+
+**Fixed bugs:**
+
+- Shapefile export is broken for layers making a double agg on the same field [\#509](https://github.com/gisaia/ARLAS-web-contributors/issues/509)
+
+## [v23.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.1) (2022-08-31)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.2...v23.0.1)
+
+**Fixed bugs:**
+
+- Fix normalization of avg in network analytics [\#506](https://github.com/gisaia/ARLAS-web-contributors/issues/506)
 
 ## [v22.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.2) (2022-07-11)
 
