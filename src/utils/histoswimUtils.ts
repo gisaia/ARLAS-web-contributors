@@ -389,20 +389,25 @@ export function adjustHistogramInterval(histogramType: Aggregation.TypeEnum,
         const initialTimestampInterval = +initialInterval.value * unitToTimestamp.get(initialInterval.unit);
         const maxTimestampInterval = range / maxBuckets;
         if (initialTimestampInterval > 0.9 * maxTimestampInterval) {
-            if (initialInterval.unit === Interval.UnitEnum.Year) {
-                initialInterval.unit = Interval.UnitEnum.Day;
-                initialInterval.value = (initialInterval.value as number) * 365;
-            } else if (initialInterval.unit === Interval.UnitEnum.Quarter) {
-                initialInterval.unit = Interval.UnitEnum.Day;
-                initialInterval.value = (initialInterval.value as number) * 90;
-            } else if (initialInterval.unit === Interval.UnitEnum.Month) {
-                initialInterval.unit = Interval.UnitEnum.Day;
-                initialInterval.value = (initialInterval.value as number) * 30;
-            } else if (initialInterval.unit === Interval.UnitEnum.Week) {
-                initialInterval.unit = Interval.UnitEnum.Day;
-                initialInterval.value = (initialInterval.value as number) * 7;
-            }
-            return initialInterval;
+            // todo : communicate to the component the exact interval, otherwise, the contrib (agg) interval and d3 interval may differ
+
+            // if (initialInterval.unit === Interval.UnitEnum.Year) {
+            //     initialInterval.unit = Interval.UnitEnum.Day;
+            //     initialInterval.value = (initialInterval.value as number) * 365;
+            // } else if (initialInterval.unit === Interval.UnitEnum.Quarter) {
+            //     initialInterval.unit = Interval.UnitEnum.Day;
+            //     initialInterval.value = (initialInterval.value as number) * 90;
+            // } else if (initialInterval.unit === Interval.UnitEnum.Month) {
+            //     initialInterval.unit = Interval.UnitEnum.Day;
+            //     initialInterval.value = (initialInterval.value as number) * 30;
+            // } else if (initialInterval.unit === Interval.UnitEnum.Week) {
+            //     initialInterval.unit = Interval.UnitEnum.Day;
+            //     initialInterval.value = (initialInterval.value as number) * 7;
+            // }
+            // return initialInterval;
+            /** for now we approximate the preferred interval to the configured interval. This way there is concordancy
+             * between agg interval and d3 interval  */
+            return getAggregationPrecision(maxBuckets, initialTimestampInterval * maxBuckets, histogramType);
         } else {
             /** the initial interval will generate more than maxBuckets; we need to enlarge it  */
             return getAggregationPrecision(maxBuckets, range, histogramType);
