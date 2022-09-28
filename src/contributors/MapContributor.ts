@@ -85,6 +85,8 @@ export class MapContributor extends Contributor {
     public searchSort: string;
     public drawPrecision: number;
     public isFlat: boolean;
+    /** collection params obtains by describe call in the constructor of this contributor */
+    public collectionParameters: CollectionReferenceParameters;
 
     private CLUSTER_SOURCE = 'cluster';
     private TOPOLOGY_SOURCE = 'feature-metric';
@@ -138,7 +140,6 @@ export class MapContributor extends Contributor {
         { tilesPrecision: number, requestsPrecision: number }> = new Map();
     private granularityTopologyFunctions: Map<Granularity, (zoom: number) =>
         { tilesPrecision: number, requestsPrecision: number }> = new Map();
-    private collectionParameters: CollectionReferenceParameters;
     private featuresIdsIndex = new Map<string, Set<string>>();
     private featuresOldExtent = new Map<string, any>();
 
