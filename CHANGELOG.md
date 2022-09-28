@@ -1,5 +1,30 @@
 # Change Log
 
+## [v22.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.3) (2022-09-28)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.3...v22.0.3)
+
+## [v23.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.3) (2022-09-27)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.2...v23.0.3)
+
+## [v23.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.2) (2022-09-27)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.1...v23.0.2)
+
+**Fixed bugs:**
+
+- Impossible to read field containing space in "Details" section of Data Table  [\#504](https://github.com/gisaia/ARLAS-web-contributors/issues/504)
+- Shapefile export is broken for layers making a double agg on the same field [\#509](https://github.com/gisaia/ARLAS-web-contributors/issues/509)
+
+## [v23.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.1) (2022-08-31)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.2...v23.0.1)
+
+**Fixed bugs:**
+
+- Fix normalization of avg in network analytics [\#506](https://github.com/gisaia/ARLAS-web-contributors/issues/506)
+
 ## [v22.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.2) (2022-07-11)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0...v22.0.2)
