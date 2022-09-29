@@ -1,5 +1,100 @@
 # Change Log
 
+## [v20.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.1.1) (2022-09-29)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.2.1...v20.1.1)
+
+## [v19.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.2.1) (2022-09-29)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.3...v19.2.1)
+
+## [v22.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.3) (2022-09-28)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.3...v22.0.3)
+
+## [v23.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.3) (2022-09-27)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.2...v23.0.3)
+
+## [v23.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.2) (2022-09-27)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.1...v23.0.2)
+
+**Fixed bugs:**
+
+- Impossible to read field containing space in "Details" section of Data Table  [\#504](https://github.com/gisaia/ARLAS-web-contributors/issues/504)
+- Shapefile export is broken for layers making a double agg on the same field [\#509](https://github.com/gisaia/ARLAS-web-contributors/issues/509)
+
+## [v23.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.1) (2022-08-31)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.2...v23.0.1)
+
+**Fixed bugs:**
+
+- Fix normalization of avg in network analytics [\#506](https://github.com/gisaia/ARLAS-web-contributors/issues/506)
+
+## [v22.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.2) (2022-07-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0...v22.0.2)
+
+## [v23.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0) (2022-07-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-rc.1...v23.0.0)
+
+## [v23.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-rc.1) (2022-07-11)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-beta.2...v23.0.0-rc.1)
+
+## [v23.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.2) (2022-07-08)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-beta.1...v23.0.0-beta.2)
+
+**New stuff:**
+
+- Add 'Count' metric [\#497](https://github.com/gisaia/ARLAS-web-contributors/issues/497)
+- Limit number of fetched buckets when bucket are units. [\#496](https://github.com/gisaia/ARLAS-web-contributors/issues/496)
+
+## [v23.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.1) (2022-07-06)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.1...v23.0.0-beta.1)
+
+**New stuff:**
+
+- Protect histograms from generating oversized number of buckets [\#492](https://github.com/gisaia/ARLAS-web-contributors/issues/492)
+
+## [v22.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.1) (2022-07-05)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.0...v22.0.1)
+
+**New stuff:**
+
+- Histogram: make configurable the list of collections included in the histogram collaboration [\#489](https://github.com/gisaia/ARLAS-web-contributors/issues/489)
+
+## [v22.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.0) (2022-05-24)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v21.0.0...v22.0.0)
+
+## [v21.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v21.0.0) (2022-04-05)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v21.0.0-beta.1...v21.0.0)
+
+## [v21.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v21.0.0-beta.1) (2022-03-14)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.1.1...v21.0.0-beta.1)
+
+**New stuff:**
+
+- Support 'sort' in powerbars [\#459](https://github.com/gisaia/ARLAS-web-contributors/issues/459)
+
+**Fixed bugs:**
+
+- Fix average merging in mapcontributors [\#478](https://github.com/gisaia/ARLAS-web-contributors/issues/478)
+- \[MapContributors\] Geograhical filters are duplicated in the case of Feature-metric layers [\#343](https://github.com/gisaia/ARLAS-web-contributors/issues/343)
+
+## [v19.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.1.1) (2022-02-28)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.0...v19.1.1)
+
 ## [v20.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.1.0) (2022-02-18)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.0-beta.1...v20.1.0)
