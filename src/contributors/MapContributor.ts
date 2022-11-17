@@ -2713,6 +2713,7 @@ export class MapContributor extends Contributor {
             }
             if (ls.shortFormLabels) {
                 ls.shortFormLabels.forEach(sfl => {
+                    includes.add(sfl);
                     this.indexSearchSourcesMetrics(cs, sfl, ReturnedField.shortform);
                 });
             }
@@ -3159,6 +3160,11 @@ export class MapContributor extends Contributor {
                         featureLayerSource.includeFields = featureLayerSource.includeFields ?
                             new Set([...existingFeatureLayer.includeFields].concat([...featureLayerSource.includeFields])) :
                             existingFeatureLayer.includeFields;
+                    }
+                    if (existingFeatureLayer.shortFormLabels) {
+                        featureLayerSource.shortFormLabels = featureLayerSource.shortFormLabels ?
+                            Array.from(new Set([...existingFeatureLayer.shortFormLabels].concat([...featureLayerSource.shortFormLabels]))) :
+                            existingFeatureLayer.shortFormLabels;
                     }
                     if (existingFeatureLayer.normalizationFields) {
                         featureLayerSource.normalizationFields = featureLayerSource.normalizationFields ?
