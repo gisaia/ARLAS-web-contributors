@@ -1205,6 +1205,7 @@ export class MapContributor extends Contributor {
                                     const keyWithoutNormalize = key.replace(NORMALIZE, '');
                                     if (notInfinity(feature.properties[keyWithoutNormalize])) {
                                         feature.properties[key] = feature.properties[keyWithoutNormalize];
+                                        /** division of the avg by the count. Should not be re-devided */
                                         feature.properties[keyWithoutNormalize] = feature.properties[keyWithoutNormalize]
                                             / feature.properties.count;
                                         feature.properties[key] = feature.properties[key] / feature.properties.count;
@@ -1230,12 +1231,20 @@ export class MapContributor extends Contributor {
                                         }
                                     }
                                 });
-                            } else if (key.endsWith(AVG) && !hasAvgNormalized) {
-                                sourceData.forEach((feature, k) => {
-                                    if (notInfinity(feature.properties[key])) {
-                                        feature.properties[key] = feature.properties[key] / feature.properties.count;
-                                    }
-                                });
+                            } else if (key.endsWith(AVG)) {
+                                const hasAlsoNormalisation = !!Array.from(metricsKeys).find(mk => mk === key + NORMALIZE);
+                                /** if the same avg metric is also demanded as normalised, the division by
+                                 * the count is done at normalisation phase and should not be done again here.
+                                 * The division by count should be done here if the normalisation of the same
+                                 * avg metric has not been demanded.
+                                 */
+                                if (!hasAlsoNormalisation) {
+                                    sourceData.forEach((feature, k) => {
+                                        if (notInfinity(feature.properties[key])) {
+                                            feature.properties[key] = feature.properties[key] / feature.properties.count;
+                                        }
+                                    });
+                                }
                             }
                         });
                     }
