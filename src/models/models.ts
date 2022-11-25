@@ -19,6 +19,7 @@
 
 import moment from 'moment';
 import { Metric, RawGeometry, Aggregation, Search, Filter } from 'arlas-api';
+import internal from 'stream';
 
 /**
 * Enum of sorting value define in Arlas-web-components
@@ -598,6 +599,7 @@ export interface MetricConfig {
     field: string;
     metric: Metric.CollectFctEnum | string;
     normalize: boolean;
+    precision_threshold?: number;
     short_format?: boolean;
 }
 
@@ -614,5 +616,7 @@ export interface SourcesSearch {
 export interface ComputeConfig {
     field: string;
     metric: string;
+    hash_field: string;
+    precision_threshold: number;
     filter?: Filter;
 }

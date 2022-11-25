@@ -198,7 +198,7 @@ export class MapContributor extends Contributor {
 
     /** <date field - date format> map */
     private dateFieldFormatMap: Map<string, string> = new Map<string, string>();
-
+    private hashFieldMap: Map<string, string> = new Map<string, string>();
 
     public dataSources = new Set<string>();
     /**
@@ -521,8 +521,16 @@ export class MapContributor extends Contributor {
         from(topoCounts).pipe(mergeAll()).pipe(
             map(computationResponse => {
                 const nbFeatures = computationResponse.value;
-                const topoVisbleSources = new Set(dTopologySources.filter(s =>
-                    this.topologyLayersIndex.get(s).geometryId === computationResponse.field));
+                const topoVisbleSources = new Set(dTopologySources.filter(s => {
+                    if (!!this.hashFieldMap.get(this.topologyLayersIndex.get(s).geometryId)) {
+                        return this.topologyLayersIndex.get(s).geometryId === computationResponse.field
+                            .replace('.'.concat(this.hashFieldMap.get(this.topologyLayersIndex.get(s).geometryId)), '');
+                    } else {
+                        return this.topologyLayersIndex.get(s).geometryId === computationResponse.field;
+
+                    }
+                }));
+
                 const topoSources = this.getDisplayableTopologySources(zoom, topoVisbleSources, nbFeatures);
                 topoSources[0].forEach(s => displayableTopoSources.add(s));
                 topoSources[1].forEach(s => removableTopoSources.add(s));
@@ -3674,12 +3682,19 @@ export class MapContributor extends Contributor {
                 this.geoShapeFields.push((parentPrefix ? parentPrefix : '') + fieldName);
             } else if (fieldList[fieldName].type === 'DATE') {
                 this.dateFieldFormatMap.set((parentPrefix ? parentPrefix : '') + fieldName, fieldList[fieldName].format);
+            } else if (!!fieldList[fieldName].hash_field) {
+                this.hashFieldMap.set((parentPrefix ? parentPrefix : '') + fieldName, fieldList[fieldName].hash_field);
             }
         }
     }
 
     private getTopoCardinality(collectField: string, filter: Filter): Observable<ComputationResponse> {
-        const computationRequest: ComputationRequest = { field: collectField, metric: ComputationRequest.MetricEnum.CARDINALITY };
+        const computationRequest: ComputationRequest = {
+            field: !!this.hashFieldMap.get(collectField) ?
+                collectField.concat('.').concat(this.hashFieldMap.get(collectField)) : collectField,
+            metric: ComputationRequest.MetricEnum.CARDINALITY,
+            precision_threshold: 3000
+        };
         return this.collaborativeSearcheService.resolveButNotComputation([projType.compute, computationRequest],
             this.collaborativeSearcheService.collaborations, this.collection, this.identifier, filter, false, this.cacheDuration);
 
