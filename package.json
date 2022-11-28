@@ -1,6 +1,6 @@
 {
   "name": "arlas-web-contributors",
-  "version": "23.2.0-dev0",
+  "version": "23.1.1",
   "description": "Contributors Library for ARLAS Components",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -9,8 +9,8 @@
     "clean": "npm cache clear && rimraf -- dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "tslint -c tslint.json 'src/**/*.ts?(x)'",
-    "copy-root-schema" : "cp src/jsonSchemas/rootContributorConf.schema.json dist/jsonSchemas",
-    "copy-npm-readme" : "cp README-NPM.md dist/README.md"
+    "copy-root-schema": "cp src/jsonSchemas/rootContributorConf.schema.json dist/jsonSchemas",
+    "copy-npm-readme": "cp README-NPM.md dist/README.md"
   },
   "repository": {
     "type": "git",
