@@ -5,10 +5,12 @@
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "scripts": {
-    "build-release": "tsc -p tsconfig-build.json && cp README-NPM.md dist/README.md",
+    "build-release": "tsc -p tsconfig-build.json && npm run copy-root-schema && npm run copy-npm-readme",
     "clean": "npm cache clear && rimraf -- dist",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "tslint -c tslint.json 'src/**/*.ts?(x)'"
+    "lint": "tslint -c tslint.json 'src/**/*.ts?(x)'",
+    "copy-root-schema" : "cp src/jsonSchemas/rootContributorConf.schema.json dist/jsonSchemas",
+    "copy-npm-readme" : "cp README-NPM.md dist/README.md"
   },
   "repository": {
     "type": "git",
