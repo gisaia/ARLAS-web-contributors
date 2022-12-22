@@ -1,5 +1,4 @@
 #!/bin/sh -e
-echo "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin
 
 ## CREATE TARGET DIRECTORY ##
 rm -rf target
