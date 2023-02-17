@@ -26,14 +26,15 @@ import {
     OperationEnum,
     projType, CollaborationEvent
 } from 'arlas-web-core';
-import { Filter, Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Interval } from 'arlas-api';
+import { Filter, Aggregation, AggregationResponse, ComputationRequest, ComputationResponse } from 'arlas-api';
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
 import { getSelectionToSet, getvaluesChanged, getAggregationPrecision, adjustHistogramInterval } from '../utils/histoswimUtils';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import jp from 'jsonpath/jsonpath.min';
-import { map, flatMap, filter } from 'rxjs/operators';
+import { map, flatMap } from 'rxjs/operators';
 import { CollectionAggField } from 'arlas-web-core/utils/utils';
+import { DetailedHistogramContributor } from './DetailedHistogramContributor';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -118,6 +119,8 @@ export class HistogramContributor extends Contributor {
 
     /** to be set in the toolkit when creating the contributor */
     public maxBuckets = 200;
+
+    public detailedHistrogramContributor!: DetailedHistogramContributor;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -202,6 +205,17 @@ export class HistogramContributor extends Contributor {
 
     public static getJsonSchema(): Object {
         return jsonSchema;
+    }
+
+    /**
+     * @override Sets the data update state for the contributor itself and its corresponding detailed histogram
+     * if it exists. This guarantees a coherence of the 'update state' for both histogram and its detailed histogram
+     */
+    public set updateData(value) {
+        super.updateData = value;
+        if (!!this.detailedHistrogramContributor) {
+            this.detailedHistrogramContributor.updateData = value;
+        }
     }
 
     /**
