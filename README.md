@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/gisaia/ARLAS-web-contributors.svg?branch=develop)](https://travis-ci.org/gisaia/ARLAS-web-contributors)
 [![npm version](https://badge.fury.io/js/arlas-web-contributors.svg)](https://badge.fury.io/js/arlas-web-contributors)
 
-`arlas-web-contributors` is a typescript library that fetches data from the [ARLAS Exploration API](http://docs.arlas.io/arlas-tech/current/arlas-api-exploration/) and pass it to the different [arlas-web-components](https://github.com/gisaia/ARLAS-web-components).
+`arlas-web-contributors` is a typescript library that fetches data from the [ARLAS Exploration API](https://docs.arlas.io/arlas-api/) and pass it to the different [arlas-web-components](https://github.com/gisaia/ARLAS-web-components).
 
 Each ARLAS-web-component has its corresponding contributor. 
 
@@ -19,7 +19,7 @@ $ npm install --save arlas-web-contributors
 
 ## Documentation
 
-Please find the documentation of all the contributors [here](http://docs.arlas.io/arlas-tech/current/classes/_contributors_treecontributor_.treecontributor/)
+Please find the documentation of all the contributors [here](https://docs.arlas.io/classes/TreeContributor/).
 
 ## Build
 
@@ -70,7 +70,7 @@ We use [SemVer](http://semver.org/) for versioning : `x.y.z`.
 
 ## Authors
 
-* **Gisaïa** - *Initial work* - [Gisaïa](http://gisaia.fr/)
+* **Gisaïa** - *Initial work* - [Gisaïa](http://gisaia.com/)
 
 See also the list of [contributors](https://github.com/gisaia/ARLAS-web-contributors/graphs/contributors) who participated in this project.
 
