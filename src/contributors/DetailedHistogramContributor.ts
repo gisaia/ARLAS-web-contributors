@@ -22,6 +22,7 @@ import { CollaborationEvent, OperationEnum, Collaboration } from 'arlas-web-core
 import { AggregationResponse, Filter, Aggregation } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
+import { getAggregationPrecision, adjustHistogramInterval } from '../utils/histoswimUtils';
 
 import { Observable, from } from 'rxjs';
 import { DateExpression, SelectedOutputValues } from '../models/models';
@@ -90,9 +91,23 @@ export class DetailedHistogramContributor extends HistogramContributor {
                                     min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false, this.useUtc);
                                     max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true, this.useUtc);
                                 }
+
+                                // Compute the bucket interval to truncate the filter with the desired offset
+                                let histogramBucketInterval;
+                                /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
+                                if (this.nbBuckets) {
+                                    histogramBucketInterval = getAggregationPrecision(
+                                        this.nbBuckets, max - min, this.aggregations[0].type).value;
+                                } else {
+                                    /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
+                                    const initialInterval = this.aggregations[0].interval;
+                                    histogramBucketInterval = adjustHistogramInterval(
+                                        this.aggregations[0].type, this.maxBuckets, initialInterval, max - min).value;
+                                }
+
                                 const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
-                                const minOffset = Math.trunc(min - offset);
-                                const maxOffset = Math.trunc(max + offset);
+                                const minOffset = Math.floor((min - offset) / histogramBucketInterval) * histogramBucketInterval;
+                                const maxOffset = Math.ceil((max + offset) / histogramBucketInterval) * histogramBucketInterval;
                                 expression.value = '[' + minOffset + '<' + maxOffset + ']';
                                 // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
                                 additionalFilter.f = [additionalFilter.f[0]];
