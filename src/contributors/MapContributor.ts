@@ -1093,11 +1093,9 @@ export class MapContributor extends Contributor {
             }
             this.redrawSource.next({ source: s, data: sourceData });
             if (!!stats) {
-                Object.keys(stats).forEach(k => {
-                    this.legendData.set(k, {
-                        minValue: this.getAbreviatedNumber(stats[k].min),
-                        maxValue: this.getAbreviatedNumber(stats[k].max)
-                    });
+                this.legendData.set('count', {
+                    minValue: '0',
+                    maxValue: stats.count + ''
                 });
                 this.legendUpdater.next(this.legendData);
             }
@@ -1253,11 +1251,9 @@ export class MapContributor extends Contributor {
             /** set minValue and maxValue foreach metric to be sent to the legend */
             this.redrawSource.next({ source: s, data: sourceData });
             if (!!stats) {
-                Object.keys(stats).forEach(k => {
-                    this.legendData.set(k, {
-                        minValue: this.getAbreviatedNumber(stats[k].min),
-                        maxValue: this.getAbreviatedNumber(stats[k].max)
-                    });
+                this.legendData.set('count', {
+                    minValue: '0',
+                    maxValue: stats.count + ''
                 });
                 this.legendUpdater.next(this.legendData);
             }
