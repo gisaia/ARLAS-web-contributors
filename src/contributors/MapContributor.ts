@@ -982,6 +982,17 @@ export class MapContributor extends Contributor {
                             delete feature.properties[k];
                         }
                     });
+
+                    const coordinates: Array<Array<number>> = (feature.geometry as any).coordinates;
+                    coordinates.forEach((point, idx) => {
+                        if (idx <= coordinates.length - 2) {
+                            if (point[0] - coordinates[idx + 1][0] > 180) {
+                                coordinates[idx + 1][0] += 360;
+                            } else if (coordinates[idx + 1][0] - point[0] > 180) {
+                                coordinates[idx + 1][0] += -360;
+                            }
+                        }
+                    });
                     sourceData.push(feature);
                 });
             }
