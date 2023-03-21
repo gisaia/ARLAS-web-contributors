@@ -56,6 +56,8 @@ import moment from 'moment';
 import { stringToExtent, numToString } from '../utils/mapUtils';
 import { notInfinity, download } from '../utils/utils';
 import * as FileSaver from 'file-saver';
+import area from '@turf/area';
+import { Geometry } from '@turf/helpers';
 
 export enum DataMode {
     simple,
@@ -73,6 +75,11 @@ export const SUM = '_sum_';
 export const MIN = '_min_';
 export const MAX = '_max_';
 export const DEFAULT_FETCH_NETWORK_LEVEL = 3;
+/** Minimum distance at a latitude of +/-80° with a zoom of 0 */
+export const MIN_DISTANCE_ZERO_ZOOM = 13591.701; // m
+/** Represents the minimum surface possible on a map with zero zoom.  */
+export const MIN_SURFACE_ZERO_ZOOM = Math.pow(MIN_DISTANCE_ZERO_ZOOM, 2); // m2
+export const EARTH_RADIUS = 6371000; // m
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -2939,9 +2946,27 @@ export class MapContributor extends Contributor {
     }
 
     private cleanRenderedAggFeature(s: string, feature: Feature, providedFields: Set<string>, isWeightedAverage = false): void {
-        delete feature.properties.geometry_ref;
         delete feature.properties.geometry_type;
         delete feature.properties.feature_type;
+
+        // If the aggregation is on data extent and the resulting polygon is a point, enlarge it
+        if ((feature.geometry as any).type === 'Polygon' &&
+            feature.properties.geometry_ref === 'bbox' &&
+            area(feature.geometry as Geometry) === 0) {
+            const coordinates = (feature.geometry as any).coordinates[0];
+            const delta = 1000 * MIN_DISTANCE_ZERO_ZOOM / Math.pow(2, this.zoom) / EARTH_RADIUS;
+            coordinates[0][0] += -delta;
+            coordinates[0][1] += -delta;
+            coordinates[1][0] += delta;
+            coordinates[1][1] += -delta;
+            coordinates[2][0] += delta;
+            coordinates[2][1] += delta;
+            coordinates[3][0] += -delta;
+            coordinates[3][1] += delta;
+            coordinates[4][0] += -delta;
+            coordinates[4][1] += -delta;
+        }
+        delete feature.properties.geometry_ref;
         const metricsKeys = this.aggSourcesMetrics.get(s);
         const sourceStats = this.aggSourcesStats.get(s);
         if (metricsKeys) {
