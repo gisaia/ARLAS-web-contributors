@@ -46,7 +46,8 @@ import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
 import {
     getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString,
-    getCanonicalExtents
+    getCanonicalExtents,
+    fix180thMeridian
 } from './../utils/mapUtils';
 
 import * as helpers from '@turf/helpers';
@@ -983,16 +984,20 @@ export class MapContributor extends Contributor {
                         }
                     });
 
-                    const coordinates: Array<Array<number>> = (feature.geometry as any).coordinates;
-                    coordinates.forEach((point, idx) => {
-                        if (idx <= coordinates.length - 2) {
-                            if (point[0] - coordinates[idx + 1][0] > 180) {
-                                coordinates[idx + 1][0] += 360;
-                            } else if (coordinates[idx + 1][0] - point[0] > 180) {
-                                coordinates[idx + 1][0] += -360;
-                            }
-                        }
-                    });
+                    switch ((feature.geometry as any).type) {
+                        case 'LineString':
+                            (feature.geometry as any).coordinates = fix180thMeridian((feature.geometry as any).coordinates);
+                            break;
+                        case 'Polygon':
+                            (feature.geometry as any).coordinates[0] = fix180thMeridian((feature.geometry as any).coordinates[0]);
+                            break;
+                        case 'MultiPolygon':
+                            (feature.geometry as any).coordinates.forEach(c => {
+                                c[0] = fix180thMeridian(c[0]);
+                            });
+                            break;
+                    }
+
                     sourceData.push(feature);
                 });
             }

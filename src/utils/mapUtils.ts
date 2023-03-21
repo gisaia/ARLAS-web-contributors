@@ -328,3 +328,21 @@ export function formatNumber(x, formatChar = ' ', roundPrecision?: number): stri
     }
     return x;
 }
+
+/**
+ * Fixes the known issue of geometries not taking the shortest path to be represented on map clients
+ * by allowing data's longitude to be outside of [-180, 180]
+ * @param coordinates Coordinates of a geometry
+ */
+export function fix180thMeridian(coordinates: Array<Array<number>>) {
+    coordinates.forEach((point, idx) => {
+        if (idx <= coordinates.length - 2) {
+            if (point[0] - coordinates[idx + 1][0] > 180) {
+                coordinates[idx + 1][0] += 360;
+            } else if (coordinates[idx + 1][0] - point[0] > 180) {
+                coordinates[idx + 1][0] += -360;
+            }
+        }
+    });
+    return coordinates;
+}
