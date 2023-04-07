@@ -86,7 +86,6 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     * @returns an observable of object that contains details information in form of a map and an array of actions applicable on the item.
     */
     public getData(identifier: string): Observable<AdditionalInfo> {
-        let searchResult: Observable<Hits>;
         const search: Search = { page: { size: 1 } };
         const expression: Expression = {
             field: this.contributor.fieldsConfiguration.idFieldName,
@@ -96,7 +95,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         const filterExpression: Filter = {
             f: [[expression]]
         };
-        searchResult = this.contributor.collaborativeSearcheService.resolveHits([
+        const searchResult: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
             this.contributor.collection, this.contributor.identifier, filterExpression, false, this.contributor.cacheDuration);
         const obs: Observable<AdditionalInfo> = searchResult.pipe(map(searchData => {
@@ -111,6 +110,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                         let resultValue = result;
                         if (process) {
                             if (process.trim().length > 0) {
+                                // eslint-disable-next-line no-eval
                                 resultValue = eval(field.process);
                             }
                         }
@@ -204,7 +204,7 @@ export class ResultListContributor extends Contributor {
     /**
     * List of columns of the table, @Input() fieldsList of ResultListComponent.
     */
-    public fieldsList: Array<{ columnName: string, fieldName: string, dataType: string, useColorService?: boolean }> = [];
+    public fieldsList: Array<{ columnName: string; fieldName: string; dataType: string; useColorService?: boolean; }> = [];
     /**
     * List of values to select mapped to each field represented on the resultList. The list of values to select is wrapped in an Observable.
     */
@@ -273,7 +273,7 @@ export class ResultListContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(
+    public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, collection: string
@@ -352,7 +352,6 @@ export class ResultListContributor extends Contributor {
     * @param productIdentifier productIdentifier of item to dowload
     */
     public downloadItem(elementidentifier: ElementIdentifier) {
-        let searchResult: Observable<Hits>;
         const search: Search = {
             page: { size: 1 },
             form: {
@@ -367,7 +366,7 @@ export class ResultListContributor extends Contributor {
         const filterExpression: Filter = {
             f: [[expression]]
         };
-        searchResult = this.collaborativeSearcheService
+        const searchResult: Observable<Hits> = this.collaborativeSearcheService
             .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations,
                 this.collection, null, filterExpression, false, this.cacheDuration);
         searchResult.pipe(map(data => JSON.stringify(data))).subscribe(
@@ -413,7 +412,7 @@ export class ResultListContributor extends Contributor {
      * @param sortParams sort parameters. They include on which field (column) to sort and in which direction (ascending, descending)
      * @param sortById whether to add a sort by id (`fieldsConfiguration.idFieldName`) to the sorted column
      */
-    public sortColumn(sortParams: { fieldName: string, sortDirection: SortEnum }, sortById?: boolean) {
+    public sortColumn(sortParams: { fieldName: string; sortDirection: SortEnum; }, sortById?: boolean) {
         this.geoOrderSort = '';
         let sort = '';
         if (sortParams && sortParams.fieldName && sortParams.sortDirection !== undefined && sortParams.sortDirection !== null) {
@@ -551,7 +550,9 @@ export class ResultListContributor extends Contributor {
         this.getHitsObservable(this.includesvalues, sort, null, startFrom * this.pageSize)
             .pipe(
                 map(f => this.computeData(f)),
-                map(f => f.forEach(d => { this.data.push(d); }))
+                map(f => f.forEach(d => {
+                    this.data.push(d);
+                }))
             )
             .subscribe(data => data);
     }
@@ -578,10 +579,22 @@ export class ResultListContributor extends Contributor {
                          * if maxPages === -1 then we keep adding data to the list without removing old data
                          */
                         if (this.maxPages !== -1) {
-                            (whichPage === PageEnum.next) ? f.forEach(d => { this.data.push(d); }) :
-                                f.reverse().forEach(d => { this.data.unshift(d); });
-                            (whichPage === PageEnum.next) ? removePageFromIndex(0, this.data, this.pageSize, this.maxPages) :
+                            if (whichPage === PageEnum.next) {
+                                f.forEach(d => {
+                                    this.data.push(d);
+                                });
+                            } else {
+                                f.reverse().forEach(d => {
+                                    this.data.unshift(d);
+                                });
+                            }
+
+                            if (whichPage === PageEnum.next) {
+                                removePageFromIndex(0, this.data, this.pageSize, this.maxPages);
+                            } else {
                                 removePageFromIndex(this.data.length - this.pageSize, this.data, this.pageSize, this.maxPages);
+                            }
+
                             if (f.length === 0) {
                                 /** notifies the end of fetching up-items or down-items */
                                 this.fetchState = { endListUp: whichPage === PageEnum.previous, endListDown: whichPage === PageEnum.next };
@@ -590,7 +603,9 @@ export class ResultListContributor extends Contributor {
                             }
                         } else {
                             if (whichPage === PageEnum.next) {
-                                f.forEach(d => { this.data.push(d); });
+                                f.forEach(d => {
+                                    this.data.push(d);
+                                });
                             }
                             this.fetchState = { endListUp: true, endListDown: f.length === 0 };
                         }
@@ -649,6 +664,7 @@ export class ResultListContributor extends Contributor {
                     let resultValue = result;
                     if (process) {
                         if (process.trim().length > 0) {
+                            // eslint-disable-next-line no-eval
                             resultValue = eval(this.columnsProcess[element.columnName]);
                         }
                     }
@@ -788,7 +804,7 @@ export class ResultListContributor extends Contributor {
     private setUrlField(urlField: string, h: Hit, fieldValueMap: Map<string, string | number | Date>): boolean {
         let allFieldsExist = true;
         this.fieldsConfiguration[urlField].match(/{(?:[a-zA-Z0-9_$.]*)}/g)
-          .map(f => f.replace('{', '').replace('}', '')).forEach((f: string) => {
+            .map(f => f.replace('{', '').replace('}', '')).forEach((f: string) => {
                 if (f.includes('$')) {
                     const tree = f.split('$');
                     let v = h.data;
@@ -807,6 +823,7 @@ export class ResultListContributor extends Contributor {
                             const processUrlTemplate: string =
                                 this.getConfigValue('process')[urlField]['process'];
                             if (processUrlTemplate.trim().length > 0) {
+                                // eslint-disable-next-line no-eval
                                 urlTemplate = eval(processUrlTemplate);
                             } else {
                                 urlTemplate = v;
@@ -836,6 +853,7 @@ export class ResultListContributor extends Contributor {
         let resultValue = result;
         if (process) {
             if (process.trim().length > 0) {
+                // eslint-disable-next-line no-eval
                 resultValue = eval(field.process);
             }
         }

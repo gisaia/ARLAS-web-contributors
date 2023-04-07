@@ -187,37 +187,37 @@ export interface LayerSourceConfig {
     minzoom: number;
     maxzoom: number;
     filters?: Array<any>;
-    /****************************************** */
+    /** **************************************** */
     /** feature (Geometric-features) only */
     returned_geometry?: string;
     normalization_fields?: Array<NormalizationFieldConfig>;
     short_form_fields?: Array<string>;
     render_mode?: FeatureRenderMode;
-    /****************************************** */
+    /** **************************************** */
     /** feature-metric (Network-analytics only) */
     geometry_id?: string;
     network_fetching_level?: number;
     /** @deprecated */
     geometry_support?: string;
-    /****************************************** */
+    /** **************************************** */
     /** cluster only */
     agg_geo_field?: string;
     aggregated_geometry?: string;
     aggType?: ClusterAggType;
     minfeatures?: number;
-    /****************************************** */
+    /** **************************************** */
     /** feature & feature-metric only */
     maxfeatures?: number;
     colors_from_fields?: Array<string>;
     include_fields?: Array<string>;
     provided_fields?: Array<ColorConfig>;
-    /****************************************** */
+    /** **************************************** */
     /** cluster & feature-metric only */
     raw_geometry?: RawGeometryConfig;
     granularity?: string;
     metrics?: Array<MetricConfig>;
     fetched_hits?: FetchedHitsConfig;
-    /****************************************** */
+    /** **************************************** */
 }
 
 export interface FetchedHitsConfig {
@@ -251,7 +251,7 @@ export class DateExpression {
     public translationUnit: DateUnitEnum;
     public roundingUnit: DateUnitEnum;
 
-    constructor(anchorDate?, translationDuration?, translationUnit?, roundingUnit?: DateUnitEnum) {
+    public constructor(anchorDate?, translationDuration?, translationUnit?, roundingUnit?: DateUnitEnum) {
         this.anchorDate = anchorDate;
         this.translationDuration = translationDuration;
         this.translationUnit = translationUnit;
@@ -261,7 +261,7 @@ export class DateExpression {
     public toString(): string {
         let stringifiedExpression = this.anchorDate.toString();
         if (this.anchorDate !== 'now') {
-            if (Number(this.anchorDate) !== NaN) {
+            if (!Number.isNaN(this.anchorDate)) {
                 stringifiedExpression += '||';
             }
         }
@@ -325,7 +325,11 @@ export class DateExpression {
             }
         }
         if (this.roundingUnit) {
-            roundUp ? this.roundUp(dateValue) : this.roundDown(dateValue);
+            if (roundUp) {
+                this.roundUp(dateValue);
+            } else {
+                this.roundDown(dateValue);
+            }
         }
         return dateValue.unix() * 1000 + dateValue.millisecond();
     }
@@ -535,7 +539,7 @@ export interface RawGeometryConfig {
 export class FeaturesNormalization implements NormalizationFieldConfig {
     public on: string;
     public per?: string;
-    public minMaxPerKey ? = new Map<string, [number, number]>();
+    public minMaxPerKey?= new Map<string, [number, number]>();
     public minMax?: [number, number];
 }
 

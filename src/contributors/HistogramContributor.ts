@@ -17,23 +17,24 @@
  * under the License.
  */
 
-import { Observable, from, zip, Subject } from 'rxjs';
+import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Filter } from 'arlas-api';
 import {
     Collaboration,
+    CollaborationEvent,
     CollaborativesearchService,
     ConfigService,
     Contributor,
     OperationEnum,
-    projType, CollaborationEvent
+    projType
 } from 'arlas-web-core';
-import { Filter, Aggregation, AggregationResponse, ComputationRequest, ComputationResponse } from 'arlas-api';
-import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
-import { getSelectionToSet, getvaluesChanged, getAggregationPrecision, adjustHistogramInterval } from '../utils/histoswimUtils';
-import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
-import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
-import jp from 'jsonpath/jsonpath.min';
-import { map, flatMap } from 'rxjs/operators';
 import { CollectionAggField } from 'arlas-web-core/utils/utils';
+import jp from 'jsonpath/jsonpath.min';
+import { Observable, Subject, from, zip } from 'rxjs';
+import { flatMap, map } from 'rxjs/operators';
+import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
+import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
+import { adjustHistogramInterval, getAggregationPrecision, getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
+import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import { DetailedHistogramContributor } from './DetailedHistogramContributor';
 
 /**
@@ -46,10 +47,10 @@ export class HistogramContributor extends Contributor {
     * New data need to be draw on the histogram (could be set to
     @Input() data of HistogramComponent
     */
-    public chartData: Array<{ key: number, value: number, chartId?: string }> =
-        new Array<{ key: number, value: number, chartId?: string }>();
+    public chartData: Array<{ key: number; value: number; chartId?: string; }> =
+        new Array<{ key: number; value: number; chartId?: string; }>();
 
-    public chartDataEvent: Subject<{ key: number, value: number, chartId?: string }[]> = new Subject();
+    public chartDataEvent: Subject<{ key: number; value: number; chartId?: string; }[]> = new Subject();
     /**
     * New selection current need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
@@ -127,11 +128,11 @@ export class HistogramContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(
+    public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, collection: string, protected isOneDimension?: boolean,
-        public additionalCollections?: Array<{ collectionName: string, field: string }>
+        public additionalCollections?: Array<{ collectionName: string; field: string; }>
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
         const lastAggregation: Aggregation = !!this.aggregations ? this.aggregations[this.aggregations.length - 1] : undefined;
@@ -304,11 +305,11 @@ export class HistogramContributor extends Contributor {
         return (!!this.additionalCollections ? this.additionalCollections : []).concat({
             collectionName: this.collection,
             field: this.field
-          });
+        });
     }
 
-    public computeData(aggResponses: AggregationResponse[]): Array<{ key: number, value: number, chartId: string }> {
-        const dataTab = new Array<{ key: number, value: number, chartId: string }>();
+    public computeData(aggResponses: AggregationResponse[]): Array<{ key: number; value: number; chartId: string; }> {
+        const dataTab = new Array<{ key: number; value: number; chartId: string; }>();
         aggResponses.forEach(aggResponse => {
             if (aggResponse.elements !== undefined) {
                 aggResponse.elements.forEach(element => {
@@ -324,7 +325,7 @@ export class HistogramContributor extends Contributor {
         return dataTab.sort((a, b) => a.key < b.key ? -1 : (a.key > b.key ? 1 : 0));
     }
 
-    public setData(data: Array<{ key: number, value: number, chartId?: string }>): Array<{ key: number, value: number, chartId?: string }> {
+    public setData(data: Array<{ key: number; value: number; chartId?: string; }>): Array<{ key: number; value: number; chartId?: string; }> {
         if (!this.isOneDimension || this.isOneDimension === undefined) {
             this.chartData = data;
         } else {
@@ -342,7 +343,7 @@ export class HistogramContributor extends Contributor {
         return this.chartData;
     }
 
-    public setSelection(data: Array<{ key: number, value: number, chartId?: string }>, collaboration: Collaboration): any {
+    public setSelection(data: Array<{ key: number; value: number; chartId?: string; }>, collaboration: Collaboration): any {
         const resultList = getSelectionToSet(data, this.collection, collaboration, this.useUtc);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
@@ -354,53 +355,56 @@ export class HistogramContributor extends Contributor {
 
     protected fetchDataGivenFilter(identifier: string, additionalFilters?: Map<string, Filter>): Observable<AggregationResponse[]> {
         const collaborations = new Map<string, Collaboration>();
-        this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
+        this.collaborativeSearcheService.collaborations.forEach((k, v) => {
+            collaborations.set(v, k);
+        });
         const aggregations = this.aggregations;
         /** We calculate the range all the time */
         const agg = zip(...Array.from(this.collections)
-                    .map(ac => {
+            .map(ac => {
+                const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
+                return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+                <ComputationRequest>{ filter: null, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
+                    collaborations, ac.collectionName, identifier, additionalFilter, false, this.cacheDuration);
+            }))
+            .pipe(
+                map((computationResponses: ComputationResponse[]) => {
+                    const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
+                    let histogramInterval;
+                    /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
+                    if (this.nbBuckets) {
+                        histogramInterval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
+                    } else {
+                        /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
+                        const initialInterval = aggregations[0].interval;
+                        histogramInterval = adjustHistogramInterval(this.aggregations[0].type,
+                            this.maxBuckets, initialInterval, dataRange);
+                    }
+                    const result = {
+                        dataRange,
+                        aggregationPrecision: histogramInterval
+                    };
+                    return result;
+                }),
+                map((r => {
+                    this.range = r.dataRange;
+                    const aggregation: Aggregation = {
+                        type: aggregations[0].type,
+                        interval: r.aggregationPrecision
+                    };
+                    if (aggregations[0].metrics) {
+                        aggregation.metrics = aggregations[0].metrics;
+                    }
+                    return zip(...Array.from(this.collections).map(ac => {
+                        aggregation.field = ac.field;
                         const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                        return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-                    <ComputationRequest>{ filter: null, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
-                        collaborations, ac.collectionName, identifier, additionalFilter, false, this.cacheDuration); }))
-                    .pipe(
-                        map((computationResponses: ComputationResponse[]) => {
-                            const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
-                            let histogramInterval;
-                            /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
-                            if (this.nbBuckets) {
-                                histogramInterval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
-                            } else {
-                                /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
-                                const initialInterval = aggregations[0].interval;
-                                histogramInterval = adjustHistogramInterval(this.aggregations[0].type,
-                                     this.maxBuckets, initialInterval, dataRange);
-                            }
-                            const result = {
-                                dataRange,
-                                aggregationPrecision: histogramInterval
-                            };
-                            return result;
-                        }),
-                        map((r => {
-                            this.range = r.dataRange;
-                            const aggregation: Aggregation = {
-                                type: aggregations[0].type,
-                                interval:  r.aggregationPrecision
-                            };
-                            if (aggregations[0].metrics) {
-                                aggregation.metrics = aggregations[0].metrics;
-                            }
-                            return zip(...Array.from(this.collections).map(ac => {
-                                aggregation.field = ac.field;
-                                const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                                return this.resolveHistogramAgg(identifier, [aggregation], collaborations, additionalFilter, ac);
-                            }));
-                        })),
-                        flatMap(a => a)
-                    );
+                        return this.resolveHistogramAgg(identifier, [aggregation], collaborations, additionalFilter, ac);
+                    }));
+                })),
+                flatMap(a => a)
+            );
 
-                return agg;
+        return agg;
     }
 
     protected resolveHistogramAgg(identifier: string, aggregations: Array<Aggregation>, collaborations: Map<string, Collaboration>,

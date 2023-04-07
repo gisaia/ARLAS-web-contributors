@@ -19,7 +19,10 @@
 
 
 import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json';
-import { Contributor, CollaborativesearchService, ConfigService, CollaborationEvent, projType, OperationEnum, Collaboration } from 'arlas-web-core';
+import {
+    Contributor, CollaborativesearchService, ConfigService,
+    CollaborationEvent, projType, OperationEnum, Collaboration
+} from 'arlas-web-core';
 import { Observable, from, forkJoin } from 'rxjs';
 import { ComputationRequest, ComputationResponse, Filter, Hits } from 'arlas-api';
 import { ComputeConfig } from '../models/models';
@@ -45,7 +48,7 @@ export class ComputeContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(identifier: string, collaborativeSearcheService: CollaborativesearchService, configService: ConfigService,
+    public constructor(identifier: string, collaborativeSearcheService: CollaborativesearchService, configService: ConfigService,
         collection: string) {
         super(identifier, configService, collaborativeSearcheService, collection);
         this.collections = [];
@@ -70,8 +73,8 @@ export class ComputeContributor extends Contributor {
 
             } else {
                 return this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
-                        this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
-                        false, this.cacheDuration);
+                    this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
+                    false, this.cacheDuration);
             }
         }));
 
@@ -95,6 +98,7 @@ export class ComputeContributor extends Contributor {
                 return (d as Hits).totalnb;
             }
         });
+        // eslint-disable-next-line no-eval
         const resultValue = eval(this.function);
         this.metricValue = resultValue;
         return from([]);
