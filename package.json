@@ -8,7 +8,7 @@
     "build-release": "tsc -p tsconfig-build.json && npm run copy-root-schema && npm run copy-npm-readme",
     "clean": "npm cache clear && rimraf -- dist",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "tslint -c tslint.json 'src/**/*.ts?(x)'",
+    "lint": "eslint . --ext .ts",
     "copy-root-schema": "cp src/jsonSchemas/rootContributorConf.schema.json dist/jsonSchemas",
     "copy-npm-readme": "cp README-NPM.md dist/README.md"
   },
@@ -26,11 +26,11 @@
     "@turf/meta": "^6.0.1",
     "@types/file-saver": "^2.0.1",
     "@types/jsonpath": "^0.2.0",
-    "@types/tinycolor2": "~1.4.0",
-    "arlas-web-core": "~23.2.2",
+    "@types/tinycolor2": "^1.4.0",
+    "arlas-web-core": "~24.0.0",
     "file-saver": "^2.0.2",
     "jsonpath": "^1.0.0",
-    "moment": "^2.22.1",
+    "moment": "^2.29.4",
     "ngeohash": "^0.6.0",
     "rxjs": "~7.4.0",
     "tinycolor2": "~1.4.1",
@@ -38,9 +38,11 @@
   },
   "devDependencies": {
     "@types/node": "16.11.20",
+    "@typescript-eslint/eslint-plugin": "^5.27.1",
+    "@typescript-eslint/parser": "^5.27.1",
+    "eslint": "^8.17.0",
     "rimraf": "^2.6.2",
-    "tslint": "~6.1.3",
-    "typescript": "~4.4.3"
+    "typescript": "~4.6.0"
   },
   "overrides": {
     "arlas-api": {

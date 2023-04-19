@@ -80,7 +80,7 @@ export class TreeContributor extends Contributor {
     public emitMissingLeaf: Subject<any[]> = new Subject();
 
 
-    constructor(
+    public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
@@ -447,7 +447,9 @@ export class TreeContributor extends Contributor {
     private getDeeper(obj, path, def) {
         let current = obj;
         for (let i = 0; i < path.length; i++) {
-            if (!current[path[i]]) { return def; }
+            if (!current[path[i]]) {
+                return def;
+            }
             current = current[path[i]];
         }
         return current;

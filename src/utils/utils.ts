@@ -28,7 +28,7 @@ export class ColorGeneratorLoader {
     public keysToColors: Array<Array<string>>;
     public colorsSaturationWeight: number;
 
-    constructor() {
+    public constructor() {
         this.keysToColors = [];
         this.colorsSaturationWeight = 0.5;
     }
@@ -171,7 +171,7 @@ export function getFieldValue(field: string, data: Hits): any {
     let result = '';
     if (field) {
         if (field.indexOf('.') < 0) {
-            const query = jp.stringify(['$', field ]);
+            const query = jp.stringify(['$', field]);
             result = jp.query(data, query);
         } else {
             let query = '$.';
@@ -202,25 +202,25 @@ export function getFieldValue(field: string, data: Hits): any {
     return result;
 }
 
-export function coarseTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+export function coarseTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function mediumTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+export function mediumTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function fineTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+export function fineTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function finestTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+export function finestTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
 
 
-export function networkFetchingLevelGranularity(precision): { tilesPrecision: number, requestsPrecision: number } {
+export function networkFetchingLevelGranularity(precision): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: precision, requestsPrecision: precision };
 }
 
-export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -243,7 +243,7 @@ export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
 }
 
 
-export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -267,7 +267,7 @@ export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
     }
 }
 
-export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -293,7 +293,7 @@ export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { ti
     }
 }
 
-export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }

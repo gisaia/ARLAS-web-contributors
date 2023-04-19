@@ -73,7 +73,7 @@ export class ChipsSearchContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(
+    public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
@@ -90,8 +90,8 @@ export class ChipsSearchContributor extends Contributor {
         return jsonSchema;
     }
 
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<{ label: string, hits: Hits }> {
-        const tabOfCount: Array<Observable<{ label: string, hits: Hits }>> = [];
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<{ label: string; hits: Hits; }> {
+        const tabOfCount: Array<Observable<{ label: string; hits: Hits; }>> = [];
         if (collaborationEvent.id !== this.identifier) {
             let f = new Array<string>();
             const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
@@ -122,9 +122,7 @@ export class ChipsSearchContributor extends Contributor {
                         );
                         tabOfCount.push(
                             countData.pipe(
-                                map(c => {
-                                    return { label: k, hits: c };
-                                })
+                                map(c => ({ label: k, hits: c }))
                             )
                         );
                     }
@@ -142,10 +140,10 @@ export class ChipsSearchContributor extends Contributor {
         return from(tabOfCount).pipe(mergeAll());
     }
 
-    public computeData(data: { label: string, hits: Hits }): { label: string, hits: Hits } {
+    public computeData(data: { label: string; hits: Hits; }): { label: string; hits: Hits; } {
         return data;
     }
-    public setData(data: { label: string, hits: Hits }): any {
+    public setData(data: { label: string; hits: Hits; }): any {
         this.chipMapData.set(data.label, data.hits.totalnb);
         let query = '';
         this.chipMapData.forEach((k, q) => {

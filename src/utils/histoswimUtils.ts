@@ -17,11 +17,10 @@
  * under the License.
  */
 
+import { Aggregation, Expression, Filter, Interval } from 'arlas-api';
 import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
-import { SelectedOutputValues, DateExpression } from '../models/models';
-import { Expression, Filter, Aggregation, Interval } from 'arlas-api';
 import { CollectionAggField } from 'arlas-web-core/utils/utils';
-import { filter } from 'rxjs/operators';
+import { DateExpression, SelectedOutputValues } from '../models/models';
 
 export function getvaluesChanged(values: SelectedOutputValues[],
     collections: CollectionAggField[],
@@ -77,7 +76,7 @@ export function getvaluesChanged(values: SelectedOutputValues[],
     return [intervalSelection, startValue, endValue];
 }
 
-export function getSelectionToSet(data: Array<{ key: number, value: number }> | Map<string, Array<{ key: number, value: number }>>,
+export function getSelectionToSet(data: Array<{ key: number; value: number; }> | Map<string, Array<{ key: number; value: number; }>>,
     collection: string, collaboration: Collaboration, useUtc: boolean
 ): any[] {
     let intervalListSelection;
@@ -102,16 +101,16 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
         }
         if (!f) {
             if (isArray) {
-                if ((<Array<{ key: number, value: number }>>data).length > 0) {
+                if ((<Array<{ key: number; value: number; }>>data).length > 0) {
                     currentIntervalSelected.startvalue = <number>data[0].key;
-                    currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
-                    if ((<Array<{ key: number, value: number }>>data).length > 1) {
-                        const dataInterval = getDataInterval(<Array<{ key: number, value: number }>>data);
+                    currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number; value: number; }>>data).length - 1].key;
+                    if ((<Array<{ key: number; value: number; }>>data).length > 1) {
+                        const dataInterval = getDataInterval(<Array<{ key: number; value: number; }>>data);
                         currentIntervalSelected.endvalue += dataInterval;
                     }
                 }
             } else {
-                const minMax = getMinMax(<Map<string, Array<{ key: number, value: number }>>>data);
+                const minMax = getMinMax(<Map<string, Array<{ key: number; value: number; }>>>data);
                 currentIntervalSelected.startvalue = minMax[0];
                 currentIntervalSelected.endvalue = minMax[1];
             }
@@ -159,16 +158,16 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
         }
     } else {
         if (isArray) {
-            if ((<Array<{ key: number, value: number }>>data).length > 0) {
+            if ((<Array<{ key: number; value: number; }>>data).length > 0) {
                 currentIntervalSelected.startvalue = <number>data[0].key;
-                currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number, value: number }>>data).length - 1].key;
-                if ((<Array<{ key: number, value: number }>>data).length > 1) {
-                    const dataInterval = getDataInterval(<Array<{ key: number, value: number }>>data);
+                currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number; value: number; }>>data).length - 1].key;
+                if ((<Array<{ key: number; value: number; }>>data).length > 1) {
+                    const dataInterval = getDataInterval(<Array<{ key: number; value: number; }>>data);
                     currentIntervalSelected.endvalue += dataInterval;
                 }
             }
         } else {
-            const minMax = getMinMax(<Map<string, Array<{ key: number, value: number }>>>data);
+            const minMax = getMinMax(<Map<string, Array<{ key: number; value: number; }>>>data);
             currentIntervalSelected.startvalue = minMax[0];
             currentIntervalSelected.endvalue = minMax[1];
 
@@ -186,7 +185,7 @@ export function getSelectionToSet(data: Array<{ key: number, value: number }> | 
     return [intervalListSelection, intervalSelection, startValue, endValue];
 }
 
-function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Array<number> {
+function getMinMax(data: Map<string, Array<{ key: number; value: number; }>>): Array<number> {
     let min;
     let max;
     let dataInterval;
@@ -216,7 +215,7 @@ function getMinMax(data: Map<string, Array<{ key: number, value: number }>>): Ar
     return [min, max];
 }
 
-function getDataInterval(data: Array<{ key: number, value: number }>): number {
+function getDataInterval(data: Array<{ key: number; value: number; }>): number {
     let interval = Number.MAX_VALUE;
     if (data.length > 1) {
         /** We need to get the smallest difference between 2 buckets that is different from 0 */
