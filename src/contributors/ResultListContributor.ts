@@ -27,7 +27,7 @@ import {
 import {
     Search,
     Projection, Hits,
-    Filter, Aggregation, Expression, Hit
+    Filter, Aggregation, Expression, ArlasHit
 } from 'arlas-api';
 import { getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex, ASC, getFieldValue } from '../utils/utils';
 import {
@@ -801,7 +801,7 @@ export class ResultListContributor extends Contributor {
      * @param fieldValueMap [fieldName - fieldValue] map that is set inside this method
      * @returns Returns true if all the fields in the template exist in 'h.data', false if at least one doesn't exist
      */
-    private setUrlField(urlField: string, h: Hit, fieldValueMap: Map<string, string | number | Date>): boolean {
+    private setUrlField(urlField: string, h: ArlasHit, fieldValueMap: Map<string, string | number | Date>): boolean {
         let allFieldsExist = true;
         this.fieldsConfiguration[urlField].match(/{(?:[a-zA-Z0-9_$.]*)}/g)
             .map(f => f.replace('{', '').replace('}', '')).forEach((f: string) => {
@@ -847,7 +847,7 @@ export class ResultListContributor extends Contributor {
         return allFieldsExist;
     }
 
-    private setProcessFieldData(h: Hit, field: Field, fieldValueMap: Map<string, string | number | Date>, dataType: string): void {
+    private setProcessFieldData(h: ArlasHit, field: Field, fieldValueMap: Map<string, string | number | Date>, dataType: string): void {
         const result: string = getElementFromJsonObject(h.data, field.fieldPath);
         const process: string = field.process;
         let resultValue = result;
