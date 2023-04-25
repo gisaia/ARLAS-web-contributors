@@ -256,7 +256,7 @@ export class ResultListContributor extends Contributor {
 
     public cacheDuration = this.cacheDuration;
 
-    public highlightItems = new Set();
+    public highlightItems = new Set<string>();
 
     private includesvalues = new Array<string>();
     private isImageEnabled = false;
