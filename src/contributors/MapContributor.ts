@@ -278,6 +278,10 @@ export class MapContributor extends Contributor {
             );
     }
 
+    public isUpdateEnabledOnOwnCollaboration() {
+        return true;
+    }
+
     public static getJsonSchema(): Object {
         return jsonSchema;
     }
@@ -2033,11 +2037,10 @@ export class MapContributor extends Contributor {
                 switch (this.geoQueryOperation) {
                     case Expression.OpEnum.Notintersects:
                     case Expression.OpEnum.Notwithin:
-                        if (this.geoQueryOperation === Expression.OpEnum.Intersects
-                            || this.geoQueryOperation === Expression.OpEnum.Notintersects) {
+                        if (this.geoQueryOperation === Expression.OpEnum.Notintersects) {
                             geoQueryOperationForCount = Expression.OpEnum.Intersects;
                         }
-                        if (this.geoQueryOperation === Expression.OpEnum.Within || this.geoQueryOperation === Expression.OpEnum.Notwithin) {
+                        if (this.geoQueryOperation === Expression.OpEnum.Notwithin) {
                             geoQueryOperationForCount = Expression.OpEnum.Within;
                         }
                         const andFilter: Array<Array<Expression>> = [];

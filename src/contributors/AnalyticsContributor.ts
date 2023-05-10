@@ -87,16 +87,16 @@ export class AnalyticsContributor extends Contributor {
         return 'arlas.web.contributors.analytics';
     }
 
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
+    }
+
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
         const aggregationObservable = this.collaborativeSearcheService.resolveButNotAggregation(
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.collection, this.identifier, {}, false, this.cacheDuration
         );
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            return aggregationObservable;
-        } else {
-            return from([]);
-        }
+        return aggregationObservable;
     }
 
     public computeData(aggregationResonse: AggregationResponse): Map<string, number> {

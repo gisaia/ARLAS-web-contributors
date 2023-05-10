@@ -340,6 +340,11 @@ export class ResultListContributor extends Contributor {
                 });
             });
     }
+
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
+    }
+
     public static getJsonSchema(): Object {
         return jsonSchema;
     }
