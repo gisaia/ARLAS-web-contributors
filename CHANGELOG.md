@@ -1,5 +1,13 @@
 # Change Log
 
+## [v24.1.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.0-beta.3) (2023-05-30)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.0-beta.2...v24.1.0-beta.3)
+
+**New stuff:**
+
+- Delegate collaboration consumption to the contributor abstract class [\#530](https://github.com/gisaia/ARLAS-web-contributors/issues/530)
+
 ## [v24.1.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.0-beta.2) (2023-05-17)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.0-beta.1...v24.1.0-beta.2)
