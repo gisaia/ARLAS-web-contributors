@@ -130,6 +130,10 @@ export class SwimLaneContributor extends Contributor {
         return jsonSchema;
     }
 
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
+    }
+
     /**
      * Set filter on value change, used in output of component
      * @param selectedSwimlanes List of selected lanes of the swimlane
@@ -166,31 +170,27 @@ export class SwimLaneContributor extends Contributor {
         this.collaborativeSearcheService.collaborations.forEach((k, v) => {
             collaborations.set(v, k);
         });
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            if (this.nbBuckets) {
-                return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-                <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
-                    collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
-                    .pipe(
-                        map((computationResponse: ComputationResponse) => {
-                            const dataRange = !!computationResponse.value ? computationResponse.value : 0;
-                            this.range = !!computationResponse.value ? computationResponse : null;
-                            this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
-                        }),
-                        flatMap(() =>
-                            this.collaborativeSearcheService.resolveButNotAggregation(
-                                [projType.aggregate, this.aggregations], collaborations,
-                                this.collection, this.identifier, {}, false, this.cacheDuration)
-                        )
+        if (this.nbBuckets) {
+            return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+            <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
+                collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
+                .pipe(
+                    map((computationResponse: ComputationResponse) => {
+                        const dataRange = !!computationResponse.value ? computationResponse.value : 0;
+                        this.range = !!computationResponse.value ? computationResponse : null;
+                        this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
+                    }),
+                    flatMap(() =>
+                        this.collaborativeSearcheService.resolveButNotAggregation(
+                            [projType.aggregate, this.aggregations], collaborations,
+                            this.collection, this.identifier, {}, false, this.cacheDuration)
                     )
-                );
-            } else {
-                return this.collaborativeSearcheService.resolveButNotAggregation(
-                    [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-                    this.collection, this.identifier, {}, false, this.cacheDuration);
-            }
+                )
+            );
         } else {
-            return from([]);
+            return this.collaborativeSearcheService.resolveButNotAggregation(
+                [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
+                this.collection, this.identifier, {}, false, this.cacheDuration);
         }
     }
 

@@ -62,8 +62,11 @@ export class ComputeContributor extends Contributor {
         return jsonSchema;
     }
 
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<ComputationResponse>> {
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
+    }
 
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<ComputationResponse>> {
         const computationResponse: Observable<Array<ComputationResponse | Hits>> = forkJoin(this.metrics.map(m => {
             if (m.metric !== 'count') {
                 return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
@@ -77,13 +80,7 @@ export class ComputeContributor extends Contributor {
                     false, this.cacheDuration);
             }
         }));
-
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            return computationResponse;
-        } else {
-            return from([]);
-        }
-
+        return computationResponse;
     }
 
     public computeData(data: Array<ComputationResponse | Hits>): Array<ComputationResponse> {

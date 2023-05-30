@@ -27,7 +27,6 @@ import { TreeNode, SimpleNode } from '../models/models';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
-import { equals } from 'tinycolor2';
 
 /**
  * This contributor fetches data from multiple term aggregations and format the data as a tree.
@@ -102,6 +101,10 @@ export class TreeContributor extends Contributor {
         return jsonSchema;
     }
 
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
+    }
+
     public getAggregations() {
         return this.aggregations;
     }
@@ -158,11 +161,7 @@ export class TreeContributor extends Contributor {
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.collection, this.identifier, filterAgg, false, this.cacheDuration
         );
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            return aggregationObservable;
-        } else {
-            return from([]);
-        }
+        return aggregationObservable;
     }
 
     public computeData(aggregationResponse: AggregationResponse): TreeNode {

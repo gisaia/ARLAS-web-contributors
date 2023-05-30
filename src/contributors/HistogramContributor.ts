@@ -154,6 +154,10 @@ export class HistogramContributor extends Contributor {
         this.collaborativeSearcheService.registerCollections(this);
     }
 
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
+    }
+
     public getNbBuckets() {
         return this.nbBuckets;
     }
@@ -293,11 +297,7 @@ export class HistogramContributor extends Contributor {
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse[]> {
         this.maxValue = 0;
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            return this.fetchDataGivenFilter(this.identifier);
-        } else {
-            return from([]);
-        }
+        return this.fetchDataGivenFilter(this.identifier);
     }
 
 

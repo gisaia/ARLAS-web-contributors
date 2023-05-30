@@ -65,62 +65,57 @@ export class DetailedHistogramContributor extends HistogramContributor {
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse[]> {
         this.maxValue = 0;
         let additionalFilters;
-
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            const annexedContributorCollaboration = this.collaborativeSearcheService.collaborations.get(this.annexedContributorId);
-            if (this.annexedContributorId && annexedContributorCollaboration) {
-                additionalFilters = this.cloneAnnexedContributorFilter(annexedContributorCollaboration);
-                if (!!additionalFilters) {
-                    additionalFilters.forEach((additionalFilter, collection) => {
-                        if (additionalFilter && additionalFilter.f && additionalFilter.f.length === 1) {
-                            // IN HISTOGRAM CONTRIBUTOR, THERE IS ONLY ONE F FILTER
-                            // FOR THIS F, THERE IS ONE EXPRESSION
-                            const expression = additionalFilter.f[0][0];
-                            // THE EXPRESSION VALUE CONTAINS COMMA SEPARATED RANGES '[MIN1<MAX1],[MIN2<MAX2]'
-                            const valuesList = expression.value.split(',');
-                            const lastValue: string = valuesList[valuesList.length - 1];
-                            const lastValueWithoutBrackets = lastValue.substring(1).slice(0, -1);
-                            const intervals = lastValueWithoutBrackets.split('<');
-                            if (!!intervals && intervals.length === 2) {
-                                let min;
-                                let max;
-                                if (Number(intervals[0]).toString() !== 'NaN' && Number(intervals[1]).toString() !== 'NaN') {
-                                    min = Number(intervals[0]);
-                                    max = Number(intervals[1]);
-                                } else {
-                                    min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false, this.useUtc);
-                                    max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true, this.useUtc);
-                                }
-
-                                // Compute the bucket interval to truncate the filter with the desired offset
-                                let histogramBucketInterval;
-                                /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
-                                if (this.nbBuckets) {
-                                    histogramBucketInterval = getAggregationPrecision(
-                                        this.nbBuckets, max - min, this.aggregations[0].type).value;
-                                } else {
-                                    /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
-                                    const initialInterval = this.aggregations[0].interval;
-                                    histogramBucketInterval = adjustHistogramInterval(
-                                        this.aggregations[0].type, this.maxBuckets, initialInterval, max - min).value;
-                                }
-
-                                const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
-                                const minOffset = Math.floor((min - offset) / histogramBucketInterval) * histogramBucketInterval;
-                                const maxOffset = Math.ceil((max + offset) / histogramBucketInterval) * histogramBucketInterval;
-                                expression.value = '[' + minOffset + '<' + maxOffset + ']';
-                                // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
-                                additionalFilter.f = [additionalFilter.f[0]];
-                                this.currentSelectedInterval = { startvalue: min, endvalue: max };
+        const annexedContributorCollaboration = this.collaborativeSearcheService.collaborations.get(this.annexedContributorId);
+        if (this.annexedContributorId && annexedContributorCollaboration) {
+            additionalFilters = this.cloneAnnexedContributorFilter(annexedContributorCollaboration);
+            if (!!additionalFilters) {
+                additionalFilters.forEach((additionalFilter, collection) => {
+                    if (additionalFilter && additionalFilter.f && additionalFilter.f.length === 1) {
+                        // IN HISTOGRAM CONTRIBUTOR, THERE IS ONLY ONE F FILTER
+                        // FOR THIS F, THERE IS ONE EXPRESSION
+                        const expression = additionalFilter.f[0][0];
+                        // THE EXPRESSION VALUE CONTAINS COMMA SEPARATED RANGES '[MIN1<MAX1],[MIN2<MAX2]'
+                        const valuesList = expression.value.split(',');
+                        const lastValue: string = valuesList[valuesList.length - 1];
+                        const lastValueWithoutBrackets = lastValue.substring(1).slice(0, -1);
+                        const intervals = lastValueWithoutBrackets.split('<');
+                        if (!!intervals && intervals.length === 2) {
+                            let min;
+                            let max;
+                            if (Number(intervals[0]).toString() !== 'NaN' && Number(intervals[1]).toString() !== 'NaN') {
+                                min = Number(intervals[0]);
+                                max = Number(intervals[1]);
+                            } else {
+                                min = DateExpression.toDateExpression(intervals[0]).toMillisecond(false, this.useUtc);
+                                max = DateExpression.toDateExpression(intervals[1]).toMillisecond(true, this.useUtc);
                             }
+
+                            // Compute the bucket interval to truncate the filter with the desired offset
+                            let histogramBucketInterval;
+                            /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
+                            if (this.nbBuckets) {
+                                histogramBucketInterval = getAggregationPrecision(
+                                    this.nbBuckets, max - min, this.aggregations[0].type).value;
+                            } else {
+                                /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
+                                const initialInterval = this.aggregations[0].interval;
+                                histogramBucketInterval = adjustHistogramInterval(
+                                    this.aggregations[0].type, this.maxBuckets, initialInterval, max - min).value;
+                            }
+
+                            const offset = this.selectionExtentPercentage ? (max - min) * this.selectionExtentPercentage : 0;
+                            const minOffset = Math.floor((min - offset) / histogramBucketInterval) * histogramBucketInterval;
+                            const maxOffset = Math.ceil((max + offset) / histogramBucketInterval) * histogramBucketInterval;
+                            expression.value = '[' + minOffset + '<' + maxOffset + ']';
+                            // ONLY THE LAST EXPRESSION (CURRENT SELECTION) IS KEPT
+                            additionalFilter.f = [additionalFilter.f[0]];
+                            this.currentSelectedInterval = { startvalue: min, endvalue: max };
                         }
-                    });
-                }
+                    }
+                });
             }
-            return this.fetchDataGivenFilter(this.annexedContributorId, additionalFilters);
-        } else {
-            return from([]);
         }
+        return this.fetchDataGivenFilter(this.annexedContributorId, additionalFilters);
     }
 
     public init(aggregations: Array<Aggregation>, field: string, jsonPath: string, additionalCollections: CollectionAggField[]) {
