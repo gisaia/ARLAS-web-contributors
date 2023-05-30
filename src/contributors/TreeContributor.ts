@@ -161,7 +161,11 @@ export class TreeContributor extends Contributor {
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.collection, this.identifier, filterAgg, false, this.cacheDuration
         );
-        return aggregationObservable;
+        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
+            return aggregationObservable;
+        } else {
+            return from([]);
+        }
     }
 
     public computeData(aggregationResponse: AggregationResponse): TreeNode {

@@ -297,7 +297,11 @@ export class HistogramContributor extends Contributor {
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse[]> {
         this.maxValue = 0;
-        return this.fetchDataGivenFilter(this.identifier);
+        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
+            return this.fetchDataGivenFilter(this.identifier);
+        } else {
+            return from([]);
+        }
     }
 
 
