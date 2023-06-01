@@ -96,7 +96,11 @@ export class AnalyticsContributor extends Contributor {
             [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
             this.collection, this.identifier, {}, false, this.cacheDuration
         );
-        return aggregationObservable;
+        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
+            return aggregationObservable;
+        } else {
+            return from([]);
+        }
     }
 
     public computeData(aggregationResonse: AggregationResponse): Map<string, number> {

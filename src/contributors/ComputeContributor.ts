@@ -67,20 +67,23 @@ export class ComputeContributor extends Contributor {
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<ComputationResponse>> {
-        const computationResponse: Observable<Array<ComputationResponse | Hits>> = forkJoin(this.metrics.map(m => {
-            if (m.metric !== 'count') {
-                return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-                <ComputationRequest>{ field: m.field, metric: ComputationRequest.MetricEnum[m.metric.toUpperCase()] }],
-                    this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
-                    false, this.cacheDuration);
-
-            } else {
-                return this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
-                    this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
-                    false, this.cacheDuration);
-            }
-        }));
-        return computationResponse;
+        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
+            const computationResponse: Observable<Array<ComputationResponse | Hits>> = forkJoin(this.metrics.map(m => {
+                if (m.metric !== 'count') {
+                    return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+                    <ComputationRequest>{ field: m.field, metric: ComputationRequest.MetricEnum[m.metric.toUpperCase()] }],
+                        this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
+                        false, this.cacheDuration);
+                } else {
+                    return this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
+                        this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
+                        false, this.cacheDuration);
+                }
+            }));
+            return computationResponse;
+        } else {
+            return from([]);
+        }
     }
 
     public computeData(data: Array<ComputationResponse | Hits>): Array<ComputationResponse> {

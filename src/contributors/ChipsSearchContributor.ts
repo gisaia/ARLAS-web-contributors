@@ -96,48 +96,50 @@ export class ChipsSearchContributor extends Contributor {
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<{ label: string; hits: Hits; }> {
         const tabOfCount: Array<Observable<{ label: string; hits: Hits; }>> = [];
-        if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
-            this.chipMapData.clear();
-            this.query = '';
-            return from(tabOfCount).pipe(mergeAll());
-        }
-        let f = new Array<string>();
-        const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
-        if (collaboration != null) {
-            let filter: Filter;
-            if (collaboration.filters && collaboration.filters.get(this.collection)) {
-                filter = collaboration.filters.get(this.collection)[0];
+        if (collaborationEvent.id !== this.identifier) {
+            let f = new Array<string>();
+            const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
+            if (collaboration != null) {
+                let filter: Filter;
+                if (collaboration.filters && collaboration.filters.get(this.collection)) {
+                    filter = collaboration.filters.get(this.collection)[0];
+                }
+                f = Array.from(this.chipMapData.keys());
+                f.forEach(k => {
+                    if (filter.q[0].indexOf(k) < 0) {
+                        this.chipMapData.delete((k));
+                    }
+                });
+                f = filter.q[0];
             }
-            f = Array.from(this.chipMapData.keys());
-            f.forEach(k => {
-                if (filter.q[0].indexOf(k) < 0) {
-                    this.chipMapData.delete((k));
-                }
-            });
-            f = filter.q[0];
-        }
-        if (f.length > 0) {
-            f.forEach((k) => {
-                if (k.length > 0) {
-                    const filter: Filter = {
-                        q: [[k]]
-                    };
-                    const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
-                        [projType.count, {}], this.collaborativeSearcheService.collaborations,
-                        this.collection,
-                        this.identifier,
-                        filter, false, this.cacheDuration
-                    );
-                    tabOfCount.push(
-                        countData.pipe(
-                            map(c => ({ label: k, hits: c }))
-                        )
-                    );
-                }
-            });
+            if (f.length > 0) {
+                f.forEach((k) => {
+                    if (k.length > 0) {
+                        const filter: Filter = {
+                            q: [[k]]
+                        };
+                        const countData: Observable<Hits> = this.collaborativeSearcheService.resolveButNotHits(
+                            [projType.count, {}], this.collaborativeSearcheService.collaborations,
+                            this.collection,
+                            this.identifier,
+                            filter, false, this.cacheDuration
+                        );
+                        tabOfCount.push(
+                            countData.pipe(
+                                map(c => ({ label: k, hits: c }))
+                            )
+                        );
+                    }
+                });
+            } else {
+                this.chipMapData.clear();
+                this.query = '';
+            }
         } else {
-            this.chipMapData.clear();
-            this.query = '';
+            if (collaborationEvent.operation.toString() === OperationEnum.remove.toString()) {
+                this.chipMapData.clear();
+                this.query = '';
+            }
         }
         return from(tabOfCount).pipe(mergeAll());
     }
