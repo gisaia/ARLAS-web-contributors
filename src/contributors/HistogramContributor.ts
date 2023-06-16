@@ -33,7 +33,7 @@ import { Observable, Subject, from, zip } from 'rxjs';
 import { flatMap, map } from 'rxjs/operators';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
-import { adjustHistogramInterval, getAggregationPrecision, getSelectionToSet, getvaluesChanged } from '../utils/histoswimUtils';
+import { adjustHistogramInterval, getAggregationPrecision, getSelectionToSet, getSelectionFromValues } from '../utils/histoswimUtils';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import { DetailedHistogramContributor } from './DetailedHistogramContributor';
 
@@ -269,7 +269,7 @@ export class HistogramContributor extends Contributor {
         if (!collections) {
             collections = this.getAllCollections();
         }
-        const resultList = getvaluesChanged(values, collections, this.identifier, this.collaborativeSearcheService, this.useUtc);
+        const resultList = getSelectionFromValues(values, collections, this.identifier, this.collaborativeSearcheService, this.useUtc);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
