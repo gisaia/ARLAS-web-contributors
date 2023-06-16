@@ -22,25 +22,27 @@ import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
 import { CollectionAggField } from 'arlas-web-core/utils/utils';
 import { DateExpression, SelectedOutputValues } from '../models/models';
 
-export function getvaluesChanged(values: SelectedOutputValues[],
+/** Extract from all the selected intervals the latest interval.
+ * Also transmits to the collaborative search service the filter to apply based on the selection. */
+export function getSelectionFromValues(selections: SelectedOutputValues[],
     collections: CollectionAggField[],
     identifier: string,
     collaborativeSearcheService: CollaborativesearchService, useUtc: boolean
-): any[] {
-    const collabFilters = new Map<string, Filter[]>();
+): [SelectedOutputValues, string, string] {
     let startValue;
     let endValue;
     let rangeExpressionValue = '';
-    values.forEach(value => {
-        let end = value.endvalue;
-        let start = value.startvalue;
+    // Construct the filter to use for the collaborative search service
+    selections.forEach(s => {
+        let start = s.startvalue;
+        let end = s.endvalue;
         if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
-            const endDate = new Date(value.endvalue.toString());
-            const startDate = new Date(value.startvalue.toString());
+            const endDate = new Date(end.toString());
+            const startDate = new Date(start.toString());
             startValue = startDate.toUTCString().split(',')[1].replace('GMT', '');
             endValue = endDate.toUTCString().split(',')[1].replace('GMT', '');
-            end = endDate.valueOf();
             start = startDate.valueOf();
+            end = endDate.valueOf();
         } else if (Number(start).toString() !== 'NaN' && Number(end).toString() !== 'NaN') {
             startValue = Math.round(<number>start).toString();
             endValue = Math.round(<number>end).toString();
@@ -51,6 +53,9 @@ export function getvaluesChanged(values: SelectedOutputValues[],
         rangeExpressionValue = rangeExpressionValue + '[' + start.toString() + '<' + end.toString() + '],';
     });
     rangeExpressionValue = rangeExpressionValue.substring(0, rangeExpressionValue.length - 1);
+
+    // Notify the collaborative search service of this new filter
+    const collabFilters = new Map<string, Filter[]>();
     collections.forEach(c => {
         const filterValue: Filter = {
             f: new Array<Array<Expression>>()
@@ -67,13 +72,17 @@ export function getvaluesChanged(values: SelectedOutputValues[],
         filters: collabFilters,
         enabled: true
     };
-    const intervalSelection = values[values.length - 1];
+    collaborativeSearcheService.setFilter(identifier, collaboration);
+
+    // Retrieve the last selection on the chart
+    const intervalSelection = selections[selections.length - 1];
     if (Number(intervalSelection.startvalue).toString() === 'NaN') {
         intervalSelection.startvalue = DateExpression.toDateExpression(<string>intervalSelection.startvalue).toMillisecond(false, useUtc);
         intervalSelection.endvalue = DateExpression.toDateExpression(<string>intervalSelection.endvalue).toMillisecond(true, useUtc);
     }
-    collaborativeSearcheService.setFilter(identifier, collaboration);
-    return [intervalSelection, startValue, endValue];
+
+    // startValue and endValue already are strings based on their construction
+    return [intervalSelection, startValue.toString(), endValue.toString()];
 }
 
 export function getSelectionToSet(data: Array<{ key: number; value: number; }> | Map<string, Array<{ key: number; value: number; }>>,
