@@ -213,17 +213,6 @@ export class HistogramContributor extends Contributor {
     }
 
     /**
-     * @override Sets the data update state for the contributor itself and its corresponding detailed histogram
-     * if it exists. This guarantees a coherence of the 'update state' for both histogram and its detailed histogram
-     */
-    public set updateData(value) {
-        super.updateData = value;
-        if (!!this.detailedHistrogramContributor) {
-            this.detailedHistrogramContributor.updateData = value;
-        }
-    }
-
-    /**
     * @returns Pretty name of contribution based on startValue/endValue properties
     */
     public getFilterDisplayName(): string {
