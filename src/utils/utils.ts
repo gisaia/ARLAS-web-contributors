@@ -167,8 +167,13 @@ export function removePageFromIndex(fromIndex, data: Array<any>, pageSize: numbe
     }
 }
 
+/**
+ * Returns the value of the desired field in the JSON data.
+ * @param field Field to find in the data JSON
+ * @param data JSON data to explore
+ */
 export function getFieldValue(field: string, data: Hits): any {
-    let result = '';
+    let result;
     if (field) {
         if (field.indexOf('.') < 0) {
             const query = jp.stringify(['$', field]);
@@ -197,6 +202,12 @@ export function getFieldValue(field: string, data: Hits): any {
             });
             query = query.substring(0, query.length - lastElementLength);
             result = jp.query(data, query);
+        }
+
+        if (result.length === 1) {
+            result = result[0];
+        } else {
+            result = result.join(',');
         }
     }
     return result;
