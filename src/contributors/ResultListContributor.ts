@@ -104,8 +104,9 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             details.forEach(group => {
                 const detailedDataMap = new Map<string, string>();
                 group.fields.forEach(field => {
-                    const result = getFieldValue(field.path, searchData.hits[0].data).join(',');
-                    if (result.length > 0) {
+                    const result = getFieldValue(field.path, searchData.hits[0].data);
+
+                    if (!!result) {
                         const process: string = field.process;
                         let resultValue = result;
                         if (process) {
@@ -120,30 +121,28 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 detailsMap.set(group.name, detailedDataMap);
             });
             const attachments = new Array<Attachment>();
-            const attachmentsConfig: Array<AttachmentConfig> = (this.contributor.getConfigValue('attachments') !== undefined)
-                ? (this.contributor.getConfigValue('attachments')) : ([]);
+            const attachmentsConfig: Array<AttachmentConfig> = this.contributor.getConfigValue('attachments') !== undefined
+                ? this.contributor.getConfigValue('attachments') : [];
             attachmentsConfig.forEach(att => {
                 const attachmentsValues = getFieldValue(att.attachmentsField, searchData.hits[0].data);
-                if (attachmentsValues && attachmentsValues.length === 1) {
-                    if (isArray(attachmentsValues[0])) {
-                        attachmentsValues[0].forEach(attachmentValue => {
-                            const label = getFieldValue(att.attachmentLabelField,
-                                attachmentValue).toString();
-                            const url = getFieldValue(att.attachementUrlField,
-                                attachmentValue).toString();
-                            const type = getFieldValue(att.attachmentTypeField,
-                                attachmentValue).toString();
-                            const description = getFieldValue(att.attachmentDescriptionField,
-                                attachmentValue).toString();
-                            attachments.push({
-                                label: label,
-                                url: url,
-                                description: description,
-                                type: type,
-                                icon: att.attachmentIcon
-                            });
+                if (attachmentsValues && isArray(attachmentsValues)) {
+                    attachmentsValues.forEach(attachmentValue => {
+                        const label = getFieldValue(att.attachmentLabelField,
+                            attachmentValue)?.toString();
+                        const url = getFieldValue(att.attachementUrlField,
+                            attachmentValue)?.toString();
+                        const type = getFieldValue(att.attachmentTypeField,
+                            attachmentValue)?.toString();
+                        const description = getFieldValue(att.attachmentDescriptionField,
+                            attachmentValue)?.toString();
+                        attachments.push({
+                            label: label,
+                            url: url,
+                            description: description,
+                            type: type,
+                            icon: att.attachmentIcon
                         });
-                    }
+                    });
                 }
             });
             const actions = new Array<Action>();
