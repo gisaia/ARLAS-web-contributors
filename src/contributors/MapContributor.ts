@@ -94,7 +94,7 @@ export class MapContributor extends Contributor {
     private TOPOLOGY_SOURCE = 'feature-metric';
     private FEATURE_SOURCE = 'feature';
 
-    private LAYERS_SOURCES_KEY = 'layers_sources';
+    public LAYERS_SOURCES_KEY = 'layers_sources';
     private SIMPLE_MODE_ACCUMULATIVE_KEY = 'simple_mode_accumulative';
     private GEO_QUERY_OP_KEY = 'geo_query_op';
     private GEO_QUERY_FIELD_KEY = 'geo_query_field';
@@ -111,7 +111,7 @@ export class MapContributor extends Contributor {
 
     private clusterLayersIndex: Map<string, LayerClusterSource>;
     private topologyLayersIndex: Map<string, LayerTopologySource>;
-    private featureLayerSourcesIndex: Map<string, LayerFeatureSource>;
+    public featureLayerSourcesIndex: Map<string, LayerFeatureSource>;
 
     private sourcesTypesIndex: Map<string, string> = new Map();
     private layerToSourceIndex: Map<string, string> = new Map();
@@ -3209,7 +3209,7 @@ export class MapContributor extends Contributor {
      * Parses the layers_sources config and returns the feature layers index
      * @param layersSourcesConfig layers_sources configuration object
      */
-    private getFeatureLayersIndex(layersSourcesConfig: Array<LayerSourceConfig>): Map<string, LayerFeatureSource> {
+    public getFeatureLayersIndex(layersSourcesConfig: Array<LayerSourceConfig>): Map<string, LayerFeatureSource> {
         const featureLayers = new Map<string, LayerFeatureSource>();
         layersSourcesConfig.filter(ls => ls.source.startsWith(this.FEATURE_SOURCE) &&
             !ls.source.startsWith(this.TOPOLOGY_SOURCE)).forEach(ls => {
