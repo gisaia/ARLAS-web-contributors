@@ -257,7 +257,7 @@ export class ResultListContributor extends Contributor {
 
     public highlightItems = new Set<string>();
 
-    private includesvalues = new Array<string>();
+    public includesvalues = new Array<string>();
     private isImageEnabled = false;
     private isThumbnailEnabled = false;
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
