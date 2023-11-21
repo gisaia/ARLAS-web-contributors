@@ -33,7 +33,7 @@ import {
 import {
     OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
-    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode
+    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode, ItemDataType
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
@@ -1849,7 +1849,7 @@ export class MapContributor extends Contributor {
      * @param whichPage Whether to fetch next or previous set.
      * @param maxPages The maxumum number of set features.
      */
-    public getPage(reference: Map<string, string | number | Date>, sort: string, whichPage: PageEnum, maxPages: number): void {
+    public getPage(reference: Map<string, ItemDataType>, sort: string, whichPage: PageEnum, maxPages: number): void {
         const wrapExtent = extentToString(this.mapTestWrappedExtent);
         const rawExtent = extentToString(this.mapTestRawExtent);
         let after;

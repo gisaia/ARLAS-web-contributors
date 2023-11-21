@@ -32,7 +32,7 @@ import {
 import { getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex, ASC, getFieldValue } from '../utils/utils';
 import {
     Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
-    PageEnum, AdditionalInfo, Attachment, AttachmentConfig
+    PageEnum, AdditionalInfo, Attachment, AttachmentConfig, ItemDataType
 } from '../models/models';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
@@ -199,7 +199,7 @@ export class ResultListContributor extends Contributor {
     /**
     * Data to populate result list, @Input() data of ResultListComponent.
     */
-    public data: Array<Map<string, string | number | Date>> = new Array<Map<string, string | number | Date>>();
+    public data: Array<Map<string, ItemDataType>> = new Array();
     /**
     * List of columns of the table, @Input() fieldsList of ResultListComponent.
     */
@@ -217,7 +217,7 @@ export class ResultListContributor extends Contributor {
     */
     public actionToTriggerOnClick: Array<Action> = [];
 
-    public filtersMap: Map<string, string | number | Date> = new Map<string, string | number | Date>();
+    public filtersMap: Map<string, ItemDataType> = new Map();
 
     /**
      * A configuration object that allows to set id field, title field, fields used in tooltip/icons and urls to images & thumbnails
@@ -305,6 +305,15 @@ export class ResultListContributor extends Contributor {
         }
         if (this.fieldsConfiguration.urlImageTemplate) {
             this.includesvalues = this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlImageTemplate));
+        }
+        if (this.fieldsConfiguration.urlImageTemplates) {
+            this.fieldsConfiguration.urlImageTemplates.forEach(descUrl => {
+                this.includesvalues.concat(this.fieldsFromUrlTemplate(descUrl.url));
+                this.includesvalues.concat(this.fieldsFromUrlTemplate(descUrl.description));
+                if (descUrl.filter) {
+                    this.includesvalues.push(descUrl.filter.field);
+                }
+            });
         }
         if (this.fieldsConfiguration.urlThumbnailTemplate) {
             this.includesvalues = this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate));
@@ -476,7 +485,7 @@ export class ResultListContributor extends Contributor {
     * Method call when emit the output setFiltersEvent
     * @param filterMap filter params
     */
-    public setFilters(filterMap: Map<string, string | number | Date>) {
+    public setFilters(filterMap: Map<string, ItemDataType>) {
         if (filterMap.size === 0) {
             this.collaborativeSearcheService.removeFilter(this.identifier);
         } else {
@@ -565,7 +574,7 @@ export class ResultListContributor extends Contributor {
      * @param reference the last/first hit returned in the list and from which next/previous data is fetched.
      * @param whichPage Whether to fetch next or previous page.
      */
-    public getPage(reference: Map<string, string | number | Date>, whichPage: PageEnum): void {
+    public getPage(reference: Map<string, ItemDataType>, whichPage: PageEnum): void {
         const sort = (this.geoOrderSort) ? this.geoOrderSort : this.sort;
         let after;
         if (whichPage === PageEnum.previous) {
@@ -635,8 +644,8 @@ export class ResultListContributor extends Contributor {
         return this.getHitsObservable(this.includesvalues, sort);
     }
 
-    public computeData(hits: Hits): Array<Map<string, string | number | Date>> {
-        const listResult = new Array<Map<string, string | number | Date>>();
+    public computeData(hits: Hits): Array<Map<string, ItemDataType>> {
+        const listResult = new Array<Map<string, ItemDataType>>();
         const next = hits.links.next;
         const previous = hits.links.previous;
         let nextAfter;
@@ -649,7 +658,7 @@ export class ResultListContributor extends Contributor {
         }
         if (hits.nbhits > 0) {
             hits.hits.forEach(h => {
-                const fieldValueMap = new Map<string, string | number | Date>();
+                const fieldValueMap = new Map<string, ItemDataType>();
                 if (next) {
                     fieldValueMap.set(this.NEXT_AFTER, nextAfter);
                 }
@@ -700,11 +709,23 @@ export class ResultListContributor extends Contributor {
                     fieldValueMap.set(this.fieldsConfiguration.iconColorFieldName.concat('_title'), resultValue);
                 }
                 if (this.fieldsConfiguration.urlImageTemplate && this.fieldsConfiguration.urlImageTemplate !== '') {
-                    this.isImageEnabled = this.setUrlField('urlImageTemplate', h, fieldValueMap);
+                    this.isImageEnabled = this.setUrlField(this.fieldsConfiguration.urlImageTemplate,
+                        h, fieldValueMap, 'urlImageTemplate');
+                    fieldValueMap.set('imageEnabled', this.isImageEnabled.toString());
+                }
+                if (this.fieldsConfiguration.urlImageTemplates && this.fieldsConfiguration.urlImageTemplates.length > 0) {
+                    this.isImageEnabled = true;
+                    this.fieldsConfiguration.urlImageTemplates.forEach(descUrl => {
+                        this.isImageEnabled = this.isImageEnabled && this.setUrlField(descUrl.url, h, fieldValueMap);
+                        if (descUrl.filter) {
+                            fieldValueMap.set(descUrl.filter.field, getElementFromJsonObject(h.data, descUrl.filter.field));
+                        }
+                    });
                     fieldValueMap.set('imageEnabled', this.isImageEnabled.toString());
                 }
                 if (this.fieldsConfiguration.urlThumbnailTemplate && this.fieldsConfiguration.urlThumbnailTemplate !== '') {
-                    this.isThumbnailEnabled = this.setUrlField('urlThumbnailTemplate', h, fieldValueMap);
+                    this.isThumbnailEnabled = this.setUrlField(this.fieldsConfiguration.urlThumbnailTemplate,
+                        h, fieldValueMap, 'urlThumbnailTemplate');
                     fieldValueMap.set('thumbnailEnabled', this.isThumbnailEnabled.toString());
                 }
                 listResult.push(fieldValueMap);
@@ -713,14 +734,14 @@ export class ResultListContributor extends Contributor {
         return listResult;
 
     }
-    public setData(listResult: Array<Map<string, string | number | Date>>) {
+    public setData(listResult: Array<Map<string, ItemDataType>>) {
         this.data = listResult;
         return this.data;
 
     }
-    public setSelection(listResult: Array<Map<string, string | number | Date>>, collaboration: Collaboration): any {
+    public setSelection(listResult: Array<Map<string, ItemDataType>>, collaboration: Collaboration): any {
         if (collaboration !== null) {
-            const fieldValueMap = new Map<string, string | number | Date>();
+            const fieldValueMap = new Map<string, ItemDataType>();
             let filterValue: Filter;
             if (collaboration.filters && collaboration.filters.get(this.collection)) {
                 filterValue = collaboration.filters.get(this.collection)[0];
@@ -736,7 +757,7 @@ export class ResultListContributor extends Contributor {
             });
             this.filtersMap = fieldValueMap;
         } else {
-            this.filtersMap = new Map<string, string | number | Date>();
+            this.filtersMap = new Map<string, ItemDataType>();
         }
         return from([]);
     }
@@ -794,21 +815,23 @@ export class ResultListContributor extends Contributor {
 
 
     private fieldsFromUrlTemplate(urlTemplate: string): Array<string> {
-        return urlTemplate.match(/{(?:[a-zA-Z0-9_$.]*)}/g).map(f => f.replace('{', '').replace('}', '').split('$')[0]);
+        return urlTemplate.match(/{(?:[a-zA-Z0-9_$.]*)}/g)?.map(f => f.replace('{', '').replace('}', '').split('$')[0]);
     }
 
 
     /**
      *
-     * @param urlField 'urlThumbnailTemplate' | 'urlImageTemplate'
+     * @param urlTemplate Template for an url
      * @param h Arlas hit containing the data
      * @param fieldValueMap [fieldName - fieldValue] map that is set inside this method
+     * @param urlfield Legacy parameter, to use process on the fields composant l'url
      * @returns Returns true if all the fields in the template exist in 'h.data', false if at least one doesn't exist
      */
-    private setUrlField(urlField: string, h: ArlasHit, fieldValueMap: Map<string, string | number | Date>): boolean {
+    private setUrlField(urlTemplate: string, h: ArlasHit, fieldValueMap: Map<string, ItemDataType>,
+        urlField?: 'urlThumbnailTemplate' | 'urlImageTemplate'): boolean {
         let allFieldsExist = true;
-        this.fieldsConfiguration[urlField].match(/{(?:[a-zA-Z0-9_$.]*)}/g)
-            .map(f => f.replace('{', '').replace('}', '')).forEach((f: string) => {
+        urlTemplate.match(/{(?:[a-zA-Z0-9_$.]*)}/g)
+            ?.map(f => f.replace('{', '').replace('}', '')).forEach((f: string) => {
                 if (f.includes('$')) {
                     const tree = f.split('$');
                     let v = h.data;
@@ -823,7 +846,7 @@ export class ResultListContributor extends Contributor {
                     }
                     let urlTemplate = '';
                     if (v !== undefined) {
-                        if (this.getConfigValue('process')[urlField] !== undefined) {
+                        if (!!urlField && !!this.getConfigValue('process') && this.getConfigValue('process')[urlField] !== undefined) {
                             const processUrlTemplate: string =
                                 this.getConfigValue('process')[urlField]['process'];
                             if (processUrlTemplate.trim().length > 0) {
@@ -851,7 +874,7 @@ export class ResultListContributor extends Contributor {
         return allFieldsExist;
     }
 
-    private setProcessFieldData(h: ArlasHit, field: Field, fieldValueMap: Map<string, string | number | Date>, dataType: string): void {
+    private setProcessFieldData(h: ArlasHit, field: Field, fieldValueMap: Map<string, ItemDataType>, dataType: string): void {
         const result: string = getElementFromJsonObject(h.data, field.fieldPath);
         const process: string = field.process;
         let resultValue = result;
