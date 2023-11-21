@@ -92,20 +92,42 @@ export interface OnMoveResult {
 export interface FieldsConfiguration {
     /** Id field name */
     idFieldName: string;
-    /** Url template of image */
+    /**
+     * @deprecated
+     * Url template of image
+     * */
     urlImageTemplate?: string;
+    /**
+     * List of url template of images
+     */
+    urlImageTemplates?: Array<DescribedUrl>;
     /** Url template of thumbnail */
     urlThumbnailTemplate?: string;
     /** List of fields which values are used as titles in the resultlist. Values are joined with a space ' ' */
     titleFieldNames?: Array<Field>;
     /** List of fields which values are used as tooltips in the resultlist. Values are joined with a space ' ' */
     tooltipFieldNames?: Array<Field>;
-    /** Name of a Material icon */
+    /**
+     * @deprecated
+     * Name of a Material icon
+     * */
     icon?: string;
     /** Field which value is used as a css class name => allows data driven styling of the resultlist rows/tiles */
     iconCssClass?: string;
     /** Field which value is transformed to a hex color (using an ArlasColorService) and associated to the icon color */
     iconColorFieldName?: string;
+    useHttpQuicklooks?: boolean;
+}
+
+export interface DescribedUrl {
+    url: string;
+    description: string;
+    filter?: FieldFilter;
+}
+
+export interface FieldFilter {
+    field: string;
+    values: Array<string>;
 }
 
 export interface Column {
@@ -620,3 +642,5 @@ export interface ComputeConfig {
     metric: string;
     filter?: Filter;
 }
+
+export declare type ItemDataType = string | number | Date | Array<string>;
