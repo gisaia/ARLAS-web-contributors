@@ -1,5 +1,9 @@
 # Change Log
 
+## [v24.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.2.0) (2023-11-21)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.2.0-beta.1...v24.2.0)
+
 ## [v24.2.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.2.0-beta.1) (2023-11-21)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.3...v24.2.0-beta.1)
