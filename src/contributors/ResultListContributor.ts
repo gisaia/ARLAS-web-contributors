@@ -308,8 +308,8 @@ export class ResultListContributor extends Contributor {
         }
         if (this.fieldsConfiguration.urlImageTemplates) {
             this.fieldsConfiguration.urlImageTemplates.forEach(descUrl => {
-                this.includesvalues.concat(this.fieldsFromUrlTemplate(descUrl.url));
-                this.includesvalues.concat(this.fieldsFromUrlTemplate(descUrl.description));
+                this.includesvalues = this.includesvalues.concat(this.fieldsFromUrlTemplate(descUrl.url));
+                this.includesvalues = this.includesvalues.concat(this.fieldsFromUrlTemplate(descUrl.description));
                 if (descUrl.filter) {
                     this.includesvalues.push(descUrl.filter.field);
                 }
