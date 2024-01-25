@@ -336,17 +336,31 @@ export function formatNumber(x, formatChar = ' ', roundPrecision?: number): stri
 /**
  * Fixes the known issue of geometries not taking the shortest path to be represented on map clients
  * by allowing data's longitude to be outside of [-180, 180]
- * @param coordinates Coordinates of a geometry
+ * @param coordinates Coordinates of a geometry (Polygon or Linestring)
  */
 export function fix180thMeridian(coordinates: Array<Array<number>>) {
-    coordinates.forEach((point, idx) => {
-        if (idx <= coordinates.length - 2) {
-            if (point[0] - coordinates[idx + 1][0] > 180) {
-                coordinates[idx + 1][0] += 360;
-            } else if (coordinates[idx + 1][0] - point[0] > 180) {
-                coordinates[idx + 1][0] += -360;
+    const isClockwise = polygonArea(coordinates) < 0;
+    if (isClockwise) {
+        coordinates.forEach((point, idx) => {
+            if (idx <= coordinates.length - 2) {
+                if (point[0] - coordinates[idx + 1][0] > 180) {
+                    coordinates[idx + 1][0] += 360;
+                } else if (coordinates[idx + 1][0] - point[0] > 180) {
+                    coordinates[idx + 1][0] += -360;
+                }
             }
-        }
-    });
+        });
+    }
     return coordinates;
+}
+
+
+function polygonArea(coordinates) {
+    let area = 0;
+    for (let i = 0; i < coordinates.length; i++) {
+        const j = (i + 1) % coordinates.length;
+        area += coordinates[i][0] * coordinates[j][1];
+        area -= coordinates[j][0] * coordinates[i][1];
+    }
+    return area / 2;
 }
