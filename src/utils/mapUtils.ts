@@ -30,6 +30,19 @@ export function getBounds(
         .pipe(
             map(h => {
                 const geojsonData = getElementFromJsonObject(h.hits[0].md, 'geometry');
+                switch (geojsonData.type) {
+                    case 'LineString':
+                        geojsonData.coordinates = fix180thMeridian(geojsonData.coordinates);
+                        break;
+                    case 'Polygon':
+                        geojsonData.coordinates[0] = fix180thMeridian(geojsonData.coordinates[0]);
+                        break;
+                    case 'MultiPolygon':
+                        geojsonData.coordinates.forEach(c => {
+                            c[0] = fix180thMeridian(c[0]);
+                        });
+                        break;
+                }
                 const box = bbox(geojsonData);
                 const minX = box[0];
                 const minY = box[1];
