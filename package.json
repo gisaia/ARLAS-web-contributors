@@ -1,6 +1,6 @@
 {
   "name": "arlas-web-contributors",
-  "version": "24.4.0-dev0",
+  "version": "25.1.0-dev0",
   "description": "Contributors Library for ARLAS Components",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -27,7 +27,7 @@
     "@types/file-saver": "^2.0.1",
     "@types/jsonpath": "^0.2.0",
     "@types/tinycolor2": "^1.4.0",
-    "arlas-web-core": "~24.3.0",
+    "arlas-web-core": "25.0.0-beta.3",
     "file-saver": "^2.0.2",
     "jsonpath": "^1.0.0",
     "moment": "^2.29.4",
@@ -43,13 +43,6 @@
     "eslint": "^8.17.0",
     "rimraf": "^2.6.2",
     "typescript": "~4.6.0"
-  },
-  "overrides": {
-    "arlas-api": {
-      "portable-fetch": {
-        "node-fetch": "3.3.0"
-      }
-    }
   },
   "bugs": {
     "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/issues"
