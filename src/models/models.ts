@@ -116,7 +116,10 @@ export interface FieldsConfiguration {
     iconCssClass?: string;
     /** Field which value is transformed to a hex color (using an ArlasColorService) and associated to the icon color */
     iconColorFieldName?: string;
+    /** Whether the quicklooks are protected and the http call needs to be enriched with auth header */
     useHttpQuicklooks?: boolean;
+    /** Whether the thumbnails are protected and the http call needs to be enriched with auth header */
+    useHttpThumbnails?: boolean;
 }
 
 export interface DescribedUrl {
