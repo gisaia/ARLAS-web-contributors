@@ -372,13 +372,37 @@ export class ResultListContributor extends Contributor {
             });
         });
         exportedFields.push({
-            displayName: 'arlas-Identifier',
+            displayName: this.fieldsConfiguration.idFieldName,
             field: this.fieldsConfiguration.idFieldName
         });
         if (this.fieldsConfiguration.titleFieldNames) {
-            exportedFields = exportedFields.concat(this.fieldsConfiguration.titleFieldNames.map((field , i) => ({
-                displayName: 'Title ' + i,
+            exportedFields = exportedFields.concat(this.fieldsConfiguration.titleFieldNames.map(field => ({
+                displayName: field.fieldPath,
                 field: field.fieldPath
+            })));
+        }
+        if (this.fieldsConfiguration.urlImageTemplates) {
+            this.fieldsConfiguration.urlImageTemplates.forEach(descUrl => {
+                exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(descUrl.url).map(s => ({
+                    displayName: s,
+                    field: s
+                })));
+                exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(descUrl.description).map(s => ({
+                    displayName: s,
+                    field: s
+                })));
+                if (descUrl.filter) {
+                    exportedFields.push({
+                        displayName: descUrl.filter.field,
+                        field: descUrl.filter.field
+                    });
+                }
+            });
+        }
+        if (this.fieldsConfiguration.urlThumbnailTemplate) {
+            exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate).map(s => ({
+                displayName: s,
+                field: s
             })));
         }
         return exportedFields;
