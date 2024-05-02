@@ -107,7 +107,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 group.fields.forEach(field => {
                     const result = getFieldValue(field.path, searchData.hits[0].data);
 
-                    if (!!result) {
+                    if (result !== null && result !== undefined && result !== '') {
                         const process: string = field.process;
                         let resultValue = result;
                         if (process) {
