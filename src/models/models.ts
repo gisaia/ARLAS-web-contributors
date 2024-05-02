@@ -50,6 +50,8 @@ export interface Action {
     tooltip?: string;
     collection?: string;
     cssClass?: string | string[];
+    /** for global actions, even if no item is selected, the action will be enabled */
+    alwaysEnabled?: boolean;
 }
 /**
  * Couple of field/value id product, use to retrieve the product.
@@ -140,6 +142,11 @@ export interface Column {
     process: string;
     dropdown: boolean;
     dropdownsize: number;
+}
+
+export interface ExportedColumn {
+    displayName: string;
+    field: string;
 }
 
 export interface Detail {
