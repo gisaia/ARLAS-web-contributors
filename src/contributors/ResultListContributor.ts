@@ -354,9 +354,18 @@ export class ResultListContributor extends Contributor {
         return false;
     }
 
+    /** Returns the current columns/details/idfieldname/urltemplates of thumbnail and quicklooks  */
     public getAllFields(): ExportedColumn[] {
-        const details: Array<Detail> = this.getConfigValue('details');
         let exportedFields: ExportedColumn[] = [];
+        if (!!this.columns) {
+            this.columns.forEach(column => {
+                exportedFields.push({
+                    displayName: column.columnName,
+                    field: column.fieldName
+                });
+            });
+        }
+        const details: Array<Detail> = this.getConfigValue('details');
         if (!!details) {
             details.forEach(group => {
                 exportedFields = exportedFields.concat(group.fields.map(f => ({
@@ -365,16 +374,12 @@ export class ResultListContributor extends Contributor {
                 })));
             });
         }
-        this.columns.forEach(column => {
+        if (!!this.fieldsConfiguration) {
             exportedFields.push({
-                displayName: column.columnName,
-                field: column.fieldName
+                displayName: this.fieldsConfiguration.idFieldName,
+                field: this.fieldsConfiguration.idFieldName
             });
-        });
-        exportedFields.push({
-            displayName: this.fieldsConfiguration.idFieldName,
-            field: this.fieldsConfiguration.idFieldName
-        });
+        }
         if (this.fieldsConfiguration.titleFieldNames) {
             exportedFields = exportedFields.concat(this.fieldsConfiguration.titleFieldNames.map(field => ({
                 displayName: field.fieldPath,
