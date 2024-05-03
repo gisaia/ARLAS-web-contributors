@@ -50,6 +50,8 @@ export interface Action {
     tooltip?: string;
     collection?: string;
     cssClass?: string | string[];
+    /** for global actions, even if no item is selected, the action will be enabled */
+    alwaysEnabled?: boolean;
 }
 /**
  * Couple of field/value id product, use to retrieve the product.
@@ -116,7 +118,10 @@ export interface FieldsConfiguration {
     iconCssClass?: string;
     /** Field which value is transformed to a hex color (using an ArlasColorService) and associated to the icon color */
     iconColorFieldName?: string;
+    /** Whether the quicklooks are protected and the http call needs to be enriched with auth header */
     useHttpQuicklooks?: boolean;
+    /** Whether the thumbnails are protected and the http call needs to be enriched with auth header */
+    useHttpThumbnails?: boolean;
 }
 
 export interface DescribedUrl {
@@ -137,6 +142,11 @@ export interface Column {
     process: string;
     dropdown: boolean;
     dropdownsize: number;
+}
+
+export interface ExportedColumn {
+    displayName: string;
+    field: string;
 }
 
 export interface Detail {

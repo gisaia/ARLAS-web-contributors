@@ -32,7 +32,8 @@ import {
 import { getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex, ASC, getFieldValue } from '../utils/utils';
 import {
     Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
-    PageEnum, AdditionalInfo, Attachment, AttachmentConfig, ItemDataType
+    PageEnum, AdditionalInfo, Attachment, AttachmentConfig, ItemDataType,
+    ExportedColumn
 } from '../models/models';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
@@ -353,6 +354,65 @@ export class ResultListContributor extends Contributor {
         return false;
     }
 
+    /** Returns the current columns/details/idfieldname/urltemplates of thumbnail and quicklooks  */
+    public getAllFields(): ExportedColumn[] {
+        let exportedFields: ExportedColumn[] = [];
+        if (!!this.columns) {
+            this.columns.forEach(column => {
+                exportedFields.push({
+                    displayName: column.columnName,
+                    field: column.fieldName
+                });
+            });
+        }
+        const details: Array<Detail> = this.getConfigValue('details');
+        if (!!details) {
+            details.forEach(group => {
+                exportedFields = exportedFields.concat(group.fields.map(f => ({
+                    displayName: f.label,
+                    field: f.path
+                })));
+            });
+        }
+        if (!!this.fieldsConfiguration) {
+            exportedFields.push({
+                displayName: this.fieldsConfiguration.idFieldName,
+                field: this.fieldsConfiguration.idFieldName
+            });
+        }
+        if (this.fieldsConfiguration.titleFieldNames) {
+            exportedFields = exportedFields.concat(this.fieldsConfiguration.titleFieldNames.map(field => ({
+                displayName: field.fieldPath,
+                field: field.fieldPath
+            })));
+        }
+        if (this.fieldsConfiguration.urlImageTemplates) {
+            this.fieldsConfiguration.urlImageTemplates.forEach(descUrl => {
+                exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(descUrl.url).map(s => ({
+                    displayName: s,
+                    field: s
+                })));
+                exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(descUrl.description).map(s => ({
+                    displayName: s,
+                    field: s
+                })));
+                if (descUrl.filter) {
+                    exportedFields.push({
+                        displayName: descUrl.filter.field,
+                        field: descUrl.filter.field
+                    });
+                }
+            });
+        }
+        if (this.fieldsConfiguration.urlThumbnailTemplate) {
+            exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate).map(s => ({
+                displayName: s,
+                field: s
+            })));
+        }
+        return exportedFields;
+    }
+
     public static getJsonSchema(): Object {
         return jsonSchema;
     }
@@ -630,6 +690,29 @@ export class ResultListContributor extends Contributor {
             this.fetchState = { endListUp: whichPage === PageEnum.previous, endListDown: whichPage === PageEnum.next };
         }
 
+    }
+
+    public fetch$(size: number, fields: string[], filter: Filter): Observable<Hits> {
+        let sort = '';
+        if (this.geoOrderSort) {
+            sort = this.geoOrderSort;
+        } else {
+            if (this.sort) {
+                sort = this.sort;
+            }
+        }
+        const projection: Projection = {};
+        const search: Search = { page: { size } };
+        if (sort) {
+            search.page.sort = sort;
+        }
+        search.projection = projection;
+        projection.includes = fields.join(',');
+        const searchResult$ = this.collaborativeSearcheService
+            .resolveButNotHits([projType.search, search],
+                this.collaborativeSearcheService.collaborations,
+                this.collection, null, filter, false, this.cacheDuration);
+        return searchResult$;
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Hits> {
