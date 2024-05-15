@@ -1,8 +1,16 @@
 # Change Log
 
+## [v25.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.1) (2024-05-15)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.0-rc.0...v25.0.1)
+
 ## [v25.0.0-rc.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.0-rc.0) (2024-05-03)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.0-beta.4...v25.0.0-rc.0)
+
+**New stuff:**
+
+- Add input to enrich thumbnail request headers [\#547](https://github.com/gisaia/ARLAS-web-contributors/issues/547)
 
 ## [v25.0.0-beta.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.0-beta.4) (2024-05-02)
 
