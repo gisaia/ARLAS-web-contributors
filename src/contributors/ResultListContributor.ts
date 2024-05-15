@@ -368,10 +368,12 @@ export class ResultListContributor extends Contributor {
         const details: Array<Detail> = this.getConfigValue('details');
         if (!!details) {
             details.forEach(group => {
-                exportedFields = exportedFields.concat(group.fields.map(f => ({
-                    displayName: f.label,
-                    field: f.path
-                })));
+                if (!!group && !!group.fields && Array.isArray(group.fields)) {
+                    exportedFields = exportedFields.concat(group.fields.map(f => ({
+                        displayName: f.label,
+                        field: f.path
+                    })));
+                }
             });
         }
         if (!!this.fieldsConfiguration) {
@@ -380,7 +382,7 @@ export class ResultListContributor extends Contributor {
                 field: this.fieldsConfiguration.idFieldName
             });
         }
-        if (this.fieldsConfiguration.titleFieldNames) {
+        if (!!this.fieldsConfiguration.titleFieldNames && Array.isArray(this.fieldsConfiguration.titleFieldNames)) {
             exportedFields = exportedFields.concat(this.fieldsConfiguration.titleFieldNames.map(field => ({
                 displayName: field.fieldPath,
                 field: field.fieldPath
@@ -388,14 +390,21 @@ export class ResultListContributor extends Contributor {
         }
         if (this.fieldsConfiguration.urlImageTemplates) {
             this.fieldsConfiguration.urlImageTemplates.forEach(descUrl => {
-                exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(descUrl.url).map(s => ({
-                    displayName: s,
-                    field: s
-                })));
-                exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(descUrl.description).map(s => ({
-                    displayName: s,
-                    field: s
-                })));
+                const urlTemplate = this.fieldsFromUrlTemplate(descUrl.url);
+                if (!!urlTemplate && Array.isArray(urlTemplate)) {
+                    exportedFields = exportedFields.concat(urlTemplate.map(s => ({
+                        displayName: s,
+                        field: s
+                    })));
+
+                }
+                const descriptionTemplate = this.fieldsFromUrlTemplate(descUrl.description);
+                if (!!descriptionTemplate && Array.isArray(descriptionTemplate)) {
+                    exportedFields = exportedFields.concat(descriptionTemplate.map(s => ({
+                        displayName: s,
+                        field: s
+                    })));
+                }
                 if (descUrl.filter) {
                     exportedFields.push({
                         displayName: descUrl.filter.field,
@@ -405,10 +414,15 @@ export class ResultListContributor extends Contributor {
             });
         }
         if (this.fieldsConfiguration.urlThumbnailTemplate) {
-            exportedFields = exportedFields.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate).map(s => ({
-                displayName: s,
-                field: s
-            })));
+            const urlTemplate = this.fieldsConfiguration.urlThumbnailTemplate;
+            if (!!urlTemplate && Array.isArray(urlTemplate)) {
+                exportedFields = exportedFields.concat(urlTemplate.map(s => ({
+                    displayName: s,
+                    field: s
+                })));
+
+            }
+
         }
         return exportedFields;
     }
