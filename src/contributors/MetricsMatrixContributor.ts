@@ -55,7 +55,7 @@ export class MetricsMatrixContributor extends Contributor {
             return forkJoin(this.matrix.vectors.map(v =>
                 this.collaborativeSearcheService.resolveButNotAggregation([projType.aggregate, [v.getAggregation()]],
                     this.collaborativeSearcheService.collaborations,
-                    this.collection,
+                    v.collection,
                     this.identifier, {}, false, this.cacheDuration
                 )));
         }
