@@ -17,7 +17,10 @@
  * under the License.
  */
 
-import { Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, OperationEnum, projType } from 'arlas-web-core';
+import {
+    Collaboration, CollaborationEvent, CollaborativesearchService,
+    ConfigService, Contributor, OperationEnum, projType
+} from 'arlas-web-core';
 import { AggregationResponse } from 'arlas-api';
 import { MetricsMatrix, MetricsMatrixConfig } from '../models/metrics-matrix.config';
 import { Observable, forkJoin, of } from 'rxjs';
@@ -39,7 +42,7 @@ export class MetricsMatrixContributor extends Contributor {
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
         /** configuration to query data for metrics matrix */
-        configuration: MetricsMatrixConfig, 
+        configuration: MetricsMatrixConfig,
         /** Number of terms for each collection (same for all). */
         nbTerms: number) {
         super(identifier, configService, collaborativeSearcheService);
@@ -54,9 +57,9 @@ export class MetricsMatrixContributor extends Contributor {
                     this.collaborativeSearcheService.collaborations,
                     this.collection,
                     this.identifier, {}, false, this.cacheDuration
-                )))
+                )));
         }
-        return of()
+        return of();
     }
 
     /** @override */

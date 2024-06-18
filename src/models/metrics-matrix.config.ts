@@ -65,6 +65,6 @@ export class MetricsVector {
                 collect_fct: m.metric as Metric.CollectFctEnum,
                 collect_field: m.field
             }))
-        }
+        };
     }
 }
