@@ -4,3 +4,5 @@ target
 *.log
 .DS_STORE
 .vscode
+/test/node_modules
+/test/package-lock.json

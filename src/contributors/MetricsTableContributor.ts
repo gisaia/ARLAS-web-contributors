@@ -49,13 +49,16 @@ export class MetricsTableContributor extends Contributor {
         configService: ConfigService,
         /** configuration to query data for metrics table */
         /** Number of terms for each collection (same for all). */
-        nbTerms: number) {
+        nbTerms: number,
+        configuration
+    ) {
         super(identifier, configService, collaborativeSearcheService);
+        this.configuration = configuration;
         this.table = new MetricsVectors(this.configuration, nbTerms);
     }
 
     /** @override */
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<AggregationResponse>> {
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<MetricsTableResponse>> {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return forkJoin(this.table.vectors.map(v =>
                 this.collaborativeSearcheService.resolveButNotAggregation([projType.aggregate, [v.getAggregation()]],
@@ -63,9 +66,10 @@ export class MetricsTableContributor extends Contributor {
                     v.collection,
                     this.identifier, {}, false, this.cacheDuration
                 ).pipe(
-                    map(ar => {
-
-                    })
+                    map(ar =>({
+                        collection: v.collection,
+                        aggregationResponse: ar
+                    }))
                 )
             ));
         }
@@ -74,8 +78,8 @@ export class MetricsTableContributor extends Contributor {
 
     /** @override */
     /** todo !!!! specify data type and return type  */
-    public computeData(data: Array<AggregationResponse>): MetricsTable {
-
+    public computeData(data: Array<MetricsTableResponse>): MetricsTable {
+        console.log('test is ok');
         return null;
     }
 
