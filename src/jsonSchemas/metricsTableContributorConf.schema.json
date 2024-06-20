@@ -1,9 +1,9 @@
 {
     "$schema": "http://json-schema.org/draft-06/schema#",
-    "title": "Metrics Matrix Contributor Configuration",
+    "title": "Metrics Table Contributor Configuration",
     "description": "The Configuration of Metrics List Contributor",
     "type": "object",
-    "$id": "metricsMatrixContributorConf.schema.json",
+    "$id": "metricsTableContributorConf.schema.json",
     "allOf": [{ "$ref": "rootContributorConf.schema.json#" }],
     "properties": {
     },

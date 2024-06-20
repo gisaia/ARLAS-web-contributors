@@ -22,50 +22,61 @@ import {
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
 import { AggregationResponse } from 'arlas-api';
-import { MetricsMatrix, MetricsMatrixConfig } from '../models/metrics-matrix.config';
-import { Observable, forkJoin, of } from 'rxjs';
+import { MetricsVectors, MetricsTableConfig, MetricsTable } from '../models/metrics-table.config';
+import { Observable, forkJoin, map, of } from 'rxjs';
+
+export interface MetricsTableResponse {
+    collection: string;
+    aggregationResponse: AggregationResponse;
+}
 
 /**
  * This contributor fetches metrics from different collection by term. The terms are value of a termfield specified for each collection.
- * The fetched metrics are formatted into a table to provide data to MetricsMatrixComponent.
+ * The fetched metrics are formatted into a table to provide data to MetricsTableComponent.
  * This contributor handles multi-collection filters.
  */
-export class MetricsMatrixContributor extends Contributor {
+export class MetricsTableContributor extends Contributor {
 
     /** @field */
-    public matrix: MetricsMatrix;
+    public table: MetricsVectors;
     /** @field */
     public nbTerms: number;
+    public configuration: MetricsTableConfig = this.getConfigValue('configuration');
 
     public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
-        /** configuration to query data for metrics matrix */
-        configuration: MetricsMatrixConfig,
+        /** configuration to query data for metrics table */
         /** Number of terms for each collection (same for all). */
         nbTerms: number) {
         super(identifier, configService, collaborativeSearcheService);
-        this.matrix = new MetricsMatrix(configuration, nbTerms);
+        this.table = new MetricsVectors(this.configuration, nbTerms);
     }
 
     /** @override */
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<AggregationResponse>> {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            return forkJoin(this.matrix.vectors.map(v =>
+            return forkJoin(this.table.vectors.map(v =>
                 this.collaborativeSearcheService.resolveButNotAggregation([projType.aggregate, [v.getAggregation()]],
                     this.collaborativeSearcheService.collaborations,
                     v.collection,
                     this.identifier, {}, false, this.cacheDuration
-                )));
+                ).pipe(
+                    map(ar => {
+
+                    })
+                )
+            ));
         }
         return of();
     }
 
     /** @override */
     /** todo !!!! specify data type and return type  */
-    public computeData(data: any): any {
+    public computeData(data: Array<AggregationResponse>): MetricsTable {
 
+        return null;
     }
 
     /** @override */

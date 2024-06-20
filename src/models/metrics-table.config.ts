@@ -20,7 +20,7 @@
 
 import { Metric, Aggregation } from 'arlas-api';
 
-export interface MetricsMatrixConfig {
+export interface MetricsTableConfig {
     [collection: string]: MetricsVectorConfig;
 }
 
@@ -34,10 +34,10 @@ export interface MetricConfig {
     metric: Metric.CollectFctEnum | 'count';
 }
 
-export class MetricsMatrix {
+export class MetricsVectors {
     public collections: Set<string> = new Set();
     public vectors: MetricsVector[] = [];
-    public constructor(config: MetricsMatrixConfig, nbTerms: number) {
+    public constructor(config: MetricsTableConfig, nbTerms: number) {
         Object.keys(config).forEach(collection => {
             this.collections.add(collection);
             this.vectors.push(new MetricsVector(collection, config[collection], nbTerms));
@@ -64,7 +64,29 @@ export class MetricsVector {
             metrics: this.configuration.metrics.filter(m => m.metric !== 'count').map(m => ({
                 collect_fct: m.metric as Metric.CollectFctEnum,
                 collect_field: m.field
-            }))
+            })),
+            type: Aggregation.TypeEnum.Term
         };
     }
+}
+
+export interface MetricsTable {
+    header: MetricsTableHeader[];
+    data: MetricsTableRow[];
+}
+
+export interface MetricsTableHeader {
+    title: string;
+    subTitle: string;
+    metric: string;
+}
+
+export interface MetricsTableData {
+    value: number;
+    maxValue: number;
+}
+
+export interface MetricsTableRow {
+    term: string;
+    data: MetricsTableData[];
 }
