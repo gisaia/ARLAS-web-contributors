@@ -1,3 +1,5 @@
+import { MetricsTableResponse } from "../contributors/MetricsTableContributor";
+
 export const aggResponse1 = {
     'query_time': 7,
     'total_time': 8,
@@ -200,3 +202,10 @@ export const aggResponse2 = {
     ]
 };
 
+export const aggregationResponseList: MetricsTableResponse[] =  [{
+    collection: 'toto',
+    aggregationResponse: aggResponse1
+}, {
+    collection: 'titi',
+    aggregationResponse: aggResponse2
+}]
