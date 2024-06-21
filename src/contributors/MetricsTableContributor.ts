@@ -164,9 +164,9 @@ export class MetricsTableContributor extends Contributor {
         const headers = new Map();
         const rows:Map<string, MetricsTableRow> = new Map();
         const maxCount = new Map();
+        let rowDataMaxLength = 0;
         aggregationResponseList.forEach(metricsResponse => {
             metricsResponse.aggregationResponse.elements.forEach(elements => {
-
                 elements.metrics.forEach(metrics => {
                     const uniqColumn = `${metricsResponse.collection}_${metrics.field}_${metrics.type}`;
                     const uniqKeyForSum = `${elements.key_as_string}_${metrics.type}`;
@@ -191,11 +191,15 @@ export class MetricsTableContributor extends Contributor {
                         rows.set(uniqKeyForSum, metricsTableRow)
                     }
 
+                    if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
+                        rowDataMaxLength = rows.get(uniqKeyForSum).data.length;
+                    }
+
                     // storing uniq sum for each value;
                     // externalise this method
-                    if(maxCount.has(uniqKeyForSum)) {
-                       const currentCount =  maxCount.get(uniqKeyForSum);
-                       maxCount.set(uniqKeyForSum, currentCount + metrics.value);
+                    // in case of not count
+                    if(maxCount.has(uniqKeyForSum) &&  maxCount.get(uniqKeyForSum) <  metrics.value) {
+                       maxCount.set(uniqKeyForSum, metrics.value);
                     } else {
                         maxCount.set(uniqKeyForSum,  metrics.value);
                     }
@@ -206,6 +210,7 @@ export class MetricsTableContributor extends Contributor {
         console.error(headers);
         console.error(rows);
         console.error(maxCount);
+        console.error(rowDataMaxLength);
 
         const metricsTable: MetricsTable = {data: [], header: []};
         //att the end we setHeaders
@@ -219,6 +224,11 @@ export class MetricsTableContributor extends Contributor {
             metricTableRow.data.forEach(data => {
                 data.maxValue = maxCount.get(key);
             });
+
+            if(metricTableRow.data.length < rowDataMaxLength) {
+                const fill = Array(rowDataMaxLength - metricTableRow.data.length).fill({maxValue:maxCount.get(key), value:0 })
+                metricTableRow.data = metricTableRow.data.concat(fill);
+            }
 
             // push updated value;
             metricsTable.data.push(metricTableRow);
