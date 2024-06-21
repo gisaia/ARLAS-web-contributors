@@ -22,7 +22,7 @@ import {
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
 import { AggregationResponse } from 'arlas-api';
-import { MetricsVectors, MetricsTableConfig, MetricsTable, MetricsVector, 
+import { MetricsVectors, MetricsTableConfig, MetricsTable, MetricsVector,
     MetricsTableSortConfig, MetricsTableRow, MetricsTableHeader } from '../models/metrics-table.config';
 import { Observable, forkJoin, map, mergeMap, of } from 'rxjs';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
@@ -192,6 +192,10 @@ export class MetricsTableContributor extends Contributor {
                         const metricsTableRow: MetricsTableRow = {data: [], term: elements.key_as_string};
                         metricsTableRow.data.push(metricsTableData);
                         rows.set(uniqKeyForSum, metricsTableRow);
+                    }
+
+                    if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
+                        rowDataMaxLength = rows.get(uniqKeyForSum).data.length;
                     }
 
                     if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
