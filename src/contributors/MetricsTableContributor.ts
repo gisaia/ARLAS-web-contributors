@@ -167,18 +167,19 @@ export class MetricsTableContributor extends Contributor {
     /** @override */
     /** todo !!!! specify data type and return type  */
     public computeData(data: Array<MetricsTableResponse>): MetricsTable {
-        // todo: to be improved
+        // todo change the value with the good one
         const headers = new Map();
         const rows: Map<string, MetricsTableRow> = new Map();
         const maxCount = new Map();
         let rowDataMaxLength = 0;
-
-        data = this.orderMetricsTableResponse(data);
-        data.forEach(metricsResponse => {
+        let test = aggregationResponseList;
+        test = this.orderMetricsTableResponse(test);
+        test.forEach(metricsResponse => {
             metricsResponse.aggregationResponse.elements.forEach(elements => {
                 elements.metrics.forEach(metrics => {
                     const uniqColumn = `${metricsResponse.collection}_${metrics.field}_${metrics.type}`;
                     const uniqKeyForSum = `${elements.key_as_string}_${metrics.type}`;
+                    console.log(uniqKeyForSum);
                     // storing headers;
                     if(!headers.has(uniqColumn)) {
                         const headerItem: MetricsTableHeader = {
@@ -197,10 +198,13 @@ export class MetricsTableContributor extends Contributor {
                         const metricsTableRow: MetricsTableRow = {data: [], term: elements.key_as_string};
                         metricsTableRow.data.push(metricsTableData);
                         rows.set(uniqKeyForSum, metricsTableRow);
+<<<<<<< HEAD
                     }
 
                     if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
                         rowDataMaxLength = rows.get(uniqKeyForSum).data.length;
+=======
+>>>>>>> f72d3f7 (feat: fix value)
                     }
 
                     if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
@@ -218,6 +222,11 @@ export class MetricsTableContributor extends Contributor {
                 });
             });
         });
+
+        console.error(headers);
+        console.error(rows);
+        console.error(maxCount);
+        console.error(rowDataMaxLength);
 
         const metricsTable: MetricsTable = {data: [], header: []};
         // att the end we setHeaders
@@ -241,6 +250,7 @@ export class MetricsTableContributor extends Contributor {
         }
 
         // we update max value.
+        console.error(metricsTable);
         return metricsTable;
     }
 
