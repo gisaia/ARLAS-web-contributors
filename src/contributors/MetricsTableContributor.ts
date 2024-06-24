@@ -63,6 +63,8 @@ export class MetricsTableContributor extends Contributor {
      */
     public sort: MetricsTableSortConfig = this.getConfigValue('sort');
 
+    public data: MetricsTable;
+
     public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
@@ -162,9 +164,8 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    /** todo !!!! specify data type and return type  */
-    public setData(data: any) {
-
+    public setData(data: MetricsTable): void {
+        this.data = data;
     }
 
     /** @override */
