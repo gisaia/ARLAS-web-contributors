@@ -25,6 +25,8 @@ import { AggregationResponse } from 'arlas-api';
 import { MetricsVectors, MetricsTableConfig, MetricsTable, MetricsVector, MetricsTableSortConfig } from '../models/metrics-table.config';
 import { Observable, forkJoin, map, mergeMap, of } from 'rxjs';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
+import { Observable, forkJoin, map, of, mergeMap } from 'rxjs';
+import { aggregationResponseList } from "../models/mock-metrics";
 
 export interface MetricsTableResponse {
     collection: string;
@@ -165,7 +167,10 @@ export class MetricsTableContributor extends Contributor {
         const rows:Map<string, MetricsTableRow> = new Map();
         const maxCount = new Map();
         let rowDataMaxLength = 0;
-        aggregationResponseList.forEach(metricsResponse => {
+        let test = aggregationResponseList;
+        test = this.orderMetricsTableResponse(test);
+        console.error(aggregationResponseList)
+        test.forEach(metricsResponse => {
             metricsResponse.aggregationResponse.elements.forEach(elements => {
                 elements.metrics.forEach(metrics => {
                     const uniqColumn = `${metricsResponse.collection}_${metrics.field}_${metrics.type}`;
@@ -237,6 +242,10 @@ export class MetricsTableContributor extends Contributor {
         // we update max value.
         console.error(metricsTable)
         return metricsTable;
+    }
+
+    private orderMetricsTableResponse(data: Array<MetricsTableResponse>):  Array<MetricsTableResponse>{
+       return data.sort(((response,  comparingResponse) => (response.leadsTermsOrder) ?  -1 : 0));
     }
 
     /** @override */

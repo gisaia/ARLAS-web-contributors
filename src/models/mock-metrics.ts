@@ -1,4 +1,5 @@
 import { MetricsTableResponse } from "../contributors/MetricsTableContributor";
+import { MetricsVector } from "./metrics-table.config";
 
 export const aggResponse1 = {
     'query_time': 7,
@@ -7,19 +8,6 @@ export const aggResponse1 = {
     'name': 'Term aggregation',
     'sumotherdoccounts': 0,
     'elements': [
-        {
-            'count': 20104,
-            'key': 'AIRBUS-SPOT',
-            'key_as_string': 'AIRBUS-SPOT',
-            'elements': [],
-            'metrics': [
-                {
-                    'type': 'avg',
-                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
-                    'value': 42.817200557103064
-                }
-            ]
-        },
         {
             'count': 5399,
             'key': 'PLEIADES',
@@ -34,15 +22,15 @@ export const aggResponse1 = {
             ]
         },
         {
-            'count': 23728,
-            'key': 'AIRBUS-PLEIADES',
-            'key_as_string': 'AIRBUS-PLEIADES',
+            'count': 20104,
+            'key': 'AIRBUS-SPOT',
+            'key_as_string': 'AIRBUS-SPOT',
             'elements': [],
             'metrics': [
                 {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
-                    'value': 35.53750842886042
+                    'value': 42.817200557103064
                 }
             ]
         },
@@ -56,6 +44,19 @@ export const aggResponse1 = {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 33.53524605018058
+                }
+            ]
+        },
+        {
+            'count': 23728,
+            'key': 'AIRBUS-PLEIADES',
+            'key_as_string': 'AIRBUS-PLEIADES',
+            'elements': [],
+            'metrics': [
+                {
+                    'type': 'avg',
+                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
+                    'value': 35.53750842886042
                 }
             ]
         },
@@ -202,10 +203,20 @@ export const aggResponse2 = {
     ]
 };
 
-export const aggregationResponseList: MetricsTableResponse[] =  [{
+export let aggregationResponseList: MetricsTableResponse[] =  [{
     collection: 'toto',
-    aggregationResponse: aggResponse1
+    aggregationResponse: aggResponse1,
+    keys: new Set(),
+    missingKeys:new Set(),
+    vector: {} as MetricsVector,
+    /** if true, it means the tables terms should be sorted according to this vector. */
+    leadsTermsOrder: true
 }, {
     collection: 'titi',
-    aggregationResponse: aggResponse2
+    aggregationResponse: aggResponse2,
+    keys: new Set(),
+    missingKeys:new Set(),
+    vector: {} as MetricsVector,
+    /** if true, it means the tables terms should be sorted according to this vector. */
+    leadsTermsOrder: false
 }]
