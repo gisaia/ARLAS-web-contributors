@@ -24,6 +24,7 @@ import {
 import { AggregationResponse } from 'arlas-api';
 import { MetricsVectors, MetricsTableConfig, MetricsTable, MetricsVector, MetricsTableSortConfig } from '../models/metrics-table.config';
 import { Observable, forkJoin, map, mergeMap, of } from 'rxjs';
+import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
 
 export interface MetricsTableResponse {
     collection: string;
@@ -185,6 +186,10 @@ export class MetricsTableContributor extends Contributor {
     /** @override */
     public isUpdateEnabledOnOwnCollaboration(): boolean {
         return false;
+    }
+    /** @override */
+    public static getJsonSchema(): Object {
+        return jsonSchema;
     }
 
 }

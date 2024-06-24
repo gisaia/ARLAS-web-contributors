@@ -26,6 +26,7 @@ import { ResultListContributor } from './contributors/ResultListContributor';
 import { AnalyticsContributor } from './contributors/AnalyticsContributor';
 import { TreeContributor } from './contributors/TreeContributor';
 import { ComputeContributor } from './contributors/ComputeContributor';
+import { MetricsTableContributor } from './contributors/MetricsTableContributor';
 export { TreeContributor } from './contributors/TreeContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
 export { ResultListContributor } from './contributors/ResultListContributor';
@@ -52,6 +53,7 @@ contributors.set('chipsearch', ChipsSearchContributor);
 contributors.set('analytics', AnalyticsContributor);
 contributors.set('tree', TreeContributor);
 contributors.set('metric', ComputeContributor);
+contributors.set('metricstable', MetricsTableContributor);
 
 export {contributors};
 
