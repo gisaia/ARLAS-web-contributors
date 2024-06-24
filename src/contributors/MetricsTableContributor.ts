@@ -26,7 +26,7 @@ import { MetricsVectors, MetricsTableConfig, MetricsTable, MetricsVector, Metric
 import { Observable, forkJoin, map, mergeMap, of } from 'rxjs';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
 import { Observable, forkJoin, map, of, mergeMap } from 'rxjs';
-import { aggregationResponseList } from "../models/mock-metrics";
+import { aggregationResponseList } from '../models/mock-metrics';
 
 export interface MetricsTableResponse {
     collection: string;
@@ -162,20 +162,19 @@ export class MetricsTableContributor extends Contributor {
     /** @override */
     /** todo !!!! specify data type and return type  */
     public computeData(data: Array<MetricsTableResponse>): MetricsTable {
-        console.log('test is ok');
+        // todo change the value with the good one
         const headers = new Map();
-        const rows:Map<string, MetricsTableRow> = new Map();
+        const rows: Map<string, MetricsTableRow> = new Map();
         const maxCount = new Map();
         let rowDataMaxLength = 0;
         let test = aggregationResponseList;
         test = this.orderMetricsTableResponse(test);
-        console.error(aggregationResponseList)
         test.forEach(metricsResponse => {
             metricsResponse.aggregationResponse.elements.forEach(elements => {
                 elements.metrics.forEach(metrics => {
                     const uniqColumn = `${metricsResponse.collection}_${metrics.field}_${metrics.type}`;
                     const uniqKeyForSum = `${elements.key_as_string}_${metrics.type}`;
-                    console.log(uniqKeyForSum)
+                    console.log(uniqKeyForSum);
                     // storing headers;
                     if(!headers.has(uniqColumn)) {
                         const headerItem: MetricsTableHeader = {
@@ -188,12 +187,12 @@ export class MetricsTableContributor extends Contributor {
 
                     // storing uniq row;
                     if(rows.has(uniqKeyForSum)) {
-                        rows.get(uniqKeyForSum).data.push({maxValue: 0, value: metrics.value})
+                        rows.get(uniqKeyForSum).data.push({maxValue: 0, value: metrics.value});
                     } else {
                         const metricsTableData: MetricsTableData = {maxValue: 0, value: metrics.value};
                         const metricsTableRow: MetricsTableRow = {data: [], term: elements.key_as_string};
-                        metricsTableRow.data.push(metricsTableData)
-                        rows.set(uniqKeyForSum, metricsTableRow)
+                        metricsTableRow.data.push(metricsTableData);
+                        rows.set(uniqKeyForSum, metricsTableRow);
                     }
 
                     if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
@@ -218,20 +217,20 @@ export class MetricsTableContributor extends Contributor {
         console.error(rowDataMaxLength);
 
         const metricsTable: MetricsTable = {data: [], header: []};
-        //att the end we setHeaders
-        for (let value of headers.values()){
+        // att the end we setHeaders
+        for (const value of headers.values()){
             metricsTable.header.push(value);
         }
 
-        //att the end we update rows
-        for (let  [key, metricTableRow] of rows.entries()){
+        // att the end we update rows
+        for (const  [key, metricTableRow] of rows.entries()){
             // update the max count
             metricTableRow.data.forEach(data => {
                 data.maxValue = maxCount.get(key);
             });
 
             if(metricTableRow.data.length < rowDataMaxLength) {
-                const fill = Array(rowDataMaxLength - metricTableRow.data.length).fill({maxValue:maxCount.get(key), value:0 })
+                const fill = Array(rowDataMaxLength - metricTableRow.data.length).fill({maxValue:maxCount.get(key), value:0 });
                 metricTableRow.data = metricTableRow.data.concat(fill);
             }
 
@@ -240,7 +239,7 @@ export class MetricsTableContributor extends Contributor {
         }
 
         // we update max value.
-        console.error(metricsTable)
+        console.error(metricsTable);
         return metricsTable;
     }
 

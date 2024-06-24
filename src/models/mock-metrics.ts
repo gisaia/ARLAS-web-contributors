@@ -1,5 +1,5 @@
-import { MetricsTableResponse } from "../contributors/MetricsTableContributor";
-import { MetricsVector } from "./metrics-table.config";
+import { MetricsTableResponse } from '../contributors/MetricsTableContributor';
+import { MetricsVector } from './metrics-table.config';
 
 export const aggResponse1 = {
     'query_time': 7,
@@ -203,7 +203,7 @@ export const aggResponse2 = {
     ]
 };
 
-export let aggregationResponseList: MetricsTableResponse[] =  [{
+export const aggregationResponseList: MetricsTableResponse[] =  [{
     collection: 'toto',
     aggregationResponse: aggResponse1,
     keys: new Set(),
@@ -219,4 +219,4 @@ export let aggregationResponseList: MetricsTableResponse[] =  [{
     vector: {} as MetricsVector,
     /** if true, it means the tables terms should be sorted according to this vector. */
     leadsTermsOrder: false
-}]
+}];
