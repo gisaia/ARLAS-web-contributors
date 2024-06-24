@@ -73,6 +73,10 @@ export class MetricsTableContributor extends Contributor {
         this.configuration = this.getConfigValue('configuration');
         this.nbterms = this.getConfigValue('nbterms');
         this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
+        this.collections = this.table.vectors.map(v => ({
+            field: v.configuration.termfield,
+            collectionName: v.collection
+        }));
     }
 
     /** @override */
