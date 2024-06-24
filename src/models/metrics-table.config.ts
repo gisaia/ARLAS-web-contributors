@@ -226,6 +226,10 @@ export class MetricsVector {
                 )
             );
     }
+
+    public leadsSort(): boolean {
+        return !!this.sort && this.sort.collection === this.collection;
+    }
 }
 
 export interface MetricsTable {

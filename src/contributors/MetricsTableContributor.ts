@@ -31,6 +31,8 @@ export interface MetricsTableResponse {
     keys: Set<string>;
     missingKeys: Set<string>;
     vector: MetricsVector;
+    /** if true, it means the tables terms should be sorted according to this vector. */
+    leadsTermsOrder?: boolean;
 }
 
 /**
@@ -49,7 +51,7 @@ export class MetricsTableContributor extends Contributor {
     /** Number of terms fetched for each collection. The resulted table
      * might have terms between `nbterms` and `nbCollection * nbterms`.
      */
-    public nbterms: number = this.getConfigValue('configuration');
+    public nbterms: number = this.getConfigValue('nbterms');
     /** @param */
     /** Configuration of the table. It includes what are the term fields for each collection and what
      * metrics to display.
@@ -63,15 +65,13 @@ export class MetricsTableContributor extends Contributor {
     public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService,
-        /** configuration to query data for metrics table */
-        /** Number of terms for each collection (same for all). */
-        nbTerms: number,
-        configuration
+        configService: ConfigService
     ) {
         super(identifier, configService, collaborativeSearcheService);
-        this.configuration = configuration;
-        this.table = new MetricsVectors(this.configuration, this.sort, nbTerms);
+        this.sort = this.getConfigValue('sort');
+        this.configuration = this.getConfigValue('configuration');
+        this.nbterms = this.getConfigValue('nbterms');
+        this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
     }
 
     /** @override */
@@ -137,7 +137,8 @@ export class MetricsTableContributor extends Contributor {
                                         aggregationResponse: mr.vector.mergeResponses(mr.aggregationResponse, ar),
                                         keys,
                                         missingKeys,
-                                        vector: mr.vector
+                                        vector: mr.vector,
+                                        leadsTermsOrder: mr.vector.leadsSort()
                                     });
                                 })
                             );
