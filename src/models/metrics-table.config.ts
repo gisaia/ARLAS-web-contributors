@@ -19,6 +19,7 @@
  */
 
 import { Metric as ArlasApiMetric, Aggregation, AggregationResponse } from 'arlas-api';
+import { MetricsTableColumn } from 'contributors/MetricsTableContributor';
 
 export interface MetricsTableConfig {
     [collection: string]: MetricsVectorConfig;
@@ -86,7 +87,7 @@ export class MetricsVector {
         this.sort = sortConfig;
     }
 
-    public getAggregation(termsToInclude?: string): Aggregation {
+    public getAggregation(termsToInclude?: string[]): Aggregation {
         const aggregation: Aggregation = {
             field: this.configuration.termfield,
             size: this.nbTerms.toString(),
@@ -94,7 +95,8 @@ export class MetricsVector {
             type: Aggregation.TypeEnum.Term
         };
         if (termsToInclude) {
-            aggregation.include = termsToInclude;
+            aggregation.include = termsToInclude.join('|');
+            aggregation.size = termsToInclude.length.toString();
         }
         if (this.sort && this.sort.collection === this.collection) {
             aggregation.order = this.getSortOrder(this.sort);
@@ -142,6 +144,40 @@ export class MetricsVector {
         }));
         return arlasMetrics;
     }
+
+    public getColumns(): MetricsTableColumn[] {
+        const metricsConfig: MetricConfig[] = this.configuration.metrics;
+        const sort: MetricsTableSortConfig = this.sort;
+        const columns: MetricsTableColumn[] = [];
+        let remainingMetrics = (m: MetricConfig) => true;
+        if (sort && sort.collection === this.collection) {
+            const sortMetric = sort.metric;
+            if (sort.on === 'count' && !!metricsConfig.find(m => m.metric === 'count')) {
+                columns.push({
+                    metric: 'count',
+                    collection: this.collection
+                });
+                remainingMetrics = (m: MetricConfig) => (m.metric !== 'count');
+            } else if (sort.on === 'metric') {
+                columns.push({
+                    metric: sortMetric.metric,
+                    collection: this.collection,
+                    field: sortMetric.field
+                });
+                remainingMetrics = (m: MetricConfig) => (m.metric !== sortMetric.metric && m.field !== sortMetric.field);
+            }
+
+        }
+        metricsConfig.filter(m => remainingMetrics(m)).forEach(m => {
+            columns.push({
+                metric: m.metric,
+                collection: this.collection,
+                field: m?.field
+            });
+        });
+        return columns;
+    }
+
 
     /** Returns the Aggregation.OnEnum to apply to arlas aggregation request object. */
     private getSortOn(sort: MetricsTableSortConfig): Aggregation.OnEnum {

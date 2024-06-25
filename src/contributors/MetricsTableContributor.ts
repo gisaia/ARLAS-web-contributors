@@ -21,7 +21,7 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { AggregationResponse } from 'arlas-api';
+import { AggregationResponse, Metric as ArlasApiMetric } from 'arlas-api';
 import {
     MetricsVectors,
     MetricsTableConfig,
@@ -31,7 +31,6 @@ import {
 } from '../models/metrics-table.config';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
 import { Observable, forkJoin, map, of, mergeMap } from 'rxjs';
-import { aggregationResponseList } from '../models/mock-metrics';
 
 export interface MetricsTableResponse {
     collection: string;
@@ -41,6 +40,18 @@ export interface MetricsTableResponse {
     vector: MetricsVector;
     /** if true, it means the tables terms should be sorted according to this vector. */
     leadsTermsOrder?: boolean;
+}
+
+
+export interface ComputableResponse {
+    columns: MetricsTableColumn[];
+    metricsResponse: Array<MetricsTableResponse>;
+}
+
+export interface MetricsTableColumn {
+    collection: string;
+    metric: ArlasApiMetric.CollectFctEnum | 'count';
+    field?: string;
 }
 
 /**
@@ -89,7 +100,7 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<MetricsTableResponse>> {
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<ComputableResponse> {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             const allKeys = new Set<string>();
             /** Base aggregations to get terms and their metrics for each collection (vector) */
@@ -129,8 +140,7 @@ export class MetricsTableContributor extends Contributor {
                     if (mr.missingKeys.size === 0) {
                         return of(mr);
                     } else {
-                        /** Joining terms with `|` as include parameter of the aggregation only accepts regex */
-                        const termsToInclude = Array.from(mr.missingKeys).join('|');
+                        const termsToInclude = Array.from(mr.missingKeys);
                         return this.collaborativeSearcheService
                             .resolveButNotAggregation([projType.aggregate, [mr.vector.getAggregation(termsToInclude)]],
                                 this.collaborativeSearcheService.collaborations,
@@ -159,22 +169,34 @@ export class MetricsTableContributor extends Contributor {
                             );
                     }
                 })),
-                ));
+                ),
+                map(mrs => {
+                    const sortedMrs = this.orderMetricsTableResponse(mrs);
+                    let columns = [];
+                    sortedMrs.forEach(mr => {
+                        columns = columns.concat(mr.vector.getColumns());
+                    });
+                    return {
+                        columns,
+                        metricsResponse: mrs
+                    };
+                })
+            );
         }
         return of();
     }
 
     /** @override */
     /** todo !!!! specify data type and return type  */
-    public computeData(data: Array<MetricsTableResponse>): MetricsTable {
-        // todo change the value with the good one
+    public computeData(data: ComputableResponse): MetricsTable {
+        // todo: to be improved
         const headers = new Map();
         const rows: Map<string, MetricsTableRow> = new Map();
         const maxCount = new Map();
         let rowDataMaxLength = 0;
-        let test = aggregationResponseList;
-        test = this.orderMetricsTableResponse(test);
-        test.forEach(metricsResponse => {
+
+        const metricsResponses = data.metricsResponse;
+        metricsResponses.forEach(metricsResponse => {
             metricsResponse.aggregationResponse.elements.forEach(elements => {
                 elements.metrics.forEach(metrics => {
                     const uniqColumn = `${metricsResponse.collection}_${metrics.field}_${metrics.type}`;
@@ -198,13 +220,6 @@ export class MetricsTableContributor extends Contributor {
                         const metricsTableRow: MetricsTableRow = {data: [], term: elements.key_as_string};
                         metricsTableRow.data.push(metricsTableData);
                         rows.set(uniqKeyForSum, metricsTableRow);
-<<<<<<< HEAD
-                    }
-
-                    if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
-                        rowDataMaxLength = rows.get(uniqKeyForSum).data.length;
-=======
->>>>>>> f72d3f7 (feat: fix value)
                     }
 
                     if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
