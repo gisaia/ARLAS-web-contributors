@@ -3657,7 +3657,7 @@ export class MapContributor extends Contributor {
     private getValueFromFeature(f: Feature, field: string, flattenedField): any {
         let value = +f.properties[flattenedField];
         if (isNaN(value)) {
-            if (this.dateFieldFormatMap.has(field)) {
+            if (this.dateFieldFormatMap.get(field)) {
                 /** Moment Format character for days is `D` while the one given by ARLAS-server is `d`
                  * Thus, we replace the `d` with `D` to adapt to Moment library.
                 */
