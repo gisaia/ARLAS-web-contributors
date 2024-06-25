@@ -22,10 +22,16 @@ import {
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
 import { AggregationResponse } from 'arlas-api';
-import { MetricsVectors, MetricsTableConfig, MetricsTable, MetricsVector, MetricsTableSortConfig } from '../models/metrics-table.config';
+import {
+    MetricsVectors,
+    MetricsTableConfig,
+    MetricsTable,
+    MetricsVector,
+    MetricsTableSortConfig,
+    MetricsTableHeader, MetricsTableData, MetricsTableRow
+} from '../models/metrics-table.config';
 import { Observable, forkJoin, map, mergeMap, of } from 'rxjs';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
-import { Observable, forkJoin, map, of, mergeMap } from 'rxjs';
 import { aggregationResponseList } from '../models/mock-metrics';
 
 export interface MetricsTableResponse {
