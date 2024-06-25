@@ -6,6 +6,7 @@
   "typings": "dist/index.d.ts",
   "scripts": {
     "build-release": "tsc -p tsconfig-build.json && npm run copy-root-schema && npm run copy-npm-readme",
+    "build-test": "tsc -p tsconfig-build.json && npm run copy-root-schema && npm run copy-npm-readme && cp package-test.json dist/package.json && cd dist && npm install && cd ..",
     "clean": "npm cache clear && rimraf -- dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts",

@@ -1,0 +1,41 @@
+{
+  "name": "arlas-web-contributors",
+  "version": "***update during release***",
+  "description": "Contributors Library for ARLAS Components",
+  "main": "./index.js",
+  "typings": "./index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors.git"
+  },
+  "scripts": {
+    "postinstall": "patch-package --patch-dir node_modules/arlas-web-core/patches"
+  },
+  "author": "gisaia-team",
+  "license": " Apache-2.0",
+  "dependencies": {
+    "@turf/bbox": "^6.0.1",
+    "@turf/bbox-polygon": "^6.0.1",
+    "@turf/boolean-contains": "^6.0.1",
+    "@turf/helpers": "^6.1.4",
+    "@turf/meta": "^6.0.1",
+    "@types/file-saver": "^2.0.1",
+    "@types/jsonpath": "^0.2.0",
+    "@types/tinycolor2": "^1.4.0",
+    "arlas-web-core": "~25.0.1",
+    "file-saver": "^2.0.2",
+    "jsonpath": "^1.0.0",
+    "moment": "^2.29.4",
+    "ngeohash": "^0.6.0",
+    "rxjs": "~7.4.0",
+    "tinycolor2": "~1.4.1",
+    "wellknown": "^0.5.0"
+  },
+  "devDependencies": {
+    "patch-package": "^6.4.7"
+  },
+  "bugs": {
+    "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/issues"
+  },
+  "homepage": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/blob/master/README.md"
+}

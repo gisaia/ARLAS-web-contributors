@@ -8,7 +8,6 @@ import { CollaborativesearchService } from 'arlas-web-core/services/collaborativ
 import { map } from 'rxjs/internal/operators/map';
 import * as meta from '@turf/meta';
 import { bboxes } from 'ngeohash';
-import { isNumber } from 'util';
 
 export function getBounds(
     elementidentifier: ElementIdentifier,
@@ -309,7 +308,8 @@ export function numToString(num: number, p?: number): string {
 }
 
 export function formatNumber(x, formatChar = ' ', roundPrecision?: number): string {
-    if (isNumber(x)) {
+    /** !!!!! not to be merged before TEST. DONT let me do it in a PR !!!!!!!!!!! */
+    if (!isNaN(x)) {
         const trunc = Math.trunc(x);
         const integerFraction = (x + '').split('.');
         const spacedNumber = Math.abs(trunc).toString().replace(/\B(?=(\d{3})+(?!\d))/g, formatChar);
