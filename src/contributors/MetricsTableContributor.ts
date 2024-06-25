@@ -122,7 +122,8 @@ export class MetricsTableContributor extends Contributor {
                     if (mr.missingKeys.size === 0) {
                         return of(mr);
                     } else {
-                        const termsToInclude = Array.from(mr.missingKeys).join(',');
+                        /** Joining terms with `|` as include parameter of the aggregation only accepts regex */
+                        const termsToInclude = Array.from(mr.missingKeys).join('|');
                         return this.collaborativeSearcheService
                             .resolveButNotAggregation([projType.aggregate, [mr.vector.getAggregation(termsToInclude)]],
                                 this.collaborativeSearcheService.collaborations,
