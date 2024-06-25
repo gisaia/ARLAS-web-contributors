@@ -158,7 +158,7 @@ export class MetricsVector {
                     collection: this.collection
                 });
                 remainingMetrics = (m: MetricConfig) => (m.metric !== 'count');
-            } else if (sort.on === 'metric') {
+            } else if (sort.on === 'metric' && !!sortMetric) {
                 columns.push({
                     metric: sortMetric.metric,
                     collection: this.collection,
