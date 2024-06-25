@@ -37,7 +37,8 @@ export interface MetricConfig {
 export interface MetricsTableSortConfig {
     collection: string;
     order: 'asc' | 'desc';
-    on: 'alphabetical' | 'count' | MetricConfig;
+    on: 'alphabetical' | 'count' | 'metric';
+    metric?: MetricConfig;
 }
 
 
@@ -114,8 +115,8 @@ export class MetricsVector {
      */
     private getMetrics(metricsConfig: MetricConfig[], sort: MetricsTableSortConfig): ArlasApiMetric[] {
         let arlasMetrics: ArlasApiMetric[] = [];
-        if (sort && sort.collection === this.collection && !!sort.on && !!(sort.on as MetricConfig)?.metric) {
-            const sortMetric = (sort.on as MetricConfig);
+        if (sort && sort.collection === this.collection && sort.on === 'metric' && !!sort.metric) {
+            const sortMetric = sort.metric;
             if (sortMetric.metric !== 'count') {
                 /** Pushing the sortMetric first so that arlas-server aggregation sort on it. */
                 arlasMetrics.push({
@@ -144,11 +145,11 @@ export class MetricsVector {
 
     /** Returns the Aggregation.OnEnum to apply to arlas aggregation request object. */
     private getSortOn(sort: MetricsTableSortConfig): Aggregation.OnEnum {
-        if (sort.on && sort.on === 'alphabetical') {
+        if (sort && sort.on === 'alphabetical') {
             return Aggregation.OnEnum.Field;
-        } else if (sort.on && sort.on === 'count') {
+        } else if (sort && sort.on === 'count') {
             return Aggregation.OnEnum.Count;
-        } else if (sort.on && (sort.on as MetricConfig)?.metric !== 'count') {
+        } else if (sort && sort.on === 'metric' && !!sort?.metric  && sort.metric.metric !== 'count') {
             return Aggregation.OnEnum.Result;
         } else {
             return Aggregation.OnEnum.Count;
@@ -208,7 +209,7 @@ export class MetricsVector {
         if (this.isSortOnCount()) {
             return response.elements.map(e => e.count);
         } else {
-            const metricConfig = this.sort.on as MetricConfig;
+            const metricConfig = this.sort.metric;
             return response.elements.map(e => e.metrics
                 .find(m => (m.field === metricConfig.field && m.type === metricConfig.metric))?.value);
         }
@@ -222,8 +223,8 @@ export class MetricsVector {
             (this.sort.collection === this.collection
                 && (
                     this.sort.on === 'count'
-                    || (this.sort.on as MetricConfig).metric === 'count'
-                )
+                    || (this.sort.on === 'metric' &&  this.sort?.metric?.metric === 'count'
+                ))
             );
     }
 

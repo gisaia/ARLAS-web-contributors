@@ -24,6 +24,7 @@ import {
 import { AggregationResponse } from 'arlas-api';
 import { MetricsVectors, MetricsTableConfig, MetricsTable, MetricsVector, MetricsTableSortConfig } from '../models/metrics-table.config';
 import { Observable, forkJoin, map, mergeMap, of } from 'rxjs';
+import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
 
 export interface MetricsTableResponse {
     collection: string;
@@ -62,6 +63,8 @@ export class MetricsTableContributor extends Contributor {
      */
     public sort: MetricsTableSortConfig = this.getConfigValue('sort');
 
+    public data: MetricsTable;
+
     public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
@@ -72,6 +75,10 @@ export class MetricsTableContributor extends Contributor {
         this.configuration = this.getConfigValue('configuration');
         this.nbterms = this.getConfigValue('nbterms');
         this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
+        this.collections = this.table.vectors.map(v => ({
+            field: v.configuration.termfield,
+            collectionName: v.collection
+        }));
     }
 
     /** @override */
@@ -157,9 +164,8 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    /** todo !!!! specify data type and return type  */
-    public setData(data: any) {
-
+    public setData(data: MetricsTable): void {
+        this.data = data;
     }
 
     /** @override */
@@ -185,6 +191,10 @@ export class MetricsTableContributor extends Contributor {
     /** @override */
     public isUpdateEnabledOnOwnCollaboration(): boolean {
         return false;
+    }
+    /** @override */
+    public static getJsonSchema(): Object {
+        return jsonSchema;
     }
 
 }
