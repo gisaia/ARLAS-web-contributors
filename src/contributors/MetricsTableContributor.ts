@@ -21,18 +21,16 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { AggregationResponse } from 'arlas-api';
+import { AggregationResponse, Metric as ArlasApiMetric } from 'arlas-api';
 import {
     MetricsVectors,
     MetricsTableConfig,
     MetricsTable,
-    MetricsVector,
-    MetricsTableSortConfig,
-    MetricsTableHeader, MetricsTableData, MetricsTableRow
+    MetricsTableHeader,
+    MetricsTableRow, MetricsTableData, MetricsTableSortConfig, MetricsVector
 } from '../models/metrics-table.config';
-import { Observable, forkJoin, map, mergeMap, of } from 'rxjs';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
-import { aggregationResponseList } from '../models/mock-metrics';
+import { Observable, forkJoin, map, of, mergeMap } from 'rxjs';
 
 export interface MetricsTableResponse {
     collection: string;
@@ -42,6 +40,18 @@ export interface MetricsTableResponse {
     vector: MetricsVector;
     /** if true, it means the tables terms should be sorted according to this vector. */
     leadsTermsOrder?: boolean;
+}
+
+
+export interface ComputableResponse {
+    columns: MetricsTableColumn[];
+    metricsResponse: Array<MetricsTableResponse>;
+}
+
+export interface MetricsTableColumn {
+    collection: string;
+    metric: ArlasApiMetric.CollectFctEnum | 'count';
+    field?: string;
 }
 
 /**
@@ -90,7 +100,7 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<MetricsTableResponse>> {
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<ComputableResponse> {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             const allKeys = new Set<string>();
             /** Base aggregations to get terms and their metrics for each collection (vector) */
@@ -130,8 +140,7 @@ export class MetricsTableContributor extends Contributor {
                     if (mr.missingKeys.size === 0) {
                         return of(mr);
                     } else {
-                        /** Joining terms with `|` as include parameter of the aggregation only accepts regex */
-                        const termsToInclude = Array.from(mr.missingKeys).join('|');
+                        const termsToInclude = Array.from(mr.missingKeys);
                         return this.collaborativeSearcheService
                             .resolveButNotAggregation([projType.aggregate, [mr.vector.getAggregation(termsToInclude)]],
                                 this.collaborativeSearcheService.collaborations,
@@ -160,26 +169,39 @@ export class MetricsTableContributor extends Contributor {
                             );
                     }
                 })),
-                ));
+                ),
+                map(mrs => {
+                    const sortedMrs = this.orderMetricsTableResponse(mrs);
+                    let columns = [];
+                    sortedMrs.forEach(mr => {
+                        columns = columns.concat(mr.vector.getColumns());
+                    });
+                    return {
+                        columns,
+                        metricsResponse: mrs
+                    };
+                })
+            );
         }
         return of();
     }
 
     /** @override */
     /** todo !!!! specify data type and return type  */
-    public computeData(data: Array<MetricsTableResponse>): MetricsTable {
+    public computeData(data: ComputableResponse): MetricsTable {
         // todo: to be improved
         const headers = new Map();
         const rows: Map<string, MetricsTableRow> = new Map();
         const maxCount = new Map();
         let rowDataMaxLength = 0;
 
-        data = this.orderMetricsTableResponse(data);
-        data.forEach(metricsResponse => {
+        const metricsResponses = data.metricsResponse;
+        metricsResponses.forEach(metricsResponse => {
             metricsResponse.aggregationResponse.elements.forEach(elements => {
                 elements.metrics.forEach(metrics => {
                     const uniqColumn = `${metricsResponse.collection}_${metrics.field}_${metrics.type}`;
                     const uniqKeyForSum = `${elements.key_as_string}_${metrics.type}`;
+                    console.log(uniqKeyForSum);
                     // storing headers;
                     if(!headers.has(uniqColumn)) {
                         const headerItem: MetricsTableHeader = {
@@ -216,6 +238,11 @@ export class MetricsTableContributor extends Contributor {
             });
         });
 
+        console.error(headers);
+        console.error(rows);
+        console.error(maxCount);
+        console.error(rowDataMaxLength);
+
         const metricsTable: MetricsTable = {data: [], header: []};
         // att the end we setHeaders
         for (const value of headers.values()){
@@ -238,6 +265,7 @@ export class MetricsTableContributor extends Contributor {
         }
 
         // we update max value.
+        console.error(metricsTable);
         return metricsTable;
     }
 
