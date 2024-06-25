@@ -31,6 +31,8 @@ import {
 } from '../models/metrics-table.config';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
 import { Observable, forkJoin, map, of, mergeMap } from 'rxjs';
+import { computableResponseMock } from '../models/mock-metrics';
+import { AggregationMetric } from 'arlas-api/api';
 
 export interface MetricsTableResponse {
     collection: string;
@@ -92,11 +94,11 @@ export class MetricsTableContributor extends Contributor {
         this.sort = this.getConfigValue('sort');
         this.configuration = this.getConfigValue('configuration');
         this.nbterms = this.getConfigValue('nbterms');
-        this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
+        /* this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
         this.collections = this.table.vectors.map(v => ({
             field: v.configuration.termfield,
             collectionName: v.collection
-        }));
+        }));*/
     }
 
     /** @override */
@@ -137,38 +139,38 @@ export class MetricsTableContributor extends Contributor {
                 /** The following block launches a list of Complementary aggregations for each vector (only in case of missing keys),
                  *  in order to fetch the missing keys and complete the table. */
                 mergeMap(metricsResponses => forkJoin(metricsResponses.map(mr => {
-                    if (mr.missingKeys.size === 0) {
-                        return of(mr);
-                    } else {
-                        const termsToInclude = Array.from(mr.missingKeys);
-                        return this.collaborativeSearcheService
-                            .resolveButNotAggregation([projType.aggregate, [mr.vector.getAggregation(termsToInclude)]],
-                                this.collaborativeSearcheService.collaborations,
-                                mr.collection,
-                                this.identifier, {}, false, this.cacheDuration
-                            ).pipe(
-                                map(ar => {
-                                    const keys = new Set(ar.elements.map(e => e.key));
-                                    keys.forEach(k => allKeys.add(k));
-                                    const missingKeys = new Set<string>();
-                                    allKeys.forEach(k => {
-                                        if (!keys.has(k)) {
-                                            missingKeys.add(k);
-                                        }
-                                    });
-                                    return ({
-                                        collection: mr.collection,
-                                        /** merging response of the base aggregation and the complementary aggregation  */
-                                        aggregationResponse: mr.vector.mergeResponses(mr.aggregationResponse, ar),
-                                        keys,
-                                        missingKeys,
-                                        vector: mr.vector,
-                                        leadsTermsOrder: mr.vector.leadsSort()
-                                    });
-                                })
-                            );
-                    }
-                })),
+                        if (mr.missingKeys.size === 0) {
+                            return of(mr);
+                        } else {
+                            const termsToInclude = Array.from(mr.missingKeys);
+                            return this.collaborativeSearcheService
+                                .resolveButNotAggregation([projType.aggregate, [mr.vector.getAggregation(termsToInclude)]],
+                                    this.collaborativeSearcheService.collaborations,
+                                    mr.collection,
+                                    this.identifier, {}, false, this.cacheDuration
+                                ).pipe(
+                                    map(ar => {
+                                        const keys = new Set(ar.elements.map(e => e.key));
+                                        keys.forEach(k => allKeys.add(k));
+                                        const missingKeys = new Set<string>();
+                                        allKeys.forEach(k => {
+                                            if (!keys.has(k)) {
+                                                missingKeys.add(k);
+                                            }
+                                        });
+                                        return ({
+                                            collection: mr.collection,
+                                            /** merging response of the base aggregation and the complementary aggregation  */
+                                            aggregationResponse: mr.vector.mergeResponses(mr.aggregationResponse, ar),
+                                            keys,
+                                            missingKeys,
+                                            vector: mr.vector,
+                                            leadsTermsOrder: mr.vector.leadsSort()
+                                        });
+                                    })
+                                );
+                        }
+                    })),
                 ),
                 map(mrs => {
                     const sortedMrs = this.orderMetricsTableResponse(mrs);
@@ -190,87 +192,87 @@ export class MetricsTableContributor extends Contributor {
     /** todo !!!! specify data type and return type  */
     public computeData(data: ComputableResponse): MetricsTable {
         // todo: to be improved
-        const headers = new Map();
         const rows: Map<string, MetricsTableRow> = new Map();
         const maxCount = new Map();
-        let rowDataMaxLength = 0;
+        const metricsResponses = computableResponseMock.metricsResponse;
+        const columnsOrder = computableResponseMock.columns;
 
-        const metricsResponses = data.metricsResponse;
         metricsResponses.forEach(metricsResponse => {
             metricsResponse.aggregationResponse.elements.forEach(elements => {
-                elements.metrics.forEach(metrics => {
-                    const uniqColumn = `${metricsResponse.collection}_${metrics.field}_${metrics.type}`;
-                    const uniqKeyForSum = `${elements.key_as_string}_${metrics.type}`;
-                    console.log(uniqKeyForSum);
-                    // storing headers;
-                    if(!headers.has(uniqColumn)) {
-                        const headerItem: MetricsTableHeader = {
-                            title: metricsResponse.collection ,
-                            subTitle: metrics.field,
-                            metric: metrics.type
-                        };
-                        headers.set(uniqColumn, headerItem);
-                    }
+                let row: MetricsTableRow;
+                if (rows.has(elements.key_as_string)) {
+                    row = rows.get(elements.key_as_string);
+                } else {
+                    row = {data: [], term: elements.key_as_string};
+                    row.data = Array(computableResponseMock.columns.length).fill(null);
+                    rows.set(elements.key_as_string, row);
+                }
 
-                    // storing uniq row;
-                    if(rows.has(uniqKeyForSum)) {
-                        rows.get(uniqKeyForSum).data.push({maxValue: 0, value: metrics.value});
-                    } else {
-                        const metricsTableData: MetricsTableData = {maxValue: 0, value: metrics.value};
-                        const metricsTableRow: MetricsTableRow = {data: [], term: elements.key_as_string};
-                        metricsTableRow.data.push(metricsTableData);
-                        rows.set(uniqKeyForSum, metricsTableRow);
-                    }
+                elements.metrics.forEach((metrics) => {
+                    const uniqueTermMetric = `${elements.key_as_string}_${metrics.type}`;
+                    const index = this.findMetricsColumnIndex(metricsResponse.collection, metrics, columnsOrder);
+                    const metricsMatchColumnOrder = index !== -1;
+                    if (metricsMatchColumnOrder) {
+                        let value;
+                        if (metrics.type !== 'count') {
+                            value = metrics.value;
+                        } else {
+                            value = elements.count;
+                        }
+                        row.data[index] = {maxValue: 0, value, metric: metrics?.type};
 
-                    if(rowDataMaxLength <  rows.get(uniqKeyForSum).data.length){
-                        rowDataMaxLength = rows.get(uniqKeyForSum).data.length;
-                    }
-
-                    // storing uniq sum for each value;
-                    // externalise this method
-                    // in case of not count
-                    if(maxCount.has(uniqKeyForSum) &&  maxCount.get(uniqKeyForSum) <  metrics.value) {
-                       maxCount.set(uniqKeyForSum, metrics.value);
-                    } else {
-                        maxCount.set(uniqKeyForSum,  metrics.value);
+                        if (maxCount.has(uniqueTermMetric) && maxCount.get(uniqueTermMetric) < metrics.value) {
+                            maxCount.set(uniqueTermMetric, metrics.value);
+                        } else {
+                            maxCount.set(uniqueTermMetric, metrics.value);
+                        }
                     }
                 });
             });
         });
 
-        console.error(headers);
         console.error(rows);
         console.error(maxCount);
-        console.error(rowDataMaxLength);
 
         const metricsTable: MetricsTable = {data: [], header: []};
         // att the end we setHeaders
-        for (const value of headers.values()){
-            metricsTable.header.push(value);
+        for (const value of columnsOrder) {
+            metricsTable.header.push({title: value.collection, subTitle: value.field, metric: value.metric});
         }
 
-        // att the end we update rows
-        for (const  [key, metricTableRow] of rows.entries()){
-            // update the max count
-            metricTableRow.data.forEach(data => {
-                data.maxValue = maxCount.get(key);
+        rows.forEach(row => {
+            row.data.forEach(cell => {
+                if (cell !== null) {
+                    const maxCountKey = `${row.term}_${cell.metric}`;
+                    cell.maxValue = maxCount.get(maxCountKey);
+                }
             });
-
-            if(metricTableRow.data.length < rowDataMaxLength) {
-                const fill = Array(rowDataMaxLength - metricTableRow.data.length).fill({maxValue:maxCount.get(key), value:0 });
-                metricTableRow.data = metricTableRow.data.concat(fill);
-            }
-            // push updated value;
-            metricsTable.data.push(metricTableRow);
-        }
+            metricsTable.data.push(row);
+        });
 
         // we update max value.
         console.error(metricsTable);
         return metricsTable;
     }
 
-    private orderMetricsTableResponse(data: Array<MetricsTableResponse>):  Array<MetricsTableResponse>{
-       return data.sort(((response,  comparingResponse) => (response.leadsTermsOrder) ?  -1 : 0));
+    private findMetricsColumnIndex(collectionName: string,
+                                   aggregationMetric: AggregationMetric,
+                                   metricsTableColumn: MetricsTableColumn[]): number {
+        return metricsTableColumn.findIndex((metricsColumn) =>
+            metricsColumn.metric.toString().toLowerCase() === aggregationMetric.type.toLowerCase() &&
+                metricsColumn.field === aggregationMetric.field &&
+                metricsColumn.collection === collectionName
+        );
+    }
+
+    private aggregMetricSpecEqColumnSpec(collectionName: string, aggregationMetric: AggregationMetric, metricsTableColumn: MetricsTableColumn) {
+        return metricsTableColumn.metric === aggregationMetric.type &&
+            metricsTableColumn.field === aggregationMetric.field &&
+            collectionName === metricsTableColumn.collection;
+    }
+
+    private orderMetricsTableResponse(data: Array<MetricsTableResponse>): Array<MetricsTableResponse> {
+        return data.sort(((response, comparingResponse) => (response.leadsTermsOrder) ? -1 : 0));
     }
 
     /** @override */
@@ -287,7 +289,7 @@ export class MetricsTableContributor extends Contributor {
     /**
      * @override
      * @returns Package name for the configuration service.
-    */
+     */
     public getPackageName(): string {
         return 'arlas.web.contributors.metricslist';
     }
@@ -302,6 +304,7 @@ export class MetricsTableContributor extends Contributor {
     public isUpdateEnabledOnOwnCollaboration(): boolean {
         return false;
     }
+
     /** @override */
     public static getJsonSchema(): Object {
         return jsonSchema;

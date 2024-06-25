@@ -277,12 +277,13 @@ export interface MetricsTable {
 export interface MetricsTableHeader {
     title: string;
     subTitle: string;
-    metric: string;
+    metric: ArlasApiMetric.CollectFctEnum | 'count';
 }
 
 export interface MetricsTableData {
     value: number;
     maxValue: number;
+    metric: ArlasApiMetric.CollectFctEnum | 'count' | string;
 }
 
 export interface MetricsTableRow {
