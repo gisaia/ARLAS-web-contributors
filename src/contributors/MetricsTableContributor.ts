@@ -208,7 +208,7 @@ export class MetricsTableContributor extends Contributor {
                     row.data = Array(columnsOrder.length).fill(null);
                     rows.set(element.key_as_string, row);
                 }
-                let colCount = 0;
+
                 columnsOrder.forEach((col, i) => {
                     if (currentCollection === col.collection) {
                         let uniqueTermMetric;
