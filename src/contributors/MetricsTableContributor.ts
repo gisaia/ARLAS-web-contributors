@@ -27,7 +27,7 @@ import {
     MetricsTableConfig,
     MetricsTable,
     MetricsTableHeader,
-    MetricsTableRow, MetricsTableData, MetricsTableSortConfig, MetricsVector
+    MetricsTableRow, MetricsTableCell, MetricsTableSortConfig, MetricsVector
 } from '../models/metrics-table.config';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
 import { Observable, forkJoin, map, of, mergeMap } from 'rxjs';
@@ -194,43 +194,54 @@ export class MetricsTableContributor extends Contributor {
         // todo: to be improved
         const rows: Map<string, MetricsTableRow> = new Map();
         const maxCount = new Map();
-        const metricsResponses = computableResponseMock.metricsResponse;
-        const columnsOrder = computableResponseMock.columns;
+        const metricsResponses = data.metricsResponse;
+        const columnsOrder = data.columns;
 
         metricsResponses.forEach(metricsResponse => {
+            const currentCollection = metricsResponse.collection;
             metricsResponse.aggregationResponse.elements.forEach(elements => {
                 let row: MetricsTableRow;
                 if (rows.has(elements.key_as_string)) {
                     row = rows.get(elements.key_as_string);
                 } else {
                     row = {data: [], term: elements.key_as_string};
-                    row.data = Array(computableResponseMock.columns.length).fill(null);
+                    row.data = Array(columnsOrder.length).fill(null);
                     rows.set(elements.key_as_string, row);
                 }
-
-                elements.metrics.forEach((metrics) => {
-                    const uniqueTermMetric = `${elements.key_as_string}_${metrics.type}`;
-                    const index = this.findMetricsColumnIndex(metricsResponse.collection, metrics, columnsOrder);
-                    const metricsMatchColumnOrder = index !== -1;
-                    if (metricsMatchColumnOrder) {
+                let colCount = 0;
+                columnsOrder.forEach((col, i) => {
+                    if (currentCollection === col.collection) {
+                        let uniqueTermMetric;
                         let value;
-                        if (metrics.type !== 'count') {
-                            value = metrics.value;
-                        } else {
+                        // how we know its the good field that we want if the metrics object can be empty ?
+                        if (col.metric === 'count' && colCount === i) {
+                            uniqueTermMetric = `${col.collection}_${elements.key_as_string}_${col.metric}`;
                             value = elements.count;
-                        }
-                        row.data[index] = {maxValue: 0, value, metric: metrics?.type};
-
-                        if (maxCount.has(uniqueTermMetric) && maxCount.get(uniqueTermMetric) < metrics.value) {
-                            maxCount.set(uniqueTermMetric, metrics.value);
                         } else {
-                            maxCount.set(uniqueTermMetric, metrics.value);
+                            uniqueTermMetric = `${col.collection}_${col.field}_${elements.key_as_string}_${col.metric}`;
+                            const metric = elements.metrics.find(metric =>
+                                metric.type.toLowerCase() === col.metric.toString().toLowerCase() &&
+                                metric.field === col.field
+                            );
+                            if(metric){
+                                value = metric.value;
+                            }
                         }
+                        // we set the value and the max count
+                        if(value){
+                            row.data[i] = {maxValue: 0, value, metric: col.metric, column: col.collection, field:col.field};
+                            if (maxCount.has(uniqueTermMetric) && maxCount.get(uniqueTermMetric) < value) {
+                                maxCount.set(uniqueTermMetric, value);
+                            } else {
+                                maxCount.set(uniqueTermMetric, value);
+                            }
+                        }
+                        console.error(colCount);
                     }
+                    colCount++;
                 });
             });
         });
-
         console.error(rows);
         console.error(maxCount);
 
@@ -243,7 +254,12 @@ export class MetricsTableContributor extends Contributor {
         rows.forEach(row => {
             row.data.forEach(cell => {
                 if (cell !== null) {
-                    const maxCountKey = `${row.term}_${cell.metric}`;
+                    let maxCountKey;
+                    if(cell.metric === 'count'){
+                        maxCountKey = `${cell.column}_${row.term}_${cell.metric}`;
+                    } else {
+                        maxCountKey = `${cell.column}_${cell.field}_${row.term}_${cell.metric}`;
+                    }
                     cell.maxValue = maxCount.get(maxCountKey);
                 }
             });
@@ -253,22 +269,6 @@ export class MetricsTableContributor extends Contributor {
         // we update max value.
         console.error(metricsTable);
         return metricsTable;
-    }
-
-    private findMetricsColumnIndex(collectionName: string,
-                                   aggregationMetric: AggregationMetric,
-                                   metricsTableColumn: MetricsTableColumn[]): number {
-        return metricsTableColumn.findIndex((metricsColumn) =>
-            metricsColumn.metric.toString().toLowerCase() === aggregationMetric.type.toLowerCase() &&
-                metricsColumn.field === aggregationMetric.field &&
-                metricsColumn.collection === collectionName
-        );
-    }
-
-    private aggregMetricSpecEqColumnSpec(collectionName: string, aggregationMetric: AggregationMetric, metricsTableColumn: MetricsTableColumn) {
-        return metricsTableColumn.metric === aggregationMetric.type &&
-            metricsTableColumn.field === aggregationMetric.field &&
-            collectionName === metricsTableColumn.collection;
     }
 
     private orderMetricsTableResponse(data: Array<MetricsTableResponse>): Array<MetricsTableResponse> {

@@ -280,13 +280,15 @@ export interface MetricsTableHeader {
     metric: ArlasApiMetric.CollectFctEnum | 'count';
 }
 
-export interface MetricsTableData {
+export interface MetricsTableCell {
     value: number;
     maxValue: number;
     metric: ArlasApiMetric.CollectFctEnum | 'count' | string;
+    column: string;
+    field: string;
 }
 
 export interface MetricsTableRow {
     term: string;
-    data: MetricsTableData[];
+    data: MetricsTableCell[];
 }

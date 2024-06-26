@@ -250,6 +250,19 @@ export const aggResponse2 = {
                     'value': 10
                 }
             ]
+        },
+        {
+            'count': 2162,
+            'key': 'IGN-PLEIADES',
+            'key_as_string': 'IGN-PLEIADES',
+            'elements': [],
+            'metrics': [
+                {
+                    'type': 'avg',
+                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
+                    'value': 10
+                }
+            ]
         }
     ]
 };
@@ -279,230 +292,8 @@ export const computableResponseMock: ComputableResponse = {
         {collection: 'toto', metric: ArlasApiMetric.CollectFctEnum.SUM, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_tristesse'},
-        {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.SUM, field: 'metadata_heureux'}
+        {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.SUM, field: 'metadata_heureux'},
+        {collection: 'titi', metric: 'count', field: 'metadata_count'} // quizz du field ??? comment on sait que c'est le bon count
     ],
     metricsResponse: aggregationResponseList
 };
-
-/**
- * result
- *
- *
- * {
- *     "data": [
- *         {
- *             "data": [
- *                 {
- *                     "maxValue": 0,
- *                     "value": 37.83978514539729,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "sum"
- *                 },
- *                 {
- *                     "maxValue": 0,
- *                     "value": 0,
- *                     "metric": "avg"
- *                 },
- *                 null,
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "sum"
- *                 }
- *             ],
- *             "term": "PLEIADES"
- *         },
- *         {
- *             "data": [
- *                 {
- *                     "maxValue": 42.817200557103064,
- *                     "value": 42.817200557103064,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "sum"
- *                 },
- *                 null,
- *                 null,
- *                 null
- *             ],
- *             "term": "AIRBUS-SPOT"
- *         },
- *         {
- *             "data": [
- *                 null,
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "sum"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 33.53524605018058,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "avg"
- *                 },
- *                 null
- *             ],
- *             "term": "SENTINEL 2"
- *         },
- *         {
- *             "data": [
- *                 {
- *                     "maxValue": 500,
- *                     "value": 500,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "sum"
- *                 },
- *                 null,
- *                 null,
- *                 null
- *             ],
- *             "term": "AIRBUS-PLEIADES"
- *         },
- *         {
- *             "data": [
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 4.640448240619069,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 800,
- *                     "value": 800,
- *                     "metric": "sum"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 4.640448240619069,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "avg"
- *                 },
- *                 null
- *             ],
- *             "term": "GEOSUD"
- *         },
- *         {
- *             "data": [
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 3.133981172246967,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 100,
- *                     "value": 100,
- *                     "metric": "sum"
- *                 },
- *                 null,
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "avg"
- *                 },
- *                 null
- *             ],
- *             "term": "SPOTWORLDHERITAGE"
- *         },
- *         {
- *             "data": [
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 0,
- *                     "metric": "avg"
- *                 },
- *                 null,
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 0,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "avg"
- *                 },
- *                 null
- *             ],
- *             "term": "CNES-PLEIADES"
- *         },
- *         {
- *             "data": [
- *                 null,
- *                 null,
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 0,
- *                     "metric": "avg"
- *                 },
- *                 {
- *                     "maxValue": 37.83978514539729,
- *                     "value": 37.83978514539729,
- *                     "metric": "avg"
- *                 },
- *                 null
- *             ],
- *             "term": "KALCNES"
- *         },
- *         {
- *             "data": [
- *                 null,
- *                 null,
- *                 {
- *                     "maxValue": 10,
- *                     "value": 10,
- *                     "metric": "avg"
- *                 },
- *                 null,
- *                 null
- *             ],
- *             "term": "IGN-PLEIADES"
- *         }
- *     ],
- *     "header": [
- *         {
- *             "title": "toto",
- *             "subTitle": "metadata_ObservationContext_eo_opt_cloudCoverPercentage",
- *             "metric": "AVG"
- *         },
- *         {
- *             "title": "toto",
- *             "subTitle": "metadata_ObservationContext_eo_opt_cloudCoverPercentage",
- *             "metric": "SUM"
- *         },
- *         {
- *             "title": "titi",
- *             "subTitle": "metadata_ObservationContext_eo_opt_cloudCoverPercentage",
- *             "metric": "AVG"
- *         },
- *         {
- *             "title": "titi",
- *             "subTitle": "metadata_tristesse",
- *             "metric": "AVG"
- *         },
- *         {
- *             "title": "titi",
- *             "subTitle": "metadata_heureux",
- *             "metric": "SUM"
- *         }
- *     ]
- * }
- */
