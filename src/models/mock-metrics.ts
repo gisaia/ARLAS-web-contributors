@@ -293,7 +293,7 @@ export const computableResponseMock: ComputableResponse = {
         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_tristesse'},
         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.SUM, field: 'metadata_heureux'},
-        {collection: 'titi', metric: 'count', field: 'metadata_count'} // quizz du field ??? comment on sait que c'est le bon count
+        {collection: 'titi', metric: 'count', field: ''} // quizz du field ??? comment on sait que c'est le bon count
     ],
     metricsResponse: aggregationResponseList
 };

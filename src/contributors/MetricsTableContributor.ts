@@ -94,11 +94,11 @@ export class MetricsTableContributor extends Contributor {
         this.sort = this.getConfigValue('sort');
         this.configuration = this.getConfigValue('configuration');
         this.nbterms = this.getConfigValue('nbterms');
-        /* this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
+        this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
         this.collections = this.table.vectors.map(v => ({
             field: v.configuration.termfield,
             collectionName: v.collection
-        }));*/
+        }));
     }
 
     /** @override */
@@ -199,14 +199,14 @@ export class MetricsTableContributor extends Contributor {
 
         metricsResponses.forEach(metricsResponse => {
             const currentCollection = metricsResponse.collection;
-            metricsResponse.aggregationResponse.elements.forEach(elements => {
+            metricsResponse.aggregationResponse.elements.forEach(element => {
                 let row: MetricsTableRow;
-                if (rows.has(elements.key_as_string)) {
-                    row = rows.get(elements.key_as_string);
+                if (rows.has(element.key_as_string)) {
+                    row = rows.get(element.key_as_string);
                 } else {
-                    row = {data: [], term: elements.key_as_string};
+                    row = {data: [], term: element.key_as_string};
                     row.data = Array(columnsOrder.length).fill(null);
-                    rows.set(elements.key_as_string, row);
+                    rows.set(element.key_as_string, row);
                 }
                 let colCount = 0;
                 columnsOrder.forEach((col, i) => {
@@ -214,12 +214,12 @@ export class MetricsTableContributor extends Contributor {
                         let uniqueTermMetric;
                         let value;
                         // how we know its the good field that we want if the metrics object can be empty ?
-                        if (col.metric === 'count' && colCount === i) {
-                            uniqueTermMetric = `${col.collection}_${elements.key_as_string}_${col.metric}`;
-                            value = elements.count;
+                        if (col.metric === 'count') {
+                            uniqueTermMetric = `${col.collection}_${element.key_as_string}_${col.metric}`;
+                            value = element.count;
                         } else {
-                            uniqueTermMetric = `${col.collection}_${col.field}_${elements.key_as_string}_${col.metric}`;
-                            const metric = elements.metrics.find(metric =>
+                            uniqueTermMetric = `${col.collection}_${col.field}_${col.metric}`;
+                            const metric = element.metrics.find(metric =>
                                 metric.type.toLowerCase() === col.metric.toString().toLowerCase() &&
                                 metric.field === col.field
                             );
@@ -236,9 +236,7 @@ export class MetricsTableContributor extends Contributor {
                                 maxCount.set(uniqueTermMetric, value);
                             }
                         }
-                        console.error(colCount);
                     }
-                    colCount++;
                 });
             });
         });
