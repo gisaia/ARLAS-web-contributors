@@ -27,34 +27,18 @@ import {
     MetricsTableConfig,
     MetricsTable,
     MetricsTableHeader,
-    MetricsTableRow, MetricsTableCell, MetricsTableSortConfig, MetricsVector
+    MetricsTableRow, MetricsTableCell, MetricsTableSortConfig, MetricsVector,
+    ComputableResponse,
+    MetricsTableResponse
 } from '../models/metrics-table.config';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
-import { Observable, forkJoin, map, of, mergeMap } from 'rxjs';
-import { computableResponseMock } from '../models/mock-metrics';
-import { AggregationMetric } from 'arlas-api/api';
-
-export interface MetricsTableResponse {
-    collection: string;
-    aggregationResponse: AggregationResponse;
-    keys: Set<string>;
-    missingKeys: Set<string>;
-    vector: MetricsVector;
-    /** if true, it means the tables terms should be sorted according to this vector. */
-    leadsTermsOrder?: boolean;
-}
+import { Observable, forkJoin, map, of, mergeMap, from } from 'rxjs';
 
 
-export interface ComputableResponse {
-    columns: MetricsTableColumn[];
-    metricsResponse: Array<MetricsTableResponse>;
-}
 
-export interface MetricsTableColumn {
-    collection: string;
-    metric: ArlasApiMetric.CollectFctEnum | 'count';
-    field?: string;
-}
+
+
+
 
 /**
  * This contributor fetches metrics from different collection by term. The terms are value of a termfield specified for each collection.
@@ -139,38 +123,38 @@ export class MetricsTableContributor extends Contributor {
                 /** The following block launches a list of Complementary aggregations for each vector (only in case of missing keys),
                  *  in order to fetch the missing keys and complete the table. */
                 mergeMap(metricsResponses => forkJoin(metricsResponses.map(mr => {
-                        if (mr.missingKeys.size === 0) {
-                            return of(mr);
-                        } else {
-                            const termsToInclude = Array.from(mr.missingKeys);
-                            return this.collaborativeSearcheService
-                                .resolveButNotAggregation([projType.aggregate, [mr.vector.getAggregation(termsToInclude)]],
-                                    this.collaborativeSearcheService.collaborations,
-                                    mr.collection,
-                                    this.identifier, {}, false, this.cacheDuration
-                                ).pipe(
-                                    map(ar => {
-                                        const keys = new Set(ar.elements.map(e => e.key));
-                                        keys.forEach(k => allKeys.add(k));
-                                        const missingKeys = new Set<string>();
-                                        allKeys.forEach(k => {
-                                            if (!keys.has(k)) {
-                                                missingKeys.add(k);
-                                            }
-                                        });
-                                        return ({
-                                            collection: mr.collection,
-                                            /** merging response of the base aggregation and the complementary aggregation  */
-                                            aggregationResponse: mr.vector.mergeResponses(mr.aggregationResponse, ar),
-                                            keys,
-                                            missingKeys,
-                                            vector: mr.vector,
-                                            leadsTermsOrder: mr.vector.leadsSort()
-                                        });
-                                    })
-                                );
-                        }
-                    })),
+                    if (mr.missingKeys.size === 0) {
+                        return of(mr);
+                    } else {
+                        const termsToInclude = Array.from(mr.missingKeys);
+                        return this.collaborativeSearcheService
+                            .resolveButNotAggregation([projType.aggregate, [mr.vector.getAggregation(termsToInclude)]],
+                                this.collaborativeSearcheService.collaborations,
+                                mr.collection,
+                                this.identifier, {}, false, this.cacheDuration
+                            ).pipe(
+                                map(ar => {
+                                    const keys = new Set(ar.elements.map(e => e.key));
+                                    keys.forEach(k => allKeys.add(k));
+                                    const missingKeys = new Set<string>();
+                                    allKeys.forEach(k => {
+                                        if (!keys.has(k)) {
+                                            missingKeys.add(k);
+                                        }
+                                    });
+                                    return ({
+                                        collection: mr.collection,
+                                        /** merging response of the base aggregation and the complementary aggregation  */
+                                        aggregationResponse: mr.vector.mergeResponses(mr.aggregationResponse, ar),
+                                        keys,
+                                        missingKeys,
+                                        vector: mr.vector,
+                                        leadsTermsOrder: mr.vector.leadsSort()
+                                    });
+                                })
+                            );
+                    }
+                })),
                 ),
                 map(mrs => {
                     const sortedMrs = this.orderMetricsTableResponse(mrs);
@@ -204,35 +188,33 @@ export class MetricsTableContributor extends Contributor {
                 if (rows.has(element.key_as_string)) {
                     row = rows.get(element.key_as_string);
                 } else {
-                    row = {data: [], term: element.key_as_string};
+                    row = { data: [], term: element.key_as_string };
                     row.data = Array(columnsOrder.length).fill(null);
                     rows.set(element.key_as_string, row);
                 }
-
                 columnsOrder.forEach((col, i) => {
                     if (currentCollection === col.collection) {
                         let uniqueTermMetric;
                         let value;
                         // how we know its the good field that we want if the metrics object can be empty ?
                         if (col.metric === 'count') {
-                            uniqueTermMetric = `${col.collection}_${element.key_as_string}_${col.metric}`;
+                            uniqueTermMetric = `${col.collection}_${col.metric}`;
                             value = element.count;
                         } else {
                             uniqueTermMetric = `${col.collection}_${col.field}_${col.metric}`;
-                            const metric = element.metrics.find(metric =>
-                                metric.type.toLowerCase() === col.metric.toString().toLowerCase() &&
-                                metric.field === col.field
+                            const metric = element.metrics.find(metric => metric.type.toLowerCase() === col.metric.toString().toLowerCase() &&
+                                    metric.field === col.field.replace(/\./g, '_')
                             );
-                            if(metric){
+                            if (metric) {
                                 value = metric.value;
                             }
                         }
                         // we set the value and the max count
-                        if(value){
-                            row.data[i] = {maxValue: 0, value, metric: col.metric, column: col.collection, field:col.field};
+                        if (value) {
+                            row.data[i] = { maxValue: 0, value, metric: col.metric, column: col.collection, field: col.field };
                             if (maxCount.has(uniqueTermMetric) && maxCount.get(uniqueTermMetric) < value) {
                                 maxCount.set(uniqueTermMetric, value);
-                            } else {
+                            } else if (!maxCount.has(uniqueTermMetric)) {
                                 maxCount.set(uniqueTermMetric, value);
                             }
                         }
@@ -243,20 +225,20 @@ export class MetricsTableContributor extends Contributor {
         console.error(rows);
         console.error(maxCount);
 
-        const metricsTable: MetricsTable = {data: [], header: []};
+        const metricsTable: MetricsTable = { data: [], header: [] };
         // att the end we setHeaders
         for (const value of columnsOrder) {
-            metricsTable.header.push({title: value.collection, subTitle: value.field, metric: value.metric});
+            metricsTable.header.push({ title: value.collection, subTitle: value.field, metric: value.metric });
         }
 
         rows.forEach(row => {
             row.data.forEach(cell => {
                 if (cell !== null) {
                     let maxCountKey;
-                    if(cell.metric === 'count'){
-                        maxCountKey = `${cell.column}_${row.term}_${cell.metric}`;
+                    if (cell.metric === 'count') {
+                        maxCountKey = `${cell.column}_${cell.metric}`;
                     } else {
-                        maxCountKey = `${cell.column}_${cell.field}_${row.term}_${cell.metric}`;
+                        maxCountKey = `${cell.column}_${cell.field}_${cell.metric}`;
                     }
                     cell.maxValue = maxCount.get(maxCountKey);
                 }
@@ -274,14 +256,16 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    public setData(data: MetricsTable): void {
+    public setData(data: MetricsTable): any {
         this.data = data;
+        return from([]);
+
     }
 
     /** @override */
     /** todo !!!! specify data type and return type  */
     public setSelection(data: any, c: Collaboration) {
-
+        return from([]);
     }
 
     /**

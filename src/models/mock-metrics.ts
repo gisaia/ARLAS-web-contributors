@@ -1,5 +1,4 @@
-import { ComputableResponse, MetricsTableResponse } from '../contributors/MetricsTableContributor';
-import { MetricsVector } from './metrics-table.config';
+import { ComputableResponse, MetricsTableResponse, MetricsVector } from './metrics-table.config';
 import { Metric as ArlasApiMetric } from 'arlas-api';
 
 export const aggResponse1 = {

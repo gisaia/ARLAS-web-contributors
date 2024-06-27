@@ -19,8 +19,27 @@
  */
 
 import { Metric as ArlasApiMetric, Aggregation, AggregationResponse } from 'arlas-api';
-import { MetricsTableColumn } from 'contributors/MetricsTableContributor';
 
+export interface MetricsTableResponse {
+    collection: string;
+    aggregationResponse: AggregationResponse;
+    keys: Set<string>;
+    missingKeys: Set<string>;
+    vector: MetricsVector;
+    /** if true, it means the tables terms should be sorted according to this vector. */
+    leadsTermsOrder?: boolean;
+}
+
+export interface ComputableResponse {
+    columns: MetricsTableColumn[];
+    metricsResponse: Array<MetricsTableResponse>;
+}
+
+export interface MetricsTableColumn {
+    collection: string;
+    metric: ArlasApiMetric.CollectFctEnum | 'count';
+    field?: string;
+}
 export interface MetricsTableConfig {
     [collection: string]: MetricsVectorConfig;
 }
@@ -213,7 +232,6 @@ export class MetricsVector {
         const complementarElements = complementaryResponse.elements;
         const mergedElements = [];
         let i = 0, j = 0;
-
         const compare = (a: number, b: number): boolean => this.getSortOrder(this.sort) === Aggregation.OrderEnum.Asc ? a < b : a > b;
         // Merge arrays until one is exhausted
         while (i < baseElements.length && j < complementarElements.length) {
@@ -247,7 +265,7 @@ export class MetricsVector {
         } else {
             const metricConfig = this.sort.metric;
             return response.elements.map(e => e.metrics
-                .find(m => (m.field === metricConfig.field && m.type === metricConfig.metric))?.value);
+                .find(m => (m.field === metricConfig.field.replace(/\./g, '_') && m.type === metricConfig.metric))?.value);
         }
     }
 
