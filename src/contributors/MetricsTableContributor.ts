@@ -21,7 +21,7 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { AggregationResponse, Metric as ArlasApiMetric } from 'arlas-api';
+import { Filter, Expression } from 'arlas-api';
 import {
     MetricsVectors,
     MetricsTableConfig,
@@ -33,11 +33,6 @@ import {
 } from '../models/metrics-table.config';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
 import { Observable, forkJoin, map, of, mergeMap, from } from 'rxjs';
-
-
-
-
-
 
 
 /**
@@ -67,7 +62,14 @@ export class MetricsTableContributor extends Contributor {
      */
     public sort: MetricsTableSortConfig = this.getConfigValue('sort');
 
+    /**
+     * Type of operator for the filter : equal or not equal
+     */
+    private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
+        Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
+
     public data: MetricsTable;
+    public selectedTerms: Array<string> = [];
 
     public constructor(
         identifier: string,
@@ -251,6 +253,35 @@ export class MetricsTableContributor extends Contributor {
         return metricsTable;
     }
 
+    private onRowSelect(terms: Set<string>): void {
+        if (terms.size > 0) {
+            const collabFilters = new Map<string, Filter[]>();
+            this.table.vectors.forEach(v => {
+                const filter: Filter = { f: [] };
+                const equalExpression: Expression = {
+                    field: v.configuration.termfield,
+                    op: this.filterOperator,
+                    value: ''
+                };
+                terms.forEach(value => {
+                    equalExpression.value += value + ',';
+                });
+                if (equalExpression.value !== '') {
+                    equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
+                    filter.f.push([equalExpression]);
+                }
+                collabFilters.set(v.collection, [filter]);
+            });
+            const collaboration: Collaboration = {
+                filters: collabFilters,
+                enabled: true
+            };
+            this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
+        } else {
+            this.collaborativeSearcheService.removeFilter(this.identifier);
+        }
+    }
+
     private orderMetricsTableResponse(data: Array<MetricsTableResponse>): Array<MetricsTableResponse> {
         return data.sort(((response, comparingResponse) => (response.leadsTermsOrder) ? -1 : 0));
     }
@@ -264,7 +295,25 @@ export class MetricsTableContributor extends Contributor {
 
     /** @override */
     /** todo !!!! specify data type and return type  */
-    public setSelection(data: any, c: Collaboration) {
+    public setSelection(data: MetricsTable, collaboration: Collaboration) {
+        const termsSet = new Set<string>();
+        if (collaboration) {
+            let filter: Filter;
+            if (collaboration.filters) {
+                collaboration.filters.forEach((filters, collection) => {
+                    filter = filters[0];
+                    if (filter) {
+                        const fFilters = filter.f;
+                        fFilters.forEach(fFilter => {
+                            const values = fFilter[0].value.split(',');
+                            values.forEach(v => termsSet.add(v));
+                        });
+                    }
+
+                });
+            }
+        }
+        this.selectedTerms = Array.from(termsSet);
         return from([]);
     }
 
