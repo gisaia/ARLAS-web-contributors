@@ -21,20 +21,19 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { AggregationResponse } from 'arlas-api';
-import { MetricsVectors, MetricsTableConfig, MetricsTable, MetricsVector, MetricsTableSortConfig } from '../models/metrics-table.config';
-import { Observable, forkJoin, map, mergeMap, of } from 'rxjs';
+import { Filter, Expression } from 'arlas-api';
+import {
+    MetricsVectors,
+    MetricsTableConfig,
+    MetricsTable,
+    MetricsTableHeader,
+    MetricsTableRow, MetricsTableCell, MetricsTableSortConfig, MetricsVector,
+    ComputableResponse,
+    MetricsTableResponse
+} from '../models/metrics-table.config';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
+import { Observable, forkJoin, map, of, mergeMap, from } from 'rxjs';
 
-export interface MetricsTableResponse {
-    collection: string;
-    aggregationResponse: AggregationResponse;
-    keys: Set<string>;
-    missingKeys: Set<string>;
-    vector: MetricsVector;
-    /** if true, it means the tables terms should be sorted according to this vector. */
-    leadsTermsOrder?: boolean;
-}
 
 /**
  * This contributor fetches metrics from different collection by term. The terms are value of a termfield specified for each collection.
@@ -63,7 +62,14 @@ export class MetricsTableContributor extends Contributor {
      */
     public sort: MetricsTableSortConfig = this.getConfigValue('sort');
 
+    /**
+     * Type of operator for the filter : equal or not equal
+     */
+    private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
+        Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
+
     public data: MetricsTable;
+    public selectedTerms: Array<string> = [];
 
     public constructor(
         identifier: string,
@@ -82,7 +88,7 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<MetricsTableResponse>> {
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<ComputableResponse> {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             const allKeys = new Set<string>();
             /** Base aggregations to get terms and their metrics for each collection (vector) */
@@ -122,8 +128,7 @@ export class MetricsTableContributor extends Contributor {
                     if (mr.missingKeys.size === 0) {
                         return of(mr);
                     } else {
-                        /** Joining terms with `|` as include parameter of the aggregation only accepts regex */
-                        const termsToInclude = Array.from(mr.missingKeys).join('|');
+                        const termsToInclude = Array.from(mr.missingKeys);
                         return this.collaborativeSearcheService
                             .resolveButNotAggregation([projType.aggregate, [mr.vector.getAggregation(termsToInclude)]],
                                 this.collaborativeSearcheService.collaborations,
@@ -152,33 +157,170 @@ export class MetricsTableContributor extends Contributor {
                             );
                     }
                 })),
-                ));
+                ),
+                map(mrs => {
+                    const sortedMrs = this.orderMetricsTableResponse(mrs);
+                    let columns = [];
+                    sortedMrs.forEach(mr => {
+                        columns = columns.concat(mr.vector.getColumns());
+                    });
+                    return {
+                        columns,
+                        metricsResponse: mrs
+                    };
+                })
+            );
         }
         return of();
     }
 
     /** @override */
     /** todo !!!! specify data type and return type  */
-    public computeData(data: Array<MetricsTableResponse>): MetricsTable {
-        console.log('test is ok');
-        return null;
+    public computeData(data: ComputableResponse): MetricsTable {
+        // todo: to be improved
+        const rows: Map<string, MetricsTableRow> = new Map();
+        const maxCount = new Map();
+        const metricsResponses = data.metricsResponse;
+        const columnsOrder = data.columns;
+
+        metricsResponses.forEach(metricsResponse => {
+            const currentCollection = metricsResponse.collection;
+            metricsResponse.aggregationResponse.elements.forEach(element => {
+                let row: MetricsTableRow;
+                if (rows.has(element.key_as_string)) {
+                    row = rows.get(element.key_as_string);
+                } else {
+                    row = { data: [], term: element.key_as_string };
+                    row.data = Array(columnsOrder.length).fill(null);
+                    rows.set(element.key_as_string, row);
+                }
+                columnsOrder.forEach((col, i) => {
+                    if (currentCollection === col.collection) {
+                        let uniqueTermMetric;
+                        let value;
+                        // how we know its the good field that we want if the metrics object can be empty ?
+                        if (col.metric === 'count') {
+                            uniqueTermMetric = `${col.collection}_${col.metric}`;
+                            value = element.count;
+                        } else {
+                            uniqueTermMetric = `${col.collection}_${col.field}_${col.metric}`;
+                            const metric = element.metrics.find(metric => metric.type.toLowerCase() === col.metric.toString().toLowerCase() &&
+                                    metric.field === col.field.replace(/\./g, '_')
+                            );
+                            if (metric) {
+                                value = metric.value;
+                            }
+                        }
+                        // we set the value and the max count
+                        if (value) {
+                            row.data[i] = { maxValue: 0, value, metric: col.metric, column: col.collection, field: col.field };
+                            if (maxCount.has(uniqueTermMetric) && maxCount.get(uniqueTermMetric) < value) {
+                                maxCount.set(uniqueTermMetric, value);
+                            } else if (!maxCount.has(uniqueTermMetric)) {
+                                maxCount.set(uniqueTermMetric, value);
+                            }
+                        }
+                    }
+                });
+            });
+        });
+        console.error(rows);
+        console.error(maxCount);
+
+        const metricsTable: MetricsTable = { data: [], header: [] };
+        // att the end we setHeaders
+        for (const value of columnsOrder) {
+            metricsTable.header.push({ title: value.collection, subTitle: value.field, metric: value.metric });
+        }
+
+        rows.forEach(row => {
+            row.data.forEach(cell => {
+                if (cell !== null) {
+                    let maxCountKey;
+                    if (cell.metric === 'count') {
+                        maxCountKey = `${cell.column}_${cell.metric}`;
+                    } else {
+                        maxCountKey = `${cell.column}_${cell.field}_${cell.metric}`;
+                    }
+                    cell.maxValue = maxCount.get(maxCountKey);
+                }
+            });
+            metricsTable.data.push(row);
+        });
+
+        // we update max value.
+        console.error(metricsTable);
+        return metricsTable;
+    }
+
+    private onRowSelect(terms: Set<string>): void {
+        if (terms.size > 0) {
+            const collabFilters = new Map<string, Filter[]>();
+            this.table.vectors.forEach(v => {
+                const filter: Filter = { f: [] };
+                const equalExpression: Expression = {
+                    field: v.configuration.termfield,
+                    op: this.filterOperator,
+                    value: ''
+                };
+                terms.forEach(value => {
+                    equalExpression.value += value + ',';
+                });
+                if (equalExpression.value !== '') {
+                    equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
+                    filter.f.push([equalExpression]);
+                }
+                collabFilters.set(v.collection, [filter]);
+            });
+            const collaboration: Collaboration = {
+                filters: collabFilters,
+                enabled: true
+            };
+            this.collaborativeSearcheService.setFilter(this.identifier, collaboration);
+        } else {
+            this.collaborativeSearcheService.removeFilter(this.identifier);
+        }
+    }
+
+    private orderMetricsTableResponse(data: Array<MetricsTableResponse>): Array<MetricsTableResponse> {
+        return data.sort(((response, comparingResponse) => (response.leadsTermsOrder) ? -1 : 0));
     }
 
     /** @override */
-    public setData(data: MetricsTable): void {
+    public setData(data: MetricsTable): any {
         this.data = data;
+        return from([]);
+
     }
 
     /** @override */
     /** todo !!!! specify data type and return type  */
-    public setSelection(data: any, c: Collaboration) {
+    public setSelection(data: MetricsTable, collaboration: Collaboration) {
+        const termsSet = new Set<string>();
+        if (collaboration) {
+            let filter: Filter;
+            if (collaboration.filters) {
+                collaboration.filters.forEach((filters, collection) => {
+                    filter = filters[0];
+                    if (filter) {
+                        const fFilters = filter.f;
+                        fFilters.forEach(fFilter => {
+                            const values = fFilter[0].value.split(',');
+                            values.forEach(v => termsSet.add(v));
+                        });
+                    }
 
+                });
+            }
+        }
+        this.selectedTerms = Array.from(termsSet);
+        return from([]);
     }
 
     /**
      * @override
      * @returns Package name for the configuration service.
-    */
+     */
     public getPackageName(): string {
         return 'arlas.web.contributors.metricslist';
     }
@@ -193,6 +335,7 @@ export class MetricsTableContributor extends Contributor {
     public isUpdateEnabledOnOwnCollaboration(): boolean {
         return false;
     }
+
     /** @override */
     public static getJsonSchema(): Object {
         return jsonSchema;

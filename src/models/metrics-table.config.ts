@@ -20,6 +20,26 @@
 
 import { Metric as ArlasApiMetric, Aggregation, AggregationResponse } from 'arlas-api';
 
+export interface MetricsTableResponse {
+    collection: string;
+    aggregationResponse: AggregationResponse;
+    keys: Set<string>;
+    missingKeys: Set<string>;
+    vector: MetricsVector;
+    /** if true, it means the tables terms should be sorted according to this vector. */
+    leadsTermsOrder?: boolean;
+}
+
+export interface ComputableResponse {
+    columns: MetricsTableColumn[];
+    metricsResponse: Array<MetricsTableResponse>;
+}
+
+export interface MetricsTableColumn {
+    collection: string;
+    metric: ArlasApiMetric.CollectFctEnum | 'count';
+    field?: string;
+}
 export interface MetricsTableConfig {
     [collection: string]: MetricsVectorConfig;
 }
@@ -86,7 +106,7 @@ export class MetricsVector {
         this.sort = sortConfig;
     }
 
-    public getAggregation(termsToInclude?: string): Aggregation {
+    public getAggregation(termsToInclude?: string[]): Aggregation {
         const aggregation: Aggregation = {
             field: this.configuration.termfield,
             size: this.nbTerms.toString(),
@@ -94,7 +114,8 @@ export class MetricsVector {
             type: Aggregation.TypeEnum.Term
         };
         if (termsToInclude) {
-            aggregation.include = termsToInclude;
+            aggregation.include = termsToInclude.join('|');
+            aggregation.size = termsToInclude.length.toString();
         }
         if (this.sort && this.sort.collection === this.collection) {
             aggregation.order = this.getSortOrder(this.sort);
@@ -143,6 +164,40 @@ export class MetricsVector {
         return arlasMetrics;
     }
 
+    public getColumns(): MetricsTableColumn[] {
+        const metricsConfig: MetricConfig[] = this.configuration.metrics;
+        const sort: MetricsTableSortConfig = this.sort;
+        const columns: MetricsTableColumn[] = [];
+        let remainingMetrics = (m: MetricConfig) => true;
+        if (sort && sort.collection === this.collection) {
+            const sortMetric = sort.metric;
+            if (sort.on === 'count' && !!metricsConfig.find(m => m.metric === 'count')) {
+                columns.push({
+                    metric: 'count',
+                    collection: this.collection
+                });
+                remainingMetrics = (m: MetricConfig) => (m.metric !== 'count');
+            } else if (sort.on === 'metric' && !!sortMetric) {
+                columns.push({
+                    metric: sortMetric.metric,
+                    collection: this.collection,
+                    field: sortMetric.field
+                });
+                remainingMetrics = (m: MetricConfig) => (m.metric !== sortMetric.metric && m.field !== sortMetric.field);
+            }
+
+        }
+        metricsConfig.filter(m => remainingMetrics(m)).forEach(m => {
+            columns.push({
+                metric: m.metric,
+                collection: this.collection,
+                field: m?.field
+            });
+        });
+        return columns;
+    }
+
+
     /** Returns the Aggregation.OnEnum to apply to arlas aggregation request object. */
     private getSortOn(sort: MetricsTableSortConfig): Aggregation.OnEnum {
         if (sort && sort.on === 'alphabetical') {
@@ -177,7 +232,6 @@ export class MetricsVector {
         const complementarElements = complementaryResponse.elements;
         const mergedElements = [];
         let i = 0, j = 0;
-
         const compare = (a: number, b: number): boolean => this.getSortOrder(this.sort) === Aggregation.OrderEnum.Asc ? a < b : a > b;
         // Merge arrays until one is exhausted
         while (i < baseElements.length && j < complementarElements.length) {
@@ -211,7 +265,7 @@ export class MetricsVector {
         } else {
             const metricConfig = this.sort.metric;
             return response.elements.map(e => e.metrics
-                .find(m => (m.field === metricConfig.field && m.type === metricConfig.metric))?.value);
+                .find(m => (m.field === metricConfig.field.replace(/\./g, '_') && m.type === metricConfig.metric))?.value);
         }
     }
 
@@ -241,15 +295,18 @@ export interface MetricsTable {
 export interface MetricsTableHeader {
     title: string;
     subTitle: string;
-    metric: string;
+    metric: ArlasApiMetric.CollectFctEnum | 'count';
 }
 
-export interface MetricsTableData {
+export interface MetricsTableCell {
     value: number;
     maxValue: number;
+    metric: ArlasApiMetric.CollectFctEnum | 'count' | string;
+    column: string;
+    field: string;
 }
 
 export interface MetricsTableRow {
     term: string;
-    data: MetricsTableData[];
+    data: MetricsTableCell[];
 }
