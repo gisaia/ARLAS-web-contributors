@@ -30,9 +30,48 @@ export interface MetricsTableResponse {
     leadsTermsOrder?: boolean;
 }
 
-export interface ComputableResponse {
-    columns: MetricsTableColumn[];
-    metricsResponse: Array<MetricsTableResponse>;
+export class ComputableResponse {
+    public columns: MetricsTableColumn[] = [];
+    public metricsResponse: Array<MetricsTableResponse> = [];
+
+    public getMetricResponse(collection): MetricsTableResponse {
+        return this.metricsResponse.find(mr => mr.collection === collection);
+    }
+
+    public static mergeKeys(keys1: Set<string>, keys2: Set<string>): Set<string> {
+        const mergedKeys = new Set<string>();
+        if (keys1) {
+            keys1.forEach(k => mergedKeys.add(k));
+        }
+        if (keys2) {
+            keys2.forEach(k => mergedKeys.add(k));
+        }
+        return mergedKeys;
+    }
+
+    public static disjointValues(wholeKeys: Set<string>, keysToCheck: Set<string>): string[] {
+        const disjointValues = [];
+        keysToCheck.forEach(k => {
+            if (!wholeKeys.has(k)) {
+                disjointValues.push(k);
+            }
+        });
+        return disjointValues;
+    }
+
+    /** Create term elements with count = 0. */
+    public static createEmptyArlasElements(keys: Array<string>): AggregationResponse[] {
+        const elements: AggregationResponse[] = [];
+        keys.forEach(k => {
+            const ar: AggregationResponse = {
+                key: k,
+                key_as_string: k,
+                count: 0
+            };
+            elements.push(ar);
+        });
+        return elements;
+    }
 }
 
 export interface MetricsTableColumn {
@@ -204,7 +243,7 @@ export class MetricsVector {
             return Aggregation.OnEnum.Field;
         } else if (sort && sort.on === 'count') {
             return Aggregation.OnEnum.Count;
-        } else if (sort && sort.on === 'metric' && !!sort?.metric  && sort.metric.metric !== 'count') {
+        } else if (sort && sort.on === 'metric' && !!sort?.metric && sort.metric.metric !== 'count') {
             return Aggregation.OnEnum.Result;
         } else {
             return Aggregation.OnEnum.Count;
@@ -237,7 +276,7 @@ export class MetricsVector {
         while (i < baseElements.length && j < complementarElements.length) {
             if (compare(baseArray[i], complementaryArray[j])) {
                 mergedElements.push(baseElements[i]);
-                    i++;
+                i++;
             } else {
                 mergedElements.push(complementarElements[j]);
                 j++;
@@ -264,8 +303,8 @@ export class MetricsVector {
             return response.elements.map(e => e.count);
         } else {
             const metricConfig = this.sort.metric;
-            return response.elements.map(e => e.metrics
-                .find(m => (m.field === metricConfig.field.replace(/\./g, '_') && m.type === metricConfig.metric))?.value);
+            return response.elements.map(e => e.metrics?.find(m => (m.field === metricConfig.field.replace(/\./g, '_')
+             && m.type === metricConfig.metric))?.value);
         }
     }
 
@@ -277,8 +316,8 @@ export class MetricsVector {
             (this.sort.collection === this.collection
                 && (
                     this.sort.on === 'count'
-                    || (this.sort.on === 'metric' &&  this.sort?.metric?.metric === 'count'
-                ))
+                    || (this.sort.on === 'metric' && this.sort?.metric?.metric === 'count'
+                    ))
             );
     }
 

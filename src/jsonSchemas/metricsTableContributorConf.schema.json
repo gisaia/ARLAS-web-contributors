@@ -130,6 +130,11 @@
         "nbterms": {
             "description": "Number of terms to fetch for each collection",
             "type": "integer"
+        },
+        "filterOperator": {
+            "description": "Operator to apply when selecting a row of the metrics table.",
+            "type": "string",
+            "enum": ["Eq", "Ne"]
         }
     },
     "required": [

@@ -32,7 +32,7 @@ import {
     MetricsTableResponse
 } from '../models/metrics-table.config';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
-import { Observable, forkJoin, map, of, mergeMap, from } from 'rxjs';
+import { Observable, forkJoin, map, of, mergeMap, from, Subject, take } from 'rxjs';
 
 
 /**
@@ -68,9 +68,13 @@ export class MetricsTableContributor extends Contributor {
     private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
         Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
 
+    private operatorChangedEvent: Subject<Expression.OpEnum> = new Subject();
+    public operatorChanged$: Observable<Expression.OpEnum> = this.operatorChangedEvent.asObservable();
+
+
     public data: MetricsTable;
     public selectedTerms: Array<string> = [];
-
+    private computableResponse: ComputableResponse;
     public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
@@ -137,7 +141,10 @@ export class MetricsTableContributor extends Contributor {
                             ).pipe(
                                 map(ar => {
                                     const keys = new Set(ar.elements.map(e => e.key));
-                                    keys.forEach(k => allKeys.add(k));
+                                    keys.forEach(k => {
+                                        allKeys.add(k);
+                                        mr.keys.add(k);
+                                    });
                                     const missingKeys = new Set<string>();
                                     allKeys.forEach(k => {
                                         if (!keys.has(k)) {
@@ -148,7 +155,7 @@ export class MetricsTableContributor extends Contributor {
                                         collection: mr.collection,
                                         /** merging response of the base aggregation and the complementary aggregation  */
                                         aggregationResponse: mr.vector.mergeResponses(mr.aggregationResponse, ar),
-                                        keys,
+                                        keys: mr.keys,
                                         missingKeys,
                                         vector: mr.vector,
                                         leadsTermsOrder: mr.vector.leadsSort()
@@ -164,96 +171,33 @@ export class MetricsTableContributor extends Contributor {
                     sortedMrs.forEach(mr => {
                         columns = columns.concat(mr.vector.getColumns());
                     });
-                    return {
-                        columns,
-                        metricsResponse: mrs
-                    };
+                    const cr = new ComputableResponse();
+                    cr.columns = columns;
+                    cr.metricsResponse = mrs;
+                    return cr;
                 })
             );
         }
-        return of();
+        return from([]);
     }
 
     /** @override */
-    /** todo !!!! specify data type and return type  */
-    public computeData(data: ComputableResponse): MetricsTable {
-        // todo: to be improved
-        const rows: Map<string, MetricsTableRow> = new Map();
-        const maxCount = new Map();
-        const metricsResponses = data.metricsResponse;
-        const columnsOrder = data.columns;
-
-        metricsResponses.forEach(metricsResponse => {
-            const currentCollection = metricsResponse.collection;
-            metricsResponse.aggregationResponse.elements.forEach(element => {
-                let row: MetricsTableRow;
-                if (rows.has(element.key_as_string)) {
-                    row = rows.get(element.key_as_string);
-                } else {
-                    row = { data: [], term: element.key_as_string };
-                    row.data = Array(columnsOrder.length).fill(null);
-                    rows.set(element.key_as_string, row);
-                }
-                columnsOrder.forEach((col, i) => {
-                    if (currentCollection === col.collection) {
-                        let uniqueTermMetric;
-                        let value;
-                        // how we know its the good field that we want if the metrics object can be empty ?
-                        if (col.metric === 'count') {
-                            uniqueTermMetric = `${col.collection}_${col.metric}`;
-                            value = element.count;
-                        } else {
-                            uniqueTermMetric = `${col.collection}_${col.field}_${col.metric}`;
-                            const metric = element.metrics.find(metric => metric.type.toLowerCase() === col.metric.toString().toLowerCase() &&
-                                    metric.field === col.field.replace(/\./g, '_')
-                            );
-                            if (metric) {
-                                value = metric.value;
-                            }
-                        }
-                        // we set the value and the max count
-                        if (value) {
-                            row.data[i] = { maxValue: 0, value, metric: col.metric, column: col.collection, field: col.field };
-                            if (maxCount.has(uniqueTermMetric) && maxCount.get(uniqueTermMetric) < value) {
-                                maxCount.set(uniqueTermMetric, value);
-                            } else if (!maxCount.has(uniqueTermMetric)) {
-                                maxCount.set(uniqueTermMetric, value);
-                            }
-                        }
-                    }
-                });
-            });
-        });
-        console.error(rows);
-        console.error(maxCount);
-
-        const metricsTable: MetricsTable = { data: [], header: [] };
-        // att the end we setHeaders
-        for (const value of columnsOrder) {
-            metricsTable.header.push({ title: value.collection, subTitle: value.field, metric: value.metric });
-        }
-
-        rows.forEach(row => {
-            row.data.forEach(cell => {
-                if (cell !== null) {
-                    let maxCountKey;
-                    if (cell.metric === 'count') {
-                        maxCountKey = `${cell.column}_${cell.metric}`;
-                    } else {
-                        maxCountKey = `${cell.column}_${cell.field}_${cell.metric}`;
-                    }
-                    cell.maxValue = maxCount.get(maxCountKey);
-                }
-            });
-            metricsTable.data.push(row);
-        });
-
-        // we update max value.
-        console.error(metricsTable);
-        return metricsTable;
+    public computeData(data: ComputableResponse): ComputableResponse {
+        return data;
     }
 
-    private onRowSelect(terms: Set<string>): void {
+    public getFilterOperator() {
+        return this.filterOperator;
+    }
+
+    public setFilterOperator(operator: Expression.OpEnum, emit = false) {
+        this.filterOperator = operator;
+        if (emit) {
+            this.operatorChangedEvent.next(operator);
+        }
+    }
+
+    public onRowSelect(terms: Set<string>): void {
         if (terms.size > 0) {
             const collabFilters = new Map<string, Filter[]>();
             this.table.vectors.forEach(v => {
@@ -287,15 +231,86 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    public setData(data: MetricsTable): any {
-        this.data = data;
+    public setData(data: ComputableResponse): any {
+        this.data = this.computeMetricsTable(data);
+        this.computableResponse = data;
         return from([]);
+    }
 
+    private computeMetricsTable(data: ComputableResponse): MetricsTable {
+        const rows: Map<string, MetricsTableRow> = new Map();
+        const maxCount = new Map();
+        const metricsResponses = data.metricsResponse;
+        const columnsOrder = data.columns;
+
+        metricsResponses.forEach(metricsResponse => {
+            const currentCollection = metricsResponse.collection;
+            metricsResponse.aggregationResponse.elements.forEach(element => {
+                let row: MetricsTableRow;
+                if (rows.has(element.key_as_string)) {
+                    row = rows.get(element.key_as_string);
+                } else {
+                    row = { data: [], term: element.key_as_string };
+                    row.data = Array(columnsOrder.length).fill(null);
+                    rows.set(element.key_as_string, row);
+                }
+                columnsOrder.forEach((col, i) => {
+                    if (currentCollection === col.collection) {
+                        let uniqueTermMetric;
+                        let value;
+                        // how we know its the good field that we want if the metrics object can be empty ?
+                        if (col.metric === 'count') {
+                            uniqueTermMetric = `${col.collection}_${col.metric}`;
+                            value = element.count;
+                        } else {
+                            uniqueTermMetric = `${col.collection}_${col.field}_${col.metric}`;
+                            const metric = element?.metrics?.find(metric => metric.type.toLowerCase() === col.metric.toString().toLowerCase() &&
+                                metric.field === col.field.replace(/\./g, '_')
+                            );
+                            if (metric) {
+                                value = metric.value;
+                            }
+                        }
+                        // we set the value and the max count
+                        if (value) {
+                            row.data[i] = { maxValue: 0, value, metric: col.metric, column: col.collection, field: col.field };
+                            if (maxCount.has(uniqueTermMetric) && maxCount.get(uniqueTermMetric) < value) {
+                                maxCount.set(uniqueTermMetric, value);
+                            } else if (!maxCount.has(uniqueTermMetric)) {
+                                maxCount.set(uniqueTermMetric, value);
+                            }
+                        }
+                    }
+                });
+            });
+        });
+        const metricsTable: MetricsTable = { data: [], header: [] };
+        // att the end we setHeaders
+        for (const value of columnsOrder) {
+            metricsTable.header.push({ title: value.collection, subTitle: value.field, metric: value.metric });
+        }
+
+        rows.forEach(row => {
+            row.data.forEach(cell => {
+                if (cell !== null) {
+                    let maxCountKey;
+                    if (cell.metric === 'count') {
+                        maxCountKey = `${cell.column}_${cell.metric}`;
+                    } else {
+                        maxCountKey = `${cell.column}_${cell.field}_${cell.metric}`;
+                    }
+                    cell.maxValue = maxCount.get(maxCountKey);
+                }
+            });
+            metricsTable.data.push(row);
+        });
+
+        // we update max value.
+        return metricsTable;
     }
 
     /** @override */
-    /** todo !!!! specify data type and return type  */
-    public setSelection(data: MetricsTable, collaboration: Collaboration) {
+    public setSelection(cr: ComputableResponse, collaboration: Collaboration) {
         const termsSet = new Set<string>();
         if (collaboration) {
             let filter: Filter;
@@ -313,7 +328,63 @@ export class MetricsTableContributor extends Contributor {
                 });
             }
         }
-        this.selectedTerms = Array.from(termsSet);
+
+        /** This block verifies if selected terms exist in data, fetches the data if so.
+         * Then it adds a row to metricsTable in order to have a complete table.
+         */
+        if (termsSet.size > 0) {
+            const missingRows = [];
+            const dataRows = new Set(...this.computableResponse?.metricsResponse.map(r => r.keys));
+            termsSet.forEach(term => {
+                if (!dataRows.has(term)) {
+                    missingRows.push(term);
+                }
+            });
+            if (missingRows.length > 0) {
+                this.isDataUpdating = true;
+                return forkJoin(this.table.vectors.map(v =>
+                    this.collaborativeSearcheService.resolveButNotAggregation([projType.aggregate, [v.getAggregation(missingRows)]],
+                        this.collaborativeSearcheService.collaborations,
+                        v.collection,
+                        this.identifier, {}, false, this.cacheDuration
+                    ).pipe(
+                        take(1),
+                        map(ar => {
+                            const keys = new Set(ar.elements.map(e => e.key));
+                            const baseResponse = cr?.getMetricResponse(v.collection);
+                            const aggregationResponse = !!baseResponse ?
+                                v.mergeResponses(baseResponse.aggregationResponse, ar) : ar;
+                            const baseKeys = cr?.getMetricResponse(v.collection)?.keys;
+                            const mergedKeys = ComputableResponse.mergeKeys(keys, baseKeys);
+                            const inexistingKeys = ComputableResponse.disjointValues(mergedKeys, new Set(missingRows));
+                            const inexistingElements = ComputableResponse.createEmptyArlasElements(inexistingKeys);
+                            inexistingElements.forEach(ie => aggregationResponse.elements.push(ie));
+                            return ({
+                                collection: v.collection,
+                                aggregationResponse,
+                                keys: mergedKeys,
+                                missingKeys: new Set<string>(),
+                                vector: v
+                            });
+                        })
+                    )
+                )).pipe(
+                    map(mrs => {
+                        cr.metricsResponse = mrs;
+                        return cr;
+                    })
+                ).subscribe(mr => {
+                    this.data = this.computeMetricsTable(mr);
+                    this.computableResponse = mr;
+                    this.selectedTerms = Array.from(termsSet);
+                    this.isDataUpdating = false;
+                });
+            } else {
+                this.selectedTerms = Array.from(termsSet);
+            }
+        } else {
+            this.selectedTerms = Array.from(termsSet);
+        }
         return from([]);
     }
 
