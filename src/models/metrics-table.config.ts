@@ -30,22 +30,63 @@ export interface MetricsTableResponse {
     leadsTermsOrder?: boolean;
 }
 
-export interface ComputableResponse {
-    columns: MetricsTableColumn[];
-    metricsResponse: Array<MetricsTableResponse>;
+export class ComputableResponse {
+    public columns: MetricsTableColumn[] = [];
+    public metricsResponse: Array<MetricsTableResponse> = [];
+
+    public getMetricResponse(collection): MetricsTableResponse {
+        return this.metricsResponse.find(mr => mr.collection === collection);
+    }
+
+    public static mergeKeys(keys1: Set<string>, keys2: Set<string>): Set<string> {
+        const mergedKeys = new Set<string>();
+        if (keys1) {
+            keys1.forEach(k => mergedKeys.add(k));
+        }
+        if (keys2) {
+            keys2.forEach(k => mergedKeys.add(k));
+        }
+        return mergedKeys;
+    }
+
+    public static disjointValues(wholeKeys: Set<string>, keysToCheck: Set<string>): string[] {
+        const disjointValues = [];
+        keysToCheck.forEach(k => {
+            if (!wholeKeys.has(k)) {
+                disjointValues.push(k);
+            }
+        });
+        return disjointValues;
+    }
+
+    /** Create term elements with count = 0. */
+    public static createEmptyArlasElements(keys: Array<string>): AggregationResponse[] {
+        const elements: AggregationResponse[] = [];
+        keys.forEach(k => {
+            const ar: AggregationResponse = {
+                key: k,
+                key_as_string: k,
+                count: 0
+            };
+            elements.push(ar);
+        });
+        return elements;
+    }
 }
 
 export interface MetricsTableColumn {
     collection: string;
+    termfield: string;
     metric: ArlasApiMetric.CollectFctEnum | 'count';
     field?: string;
 }
 export interface MetricsTableConfig {
-    [collection: string]: MetricsVectorConfig;
+    [collection_termfield: string]: MetricsVectorConfig;
 }
 
 export interface MetricsVectorConfig {
     termfield: string;
+    collection: string;
     metrics: MetricConfig[];
 }
 
@@ -56,6 +97,7 @@ export interface MetricConfig {
 
 export interface MetricsTableSortConfig {
     collection: string;
+    termfield: string;
     order: 'asc' | 'desc';
     on: 'alphabetical' | 'count' | 'metric';
     metric?: MetricConfig;
@@ -71,17 +113,25 @@ export interface MetricsTableSortConfig {
  */
 
 export class MetricsVectors {
-    public collections: Set<string> = new Set();
+    public collections_fields: Set<string> = new Set();
     /** A vector represents a collection */
     public vectors: MetricsVector[] = [];
     public constructor(config: MetricsTableConfig, sortConfig: MetricsTableSortConfig, nbTerms: number) {
-        Object.keys(config).forEach(collection => {
-            if (!this.collections.has(collection)) {
-                this.collections.add(collection);
-                this.vectors.push(new MetricsVector(collection, config[collection], sortConfig, nbTerms));
+        Object.keys(config).forEach(collection_fields => {
+            const collectionfieldConfig = config[collection_fields];
+            const uniqueConfigKey = collectionfieldConfig.collection + collectionfieldConfig.termfield;
+            if (collection_fields !== uniqueConfigKey) {
+                // throw error ? we need to be sure that the key is always built the same way.
+            }
+            if (!this.collections_fields.has(uniqueConfigKey)) {
+                this.collections_fields.add(uniqueConfigKey);
+                this.vectors.push(new MetricsVector(
+                    collectionfieldConfig.collection,
+                    collectionfieldConfig.termfield , collectionfieldConfig, sortConfig, nbTerms));
             }
         });
     }
+
 }
 
 /** @class */
@@ -94,13 +144,15 @@ export class MetricsVectors {
  */
 export class MetricsVector {
     public collection: string;
+    public termfield: string;
     public configuration: MetricsVectorConfig;
     public nbTerms: number;
     public sort: MetricsTableSortConfig;
 
-    public constructor(collection: string, configuration: MetricsVectorConfig,
+    public constructor(collection: string, termfield: string, configuration: MetricsVectorConfig,
         sortConfig: MetricsTableSortConfig, nbTerms: number) {
         this.collection = collection;
+        this.termfield = termfield;
         this.configuration = configuration;
         this.nbTerms = nbTerms;
         this.sort = sortConfig;
@@ -108,7 +160,7 @@ export class MetricsVector {
 
     public getAggregation(termsToInclude?: string[]): Aggregation {
         const aggregation: Aggregation = {
-            field: this.configuration.termfield,
+            field: this.termfield,
             size: this.nbTerms.toString(),
             metrics: this.getMetrics(this.configuration.metrics, this.sort),
             type: Aggregation.TypeEnum.Term
@@ -169,19 +221,21 @@ export class MetricsVector {
         const sort: MetricsTableSortConfig = this.sort;
         const columns: MetricsTableColumn[] = [];
         let remainingMetrics = (m: MetricConfig) => true;
-        if (sort && sort.collection === this.collection) {
+        if (sort && sort.collection === this.collection && sort.termfield === this.termfield) {
             const sortMetric = sort.metric;
             if (sort.on === 'count' && !!metricsConfig.find(m => m.metric === 'count')) {
                 columns.push({
                     metric: 'count',
-                    collection: this.collection
+                    collection: this.collection,
+                    termfield: this.termfield
                 });
                 remainingMetrics = (m: MetricConfig) => (m.metric !== 'count');
             } else if (sort.on === 'metric' && !!sortMetric) {
                 columns.push({
                     metric: sortMetric.metric,
                     collection: this.collection,
-                    field: sortMetric.field
+                    field: sortMetric.field,
+                    termfield: this.termfield
                 });
                 remainingMetrics = (m: MetricConfig) => (m.metric !== sortMetric.metric && m.field !== sortMetric.field);
             }
@@ -191,7 +245,8 @@ export class MetricsVector {
             columns.push({
                 metric: m.metric,
                 collection: this.collection,
-                field: m?.field
+                field: m?.field,
+                termfield: this.termfield
             });
         });
         return columns;
@@ -204,7 +259,7 @@ export class MetricsVector {
             return Aggregation.OnEnum.Field;
         } else if (sort && sort.on === 'count') {
             return Aggregation.OnEnum.Count;
-        } else if (sort && sort.on === 'metric' && !!sort?.metric  && sort.metric.metric !== 'count') {
+        } else if (sort && sort.on === 'metric' && !!sort?.metric && sort.metric.metric !== 'count') {
             return Aggregation.OnEnum.Result;
         } else {
             return Aggregation.OnEnum.Count;
@@ -237,7 +292,7 @@ export class MetricsVector {
         while (i < baseElements.length && j < complementarElements.length) {
             if (compare(baseArray[i], complementaryArray[j])) {
                 mergedElements.push(baseElements[i]);
-                    i++;
+                i++;
             } else {
                 mergedElements.push(complementarElements[j]);
                 j++;
@@ -264,8 +319,8 @@ export class MetricsVector {
             return response.elements.map(e => e.count);
         } else {
             const metricConfig = this.sort.metric;
-            return response.elements.map(e => e.metrics
-                .find(m => (m.field === metricConfig.field.replace(/\./g, '_') && m.type === metricConfig.metric))?.value);
+            return response.elements.map(e => e.metrics?.find(m => (m.field === metricConfig.field.replace(/\./g, '_')
+             && m.type === metricConfig.metric))?.value);
         }
     }
 
@@ -277,13 +332,13 @@ export class MetricsVector {
             (this.sort.collection === this.collection
                 && (
                     this.sort.on === 'count'
-                    || (this.sort.on === 'metric' &&  this.sort?.metric?.metric === 'count'
-                ))
+                    || (this.sort.on === 'metric' && this.sort?.metric?.metric === 'count'
+                    ))
             );
     }
 
     public leadsSort(): boolean {
-        return !!this.sort && this.sort.collection === this.collection;
+        return !!this.sort && this.sort.collection === this.collection && this.sort.termfield === this.termfield;
     }
 }
 
@@ -296,11 +351,13 @@ export interface MetricsTableHeader {
     title: string;
     subTitle: string;
     metric: ArlasApiMetric.CollectFctEnum | 'count';
+    rowfield: string;
 }
 
 export interface MetricsTableCell {
     value: number;
-    maxValue: number;
+    maxColumnValue: number;
+    maxTableValue: number;
     metric: ArlasApiMetric.CollectFctEnum | 'count' | string;
     column: string;
     field: string;
