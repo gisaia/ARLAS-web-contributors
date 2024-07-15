@@ -26,6 +26,7 @@ import { ResultListContributor } from './contributors/ResultListContributor';
 import { AnalyticsContributor } from './contributors/AnalyticsContributor';
 import { TreeContributor } from './contributors/TreeContributor';
 import { ComputeContributor } from './contributors/ComputeContributor';
+import { MetricsTableContributor } from './contributors/MetricsTableContributor';
 export { TreeContributor } from './contributors/TreeContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
 export { ResultListContributor } from './contributors/ResultListContributor';
@@ -39,6 +40,9 @@ export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpressi
     LayerSourceConfig, ColorConfig, MetricConfig } from './models/models';
 export { getSourceName } from './utils/utils';
 export { FieldsConfiguration, ComputeConfig, Column, Detail } from './models/models';
+export { MetricsTableContributor } from './contributors/MetricsTableContributor';
+export { MetricsTable, MetricsTableConfig, MetricsTableCell,
+     MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig } from './models/metrics-table.config';
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);
 contributors.set('detailedhistogram', DetailedHistogramContributor);
@@ -49,6 +53,7 @@ contributors.set('chipsearch', ChipsSearchContributor);
 contributors.set('analytics', AnalyticsContributor);
 contributors.set('tree', TreeContributor);
 contributors.set('metric', ComputeContributor);
+contributors.set('metricstable', MetricsTableContributor);
 
 export {contributors};
 
