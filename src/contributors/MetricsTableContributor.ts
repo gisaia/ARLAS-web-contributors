@@ -352,7 +352,7 @@ export class MetricsTableContributor extends Contributor {
             });
             if (missingRows.length > 0) {
                 this.isDataUpdating = true;
-                return forkJoin(this.table.vectors.map(v =>
+                forkJoin(this.table.vectors.map(v =>
                     this.collaborativeSearcheService.resolveButNotAggregation([projType.aggregate, [v.getAggregation(missingRows)]],
                         this.collaborativeSearcheService.collaborations,
                         v.collection,
