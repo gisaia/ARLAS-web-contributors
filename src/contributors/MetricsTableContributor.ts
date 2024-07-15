@@ -71,6 +71,7 @@ export class MetricsTableContributor extends Contributor {
     private operatorChangedEvent: Subject<Expression.OpEnum> = new Subject();
     public operatorChanged$: Observable<Expression.OpEnum> = this.operatorChangedEvent.asObservable();
 
+    public maxValue = -Number.MAX_VALUE;
 
     public data: MetricsTable;
     public selectedTerms: Array<string> = [];
@@ -239,12 +240,14 @@ export class MetricsTableContributor extends Contributor {
 
     private computeMetricsTable(data: ComputableResponse): MetricsTable {
         const rows: Map<string, MetricsTableRow> = new Map();
-        const maxCount = new Map();
+        /** key:collection_field_metric ----  value: maxvalue  */
+        const maxValues = new Map<string, number>();
+        let maxTableValue = -Number.MAX_VALUE;
         const metricsResponses = data.metricsResponse;
         const columnsOrder = data.columns;
 
         metricsResponses.forEach(metricsResponse => {
-            const currentCollection = metricsResponse.collection;
+            const currentCollectionTermfield = metricsResponse.collection + metricsResponse.vector.termfield;
             metricsResponse.aggregationResponse.elements.forEach(element => {
                 let row: MetricsTableRow;
                 if (rows.has(element.key_as_string)) {
@@ -255,7 +258,7 @@ export class MetricsTableContributor extends Contributor {
                     rows.set(element.key_as_string, row);
                 }
                 columnsOrder.forEach((col, i) => {
-                    if (currentCollection === col.collection) {
+                    if (currentCollectionTermfield === col.collection + col.termfield) {
                         let uniqueTermMetric;
                         let value;
                         // how we know its the good field that we want if the metrics object can be empty ?
@@ -272,12 +275,18 @@ export class MetricsTableContributor extends Contributor {
                             }
                         }
                         // we set the value and the max count
-                        if (value) {
-                            row.data[i] = { maxValue: 0, value, metric: col.metric, column: col.collection, field: col.field };
-                            if (maxCount.has(uniqueTermMetric) && maxCount.get(uniqueTermMetric) < value) {
-                                maxCount.set(uniqueTermMetric, value);
-                            } else if (!maxCount.has(uniqueTermMetric)) {
-                                maxCount.set(uniqueTermMetric, value);
+                        if (value !== undefined) {
+                            if (value > maxTableValue) {
+                                maxTableValue = value;
+                            }
+                            row.data[i] = {
+                                maxColumnValue: 0, maxTableValue: 0, value, metric: col.metric,
+                                column: col.collection, field: col.field
+                            };
+                            if (maxValues.has(uniqueTermMetric) && maxValues.get(uniqueTermMetric) < value) {
+                                maxValues.set(uniqueTermMetric, value);
+                            } else if (!maxValues.has(uniqueTermMetric)) {
+                                maxValues.set(uniqueTermMetric, value);
                             }
                         }
                     }
@@ -287,19 +296,20 @@ export class MetricsTableContributor extends Contributor {
         const metricsTable: MetricsTable = { data: [], header: [] };
         // att the end we setHeaders
         for (const value of columnsOrder) {
-            metricsTable.header.push({ title: value.collection, subTitle: value.field, metric: value.metric });
+            metricsTable.header.push({ title: value.collection, subTitle: value.field, metric: value.metric, rowfield: value.termfield });
         }
 
         rows.forEach(row => {
             row.data.forEach(cell => {
                 if (cell !== null) {
-                    let maxCountKey;
+                    let maxValueKey;
                     if (cell.metric === 'count') {
-                        maxCountKey = `${cell.column}_${cell.metric}`;
+                        maxValueKey = `${cell.column}_${cell.metric}`;
                     } else {
-                        maxCountKey = `${cell.column}_${cell.field}_${cell.metric}`;
+                        maxValueKey = `${cell.column}_${cell.field}_${cell.metric}`;
                     }
-                    cell.maxValue = maxCount.get(maxCountKey);
+                    cell.maxColumnValue = maxValues.get(maxValueKey);
+                    cell.maxTableValue = maxTableValue;
                 }
             });
             metricsTable.data.push(row);

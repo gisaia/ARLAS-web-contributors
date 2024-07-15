@@ -60,12 +60,16 @@
         },
         "configuration": {
             "type": "object",
-            "description": "collectionName: configuration of metrics to calculate on each term of the given collectionName.",
+            "description": "collectionName: configuration of metrics to calculate on each term of the given collectionName+termfield.",
             "patternProperties": {
                 "^[a-zA-Z0-9._-]+$": {
                     "type": "object",
-                    "description": "Configuration of metrics to calculate on each term of the collection.",
+                    "description": "Configuration of metrics to calculate on each term of the collection. The key should be the concatenation of collection",
                     "properties": {
+                        "collection": {
+                            "description": "Collection of data",
+                            "type": "string"
+                        },
                         "termfield": {
                             "description": "Term field which values constitute the table lines. Form each term value, metrics will be calculated.",
                             "type": "string"
@@ -119,6 +123,7 @@
                         }
                     },
                     "required": [
+                        "collection",
                         "termfield",
                         "metrics"
                     ],
