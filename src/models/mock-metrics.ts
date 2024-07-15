@@ -1,3 +1,6 @@
+import { ComputableResponse, MetricsTableResponse, MetricsVector } from './metrics-table.config';
+import { Metric as ArlasApiMetric } from 'arlas-api';
+
 export const aggResponse1 = {
     'query_time': 7,
     'total_time': 8,
@@ -5,6 +8,24 @@ export const aggResponse1 = {
     'name': 'Term aggregation',
     'sumotherdoccounts': 0,
     'elements': [
+        {
+            'count': 5399,
+            'key': 'PLEIADES',
+            'key_as_string': 'PLEIADES',
+            'elements': [],
+            'metrics': [
+                {
+                    'type': 'avg',
+                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
+                    'value': 37.83978514539729
+                },
+                {
+                    'type': 'sum',
+                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
+                    'value': 37.83978514539729
+                }
+            ]
+        },
         {
             'count': 20104,
             'key': 'AIRBUS-SPOT',
@@ -15,17 +36,22 @@ export const aggResponse1 = {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 42.817200557103064
+                },
+                {
+                    'type': 'sum',
+                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
+                    'value': 37.83978514539729
                 }
             ]
         },
         {
-            'count': 5399,
-            'key': 'PLEIADES',
-            'key_as_string': 'PLEIADES',
+            'count': 108728,
+            'key': 'SENTINEL 2',
+            'key_as_string': 'SENTINEL 2',
             'elements': [],
             'metrics': [
                 {
-                    'type': 'avg',
+                    'type': 'sum',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 37.83978514539729
                 }
@@ -40,20 +66,12 @@ export const aggResponse1 = {
                 {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
-                    'value': 35.53750842886042
-                }
-            ]
-        },
-        {
-            'count': 108728,
-            'key': 'SENTINEL 2',
-            'key_as_string': 'SENTINEL 2',
-            'elements': [],
-            'metrics': [
+                    'value': 500
+                },
                 {
-                    'type': 'avg',
+                    'type': 'sum',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
-                    'value': 33.53524605018058
+                    'value': 37.83978514539729
                 }
             ]
         },
@@ -67,6 +85,11 @@ export const aggResponse1 = {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 4.640448240619069
+                },
+                {
+                    'type': 'sum',
+                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
+                    'value': 800
                 }
             ]
         },
@@ -80,6 +103,11 @@ export const aggResponse1 = {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 3.133981172246967
+                },
+                {
+                    'type': 'sum',
+                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
+                    'value': 100
                 }
             ]
         },
@@ -116,6 +144,11 @@ export const aggResponse2 = {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 33.53524605018058
+                },
+                {
+                    'type': 'avg',
+                    'field': 'metadata_tristesse',
+                    'value': 37.83978514539729
                 }
             ]
         },
@@ -129,6 +162,11 @@ export const aggResponse2 = {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 4.640448240619069
+                },
+                {
+                    'type': 'avg',
+                    'field': 'metadata_tristesse',
+                    'value': 37.83978514539729
                 }
             ]
         },
@@ -140,8 +178,8 @@ export const aggResponse2 = {
             'metrics': [
                 {
                     'type': 'avg',
-                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
-                    'value': 3.133981172246967
+                    'field': 'metadata_tristesse',
+                    'value': 37.83978514539729
                 }
             ]
         },
@@ -155,6 +193,11 @@ export const aggResponse2 = {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 0.0
+                },
+                {
+                    'type': 'avg',
+                    'field': 'metadata_tristesse',
+                    'value': 37.83978514539729
                 }
             ]
         },
@@ -168,19 +211,42 @@ export const aggResponse2 = {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 0.0
+                },
+                {
+                    'type': 'avg',
+                    'field': 'metadata_tristesse',
+                    'value': 37.83978514539729
                 }
             ]
         },
         {
             'count': 484,
-            'key': 'Pleiades',
-            'key_as_string': 'Pleiades',
+            'key': 'PLEIADES',
+            'key_as_string': 'PLEIADES',
             'elements': [],
             'metrics': [
                 {
                     'type': 'avg',
                     'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
                     'value': 0.0
+                },
+                {
+                    'type': 'sum',
+                    'field': 'metadata_heureux',
+                    'value': 37.83978514539729
+                }
+            ]
+        },
+        {
+            'count': 2162,
+            'key': 'IGN-PLEIADES',
+            'key_as_string': 'IGN-PLEIADES',
+            'elements': [],
+            'metrics': [
+                {
+                    'type': 'avg',
+                    'field': 'metadata_ObservationContext_eo_opt_cloudCoverPercentage',
+                    'value': 10
                 }
             ]
         },
@@ -200,3 +266,33 @@ export const aggResponse2 = {
     ]
 };
 
+const aggregationResponseList: MetricsTableResponse[] =  [{
+    collection: 'toto',
+    aggregationResponse: aggResponse1,
+    keys: new Set(),
+    missingKeys:new Set(),
+    vector: {} as MetricsVector,
+    /** if true, it means the tables terms should be sorted according to this vector. */
+    leadsTermsOrder: true
+}, {
+    collection: 'titi',
+    aggregationResponse: aggResponse2,
+    keys: new Set(),
+    missingKeys:new Set(),
+    vector: {} as MetricsVector,
+
+    leadsTermsOrder: false
+}];
+
+
+// export const computableResponseMock: ComputableResponse = {
+//     columns: [
+//         {collection: 'toto', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
+//         {collection: 'toto', metric: ArlasApiMetric.CollectFctEnum.SUM, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
+//         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
+//         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_tristesse'},
+//         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.SUM, field: 'metadata_heureux'},
+//         {collection: 'titi', metric: 'count', field: ''} // quizz du field ??? comment on sait que c'est le bon count
+//     ],
+//     metricsResponse: aggregationResponseList
+// };
