@@ -24,12 +24,11 @@ import {
 import { Filter, Expression } from 'arlas-api';
 import {
     MetricsVectors,
-    MetricsTableConfig,
     MetricsTable,
-    MetricsTableHeader,
-    MetricsTableRow, MetricsTableCell, MetricsTableSortConfig, MetricsVector,
+    MetricsTableRow, MetricsTableSortConfig,
     ComputableResponse,
-    MetricsTableResponse
+    MetricsTableResponse,
+    MetricsVectorConfig
 } from '../models/metrics-table.config';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
 import { Observable, forkJoin, map, of, mergeMap, from, Subject, take } from 'rxjs';
@@ -49,14 +48,14 @@ export class MetricsTableContributor extends Contributor {
     public table: MetricsVectors;
     /** @param */
     /** Number of terms fetched for each collection. The resulted table
-     * might have terms between `nbterms` and `nbCollection * nbterms`.
+     * might have terms between `numberOfBuckets` and `nbCollection * numberOfBuckets`.
      */
-    public nbterms: number = this.getConfigValue('nbterms');
+    public nbterms: number;
     /** @param */
     /** Configuration of the table. It includes what are the term fields for each collection and what
      * metrics to display.
      */
-    public configuration: MetricsTableConfig = this.getConfigValue('configuration');
+    public configuration: MetricsVectorConfig[] = this.getConfigValue('configuration');
     /** @param */
     /**
      */
@@ -84,7 +83,7 @@ export class MetricsTableContributor extends Contributor {
         super(identifier, configService, collaborativeSearcheService);
         this.sort = this.getConfigValue('sort');
         this.configuration = this.getConfigValue('configuration');
-        this.nbterms = this.getConfigValue('nbterms');
+        this.nbterms = this.getConfigValue('numberOfBuckets');
         this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
         this.collections = this.table.vectors.map(v => ({
             field: v.configuration.termfield,
@@ -158,8 +157,7 @@ export class MetricsTableContributor extends Contributor {
                                         aggregationResponse: mr.vector.mergeResponses(mr.aggregationResponse, ar),
                                         keys: mr.keys,
                                         missingKeys,
-                                        vector: mr.vector,
-                                        leadsTermsOrder: mr.vector.leadsSort()
+                                        vector: mr.vector
                                     });
                                 })
                             );
@@ -167,9 +165,8 @@ export class MetricsTableContributor extends Contributor {
                 })),
                 ),
                 map(mrs => {
-                    const sortedMrs = this.orderMetricsTableResponse(mrs);
                     let columns = [];
-                    sortedMrs.forEach(mr => {
+                    mrs.forEach(mr => {
                         columns = columns.concat(mr.vector.getColumns());
                     });
                     const cr = new ComputableResponse();
@@ -227,10 +224,6 @@ export class MetricsTableContributor extends Contributor {
         }
     }
 
-    private orderMetricsTableResponse(data: Array<MetricsTableResponse>): Array<MetricsTableResponse> {
-        return data.sort(((response, comparingResponse) => (response.leadsTermsOrder) ? -1 : 0));
-    }
-
     /** @override */
     public setData(data: ComputableResponse): any {
         this.data = this.computeMetricsTable(data);
@@ -239,24 +232,29 @@ export class MetricsTableContributor extends Contributor {
     }
 
     private computeMetricsTable(data: ComputableResponse): MetricsTable {
-        const rows: Map<string, MetricsTableRow> = new Map();
+        const rowsMap: Map<string, MetricsTableRow> = new Map();
+        const rows: MetricsTableRow[] = [];
         /** key:collection_field_metric ----  value: maxvalue  */
         const maxValues = new Map<string, number>();
         let maxTableValue = -Number.MAX_VALUE;
         const metricsResponses = data.metricsResponse;
         const columnsOrder = data.columns;
-
+        let leadingMr = metricsResponses?.find(mr => mr.vector.isSortable());
+        if (!leadingMr && metricsResponses.length > 0) {
+            leadingMr = metricsResponses[0];
+        }
+        if (!!leadingMr) {
+            leadingMr.aggregationResponse.elements.forEach(element => {
+                const row: MetricsTableRow = { data: [], term: element.key_as_string };
+                row.data = Array(columnsOrder.length).fill(null);
+                rowsMap.set(element.key_as_string, row);
+                rows.push(row);
+            });
+        }
         metricsResponses.forEach(metricsResponse => {
             const currentCollectionTermfield = metricsResponse.collection + metricsResponse.vector.termfield;
             metricsResponse.aggregationResponse.elements.forEach(element => {
-                let row: MetricsTableRow;
-                if (rows.has(element.key_as_string)) {
-                    row = rows.get(element.key_as_string);
-                } else {
-                    row = { data: [], term: element.key_as_string };
-                    row.data = Array(columnsOrder.length).fill(null);
-                    rows.set(element.key_as_string, row);
-                }
+                const row: MetricsTableRow = rowsMap.get(element.key_as_string);
                 columnsOrder.forEach((col, i) => {
                     if (currentCollectionTermfield === col.collection + col.termfield) {
                         let uniqueTermMetric;
@@ -299,7 +297,7 @@ export class MetricsTableContributor extends Contributor {
             metricsTable.header.push({ title: value.collection, subTitle: value.field, metric: value.metric, rowfield: value.termfield });
         }
 
-        rows.forEach(row => {
+        rowsMap.forEach(row => {
             row.data.forEach(cell => {
                 if (cell !== null) {
                     let maxValueKey;
@@ -312,7 +310,9 @@ export class MetricsTableContributor extends Contributor {
                     cell.maxTableValue = maxTableValue;
                 }
             });
-            metricsTable.data.push(row);
+        });
+        rows.forEach(r => {
+            metricsTable.data.push(rowsMap.get(r.term));
         });
 
         // we update max value.

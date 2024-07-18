@@ -26,8 +26,6 @@ export interface MetricsTableResponse {
     keys: Set<string>;
     missingKeys: Set<string>;
     vector: MetricsVector;
-    /** if true, it means the tables terms should be sorted according to this vector. */
-    leadsTermsOrder?: boolean;
 }
 
 export class ComputableResponse {
@@ -80,9 +78,6 @@ export interface MetricsTableColumn {
     metric: ArlasApiMetric.CollectFctEnum | 'count';
     field?: string;
 }
-export interface MetricsTableConfig {
-    [collection_termfield: string]: MetricsVectorConfig;
-}
 
 export interface MetricsVectorConfig {
     termfield: string;
@@ -113,21 +108,17 @@ export interface MetricsTableSortConfig {
  */
 
 export class MetricsVectors {
-    public collections_fields: Set<string> = new Set();
+    public ids: Set<string> = new Set();
     /** A vector represents a collection */
     public vectors: MetricsVector[] = [];
-    public constructor(config: MetricsTableConfig, sortConfig: MetricsTableSortConfig, nbTerms: number) {
-        Object.keys(config).forEach(collection_fields => {
-            const collectionfieldConfig = config[collection_fields];
-            const uniqueConfigKey = collectionfieldConfig.collection + collectionfieldConfig.termfield;
-            if (collection_fields !== uniqueConfigKey) {
-                // throw error ? we need to be sure that the key is always built the same way.
-            }
-            if (!this.collections_fields.has(uniqueConfigKey)) {
-                this.collections_fields.add(uniqueConfigKey);
+    public constructor(configs: MetricsVectorConfig[], sortConfig: MetricsTableSortConfig, nbTerms: number) {
+        configs.forEach(config => {
+            const vectorId = MetricsVector.id(config);
+            if (!this.ids.has(vectorId)) {
+                this.ids.add(vectorId);
                 this.vectors.push(new MetricsVector(
-                    collectionfieldConfig.collection,
-                    collectionfieldConfig.termfield , collectionfieldConfig, sortConfig, nbTerms));
+                    config.collection,
+                    config.termfield , config, sortConfig, nbTerms));
             }
         });
     }
@@ -158,6 +149,34 @@ export class MetricsVector {
         this.sort = sortConfig;
     }
 
+    public static id(mvc: MetricsVectorConfig) {
+        return mvc.collection + mvc.termfield + mvc.metrics.map(m => m.metric + (!!m.field ? m.field : 'count')).join('__:__');
+    }
+
+    public hasCount() {
+        return !!this.configuration && !!this.configuration.metrics?.find(m => m.metric === 'count');
+    }
+
+    /** This method detects if this vector should be sorted by arlas-server */
+    public isSortable() {
+        if (this.sort) {
+            const hasSameCollection = (this.collection === this.sort.collection);
+            const hasSameTermfield = (this.termfield === this.sort.termfield);
+            if (hasSameCollection && hasSameTermfield) {
+                if (this.isSortOnCount()) {
+                    return this.hasCount();
+                } else {
+                    return (!!this.configuration.metrics.find(m => (m.field === this.sort.metric?.field
+                        && m.metric === this.sort?.metric?.metric)));
+                }
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     public getAggregation(termsToInclude?: string[]): Aggregation {
         const aggregation: Aggregation = {
             field: this.termfield,
@@ -169,7 +188,7 @@ export class MetricsVector {
             aggregation.include = termsToInclude.join('|');
             aggregation.size = termsToInclude.length.toString();
         }
-        if (this.sort && this.sort.collection === this.collection) {
+        if (this.isSortable()) {
             aggregation.order = this.getSortOrder(this.sort);
             aggregation.on = this.getSortOn(this.sort);
         }
@@ -188,7 +207,7 @@ export class MetricsVector {
      */
     private getMetrics(metricsConfig: MetricConfig[], sort: MetricsTableSortConfig): ArlasApiMetric[] {
         let arlasMetrics: ArlasApiMetric[] = [];
-        if (sort && sort.collection === this.collection && sort.on === 'metric' && !!sort.metric) {
+        if (this.isSortable() && !this.isSortOnCount()) {
             const sortMetric = sort.metric;
             if (sortMetric.metric !== 'count') {
                 /** Pushing the sortMetric first so that arlas-server aggregation sort on it. */
@@ -207,41 +226,21 @@ export class MetricsVector {
                 });
                 return arlasMetrics;
             }
+        } else {
+            /** !! Otherwise : Pushing all the metrics (except for count) */
+            arlasMetrics = metricsConfig.filter(m => m.metric !== 'count').map(m => ({
+                collect_fct: m.metric as ArlasApiMetric.CollectFctEnum,
+                collect_field: m.field
+            }));
+            return arlasMetrics;
         }
-        /** !! Otherwise : Pushing all the metrics (except for count) */
-        arlasMetrics = metricsConfig.filter(m => m.metric !== 'count').map(m => ({
-            collect_fct: m.metric as ArlasApiMetric.CollectFctEnum,
-            collect_field: m.field
-        }));
-        return arlasMetrics;
     }
 
     public getColumns(): MetricsTableColumn[] {
         const metricsConfig: MetricConfig[] = this.configuration.metrics;
         const sort: MetricsTableSortConfig = this.sort;
         const columns: MetricsTableColumn[] = [];
-        let remainingMetrics = (m: MetricConfig) => true;
-        if (sort && sort.collection === this.collection && sort.termfield === this.termfield) {
-            const sortMetric = sort.metric;
-            if (sort.on === 'count' && !!metricsConfig.find(m => m.metric === 'count')) {
-                columns.push({
-                    metric: 'count',
-                    collection: this.collection,
-                    termfield: this.termfield
-                });
-                remainingMetrics = (m: MetricConfig) => (m.metric !== 'count');
-            } else if (sort.on === 'metric' && !!sortMetric) {
-                columns.push({
-                    metric: sortMetric.metric,
-                    collection: this.collection,
-                    field: sortMetric.field,
-                    termfield: this.termfield
-                });
-                remainingMetrics = (m: MetricConfig) => (m.metric !== sortMetric.metric && m.field !== sortMetric.field);
-            }
-
-        }
-        metricsConfig.filter(m => remainingMetrics(m)).forEach(m => {
+        metricsConfig.forEach(m => {
             columns.push({
                 metric: m.metric,
                 collection: this.collection,
@@ -280,7 +279,6 @@ export class MetricsVector {
 
     public mergeResponses(baseResponse: AggregationResponse, complementaryResponse: AggregationResponse): AggregationResponse {
         const mergedResponse = Object.assign({}, baseResponse);
-
         const baseArray = this.getComparableArray(baseResponse);
         const complementaryArray = this.getComparableArray(complementaryResponse);
         const baseElements = baseResponse.elements;
@@ -335,10 +333,6 @@ export class MetricsVector {
                     || (this.sort.on === 'metric' && this.sort?.metric?.metric === 'count'
                     ))
             );
-    }
-
-    public leadsSort(): boolean {
-        return !!this.sort && this.sort.collection === this.collection && this.sort.termfield === this.termfield;
     }
 }
 
