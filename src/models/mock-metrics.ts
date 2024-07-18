@@ -266,22 +266,19 @@ export const aggResponse2 = {
     ]
 };
 
-const aggregationResponseList: MetricsTableResponse[] =  [{
+const aggregationResponseList: MetricsTableResponse[] = [{
     collection: 'toto',
     aggregationResponse: aggResponse1,
     keys: new Set(),
-    missingKeys:new Set(),
-    vector: {} as MetricsVector,
-    /** if true, it means the tables terms should be sorted according to this vector. */
-    leadsTermsOrder: true
+    missingKeys: new Set(),
+    vector: {} as MetricsVector
 }, {
     collection: 'titi',
     aggregationResponse: aggResponse2,
     keys: new Set(),
-    missingKeys:new Set(),
-    vector: {} as MetricsVector,
+    missingKeys: new Set(),
+    vector: {} as MetricsVector
 
-    leadsTermsOrder: false
 }];
 
 

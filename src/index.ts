@@ -41,7 +41,7 @@ export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpressi
 export { getSourceName } from './utils/utils';
 export { FieldsConfiguration, ComputeConfig, Column, Detail } from './models/models';
 export { MetricsTableContributor } from './contributors/MetricsTableContributor';
-export { MetricsTable, MetricsTableConfig, MetricsTableCell,
+export { MetricsTable, MetricsTableCell,
      MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig } from './models/metrics-table.config';
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);
