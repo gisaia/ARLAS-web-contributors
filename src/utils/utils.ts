@@ -28,7 +28,7 @@ export class ColorGeneratorLoader {
     public keysToColors: Array<Array<string>>;
     public colorsSaturationWeight: number;
 
-    constructor() {
+    public constructor() {
         this.keysToColors = [];
         this.colorsSaturationWeight = 0.5;
     }
@@ -167,11 +167,17 @@ export function removePageFromIndex(fromIndex, data: Array<any>, pageSize: numbe
     }
 }
 
+/**
+ * Returns the value of the desired field in the JSON data.
+ * @param field Field to find in the data JSON
+ * @param data JSON data to explore
+ */
 export function getFieldValue(field: string, data: Hits): any {
-    let result = '';
+    let result;
     if (field) {
         if (field.indexOf('.') < 0) {
-            result = jp.query(data, '$.' + field);
+            const query = jp.stringify(['$', field]);
+            result = jp.query(data, query);
         } else {
             let query = '$.';
             let composePath = '';
@@ -197,29 +203,35 @@ export function getFieldValue(field: string, data: Hits): any {
             query = query.substring(0, query.length - lastElementLength);
             result = jp.query(data, query);
         }
+
+        if (result.length === 1) {
+            result = result[0];
+        } else {
+            result = result.join(',');
+        }
     }
     return result;
 }
 
-export function coarseTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+export function coarseTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function mediumTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+export function mediumTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function fineTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+export function fineTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function finestTopoGranularity(zoom: number): { tilesPrecision: number, requestsPrecision: number } {
+export function finestTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
 
 
-export function networkFetchingLevelGranularity(precision): { tilesPrecision: number, requestsPrecision: number } {
+export function networkFetchingLevelGranularity(precision): { tilesPrecision: number; requestsPrecision: number; } {
     return { tilesPrecision: precision, requestsPrecision: precision };
 }
 
-export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -238,7 +250,7 @@ export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
     } else if (type === Aggregation.TypeEnum.Geotile) {
         const tilesPrecision = Math.trunc(zoom) % 2 === 0 ? Math.trunc(zoom) + 1 : Math.trunc(zoom);
         return { tilesPrecision: tilesPrecision, requestsPrecision: tilesPrecision + 2 };
-    } else if (type === Aggregation.TypeEnum.H3) {
+    } else if (type === Aggregation.TypeEnum.Geohex) {
         if (zoom >= 0 && zoom < 3) {
             return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 1, 0)), 15) };
         } else if (zoom >= 3 && zoom < 5) {
@@ -250,7 +262,7 @@ export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
 }
 
 
-export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -271,7 +283,7 @@ export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
     } else if (type === Aggregation.TypeEnum.Geotile) {
         const tilesPrecision = Math.trunc(zoom) % 2 === 0 ? Math.trunc(zoom) + 1 : Math.trunc(zoom);
         return { tilesPrecision: tilesPrecision, requestsPrecision: tilesPrecision + 3 };
-    } else if (type === Aggregation.TypeEnum.H3) {
+    } else if (type === Aggregation.TypeEnum.Geohex) {
         if (zoom >= 0 && zoom < 5) {
             return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 1, 0)), 15) };
         } else {
@@ -280,7 +292,7 @@ export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
     }
 }
 
-export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -302,7 +314,7 @@ export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { ti
         }
     } else if (type === Aggregation.TypeEnum.Geotile) {
         return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.trunc(zoom) + 5 };
-    } else if (type === Aggregation.TypeEnum.H3) {
+    } else if (type === Aggregation.TypeEnum.Geohex) {
         if (zoom >= 0 && zoom < 5) {
             return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(zoom), 15) };
         } else {
@@ -311,7 +323,7 @@ export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { ti
     }
 }
 
-export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number, requestsPrecision: number } {
+export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -335,7 +347,7 @@ export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
         }
     } else if (type === Aggregation.TypeEnum.Geotile) {
         return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.trunc(zoom) + 7 };
-    } else if (type === Aggregation.TypeEnum.H3) {
+    } else if (type === Aggregation.TypeEnum.Geohex) {
         if (zoom >= 0 && zoom < 5) {
             return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(zoom + 1), 15) };
         } else {

@@ -58,7 +58,7 @@ export interface SwimlaneStats {
 
 export interface SwimlaneData {
     stats: SwimlaneStats;
-    lanes: Map<string, Array<{ key: number, value: number }>>;
+    lanes: Map<string, Array<{ key: number; value: number; }>>;
 }
 
 
@@ -99,7 +99,9 @@ export class SwimLaneContributor extends Contributor {
     */
     public useUtc = this.getConfigValue('useUtc') !== undefined ? this.getConfigValue('useUtc') : true;
 
-    private INVALID_AGGREGATIONS_MESSAGE = '`aggregationmodels` should contain 2 bucket aggregations. The first one should be a `term` aggregation. The second one should be a `histogram` OR `datehistogram` aggregation.';
+    private INVALID_AGGREGATIONS_MESSAGE =
+        '`aggregationmodels` should contain 2 bucket aggregations. The first one should be a `term` aggregation. '
+        + 'The second one should be a `histogram` OR `datehistogram` aggregation.';
     private INVALID_SWIMLANES_MESSAGE = '`swimlanes` property is mandatory and should contain at least one item.';
 
     /**
@@ -108,7 +110,7 @@ export class SwimLaneContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(
+    public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, collection: string, private isOneDimension?: boolean
@@ -126,6 +128,10 @@ export class SwimLaneContributor extends Contributor {
     }
     public static getJsonSchema(): Object {
         return jsonSchema;
+    }
+
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
     }
 
     /**
@@ -161,12 +167,14 @@ export class SwimLaneContributor extends Contributor {
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {
         this.checkAggregations();
         const collaborations = new Map<string, Collaboration>();
-        this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
+        this.collaborativeSearcheService.collaborations.forEach((k, v) => {
+            collaborations.set(v, k);
+        });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             if (this.nbBuckets) {
                 return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
                 <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
-                collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
+                    collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
                     .pipe(
                         map((computationResponse: ComputationResponse) => {
                             const dataRange = !!computationResponse.value ? computationResponse.value : 0;
@@ -191,7 +199,7 @@ export class SwimLaneContributor extends Contributor {
     }
 
     public computeData(aggResponse: AggregationResponse): SwimlaneData {
-        const mapResponse = new Map<string, Array<{ key: number, value: number }>>();
+        const mapResponse = new Map<string, Array<{ key: number; value: number; }>>();
         const responseStats: SwimlaneStats = {
             columnStats: new Map<number, LaneStats>(),
             globalStats: {
@@ -207,7 +215,7 @@ export class SwimLaneContributor extends Contributor {
         if (aggResponse.elements !== undefined) {
             aggResponse.elements.forEach(element => {
                 const key = element.key;
-                const dataTab = new Array<{ key: number, value: number }>();
+                const dataTab = new Array<{ key: number; value: number; }>();
                 responseStats.nbLanes++;
                 element.elements.forEach(e => {
                     e.elements.forEach(el => {
@@ -309,20 +317,20 @@ export class SwimLaneContributor extends Contributor {
         return '';
     }
 
-    private fillBlanks(mapResponse: Map<string, Array<{key: number, value: number}>>, keys: Array<number>): void {
+    private fillBlanks(mapResponse: Map<string, Array<{ key: number; value: number; }>>, keys: Array<number>): void {
         mapResponse.forEach((v, k) => {
             const minV = v[0].key;
             const maxV = v[v.length - 1].key;
             if (minV > keys[0]) {
                 const upstreamBlanks = keys.filter(n => n < minV).reverse();
                 upstreamBlanks.forEach(c => {
-                    v.unshift({key: c, value: 0});
+                    v.unshift({ key: c, value: 0 });
                 });
             }
             if (maxV < keys[keys.length - 1]) {
                 const downstramBlanks = keys.filter(n => n > maxV);
                 downstramBlanks.forEach(c => {
-                    v.push({key: c, value: 0});
+                    v.push({ key: c, value: 0 });
                 });
             }
         });

@@ -27,7 +27,6 @@ import { TreeNode, SimpleNode } from '../models/models';
 import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
 import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
-import { equals } from 'tinycolor2';
 
 /**
  * This contributor fetches data from multiple term aggregations and format the data as a tree.
@@ -80,7 +79,7 @@ export class TreeContributor extends Contributor {
     public emitMissingLeaf: Subject<any[]> = new Subject();
 
 
-    constructor(
+    public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
@@ -100,6 +99,10 @@ export class TreeContributor extends Contributor {
     */
     public static getJsonSchema(): Object {
         return jsonSchema;
+    }
+
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
     }
 
     public getAggregations() {
@@ -447,7 +450,9 @@ export class TreeContributor extends Contributor {
     private getDeeper(obj, path, def) {
         let current = obj;
         for (let i = 0; i < path.length; i++) {
-            if (!current[path[i]]) { return def; }
+            if (!current[path[i]]) {
+                return def;
+            }
             current = current[path[i]];
         }
         return current;

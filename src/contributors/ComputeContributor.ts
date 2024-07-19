@@ -19,9 +19,12 @@
 
 
 import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json';
-import { Contributor, CollaborativesearchService, ConfigService, CollaborationEvent, projType, OperationEnum, Collaboration } from 'arlas-web-core';
+import {
+    Contributor, CollaborativesearchService, ConfigService,
+    CollaborationEvent, projType, OperationEnum, Collaboration
+} from 'arlas-web-core';
 import { Observable, from, forkJoin } from 'rxjs';
-import { ComputationRequest, ComputationResponse, Filter } from 'arlas-api';
+import { ComputationRequest, ComputationResponse, Filter, Hits } from 'arlas-api';
 import { ComputeConfig } from '../models/models';
 
 
@@ -45,7 +48,7 @@ export class ComputeContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(identifier: string, collaborativeSearcheService: CollaborativesearchService, configService: ConfigService,
+    public constructor(identifier: string, collaborativeSearcheService: CollaborativesearchService, configService: ConfigService,
         collection: string) {
         super(identifier, configService, collaborativeSearcheService, collection);
         this.collections = [];
@@ -59,29 +62,43 @@ export class ComputeContributor extends Contributor {
         return jsonSchema;
     }
 
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
+    }
+
     public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<ComputationResponse>> {
-
-        const computationResponse: Observable<Array<ComputationResponse>> = forkJoin(this.metrics.map(m => {
-            return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-            <ComputationRequest>{ field: m.field, metric: ComputationRequest.MetricEnum[m.metric.toUpperCase()] }],
-                this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
-                false, this.cacheDuration);
-        }));
-
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
+            const computationResponse: Observable<Array<ComputationResponse | Hits>> = forkJoin(this.metrics.map(m => {
+                if (m.metric !== 'count') {
+                    return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+                    <ComputationRequest>{ field: m.field, metric: ComputationRequest.MetricEnum[m.metric.toUpperCase()] }],
+                        this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
+                        false, this.cacheDuration);
+                } else {
+                    return this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
+                        this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
+                        false, this.cacheDuration);
+                }
+            }));
             return computationResponse;
         } else {
             return from([]);
         }
-
     }
 
-    public computeData(data: Array<ComputationResponse>): Array<ComputationResponse> {
+    public computeData(data: Array<ComputationResponse | Hits>): Array<ComputationResponse> {
         return data;
     }
 
-    public setData(data: Array<ComputationResponse>): any {
-        const m = data.map(d => d.value);
+    public setData(data: Array<ComputationResponse | Hits>): any {
+        const m = data.map(d => {
+            if ('value' in d) {
+                return (d as ComputationResponse).value;
+            } else {
+                return (d as Hits).totalnb;
+            }
+        });
+        // eslint-disable-next-line no-eval
         const resultValue = eval(this.function);
         this.metricValue = resultValue;
         return from([]);

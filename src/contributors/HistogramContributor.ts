@@ -17,23 +17,25 @@
  * under the License.
  */
 
-import { Observable, from, zip, Subject } from 'rxjs';
+import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Filter } from 'arlas-api';
 import {
     Collaboration,
+    CollaborationEvent,
     CollaborativesearchService,
     ConfigService,
     Contributor,
     OperationEnum,
-    projType, CollaborationEvent
+    projType
 } from 'arlas-web-core';
-import { Filter, Aggregation, AggregationResponse, ComputationRequest, ComputationResponse } from 'arlas-api';
-import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
-import { getSelectionToSet, getvaluesChanged, getAggregationPrecision } from '../utils/histoswimUtils';
-import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
-import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
-import jp from 'jsonpath/jsonpath.min';
-import { map, flatMap } from 'rxjs/operators';
 import { CollectionAggField } from 'arlas-web-core/utils/utils';
+import jp from 'jsonpath/jsonpath.min';
+import { Observable, Subject, from, zip } from 'rxjs';
+import { flatMap, map } from 'rxjs/operators';
+import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
+import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
+import { adjustHistogramInterval, getAggregationPrecision, getSelectionToSet, getSelectionFromValues } from '../utils/histoswimUtils';
+import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
+import { DetailedHistogramContributor } from './DetailedHistogramContributor';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -45,10 +47,10 @@ export class HistogramContributor extends Contributor {
     * New data need to be draw on the histogram (could be set to
     @Input() data of HistogramComponent
     */
-    public chartData: Array<{ key: number, value: number, chartId?: string }> =
-        new Array<{ key: number, value: number, chartId?: string }>();
+    public chartData: Array<{ key: number; value: number; chartId?: string; }> =
+        new Array<{ key: number; value: number; chartId?: string; }>();
 
-    public chartDataEvent: Subject<{ key: number, value: number, chartId?: string }[]> = new Subject();
+    public chartDataEvent: Subject<{ key: number; value: number; chartId?: string; }[]> = new Subject();
     /**
     * New selection current need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
@@ -116,18 +118,21 @@ export class HistogramContributor extends Contributor {
     */
     public useUtc = this.getConfigValue('useUtc') !== undefined ? this.getConfigValue('useUtc') : true;
 
+    /** to be set in the toolkit when creating the contributor */
+    public maxBuckets = 200;
 
+    public detailedHistrogramContributor!: DetailedHistogramContributor;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(
+    public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, collection: string, protected isOneDimension?: boolean,
-        public additionalCollections?: Array<{ collectionName: string, field: string }>
+        public additionalCollections?: Array<{ collectionName: string; field: string; }>
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
         const lastAggregation: Aggregation = !!this.aggregations ? this.aggregations[this.aggregations.length - 1] : undefined;
@@ -145,11 +150,12 @@ export class HistogramContributor extends Contributor {
                         .filter(s => this.yearShortcutsLabels.indexOf(s.label) >= 0));
             }
         }
-        this.collections = (!!this.additionalCollections ? this.additionalCollections : []).concat({
-            collectionName: collection,
-            field: this.field
-        });
+        this.collections = this.getAllCollections();
         this.collaborativeSearcheService.registerCollections(this);
+    }
+
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
     }
 
     public getNbBuckets() {
@@ -228,12 +234,31 @@ export class HistogramContributor extends Contributor {
     public getPackageName(): string {
         return 'arlas.web.contributors.histogram';
     }
+
     /**
-    * Set filter on value change, use in output of component
-    * @param value DateType.millisecond | DateType.second
-    */
-    public valueChanged(values: SelectedOutputValues[]) {
-        const resultList = getvaluesChanged(values, this.collections, this.identifier, this.collaborativeSearcheService, this.useUtc);
+     * Triggers the collaboration of this contributor on the given intervals and for the given collections
+     * @param values List of selected intervals in the histogram
+     * @param collections List of collections to declare in the collaboration. This list should be a subset of
+     * collections declared in this contributor.
+     */
+    public valueChanged(values: SelectedOutputValues[], collections?: CollectionAggField[]) {
+        if (collections) {
+            const paramCollections = collections.map(c => c.collectionName);
+            const allCollectionsSet = new Set(this.getAllCollections().map(c => c.collectionName));
+            /** collections given as parameters should be in the `allCollections` list, otherwise an error is thrown */
+            const strangerCollections = paramCollections.filter(c => !allCollectionsSet.has(c));
+            if (strangerCollections.length > 0) {
+                const is = strangerCollections.length > 1 ? 'are' : 'is';
+                const plural = strangerCollections.length > 1 ? 's' : '';
+                throw Error(`Collection${plural} '${strangerCollections.join(' ')}'
+                    ${is} not declared in the ${this.getName()} contributor `);
+            }
+
+        }
+        if (!collections) {
+            collections = this.getAllCollections();
+        }
+        const resultList = getSelectionFromValues(values, collections, this.identifier, this.collaborativeSearcheService, this.useUtc);
         this.intervalSelection = resultList[0];
         this.startValue = resultList[1];
         this.endValue = resultList[2];
@@ -268,8 +293,16 @@ export class HistogramContributor extends Contributor {
         }
     }
 
-    public computeData(aggResponses: AggregationResponse[]): Array<{ key: number, value: number, chartId: string }> {
-        const dataTab = new Array<{ key: number, value: number, chartId: string }>();
+
+    public getAllCollections() {
+        return (!!this.additionalCollections ? this.additionalCollections : []).concat({
+            collectionName: this.collection,
+            field: this.field
+        });
+    }
+
+    public computeData(aggResponses: AggregationResponse[]): Array<{ key: number; value: number; chartId: string; }> {
+        const dataTab = new Array<{ key: number; value: number; chartId: string; }>();
         aggResponses.forEach(aggResponse => {
             if (aggResponse.elements !== undefined) {
                 aggResponse.elements.forEach(element => {
@@ -285,7 +318,7 @@ export class HistogramContributor extends Contributor {
         return dataTab.sort((a, b) => a.key < b.key ? -1 : (a.key > b.key ? 1 : 0));
     }
 
-    public setData(data: Array<{ key: number, value: number, chartId?: string }>): Array<{ key: number, value: number, chartId?: string }> {
+    public setData(data: Array<{ key: number; value: number; chartId?: string; }>): Array<{ key: number; value: number; chartId?: string; }> {
         if (!this.isOneDimension || this.isOneDimension === undefined) {
             this.chartData = data;
         } else {
@@ -303,7 +336,7 @@ export class HistogramContributor extends Contributor {
         return this.chartData;
     }
 
-    public setSelection(data: Array<{ key: number, value: number, chartId?: string }>, collaboration: Collaboration): any {
+    public setSelection(data: Array<{ key: number; value: number; chartId?: string; }>, collaboration: Collaboration): any {
         const resultList = getSelectionToSet(data, this.collection, collaboration, this.useUtc);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
@@ -315,47 +348,56 @@ export class HistogramContributor extends Contributor {
 
     protected fetchDataGivenFilter(identifier: string, additionalFilters?: Map<string, Filter>): Observable<AggregationResponse[]> {
         const collaborations = new Map<string, Collaboration>();
-        this.collaborativeSearcheService.collaborations.forEach((k, v) => { collaborations.set(v, k); });
-        if (this.nbBuckets) {
-            const agg = zip(...Array.from(this.collections)
-                .map(ac => {
-                    const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                    return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-                <ComputationRequest>{ filter: null, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
-                    collaborations, ac.collectionName, identifier, additionalFilter, false, this.cacheDuration); }))
-                .pipe(
-                    map((computationResponses: ComputationResponse[]) => {
-                        const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
-                        const aggregationPrecision = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
-                        const result = {
-                            dataRange,
-                            aggregationPrecision
-                        };
-                        return result;
-                    }),
-                    map((r => {
-                        this.range = r.dataRange;
-                        this.aggregations[0].interval = r.aggregationPrecision;
-                        return zip(...Array.from(this.collections).map(ac => {
-                            const aggregations = this.aggregations;
-                            aggregations[0].interval = r.aggregationPrecision;
-                            aggregations[0].field = ac.field;
-                            const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                            return this.resolveHistogramAgg(identifier, aggregations, collaborations, additionalFilter, ac);
-                        }));
-                    })),
-                    flatMap(a => a)
-                );
-
-            return agg;
-        } else {
-            return zip(...Array.from(this.collections).map(ac => {
-                const aggregations = this.aggregations;
-                aggregations[0].field = ac.field;
+        this.collaborativeSearcheService.collaborations.forEach((k, v) => {
+            collaborations.set(v, k);
+        });
+        const aggregations = this.aggregations;
+        /** We calculate the range all the time */
+        const agg = zip(...Array.from(this.collections)
+            .map(ac => {
                 const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                return this.resolveHistogramAgg(identifier, aggregations, collaborations, additionalFilter, ac);
-            }));
-        }
+                return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+                <ComputationRequest>{ filter: null, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
+                    collaborations, ac.collectionName, identifier, additionalFilter, false, this.cacheDuration);
+            }))
+            .pipe(
+                map((computationResponses: ComputationResponse[]) => {
+                    const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
+                    let histogramInterval;
+                    /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
+                    if (this.nbBuckets) {
+                        histogramInterval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
+                    } else {
+                        /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
+                        const initialInterval = aggregations[0].interval;
+                        histogramInterval = adjustHistogramInterval(this.aggregations[0].type,
+                            this.maxBuckets, initialInterval, dataRange);
+                    }
+                    const result = {
+                        dataRange,
+                        aggregationPrecision: histogramInterval
+                    };
+                    return result;
+                }),
+                map((r => {
+                    this.range = r.dataRange;
+                    const aggregation: Aggregation = {
+                        type: aggregations[0].type,
+                        interval: r.aggregationPrecision
+                    };
+                    if (aggregations[0].metrics) {
+                        aggregation.metrics = aggregations[0].metrics;
+                    }
+                    return zip(...Array.from(this.collections).map(ac => {
+                        aggregation.field = ac.field;
+                        const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
+                        return this.resolveHistogramAgg(identifier, [aggregation], collaborations, additionalFilter, ac);
+                    }));
+                })),
+                flatMap(a => a)
+            );
+
+        return agg;
     }
 
     protected resolveHistogramAgg(identifier: string, aggregations: Array<Aggregation>, collaborations: Map<string, Collaboration>,
@@ -367,4 +409,5 @@ export class HistogramContributor extends Contributor {
                 return d;
             }));
     }
+
 }

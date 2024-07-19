@@ -56,7 +56,7 @@ export class AnalyticsContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    constructor(
+    public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
@@ -85,6 +85,10 @@ export class AnalyticsContributor extends Contributor {
     */
     public getPackageName(): string {
         return 'arlas.web.contributors.analytics';
+    }
+
+    public isUpdateEnabledOnOwnCollaboration() {
+        return false;
     }
 
     public fetchData(collaborationEvent: CollaborationEvent): Observable<AggregationResponse> {

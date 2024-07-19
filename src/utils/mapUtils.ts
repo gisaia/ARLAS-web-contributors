@@ -10,9 +10,11 @@ import * as meta from '@turf/meta';
 import { bboxes } from 'ngeohash';
 import { isNumber } from 'util';
 
-export function getBounds(elementidentifier: ElementIdentifier, collaborativeSearcheService: CollaborativesearchService, collection: string)
-    : Observable<Array<Array<number>>> {
-    let searchResult: Observable<Hits>;
+export function getBounds(
+    elementidentifier: ElementIdentifier,
+    collaborativeSearcheService: CollaborativesearchService,
+    collection: string
+): Observable<Array<Array<number>>> {
     const search: Search = { page: { size: 1 } };
     const expression: Expression = {
         field: elementidentifier.idFieldName,
@@ -22,12 +24,25 @@ export function getBounds(elementidentifier: ElementIdentifier, collaborativeSea
     const filter: Filter = {
         f: [[expression]]
     };
-    searchResult = collaborativeSearcheService
+    const searchResult: Observable<Hits> = collaborativeSearcheService
         .resolveHits([projType.search, search], collaborativeSearcheService.collaborations, collection, '', filter);
     return searchResult
         .pipe(
             map(h => {
                 const geojsonData = getElementFromJsonObject(h.hits[0].md, 'geometry');
+                switch (geojsonData.type) {
+                    case 'LineString':
+                        geojsonData.coordinates = fix180thMeridian(geojsonData.coordinates);
+                        break;
+                    case 'Polygon':
+                        geojsonData.coordinates[0] = fix180thMeridian(geojsonData.coordinates[0]);
+                        break;
+                    case 'MultiPolygon':
+                        geojsonData.coordinates.forEach(c => {
+                            c[0] = fix180thMeridian(c[0]);
+                        });
+                        break;
+                }
                 const box = bbox(geojsonData);
                 const minX = box[0];
                 const minY = box[1];
@@ -38,7 +53,7 @@ export function getBounds(elementidentifier: ElementIdentifier, collaborativeSea
 }
 
 export function extentToGeohashes(extent: Array<number>, zoom: number,
-    granularityFunction: (zoom: number, clusterType?) => { tilesPrecision: number, requestsPrecision: number }): Set<string> {
+    granularityFunction: (zoom: number, clusterType?) => { tilesPrecision: number; requestsPrecision: number; }): Set<string> {
     let geohashList = [];
     const west = extent[1];
     const east = extent[3];
@@ -50,25 +65,25 @@ export function extentToGeohashes(extent: Array<number>, zoom: number,
             Math.max(south, north),
             180, Math.max(granularityFunction(zoom).tilesPrecision, 1));
     } else if (west < -180 && east < 180) {
-        const geohashList_1: Array<string> = bboxes(Math.min(south, north),
+        const geohashList1: Array<string> = bboxes(Math.min(south, north),
             Math.min(-180, west + 360),
             Math.max(south, north),
             Math.max(-180, west + 360), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-        const geohashList_2: Array<string> = bboxes(Math.min(south, north),
+        const geohashList2: Array<string> = bboxes(Math.min(south, north),
             Math.min(east, 180),
             Math.max(south, north),
             Math.max(east, 180), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-        geohashList = geohashList_1.concat(geohashList_2);
+        geohashList = geohashList1.concat(geohashList2);
     } else if (east > 180 && west > -180) {
-        const geohashList_1: Array<string> = bboxes(Math.min(south, north),
+        const geohashList1: Array<string> = bboxes(Math.min(south, north),
             Math.min(180, east - 360),
             Math.max(south, north),
             Math.max(180, east - 360), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-        const geohashList_2: Array<string> = bboxes(Math.min(south, north),
+        const geohashList2: Array<string> = bboxes(Math.min(south, north),
             Math.min(west, -180),
             Math.max(south, north),
             Math.max(west, -180), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-        geohashList = geohashList_1.concat(geohashList_2);
+        geohashList = geohashList1.concat(geohashList2);
     } else {
         geohashList = bboxes(Math.min(south, north),
             Math.min(east, west),
@@ -78,7 +93,7 @@ export function extentToGeohashes(extent: Array<number>, zoom: number,
     return new Set(geohashList);
 }
 
-export function tileToString(tile: { x: number, y: number, z: number }): string {
+export function tileToString(tile: { x: number; y: number; z: number; }): string {
     return tile.x.toString() + '_' + tile.y.toString() + '_' + tile.z.toString();
 }
 
@@ -91,7 +106,7 @@ export function stringToExtent(s: string): Array<number> {
     return [+ss[3], +ss[0], +ss[1], +ss[2]];
 }
 
-export function stringToTile(tileString: string): { x: number, y: number, z: number } {
+export function stringToTile(tileString: string): { x: number; y: number; z: number; } {
     const numbers = tileString.split('_');
     return { x: +numbers[0], y: +numbers[1], z: +numbers[2] };
 }
@@ -100,7 +115,7 @@ function tiled(num: number): number {
     return Math.floor(num / 256);
 }
 
-export function project(lat: number, lng: number, zoom: number): { x: number, y: number } {
+export function project(lat: number, lng: number, zoom: number): { x: number; y: number; } {
 
     const R = 6378137;
     const sphericalScale = 0.5 / (Math.PI * R);
@@ -119,7 +134,7 @@ export function project(lat: number, lng: number, zoom: number): { x: number, y:
 
     return point;
 }
-export function getTiles(bounds: Array<Array<number>>, zoom: number): Array<{ x: number, y: number, z: number }> {
+export function getTiles(bounds: Array<Array<number>>, zoom: number): Array<{ x: number; y: number; z: number; }> {
     // north,west
     const min = project(bounds[1][1], bounds[0][0], zoom);
     // south,east
@@ -138,7 +153,7 @@ export function getTiles(bounds: Array<Array<number>>, zoom: number): Array<{ x:
     return tiles;
 }
 
-export function xyz(bounds, minZoom, maxZoom?): Array<{ x: number, y: number, z: number }> {
+export function xyz(bounds, minZoom, maxZoom?): Array<{ x: number; y: number; z: number; }> {
     let min;
     let max;
     let tiles = [];
@@ -171,7 +186,9 @@ export function xyz(bounds, minZoom, maxZoom?): Array<{ x: number, y: number, z:
  */
 
 export function truncate(geojson, options) {
-    if (options === void 0) { options = {}; }
+    if (options === void 0) {
+        options = {};
+    }
     // Optional parameters
     let precision = options.precision;
     let coordinates = options.coordinates;
@@ -327,4 +344,36 @@ export function formatNumber(x, formatChar = ' ', roundPrecision?: number): stri
         }
     }
     return x;
+}
+
+/**
+ * Fixes the known issue of geometries not taking the shortest path to be represented on map clients
+ * by allowing data's longitude to be outside of [-180, 180]
+ * @param coordinates Coordinates of a geometry (Polygon or Linestring)
+ */
+export function fix180thMeridian(coordinates: Array<Array<number>>) {
+    const isClockwise = polygonArea(coordinates) < 0;
+    if (isClockwise) {
+        coordinates.forEach((point, idx) => {
+            if (idx <= coordinates.length - 2) {
+                if (point[0] - coordinates[idx + 1][0] > 180) {
+                    coordinates[idx + 1][0] += 360;
+                } else if (coordinates[idx + 1][0] - point[0] > 180) {
+                    coordinates[idx + 1][0] += -360;
+                }
+            }
+        });
+    }
+    return coordinates;
+}
+
+
+function polygonArea(coordinates) {
+    let area = 0;
+    for (let i = 0; i < coordinates.length; i++) {
+        const j = (i + 1) % coordinates.length;
+        area += coordinates[i][0] * coordinates[j][1];
+        area -= coordinates[j][0] * coordinates[i][1];
+    }
+    return area / 2;
 }
