@@ -261,6 +261,7 @@ export class ResultListContributor extends Contributor {
     private includesvalues = new Array<string>();
     private isImageEnabled = false;
     private isThumbnailEnabled = false;
+    private isDetailsTitleEnabled = false;
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
     /** CONSTANTS */
@@ -318,6 +319,9 @@ export class ResultListContributor extends Contributor {
         }
         if (this.fieldsConfiguration.urlThumbnailTemplate) {
             this.includesvalues = this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.urlThumbnailTemplate));
+        }
+        if (this.fieldsConfiguration.detailsTitleTemplate) {
+            this.includesvalues = this.includesvalues.concat(this.fieldsFromUrlTemplate(this.fieldsConfiguration.detailsTitleTemplate));
         }
         if (this.fieldsConfiguration.iconCssClass) {
             this.includesvalues.push(this.fieldsConfiguration.iconCssClass);
@@ -824,6 +828,11 @@ export class ResultListContributor extends Contributor {
                     this.isThumbnailEnabled = this.setUrlField(this.fieldsConfiguration.urlThumbnailTemplate,
                         h, fieldValueMap, 'urlThumbnailTemplate');
                     fieldValueMap.set('thumbnailEnabled', this.isThumbnailEnabled.toString());
+                }
+                if (this.fieldsConfiguration.detailsTitleTemplate && this.fieldsConfiguration.detailsTitleTemplate !== '') {
+                    this.isDetailsTitleEnabled = this.setUrlField(this.fieldsConfiguration.detailsTitleTemplate,
+                        h, fieldValueMap);
+                    fieldValueMap.set('detailsTitleEnabled', this.isDetailsTitleEnabled.toString());
                 }
                 listResult.push(fieldValueMap);
             });
