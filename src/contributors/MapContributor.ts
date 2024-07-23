@@ -1728,6 +1728,9 @@ export class MapContributor extends Contributor {
                 if (!!feature.properties.tile) {
                     aggType = 'tile';
                 }
+                if (!!feature.properties.h3) {
+                    aggType = 'h3';
+                }
                 const geometryRef = feature.properties.geometry_sort ?
                     feature.properties.geometry_ref + '-' + feature.properties.geometry_sort + '-'
                     + aggType : feature.properties.geometry_ref + '-' + aggType;
@@ -1741,6 +1744,9 @@ export class MapContributor extends Contributor {
                 if (!!feature.properties.tile) {
                     existingCell = gmap ? gmap.get(feature.properties.tile) : null;
                 }
+                if (!!feature.properties.h3) {
+                    existingCell = gmap ? gmap.get(feature.properties.h3) : null;
+                }
                 if (existingCell) {
                     /** parent_geohash or parent_tile corresponds to the geohash or tile on which we applied the geoaggregation */
                     aggSource.sources.forEach(source => {
@@ -1752,6 +1758,9 @@ export class MapContributor extends Contributor {
                         }
                         if (!!feature.properties.tile) {
                             parentCellsTest = !parentCells.has(feature.properties.parent_tile);
+                        }
+                        if (!!feature.properties.h3) {
+                            parentCellsTest = !parentCells.has(feature.properties.parent_cell);
                         }
                         if (parentCellsTest) {
                             /** when this tile (parent_geohash or parent_tile) is requested for the first time we merge the counts */
@@ -1815,12 +1824,18 @@ export class MapContributor extends Contributor {
                         if (!!feature.properties.tile) {
                             cellsMap.set(feature.properties.tile, feature);
                         }
+                        if (!!feature.properties.h3) {
+                            cellsMap.set(feature.properties.h3, feature);
+                        }
                         this.cellsPerSource.set(source, cellsMap);
                         if (!!feature.properties.geohash) {
                             parentCellsPerSource.set(source, feature.properties.parent_geohash);
                         }
                         if (!!feature.properties.tile) {
                             parentCellsPerSource.set(source, feature.properties.parent_tile);
+                        }
+                        if (!!feature.properties.h3) {
+                            parentCellsPerSource.set(source, feature.properties.parent_cell);
                         }
                         this.calculateAggMetricsStatsExceptAvg(source, feature);
                     }
@@ -2474,8 +2489,10 @@ export class MapContributor extends Contributor {
                 let type: Aggregation.TypeEnum;
                 if (ls.type === ClusterAggType.geohash || !ls.type) {
                     type = Aggregation.TypeEnum.Geohash;
-                } else {
+                } else if (ls.type === ClusterAggType.tile)  {
                     type = Aggregation.TypeEnum.Geotile;
+                } else {
+                    type = Aggregation.TypeEnum.Geohex;
                 }
                 aggregation = {
                     type: type,
@@ -2947,8 +2964,10 @@ export class MapContributor extends Contributor {
         let aggClusterType;
         if (clusterType === ClusterAggType.geohash) {
             aggClusterType = Aggregation.TypeEnum.Geohash;
-        } else {
+        } else if (clusterType === ClusterAggType.tile) {
             aggClusterType = Aggregation.TypeEnum.Geotile;
+        } else {
+            aggClusterType = Aggregation.TypeEnum.Geohex;
         }
         let precisions;
         if (aggType === this.TOPOLOGY_SOURCE) {
