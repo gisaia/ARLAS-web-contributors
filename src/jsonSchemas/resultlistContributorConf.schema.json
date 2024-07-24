@@ -90,6 +90,10 @@
                 "iconColorFieldName": {
                     "description": "Field which value is transformed to a hex color (using an ArlasColorService) and associated to the icon color",
                     "type": "string"
+                },
+                "detailsTitleTemplate": {
+                    "description": "Template of details title",
+                    "type": "string"
                 }
             }
         },

@@ -122,6 +122,8 @@ export interface FieldsConfiguration {
     useHttpQuicklooks?: boolean;
     /** Whether the thumbnails are protected and the http call needs to be enriched with auth header */
     useHttpThumbnails?: boolean;
+    /** Template of details title */
+    detailsTitleTemplate?: string;
 }
 
 export interface DescribedUrl {
