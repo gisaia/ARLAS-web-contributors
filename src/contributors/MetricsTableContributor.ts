@@ -239,56 +239,57 @@ export class MetricsTableContributor extends Contributor {
         let maxTableValue = -Number.MAX_VALUE;
         const metricsResponses = data.metricsResponse;
         const columnsOrder = data.columns;
-        let leadingMr = metricsResponses?.find(mr => mr.vector.isSortable());
-        if (!leadingMr && metricsResponses.length > 0) {
-            leadingMr = metricsResponses[0];
-        }
-        if (!!leadingMr) {
-            leadingMr.aggregationResponse.elements.forEach(element => {
-                const row: MetricsTableRow = { data: [], term: element.key_as_string };
+        metricsResponses.forEach(mr => {
+            mr.aggregationResponse.elements.forEach(element => {
+                const row = { data: [], term: element.key_as_string };
                 row.data = Array(columnsOrder.length).fill(null);
                 rowsMap.set(element.key_as_string, row);
-                rows.push(row);
+                if (!rows.find(r => r.term === element.key_as_string)) {
+                    rows.push(row);
+                }
             });
-        }
+        });
         metricsResponses.forEach(metricsResponse => {
             const currentCollectionTermfield = metricsResponse.collection + metricsResponse.vector.termfield;
             metricsResponse.aggregationResponse.elements.forEach(element => {
                 const row: MetricsTableRow = rowsMap.get(element.key_as_string);
-                columnsOrder.forEach((col, i) => {
-                    if (currentCollectionTermfield === col.collection + col.termfield) {
-                        let uniqueTermMetric;
-                        let value;
-                        // how we know its the good field that we want if the metrics object can be empty ?
-                        if (col.metric === 'count') {
-                            uniqueTermMetric = `${col.collection}_${col.metric}`;
-                            value = element.count;
-                        } else {
-                            uniqueTermMetric = `${col.collection}_${col.field}_${col.metric}`;
-                            const metric = element?.metrics?.find(metric => metric.type.toLowerCase() === col.metric.toString().toLowerCase() &&
-                                metric.field === col.field.replace(/\./g, '_')
-                            );
-                            if (metric) {
-                                value = metric.value;
+                if (row) {
+                    columnsOrder.forEach((col, i) => {
+                        if (currentCollectionTermfield === col.collection + col.termfield) {
+                            let uniqueTermMetric;
+                            let value;
+                            // how we know its the good field that we want if the metrics object can be empty ?
+                            if (col.metric === 'count') {
+                                uniqueTermMetric = `${col.collection}_${col.metric}`;
+                                value = element.count;
+                            } else {
+                                uniqueTermMetric = `${col.collection}_${col.field}_${col.metric}`;
+                                const metric = element?.metrics?.find(metric => metric.type.toLowerCase() ===
+                                    col.metric.toString().toLowerCase() &&
+                                    metric.field === col.field.replace(/\./g, '_')
+                                );
+                                if (metric) {
+                                    value = metric.value;
+                                }
+                            }
+                            // we set the value and the max count
+                            if (value !== undefined) {
+                                if (value > maxTableValue) {
+                                    maxTableValue = value;
+                                }
+                                row.data[i] = {
+                                    maxColumnValue: 0, maxTableValue: 0, value, metric: col.metric,
+                                    column: col.collection, field: col.field
+                                };
+                                if (maxValues.has(uniqueTermMetric) && maxValues.get(uniqueTermMetric) < value) {
+                                    maxValues.set(uniqueTermMetric, value);
+                                } else if (!maxValues.has(uniqueTermMetric)) {
+                                    maxValues.set(uniqueTermMetric, value);
+                                }
                             }
                         }
-                        // we set the value and the max count
-                        if (value !== undefined) {
-                            if (value > maxTableValue) {
-                                maxTableValue = value;
-                            }
-                            row.data[i] = {
-                                maxColumnValue: 0, maxTableValue: 0, value, metric: col.metric,
-                                column: col.collection, field: col.field
-                            };
-                            if (maxValues.has(uniqueTermMetric) && maxValues.get(uniqueTermMetric) < value) {
-                                maxValues.set(uniqueTermMetric, value);
-                            } else if (!maxValues.has(uniqueTermMetric)) {
-                                maxValues.set(uniqueTermMetric, value);
-                            }
-                        }
-                    }
-                });
+                    });
+                }
             });
         });
         const metricsTable: MetricsTable = { data: [], header: [] };
