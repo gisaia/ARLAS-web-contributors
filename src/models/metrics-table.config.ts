@@ -267,9 +267,9 @@ export class MetricsVector {
 
     /** Returns the Aggregation.OrderEnum to apply to arlas aggregation request object. */
     private getSortOrder(sort: MetricsTableSortConfig): Aggregation.OrderEnum {
-        if (sort.order === 'asc') {
+        if (sort && sort.order === 'asc') {
             return Aggregation.OrderEnum.Asc;
-        } else if (sort.order === 'desc') {
+        } else if (sort && sort.order === 'desc') {
             return Aggregation.OrderEnum.Desc;
         } else {
             /** sort.order should always be specified. This block is for code safety. */
