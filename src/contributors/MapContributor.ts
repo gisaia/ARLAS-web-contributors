@@ -166,8 +166,8 @@ export class MapContributor extends Contributor {
      * List of fields pattern or names that will be included in features mode as geojson properties.
      */
 
-    public zoom;
-    public center;
+    public zoom: number;
+    public center: Array<number>;
     public mapLoadWrappedExtent = [90, -180, -90, 180];
     public mapLoadRawExtent = [90, -180, -90, 180];
     public mapTestWrappedExtent = [90, -180, -90, 180];
@@ -462,7 +462,7 @@ export class MapContributor extends Contributor {
             if (sort && sort.length > 0) {
                 search.page.sort = sort;
             } else {
-                search.page.sort = 'geodistance:' + this.center.lat.toString() + ' ' + this.center.lng.toString() + ',' +
+                search.page.sort = 'geodistance:' + this.center[0].toString() + ' ' + this.center[1].toString() + ',' +
                     this.collectionParameters.id_path;
             }
             let renderStrategy: RenderStrategy;

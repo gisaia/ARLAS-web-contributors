@@ -82,7 +82,7 @@ export interface SearchLabel {
 */
 export interface OnMoveResult {
     zoom: number;
-    center: any;
+    center: Array<number>;
     extend: Array<number>;
     extendForLoad: Array<number>;
     rawExtendForTest: Array<number>;
