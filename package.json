@@ -10,7 +10,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts",
     "copy-root-schema": "cp src/jsonSchemas/rootContributorConf.schema.json dist/jsonSchemas",
-    "copy-npm-readme": "cp README-NPM.md dist/README.md"
+    "copy-npm-readme": "cp README-NPM.md dist/README.md",
+    "license-check": "license-check-and-add check -f license-check-and-add.json"
   },
   "repository": {
     "type": "git",
@@ -41,6 +42,7 @@
     "@typescript-eslint/eslint-plugin": "^5.27.1",
     "@typescript-eslint/parser": "^5.27.1",
     "eslint": "^8.17.0",
+    "license-check-and-add": "^4.0.5",
     "rimraf": "^2.6.2",
     "typescript": "~4.6.0"
   },
