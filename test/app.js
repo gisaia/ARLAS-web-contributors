@@ -15,10 +15,10 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+*/
 
 import { MetricsTableContributor } from '../dist/index.js';
-import { Observable, of } from 'rxjs';
+import { of } from 'rxjs';
 
 const metricsTableConfig = {
   'collection_toto' : {
