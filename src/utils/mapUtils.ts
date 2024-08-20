@@ -328,7 +328,6 @@ export function numToString(num: number, p?: number): string {
 }
 
 export function formatNumber(x, formatChar = ' ', roundPrecision?: number): string {
-    /** !!!!! not to be merged before TEST. DONT let me do it in a PR !!!!!!!!!!! */
     if (isNumber(x)) {
         const trunc = Math.trunc(x);
         const integerFraction = (x + '').split('.');

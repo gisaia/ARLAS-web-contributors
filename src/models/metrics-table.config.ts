@@ -323,7 +323,11 @@ export class MetricsVector {
         }
     }
 
-    private isSortOnCount() {
+    /**
+     * Note: by default, if no sort is defined, the sort is applied on the count.
+     * @returns whether the sort is applied on count
+     */
+    private isSortOnCount(): boolean {
         return !this.sort
             ||
             this.sort.collection !== this.collection
