@@ -1,5 +1,21 @@
 # Change Log
 
+## [v26.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-rc.1) (2024-08-20)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0-beta.2...v26.0.0-rc.1)
+
+**New stuff:**
+
+- Add an attribute to fieldsConfiguration that template the details title [\#565](https://github.com/gisaia/ARLAS-web-contributors/issues/565)
+- Support H3 grids in map contributors [\#456](https://github.com/gisaia/ARLAS-web-contributors/issues/456)
+
+## [v26.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-beta.2) (2024-07-18)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0-beta.1...v26.0.0-beta.2)
+
+## [v26.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-beta.1) (2024-07-15)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.1.0...v26.0.0-beta.1)
 
 ## [v25.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.1.0) (2024-07-05)
 
