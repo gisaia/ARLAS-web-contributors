@@ -280,16 +280,3 @@ const aggregationResponseList: MetricsTableResponse[] = [{
     vector: {} as MetricsVector
 
 }];
-
-
-// export const computableResponseMock: ComputableResponse = {
-//     columns: [
-//         {collection: 'toto', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
-//         {collection: 'toto', metric: ArlasApiMetric.CollectFctEnum.SUM, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
-//         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_ObservationContext_eo_opt_cloudCoverPercentage'},
-//         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.AVG, field: 'metadata_tristesse'},
-//         {collection: 'titi', metric: ArlasApiMetric.CollectFctEnum.SUM, field: 'metadata_heureux'},
-//         {collection: 'titi', metric: 'count', field: ''} // quizz du field ??? comment on sait que c'est le bon count
-//     ],
-//     metricsResponse: aggregationResponseList
-// };

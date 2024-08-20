@@ -101,7 +101,7 @@ export interface MetricsTableSortConfig {
 
 /**
  * |                             MetricsVectors                            |
- * |        |      MetricVector 1        |          MetricVector 2         |
+ * |        |      MetricsVector 1        |          MetricsVector 2         |
  * |        | (c1,f1,m1)  |  (c1,f2,m2)  |  (c2,f'1,m'2)  |  (c2,f'2,m'2)  |
  * | term 1 |      x      |      x       |      x         |      x         |
  * | term 2 |      x      |      x       |      x         |      x         |
@@ -128,7 +128,7 @@ export class MetricsVectors {
 /** @class */
 /** A MetricsVector reprensents a collection with all its metrics.
  * It provides `getAggregation`method that returns the arlas-api Aggregation request object.
- * |        |      MetricVector 1        |
+ * |        |      MetricsVector 1        |
  * |        | (c1,f1,m1)  |  (c1,f2,m2)  |
  * | term 1 |      x      |      x       |
  * | term 2 |      x      |      x       |
@@ -203,7 +203,8 @@ export class MetricsVector {
      *     two or more (collect_field,collect_fct) couples are specified,
      *     then the order is applied on the first collect_fct different from geobbox and geobbox".
      * <<<
-     * @param sort
+     * @param metricsConfig List of metrics defined by configuration
+     * @param sort Sort configuration
      */
     private getMetrics(metricsConfig: MetricConfig[], sort: MetricsTableSortConfig): ArlasApiMetric[] {
         let arlasMetrics: ArlasApiMetric[] = [];

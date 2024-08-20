@@ -42,7 +42,7 @@ import { Observable, forkJoin, map, of, mergeMap, from, Subject, take } from 'rx
 export class MetricsTableContributor extends Contributor {
 
     /** @field */
-    /** A object that simplifies building arlas-api aggregation requests from the table
+    /** An object that simplifies building arlas-api aggregation requests from the table
      * configuration.
      */
     public table: MetricsVectors;
@@ -50,20 +50,19 @@ export class MetricsTableContributor extends Contributor {
     /** Number of terms fetched for each collection. The resulted table
      * might have terms between `numberOfBuckets` and `nbCollection * numberOfBuckets`.
      */
-    public nbterms: number;
+    public nbTerms: number;
     /** @param */
-    /** Configuration of the table. It includes what are the term fields for each collection and what
+    /** Configuration of the table. It includes what the term fields are for each collection and which
      * metrics to display.
      */
-    public configuration: MetricsVectorConfig[] = this.getConfigValue('configuration');
-    /** @param */
-    /**
-     */
-    public sort: MetricsTableSortConfig = this.getConfigValue('sort');
+    public configuration: MetricsVectorConfig[];
 
-    /**
-     * Type of operator for the filter : equal or not equal
-     */
+    /** @param */
+    /** Configuration of the sort to apply to the metrics table. */
+    public sort: MetricsTableSortConfig;
+
+    /** @param */
+    /** Type of operator for the filter : equal or not equal */
     private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
         Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
 
@@ -72,8 +71,14 @@ export class MetricsTableContributor extends Contributor {
 
     public maxValue = -Number.MAX_VALUE;
 
+    /** The data that will be given as an input of the MetricsTable component. */
     public data: MetricsTable;
+    /** List of currently selected terms (rows) of the table. */
     public selectedTerms: Array<string> = [];
+
+    /** An intermediate data structure : it restructures the ARLAS-server aggregation. It will be transformed to MetricsTable structure
+     * after calling the 'setSelection' method.
+     */
     private computableResponse: ComputableResponse;
     public constructor(
         identifier: string,
@@ -83,8 +88,8 @@ export class MetricsTableContributor extends Contributor {
         super(identifier, configService, collaborativeSearcheService);
         this.sort = this.getConfigValue('sort');
         this.configuration = this.getConfigValue('configuration');
-        this.nbterms = this.getConfigValue('numberOfBuckets');
-        this.table = new MetricsVectors(this.configuration, this.sort, this.nbterms);
+        this.nbTerms = this.getConfigValue('numberOfBuckets');
+        this.table = new MetricsVectors(this.configuration, this.sort, this.nbTerms);
         this.collections = this.table.vectors.map(v => ({
             field: v.configuration.termfield,
             collectionName: v.collection
@@ -126,7 +131,7 @@ export class MetricsTableContributor extends Contributor {
                     });
                     return metricsResponses;
                 }),
-                /** The following block launches a list of Complementary aggregations for each vector (only in case of missing keys),
+                /** The following block launches a list of complementary aggregations for each vector (only in case of missing keys),
                  *  in order to fetch the missing keys and complete the table. */
                 mergeMap(metricsResponses => forkJoin(metricsResponses.map(mr => {
                     if (mr.missingKeys.size === 0) {
@@ -142,7 +147,6 @@ export class MetricsTableContributor extends Contributor {
                                 map(ar => {
                                     const keys = new Set(ar.elements.map(e => e.key));
                                     keys.forEach(k => {
-                                        allKeys.add(k);
                                         mr.keys.add(k);
                                     });
                                     const missingKeys = new Set<string>();
@@ -258,7 +262,6 @@ export class MetricsTableContributor extends Contributor {
                         if (currentCollectionTermfield === col.collection + col.termfield) {
                             let uniqueTermMetric;
                             let value;
-                            // how we know its the good field that we want if the metrics object can be empty ?
                             if (col.metric === 'count') {
                                 uniqueTermMetric = `${col.collection}_${col.metric}`;
                                 value = element.count;
@@ -293,7 +296,7 @@ export class MetricsTableContributor extends Contributor {
             });
         });
         const metricsTable: MetricsTable = { data: [], header: [] };
-        // att the end we setHeaders
+        // at the end we set headers
         for (const value of columnsOrder) {
             metricsTable.header.push({ title: value.collection, subTitle: value.field, metric: value.metric, rowfield: value.termfield });
         }
@@ -408,9 +411,8 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    /** todo !!!! specify data type and return type  */
     public getFilterDisplayName(): string {
-        return 'Todo';
+        return 'Metrics table.';
     }
 
     /** @override */
