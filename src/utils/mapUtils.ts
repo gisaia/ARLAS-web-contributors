@@ -24,9 +24,9 @@ import { projType } from 'arlas-web-core';
 import { CollaborativesearchService } from 'arlas-web-core/services/collaborativesearch.service';
 import { ElementIdentifier } from 'models/models';
 import { bboxes } from 'ngeohash';
+import { isNumber } from '@turf/helpers';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/internal/operators/map';
-import { isNumber } from 'util';
 import { getElementFromJsonObject } from './utils';
 
 export function getBounds(

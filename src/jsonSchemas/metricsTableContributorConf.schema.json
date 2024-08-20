@@ -1,0 +1,151 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "title": "Metrics Table Contributor Configuration",
+    "description": "The Configuration of Metrics List Contributor",
+    "type": "object",
+    "$id": "metricsTableContributorConf.schema.json",
+    "allOf": [
+        {
+            "$ref": "rootContributorConf.schema.json#"
+        }
+    ],
+    "properties": {
+        "sort": {
+            "description": "The collection as well as the field and metric on which the metric table will be sorted.",
+            "type": "object",
+            "properties": {
+                "collection": {
+                    "description": "Collection on which the sort is applied.",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "Order of the sort ('asc' | 'desc').",
+                    "type": "string"
+                },
+                "on": {
+                    "description": "How to sort ? on 'alphabetical', 'count', 'metric'.",
+                    "type": "string"
+                },
+                "metric": {
+                    "description": "Metric on which the sort will be applied. To be specified when 'sort.on' === 'metric'.",
+                    "type": "object",
+                    "properties": {
+                        "metric": {
+                            "description": "Metric function.",
+                            "type": "string",
+                            "enum": [
+                                "avg",
+                                "max",
+                                "min",
+                                "sum",
+                                "cardinality"
+                            ]
+                        },
+                        "field": {
+                            "description": "Field on which the metric is calculated.",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "metric",
+                        "field"
+                    ]
+                }
+            },
+            "required": [
+                "collection",
+                "on",
+                "order"
+            ]
+        },
+        "configuration": {
+            "type": "array",
+            "description": "List of columns of the metric table.",
+            "items": {
+                "type": "object",
+                "description": "Configuration of metrics to calculate on each term of the given collection and termfield.",
+                "properties": {
+                    "collection": {
+                        "description": "Collection of data",
+                        "type": "string"
+                    },
+                    "termfield": {
+                        "description": "Term field which values constitute the table rows. Form each term value, metrics will be calculated.",
+                        "type": "string"
+                    },
+                    "metrics": {
+                        "type": "array",
+                        "description": "List of metrics to calculate.",
+                        "items": {
+                            "type": "object",
+                            "description": "Metric to calculate.",
+                            "properties": {
+                                "metric": {
+                                    "description": "Metric function.",
+                                    "type": "string",
+                                    "enum": [
+                                        "avg",
+                                        "max",
+                                        "min",
+                                        "sum",
+                                        "cardinality",
+                                        "count"
+                                    ]
+                                },
+                                "field": {
+                                    "description": "Field on which the metric is calculated.",
+                                    "type": "string"
+                                }
+                            },
+                            "if": {
+                                "anyOf": [
+                                    {
+                                        "properties": {
+                                            "metric": {
+                                                "const": "count"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "then": {
+                                "required": [
+                                    "metric"
+                                ]
+                            },
+                            "else": {
+                                "required": [
+                                    "metric",
+                                    "field"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "collection",
+                    "termfield",
+                    "metrics"
+                ],
+                "additionalProperties": false
+            },
+            "additionalProperties": true
+        },
+        "numberOfBuckets": {
+            "description": "Number of terms to fetch for each collection",
+            "type": "integer"
+        },
+        "filterOperator": {
+            "description": "Operator to apply when selecting a row of the metrics table.",
+            "type": "string",
+            "enum": [
+                "Eq",
+                "Ne"
+            ]
+        }
+    },
+    "required": [
+        "numberOfBuckets",
+        "configuration"
+    ]
+}

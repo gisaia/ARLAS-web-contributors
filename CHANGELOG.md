@@ -1,5 +1,6 @@
 # Change Log
 
+
 ## [v25.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.1.0) (2024-07-05)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.2...v25.1.0)
