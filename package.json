@@ -12,7 +12,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts",
     "copy-root-schema": "cp src/jsonSchemas/rootContributorConf.schema.json dist/jsonSchemas",
-    "copy-npm-readme": "cp README-NPM.md dist/README.md"
+    "copy-npm-readme": "cp README-NPM.md dist/README.md",
+    "license-check": "license-check-and-add check -f license-check-and-add.json"
   },
   "repository": {
     "type": "git",
@@ -29,7 +30,7 @@
     "@types/file-saver": "^2.0.1",
     "@types/jsonpath": "^0.2.0",
     "@types/tinycolor2": "^1.4.0",
-    "arlas-web-core": "~25.0.1",
+    "arlas-web-core": "~25.1.0",
     "file-saver": "^2.0.2",
     "jsonpath": "^1.0.0",
     "moment": "^2.29.4",
@@ -43,11 +44,15 @@
     "@typescript-eslint/eslint-plugin": "^5.27.1",
     "@typescript-eslint/parser": "^5.27.1",
     "eslint": "^8.17.0",
+    "license-check-and-add": "^4.0.5",
     "rimraf": "^2.6.2",
     "typescript": "~4.6.0"
   },
   "bugs": {
     "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/issues"
   },
-  "homepage": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/blob/master/README.md"
+  "homepage": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/blob/master/README.md",
+  "overrides": {
+    "braces": "3.0.3"
+  }
 }

@@ -3,7 +3,7 @@
  * license agreements. See the NOTICE.txt file distributed with
  * this work for additional information regarding copyright
  * ownership. Gisaïa licenses this file to you under
- * the Apache License, Version 2.0 (the 'License'); you may
+ * the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,7 +11,7 @@
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
- * 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
@@ -166,8 +166,8 @@ export class MapContributor extends Contributor {
      * List of fields pattern or names that will be included in features mode as geojson properties.
      */
 
-    public zoom;
-    public center;
+    public zoom: number;
+    public center: Array<number>;
     public mapLoadWrappedExtent = [90, -180, -90, 180];
     public mapLoadRawExtent = [90, -180, -90, 180];
     public mapTestWrappedExtent = [90, -180, -90, 180];
@@ -462,7 +462,7 @@ export class MapContributor extends Contributor {
             if (sort && sort.length > 0) {
                 search.page.sort = sort;
             } else {
-                search.page.sort = 'geodistance:' + this.center.lat.toString() + ' ' + this.center.lng.toString() + ',' +
+                search.page.sort = 'geodistance:' + this.center[0].toString() + ' ' + this.center[1].toString() + ',' +
                     this.collectionParameters.id_path;
             }
             let renderStrategy: RenderStrategy;
@@ -1728,6 +1728,9 @@ export class MapContributor extends Contributor {
                 if (!!feature.properties.tile) {
                     aggType = 'tile';
                 }
+                if (!!feature.properties.h3) {
+                    aggType = 'h3';
+                }
                 const geometryRef = feature.properties.geometry_sort ?
                     feature.properties.geometry_ref + '-' + feature.properties.geometry_sort + '-'
                     + aggType : feature.properties.geometry_ref + '-' + aggType;
@@ -1741,6 +1744,9 @@ export class MapContributor extends Contributor {
                 if (!!feature.properties.tile) {
                     existingCell = gmap ? gmap.get(feature.properties.tile) : null;
                 }
+                if (!!feature.properties.h3) {
+                    existingCell = gmap ? gmap.get(feature.properties.h3) : null;
+                }
                 if (existingCell) {
                     /** parent_geohash or parent_tile corresponds to the geohash or tile on which we applied the geoaggregation */
                     aggSource.sources.forEach(source => {
@@ -1752,6 +1758,9 @@ export class MapContributor extends Contributor {
                         }
                         if (!!feature.properties.tile) {
                             parentCellsTest = !parentCells.has(feature.properties.parent_tile);
+                        }
+                        if (!!feature.properties.h3) {
+                            parentCellsTest = !parentCells.has(feature.properties.parent_cell);
                         }
                         if (parentCellsTest) {
                             /** when this tile (parent_geohash or parent_tile) is requested for the first time we merge the counts */
@@ -1815,12 +1824,18 @@ export class MapContributor extends Contributor {
                         if (!!feature.properties.tile) {
                             cellsMap.set(feature.properties.tile, feature);
                         }
+                        if (!!feature.properties.h3) {
+                            cellsMap.set(feature.properties.h3, feature);
+                        }
                         this.cellsPerSource.set(source, cellsMap);
                         if (!!feature.properties.geohash) {
                             parentCellsPerSource.set(source, feature.properties.parent_geohash);
                         }
                         if (!!feature.properties.tile) {
                             parentCellsPerSource.set(source, feature.properties.parent_tile);
+                        }
+                        if (!!feature.properties.h3) {
+                            parentCellsPerSource.set(source, feature.properties.parent_cell);
                         }
                         this.calculateAggMetricsStatsExceptAvg(source, feature);
                     }
@@ -2474,8 +2489,10 @@ export class MapContributor extends Contributor {
                 let type: Aggregation.TypeEnum;
                 if (ls.type === ClusterAggType.geohash || !ls.type) {
                     type = Aggregation.TypeEnum.Geohash;
-                } else {
+                } else if (ls.type === ClusterAggType.tile)  {
                     type = Aggregation.TypeEnum.Geotile;
+                } else {
+                    type = Aggregation.TypeEnum.Geohex;
                 }
                 aggregation = {
                     type: type,
@@ -2947,8 +2964,10 @@ export class MapContributor extends Contributor {
         let aggClusterType;
         if (clusterType === ClusterAggType.geohash) {
             aggClusterType = Aggregation.TypeEnum.Geohash;
-        } else {
+        } else if (clusterType === ClusterAggType.tile) {
             aggClusterType = Aggregation.TypeEnum.Geotile;
+        } else {
+            aggClusterType = Aggregation.TypeEnum.Geohex;
         }
         let precisions;
         if (aggType === this.TOPOLOGY_SOURCE) {
@@ -3657,7 +3676,7 @@ export class MapContributor extends Contributor {
     private getValueFromFeature(f: Feature, field: string, flattenedField): any {
         let value = +f.properties[flattenedField];
         if (isNaN(value)) {
-            if (this.dateFieldFormatMap.has(field)) {
+            if (this.dateFieldFormatMap.get(field)) {
                 /** Moment Format character for days is `D` while the one given by ARLAS-server is `d`
                  * Thus, we replace the `d` with `D` to adapt to Moment library.
                 */

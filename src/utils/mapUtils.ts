@@ -1,14 +1,33 @@
-import { Expression, Search, Hits, Filter } from 'arlas-api';
-import { Observable } from 'rxjs';
-import { ElementIdentifier } from 'models/models';
-import { projType } from 'arlas-web-core';
-import { getElementFromJsonObject } from './utils';
+/*
+ * Licensed to Gisaïa under one or more contributor
+ * license agreements. See the NOTICE.txt file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Gisaïa licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 import bbox from '@turf/bbox';
-import { CollaborativesearchService } from 'arlas-web-core/services/collaborativesearch.service';
-import { map } from 'rxjs/internal/operators/map';
 import * as meta from '@turf/meta';
+import { Expression, Filter, Hits, Search } from 'arlas-api';
+import { projType } from 'arlas-web-core';
+import { CollaborativesearchService } from 'arlas-web-core/services/collaborativesearch.service';
+import { ElementIdentifier } from 'models/models';
 import { bboxes } from 'ngeohash';
 import { isNumber } from '@turf/helpers';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/internal/operators/map';
+import { getElementFromJsonObject } from './utils';
 
 export function getBounds(
     elementidentifier: ElementIdentifier,

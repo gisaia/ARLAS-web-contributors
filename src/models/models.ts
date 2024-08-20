@@ -37,7 +37,7 @@ export enum triggerType {
 * Enum of type for cluster calculation
 */
 export enum ClusterAggType {
-    tile = 'tile', geohash = 'geohash'
+    tile = 'tile', geohash = 'geohash', h3 = 'h3'
 }
 /**
  * Action trigger by a contributor through the app or another contributor.
@@ -82,7 +82,7 @@ export interface SearchLabel {
 */
 export interface OnMoveResult {
     zoom: number;
-    center: any;
+    center: Array<number>;
     extend: Array<number>;
     extendForLoad: Array<number>;
     rawExtendForTest: Array<number>;
@@ -122,6 +122,8 @@ export interface FieldsConfiguration {
     useHttpQuicklooks?: boolean;
     /** Whether the thumbnails are protected and the http call needs to be enriched with auth header */
     useHttpThumbnails?: boolean;
+    /** Template of details title */
+    detailsTitleTemplate?: string;
 }
 
 export interface DescribedUrl {
