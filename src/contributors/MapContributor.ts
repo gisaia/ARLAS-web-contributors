@@ -493,8 +493,8 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public getWideModeData(rawTestExtent, wrapTestExtent, mapLoadExtent, mapLoadRawExtent,
-        zoom: number, visibleSources: Set<string>): void {
+    public getWideModeData(rawTestExtent: string, wrapTestExtent: string, mapLoadExtent: number[],
+            mapLoadRawExtent: number[], zoom: number, visibleSources: Set<string>): void {
         const countFilter = this.getFilterForCount(rawTestExtent, wrapTestExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
@@ -1710,7 +1710,7 @@ export class MapContributor extends Contributor {
         const sourceGeometryIndex = new Map();
         aggSource.sources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
-            const aggType = !!ls.type ? ls.type.toString() : 'geohash';
+            const aggType = ls.type ?? ClusterAggType.geohash;
             const geometryRef = ls.aggregatedGeometry ? ls.aggregatedGeometry + '-' + aggType.toString() :
                 ls.rawGeometry.geometry + '-' + ls.rawGeometry.sort + '-' + aggType.toString();
             geometrySourceIndex.set(geometryRef, cs);
@@ -1721,15 +1721,15 @@ export class MapContributor extends Contributor {
             featureCollection.features.forEach(feature => {
                 delete feature.properties.key;
                 delete feature.properties.key_as_string;
-                let aggType;
+                let aggType: ClusterAggType;
                 if (!!feature.properties.geohash) {
-                    aggType = 'geohash';
+                    aggType = ClusterAggType.geohash;
                 }
                 if (!!feature.properties.tile) {
-                    aggType = 'tile';
+                    aggType = ClusterAggType.tile;
                 }
-                if (!!feature.properties.h3) {
-                    aggType = 'h3';
+                if (!!feature.properties.geohex) {
+                    aggType = ClusterAggType.h3;
                 }
                 const geometryRef = feature.properties.geometry_sort ?
                     feature.properties.geometry_ref + '-' + feature.properties.geometry_sort + '-'
@@ -1744,8 +1744,8 @@ export class MapContributor extends Contributor {
                 if (!!feature.properties.tile) {
                     existingCell = gmap ? gmap.get(feature.properties.tile) : null;
                 }
-                if (!!feature.properties.h3) {
-                    existingCell = gmap ? gmap.get(feature.properties.h3) : null;
+                if (!!feature.properties.geohex) {
+                    existingCell = gmap ? gmap.get(feature.properties.geohex) : null;
                 }
                 if (existingCell) {
                     /** parent_geohash or parent_tile corresponds to the geohash or tile on which we applied the geoaggregation */
@@ -1759,7 +1759,7 @@ export class MapContributor extends Contributor {
                         if (!!feature.properties.tile) {
                             parentCellsTest = !parentCells.has(feature.properties.parent_tile);
                         }
-                        if (!!feature.properties.h3) {
+                        if (!!feature.properties.geohex) {
                             parentCellsTest = !parentCells.has(feature.properties.parent_cell);
                         }
                         if (parentCellsTest) {
@@ -1824,8 +1824,8 @@ export class MapContributor extends Contributor {
                         if (!!feature.properties.tile) {
                             cellsMap.set(feature.properties.tile, feature);
                         }
-                        if (!!feature.properties.h3) {
-                            cellsMap.set(feature.properties.h3, feature);
+                        if (!!feature.properties.geohex) {
+                            cellsMap.set(feature.properties.geohex, feature);
                         }
                         this.cellsPerSource.set(source, cellsMap);
                         if (!!feature.properties.geohash) {
@@ -1834,7 +1834,7 @@ export class MapContributor extends Contributor {
                         if (!!feature.properties.tile) {
                             parentCellsPerSource.set(source, feature.properties.parent_tile);
                         }
-                        if (!!feature.properties.h3) {
+                        if (!!feature.properties.geohex) {
                             parentCellsPerSource.set(source, feature.properties.parent_cell);
                         }
                         this.calculateAggMetricsStatsExceptAvg(source, feature);
@@ -2472,7 +2472,7 @@ export class MapContributor extends Contributor {
         const aggregationsMap: Map<string, SourcesAgg> = new Map();
         clusterSources.forEach(cs => {
             const ls = this.clusterLayersIndex.get(cs);
-            const aggType = !!ls.type ? ls.type.toString() : 'geohash';
+            const aggType = ls.type ?? ClusterAggType.geohash;
             const hasHitsToFetch = !!ls.fetchedHits && !!ls.fetchedHits.sorts && ls.fetchedHits.sorts.length > 0;
             const fetchHitsId = hasHitsToFetch ? `:${ls.fetchedHits.sorts.join('_')}` : '';
             const aggId = ls.aggGeoField + ':' + ls.granularity.toString() + ':' + ls.minfeatures + ':' +
@@ -2487,9 +2487,9 @@ export class MapContributor extends Contributor {
                 sources = aggBuilder.sources;
             } else {
                 let type: Aggregation.TypeEnum;
-                if (ls.type === ClusterAggType.geohash || !ls.type) {
+                if (aggType === ClusterAggType.geohash) {
                     type = Aggregation.TypeEnum.Geohash;
-                } else if (ls.type === ClusterAggType.tile)  {
+                } else if (aggType === ClusterAggType.tile)  {
                     type = Aggregation.TypeEnum.Geotile;
                 } else {
                     type = Aggregation.TypeEnum.Geohex;
