@@ -245,8 +245,8 @@ export class MapContributor extends Contributor {
                 this.geoQueryOperation = Expression.OpEnum.Notwithin;
             } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Intersects.toString()) {
                 this.geoQueryOperation = Expression.OpEnum.Intersects;
-            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notwithin.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Notwithin;
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notintersects.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Notintersects;
             }
         } else {
             this.geoQueryOperation = Expression.OpEnum.Within;
