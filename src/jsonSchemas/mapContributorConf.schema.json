@@ -183,9 +183,9 @@
             "description": "Operator  used for geo query",
             "enum": [
                 "Within",
-                "NotWithin",
+                "Notwithin",
                 "Intersects",
-                "NotIntersects"
+                "Notintersects"
             ]
         },
         "isFlat": {
