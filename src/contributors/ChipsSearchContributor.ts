@@ -38,6 +38,9 @@ import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
  * This class make the brigde between the component which displays the data and the
  * collaborativeSearchService of the Arlas-web-core which retrieve the data from the server.
  */
+/**
+ * @deprecated This class should not be used, use SearchContributor
+ */
 export class ChipsSearchContributor extends Contributor {
 
     /**

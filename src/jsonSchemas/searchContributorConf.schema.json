@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "title": "Qearch Contributor Configuration",
+    "description": "The Configuration of Search Contributor",
+    "type": "object",
+    "$id": "searchContributorConf.schema.json",
+    "properties": {
+        "identifier": {
+            "description": "The unique identifier for a Contributor",
+            "type": "string"
+        },
+        "search_field": {
+            "description": "Keyword field on which the full text search is applied.",
+            "type": "string"
+        },
+        "autocomplete_field": {
+            "description": "Keyword field on which the autocompletion is performed.",
+            "type": "string"
+        },
+        "autocomplete_size": {
+            "description": "Number of suggested keywords by the autocompletion.",
+            "type": "number"
+        }
+    },
+    "required": [
+        "identifier",
+        "search_field"
+    ]
+}
