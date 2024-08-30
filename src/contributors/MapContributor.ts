@@ -766,7 +766,7 @@ export class MapContributor extends Contributor {
         let isleaving = false;
         let id = elementidentifier.idValue;
         if (id.split('-')[0] === 'leave') {
-            id = id.split('-')[1];
+            id = id.split('leave-', 2)[1];
             isleaving = true;
         }
         return {
