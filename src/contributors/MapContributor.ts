@@ -2016,7 +2016,7 @@ export class MapContributor extends Contributor {
         };
     }
 
-    public getFilterForCount(rawExtent: string, wrappedExtent: string, countGeoField: string): Filter {
+    public getFilterForCount(rawExtent: string, wrappedExtent: string, countGeoField: string, ignoreCollab = false): Filter {
         // west, south, east, north
         const finalExtends = getCanonicalExtents(rawExtent, wrappedExtent);
         let filter: Filter = {};
@@ -2034,7 +2034,7 @@ export class MapContributor extends Contributor {
                 value: finalExtends[1]
             });
         }
-        if (collaboration !== null && collaboration !== undefined) {
+        if (collaboration !== null && collaboration !== undefined && !ignoreCollab) {
             if (collaboration.enabled) {
                 const aois: string[] = [];
                 let mapFilter: Filter;
