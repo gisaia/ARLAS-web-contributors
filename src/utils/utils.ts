@@ -459,5 +459,141 @@ export function notInfinity(value: any) {
 
 export function validProcess(process: string): boolean {
     return !process.includes('document') &&  !process.includes('window') &&  !process.includes('eval');
+}
+
+export function processAllowList(variableName: string) {
+    const instanciation = [
+        'new'
+    ];
+
+    const variables = [variableName];
+    const classes = [
+        'Date',
+        'Math',
+        'Number'
+    ];
+    const dateMethods = [
+        'getDate',
+        'getDay',
+        'getFullYear',
+        'getHours',
+        'getMilliseconds',
+        'getMinutes',
+        'getMonth',
+        'getSeconds',
+        'getTime',
+        'getTimezoneOffset',
+        'getUTCDate',
+        'getUTCDay',
+        'getUTCFullYear',
+        'getUTCHours',
+        'getUTCMilliseconds',
+        'getUTCMinutes',
+        'getUTCSeconds',
+        'toDateString',
+        'toISOString',
+        'toJSON',
+        'toLocaleDateString',
+        'toLocaleString',
+        'toLocaleTimeString',
+        'toMetaDataString',
+        'toString',
+        'toTimeString',
+        'toUTCString',
+        'valueOf'
+    ];
+
+    const arraysMethod = [
+        'concat',
+        'filter',
+        'find',
+        'findIndex',
+        'flat',
+        'flatMap',
+        'join',
+        'keys',
+        'includes',
+        'reduce',
+        'slice',
+        'toLocaleString',
+        'values'
+    ];
+
+    const stringMethods = [
+        'concat',
+        'endsWith',
+        'includes',
+        'replace',
+        'replaceAll',
+        'slice',
+        'split',
+        'startsWith',
+        'substring',
+        'toLocaleLowerCase',
+        'toLocaleUpperCase',
+        'toLowerCase',
+        'toString',
+        'toUpperCase',
+        'trim',
+        ''
+    ];
+
+    const mathMethods = [
+        'abs',
+        'acos',
+        'asin',
+        'atan',
+        'atan2',
+        'ceil',
+        'cos',
+        'exp',
+        'floor',
+        'log',
+        'max',
+        'min',
+        'pow',
+        'random',
+        'round',
+        'sin',
+        'sqrt',
+        'tan',
+        'trunc',
+        'Mat'
+    ];
+
+    const numberMethods = [
+        'parseFloat',
+        'parseInt',
+        'toExponential',
+        'toFixed',
+        'toPrecision'
+    ]
+    
+    const mathOps = [
+        '+', '-', '/', '*', '%', '^'
+    ];
+
+    const chars = [
+        '[', ']', '.', ';', ',', '(', ')', ':', '?'
+    ];
+
+    const comparisonOps = [
+        '==', '===', '!=', '!==', '<', '<=', '>', '>='
+    ]
+    const regexPattern = 
+    `
+    ^([ \t]*(new[ \t]+(?:Date|Math|Number)
+    |(?:result|undefined)
+    |(?:getDate|getDay|getFullYear|getHours|getMilliseconds|getMinutes|getMonth|getSeconds|getTime|getTimezoneOffset|getUTCDate|getUTCDay|getUTCFullYear|getUTCHours|getUTCMilliseconds|getUTCMinutes|getUTCSeconds|toDateString|toISOString|toJSON|toLocaleDateString|toLocaleString|toLocaleTimeString|toMetaDataString|toString|toTimeString|toUTCString|valueOf)
+    |Math\.(?:abs|acos|asin|atan|atan2|ceil|cos|exp|floor|log|max|min|pow|random|round|sin|sqrt|tan|trunc)
+    |Number\.(?:parseFloat|parseInt|toExponential|toFixed|toPrecision)
+    |(?:concat|endsWith|includes|replace|replaceAll|slice|split|startsWith|substring|toLocaleLowerCase|toLocaleUpperCase|toLowerCase|toString|toUpperCase|trim)
+    |(?:concat|filter|find|findIndex|flat|flatMap|join|keys|includes|reduce|slice|toLocaleString|values)
+    |[+\-*\/%^]|[\[\].;,():?]|(?:==|===|!=|!==|<|<=|>|>=)
+    |[ \t]*'(?:[a-zA-Z0-9,:-_;]+)'
+    |[ \t]*''(?!')
+    |[ \t]*\d+(\.\d+)?))*[ \t]*;?$
+    `;
+    const rp = new RegExp(regexPattern, '/')
 
 }
