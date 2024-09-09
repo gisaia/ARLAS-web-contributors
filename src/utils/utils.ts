@@ -456,3 +456,8 @@ export function getSourceName(ls: LayerSourceConfig): string {
 export function notInfinity(value: any) {
     return value !== 'Infinity' && value !== '-Infinity' && value !== Infinity && value !== -Infinity;
 }
+
+export function validProcess(process: string): boolean {
+    return !process.includes('document') &&  !process.includes('window') &&  !process.includes('eval');
+
+}

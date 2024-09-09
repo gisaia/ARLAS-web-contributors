@@ -29,7 +29,10 @@ import {
     Projection, Hits,
     Filter, Aggregation, Expression, ArlasHit
 } from 'arlas-api';
-import { getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex, ASC, getFieldValue } from '../utils/utils';
+import {
+    getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex,
+    ASC, getFieldValue, validProcess
+} from '../utils/utils';
 import {
     Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
     PageEnum, AdditionalInfo, Attachment, AttachmentConfig, ItemDataType,
@@ -111,9 +114,14 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                         const process: string = field.process;
                         let resultValue = result;
                         if (process) {
-                            if (process.trim().length > 0) {
-                                // eslint-disable-next-line no-eval
-                                resultValue = eval(field.process);
+                            if (process.trim().length > 0 && process.trim().length < 250 && validProcess(process)) {
+                                const func = new Function('result', '\'use strict\';const r=' +
+                                    process + '; return r;');
+                                resultValue = func(result);
+                            } else if (process.trim().length > 250) {
+                                throw new Error('Invalid process function: too long.');
+                            } else if (!validProcess(process)) {
+                                throw new Error('Invalid process function.');
                             }
                         }
                         detailedDataMap.set(field.label, resultValue);
@@ -777,9 +785,15 @@ export class ResultListContributor extends Contributor {
                     const process: string = this.columnsProcess[element.columnName];
                     let resultValue = result;
                     if (process) {
-                        if (process.trim().length > 0) {
-                            // eslint-disable-next-line no-eval
-                            resultValue = eval(this.columnsProcess[element.columnName]);
+                        if (process.trim().length > 0 && process.trim().length < 250 && validProcess(process)) {
+                            const func = Function('result', '\'use strict\';const r='
+                                + this.columnsProcess[element.columnName] + '; return r;');
+
+                            resultValue = func(result);
+                        } else if (process.trim().length > 250) {
+                            throw new Error('Invalid process function: too long.');
+                        } else if (!validProcess(process)) {
+                            throw new Error('Invalid process function.');
                         }
                     }
                     fieldValueMap.set(element.fieldName, resultValue);
@@ -953,11 +967,13 @@ export class ResultListContributor extends Contributor {
                     let urlTemplate = '';
                     if (v !== undefined) {
                         if (!!urlField && !!this.getConfigValue('process') && this.getConfigValue('process')[urlField] !== undefined) {
-                            const processUrlTemplate: string =
-                                this.getConfigValue('process')[urlField]['process'];
-                            if (processUrlTemplate.trim().length > 0) {
-                                // eslint-disable-next-line no-eval
-                                urlTemplate = eval(processUrlTemplate);
+                            const processUrlTemplate: string = this.getConfigValue('process')[urlField]['process'];
+                            if (processUrlTemplate.trim().length > 0 && processUrlTemplate.trim().length < 250
+                                && validProcess(processUrlTemplate)) {
+                                const func = new Function('result', '\'use strict\';const r=' + processUrlTemplate + '; return r;');
+                                urlTemplate = func(urlTemplate);
+                            } else if (processUrlTemplate.trim().length > 250) {
+                                throw new Error('Invalid process function: too long or invalid');
                             } else {
                                 urlTemplate = v;
                             }
@@ -985,9 +1001,13 @@ export class ResultListContributor extends Contributor {
         const process: string = field.process;
         let resultValue = result;
         if (process) {
-            if (process.trim().length > 0) {
-                // eslint-disable-next-line no-eval
-                resultValue = eval(field.process);
+            if (process.trim().length > 0 && process.trim().length < 250 && validProcess(process)) {
+                const func = new Function('result', '\'use strict\';const r=' + field.process + '; return r;');
+                resultValue = func(result);
+            } else if (process.trim().length > 250) {
+                throw new Error('Invalid process function: too long.');
+            } else if (!validProcess(process)) {
+                throw new Error('Invalid process function.');
             }
         }
         fieldValueMap.set(field.fieldPath + '_' + dataType, resultValue);
