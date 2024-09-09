@@ -29,7 +29,10 @@ import {
     Projection, Hits,
     Filter, Aggregation, Expression, ArlasHit
 } from 'arlas-api';
-import { getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex, ASC, getFieldValue } from '../utils/utils';
+import {
+    getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex,
+    ASC, getFieldValue, validProcess
+} from '../utils/utils';
 import {
     Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
     PageEnum, AdditionalInfo, Attachment, AttachmentConfig, ItemDataType,
@@ -37,6 +40,7 @@ import {
 } from '../models/models';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
+import { parse } from 'wellknown';
 
 /**
 * Interface defined in Arlas-web-components
@@ -54,6 +58,24 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     * Contributor which the ResultListDetailedDataRetriever works
     */
     private contributor: ResultListContributor;
+    private detailsFunctionMap = new Map<string, Map<string, Function>>();
+    public constructor(contributor: ResultListContributor) {
+        this.contributor = contributor;
+        const details: Array<Detail> = this.contributor.getConfigValue('details');
+        details.forEach(group => {
+            const detailedDataFunctionMap = new Map<string, Function>();
+            group.fields.forEach(field => {
+                const process: string = field.process;
+                    if (process && process.trim().length > 0) {
+                        const func = new Function('result', '\'use strict\';const r=' +
+                            process + '; return r;');
+                        detailedDataFunctionMap.set(field.label, func);
+                    }
+            });
+            this.detailsFunctionMap.set(group.name, detailedDataFunctionMap);
+        });
+
+    }
 
     public getActions(item: any): Observable<Array<Action>> {
         const actions = new Array<Action>();
@@ -106,15 +128,11 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 const detailedDataMap = new Map<string, string>();
                 group.fields.forEach(field => {
                     const result = getFieldValue(field.path, searchData.hits[0].data);
-
                     if (result !== null && result !== undefined && result !== '') {
-                        const process: string = field.process;
+                        const process: Function = this.detailsFunctionMap.get(group.name)?.get(field.label);
                         let resultValue = result;
                         if (process) {
-                            if (process.trim().length > 0) {
-                                // eslint-disable-next-line no-eval
-                                resultValue = eval(field.process);
-                            }
+                            resultValue = process(result);
                         }
                         detailedDataMap.set(field.label, resultValue);
                     }
@@ -212,7 +230,7 @@ export class ResultListContributor extends Contributor {
     /**
     * Instance of DetailedDataRetriever class, @Input() detailedDataRetriever of ResultListComponent.
     */
-    public detailedDataRetriever = new ResultListDetailedDataRetriever();
+    public detailedDataRetriever = new ResultListDetailedDataRetriever(this);
     /**
     * List of actions, from all the contributors of the app, which we could trigger on click in the ResultListComponent.
     */
@@ -267,6 +285,10 @@ export class ResultListContributor extends Contributor {
     /** CONSTANTS */
     private NEXT_AFTER = '_nextAfter';
     private PREVIOUS_AFTER = '_previousAfter';
+    private urlImageTemplateFunction: Function | undefined;
+    private urlThumbnailTemplateFunction: Function | undefined;
+    private titleFunctions = new Map<string, Function>();
+    private tooltipFunctionn = new Map<string, Function>();
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -280,15 +302,19 @@ export class ResultListContributor extends Contributor {
         configService: ConfigService, collection: string
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
+        this.urlImageTemplateFunction = this.getImageUrlTemplateFunction('urlImageTemplate');
+        this.urlThumbnailTemplateFunction = this.getImageUrlTemplateFunction('urlThumbnailTemplate');
         this.collections = [];
         this.collections.push({
             collectionName: collection
         });
-        // Link the ResultListContributor and the detailedDataRetriever
-        this.detailedDataRetriever.setContributor(this);
         this.fieldsList = [];
         this.columns.forEach(column => {
-            this.columnsProcess[column.columnName] = column.process;
+            if (column.process && column.process.trim().length > 0) {
+                const func = new Function('result', '\'use strict\';const r='
+                    + column.process + '; return r;');
+                this.columnsProcess[column.columnName] = func;
+            }
             this.fieldsList.push(column);
             this.includesvalues.push(column.fieldName);
             if (column.dropdown) {
@@ -332,6 +358,26 @@ export class ResultListContributor extends Contributor {
         if (this.includeMetadata) {
             this.includeMetadata.forEach(field => this.includesvalues.push(field));
         }
+
+        if (this.fieldsConfiguration.titleFieldNames) {
+            this.fieldsConfiguration.titleFieldNames.forEach(field => {
+                if (field.process && field.process.trim().length > 0) {
+                    const func = new Function('result', '\'use strict\';const r=' +
+                        process + '; return r;');
+                    this.titleFunctions.set(field.fieldPath, func);
+                }
+            });
+        }
+        if (this.fieldsConfiguration.tooltipFieldNames) {
+            this.fieldsConfiguration.tooltipFieldNames.forEach(field => {
+                if (field.process && field.process.trim().length > 0) {
+                    const func = new Function('result', '\'use strict\';const r=' +
+                        process + '; return r;');
+                    this.tooltipFunctionn.set(field.fieldPath, func);
+                }
+            });
+        }
+
         const setOfIncludeValues = new Set(this.includesvalues);
         this.includesvalues = Array.from(setOfIncludeValues);
 
@@ -774,13 +820,10 @@ export class ResultListContributor extends Contributor {
                 }
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
-                    const process: string = this.columnsProcess[element.columnName];
+                    const process: Function = this.columnsProcess[element.columnName];
                     let resultValue = result;
                     if (process) {
-                        if (process.trim().length > 0) {
-                            // eslint-disable-next-line no-eval
-                            resultValue = eval(this.columnsProcess[element.columnName]);
-                        }
+                            resultValue = process(result);
                     }
                     fieldValueMap.set(element.fieldName, resultValue);
                 });
@@ -793,12 +836,12 @@ export class ResultListContributor extends Contributor {
                 }
                 if (this.fieldsConfiguration.titleFieldNames) {
                     this.fieldsConfiguration.titleFieldNames.forEach(field => {
-                        this.setProcessFieldData(h, field, fieldValueMap, 'title');
+                        this.setProcessFieldData(h, field, fieldValueMap, 'title', this.titleFunctions.get(field.fieldPath));
                     });
                 }
                 if (this.fieldsConfiguration.tooltipFieldNames) {
                     this.fieldsConfiguration.tooltipFieldNames.forEach(field => {
-                        this.setProcessFieldData(h, field, fieldValueMap, 'tooltip');
+                        this.setProcessFieldData(h, field, fieldValueMap, 'tooltip', this.tooltipFunctionn.get(field.fieldPath));
                     });
                 }
                 if (this.fieldsConfiguration.iconCssClass) {
@@ -952,12 +995,11 @@ export class ResultListContributor extends Contributor {
                     }
                     let urlTemplate = '';
                     if (v !== undefined) {
-                        if (!!urlField && !!this.getConfigValue('process') && this.getConfigValue('process')[urlField] !== undefined) {
-                            const processUrlTemplate: string =
-                                this.getConfigValue('process')[urlField]['process'];
-                            if (processUrlTemplate.trim().length > 0) {
-                                // eslint-disable-next-line no-eval
-                                urlTemplate = eval(processUrlTemplate);
+                        if (!!urlField) {
+                            if (urlField === 'urlThumbnailTemplate' && this.urlThumbnailTemplateFunction) {
+                                urlTemplate = this.urlThumbnailTemplateFunction(v);
+                            } else if (urlField === 'urlImageTemplate' && this.urlImageTemplateFunction) {
+                                urlTemplate = this.urlImageTemplateFunction(v);
                             } else {
                                 urlTemplate = v;
                             }
@@ -980,15 +1022,13 @@ export class ResultListContributor extends Contributor {
         return allFieldsExist;
     }
 
-    private setProcessFieldData(h: ArlasHit, field: Field, fieldValueMap: Map<string, ItemDataType>, dataType: string): void {
+    private setProcessFieldData(h: ArlasHit, field: Field, fieldValueMap: Map<string, ItemDataType>, dataType: string,
+        func: Function | undefined): void {
         const result: string = getElementFromJsonObject(h.data, field.fieldPath);
         const process: string = field.process;
         let resultValue = result;
-        if (process) {
-            if (process.trim().length > 0) {
-                // eslint-disable-next-line no-eval
-                resultValue = eval(field.process);
-            }
+        if (func) {
+            resultValue = func(result);
         }
         fieldValueMap.set(field.fieldPath + '_' + dataType, resultValue);
     }
@@ -1013,5 +1053,15 @@ export class ResultListContributor extends Contributor {
         } else {
             return from([]);
         }
+    }
+
+    private getImageUrlTemplateFunction(urlField): Function | undefined {
+        if (!!this.getConfigValue('process') && this.getConfigValue('process')[urlField] !== undefined) {
+            const processUrlTemplate: string = this.getConfigValue('process')[urlField]['process'];
+            if (processUrlTemplate && processUrlTemplate.trim().length > 0) {
+                const func = new Function('result', '\'use strict\';const r=' + processUrlTemplate + '; return r;');
+                return func;
+            };
+        };
     }
 }
