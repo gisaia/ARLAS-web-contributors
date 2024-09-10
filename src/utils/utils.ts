@@ -458,7 +458,7 @@ export function notInfinity(value: any) {
 }
 
 export function validProcess(process: string, variableName: string): boolean {
-    return !process.includes('document') 
+    return !process.includes('document')
         && !process.includes('window')
         && !process.includes('eval')
         && !process.includes('localStorage')
@@ -467,7 +467,6 @@ export function validProcess(process: string, variableName: string): boolean {
         && !process.includes('Function')
         && processPassesAllowList(process, variableName);
 }
-
 
 /**
  * Verifies if the Javascript code to execute respects the following rules.
@@ -483,15 +482,10 @@ export function validProcess(process: string, variableName: string): boolean {
  * - The following chars ([ ] ( ) , ; : ? ! .)
  * - text between simple quotes 'your text'. Only these special chars are allowed : ,:-_;%!?
  * @param processToExecute A javascript code to execute.
- * @param variableName 
- * @returns 
+ * @param variableName variable to use
+ * @returns boolean (true if valid)
  */
 export function processPassesAllowList(processToExecute: string, variableName: string): boolean {
-    const instanciation = [
-        'new'
-    ];
-
-    const variables = [variableName, 'undefined', 'tmp'];
     const classes = [
         'Date',
         'Math',
@@ -597,7 +591,7 @@ export function processPassesAllowList(processToExecute: string, variableName: s
         'isNaN',
         'isFinite',
         'isInteger'
-    ]
+    ];
 
     const mathOps = [
         '+', '\\-', '\\/', '*', '%', '^'
@@ -609,7 +603,7 @@ export function processPassesAllowList(processToExecute: string, variableName: s
 
     const comparisonOps = [
         '==', '===', '!=', '!==', '<', '<=', '>', '>='
-    ]
+    ];
     const regexPattern: string = `^([ \\t]*(new[ \\t]+(?:${classes.join('|')})` + // use of new + classes
         `|(?:${variableName}|undefined|tmp)` + // variables names we can use
         `|(?:${dateMethods.join('|')})` +
@@ -620,9 +614,11 @@ export function processPassesAllowList(processToExecute: string, variableName: s
         `|[${mathOps.join('')}]` +
         `|[${chars.join('')}]` +
         `|(?:${comparisonOps.join('|')})` +
-        "|[ \\t]*'(?:[a-zA-Z0-9 ,:-_;%!?]+)'" + // alphanumerical chars + ,:-_;%!?  between simple quotes ''.
-        "|[ \\t]*''(?!')" + // empty simple quotes ''.
-        "|[ \\t]*\\d+(\\.\\d+)?))*[ \\t]*;?$";
+        `|[ \\t]*'(?:[a-zA-Z0-9 ,:-_;%!?°]+)'` + // alphanumerical chars + ,:-_;%!?°  between simple quotes ''.
+        `|[ \\t]*\"(?:[a-zA-Z0-9 ,:-_;%!?°]+)\"` + // alphanumerical chars + ,:-_;%!?°  between simple quotes ''.
+        `|[ \\t]*''(?!')` + // empty simple quotes ''.
+        `|[ \\t]*\"\"(?!\")` + // empty simple quotes ''.
+        `|[ \\t]*\\d+(\\.\\d+)?))*[ \\t]*;?$`;
 
     const regexExp = new RegExp(regexPattern);
     return regexExp.test(processToExecute);

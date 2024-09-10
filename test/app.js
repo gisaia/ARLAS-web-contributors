@@ -50,8 +50,9 @@ metricTableContributor.computeData(undefined);**/
 
 const testString1 = "new Date().getFullYear() === 2024;";
 const testString2 = "Math.abs(-5) + 10;";
-const testString3 = "'test' === 'example';";
+const testString3 = "\"\" + (new Date()).getTime() + ''";
 const testString4 = "'alphanumeric' + 123;";
+const testString5 = "test === \"example\";"; 
 const invalidTestString = "test === 'example';";  // This should fail because 'test' is not quoted
 const invalidTestString2 = "document.write('toto')";  // This should fail because 'test' is not quoted
 const invalidTestString3 = "window";  // This should fail because 'test' is not quoted
@@ -61,6 +62,7 @@ console.log(processPassesAllowList(testString1, ''));
 console.log(processPassesAllowList(testString2, ''));
 console.log(processPassesAllowList(testString3, ''));
 console.log(processPassesAllowList(testString4, ''));
+console.log(processPassesAllowList(testString5, 'test'));
 console.log(processPassesAllowList(invalidTestString, ''));
 console.log(processPassesAllowList(invalidTestString2, ''));
 console.log(processPassesAllowList(invalidTestString3, ''));
