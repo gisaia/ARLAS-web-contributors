@@ -54,8 +54,8 @@ const testString3 = "\"\" + (new Date()).getTime() + ''";
 const testString4 = "'alphanumeric' + 123;";
 const testString5 = "test === \"example\";"; 
 const invalidTestString = "test === 'example';";  // This should fail because 'test' is not quoted
-const invalidTestString2 = "document.write('toto')";  // This should fail because 'test' is not quoted
-const invalidTestString3 = "window";  // This should fail because 'test' is not quoted
+const invalidTestString2 = "document.write('toto')";  // This should fail because document, write are not allowed
+const invalidTestString3 = "window";  // This should fail because window is not allowed
 
 
 console.log(processPassesAllowList(testString1, ''));

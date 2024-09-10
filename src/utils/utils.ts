@@ -578,8 +578,7 @@ export function processPassesAllowList(processToExecute: string, variableName: s
         'sin',
         'sqrt',
         'tan',
-        'trunc',
-        'Mat'
+        'trunc'
     ];
 
     const numberMethods = [
@@ -615,9 +614,9 @@ export function processPassesAllowList(processToExecute: string, variableName: s
         `|[${chars.join('')}]` +
         `|(?:${comparisonOps.join('|')})` +
         `|[ \\t]*'(?:[a-zA-Z0-9 ,:-_;%!?°]+)'` + // alphanumerical chars + ,:-_;%!?°  between simple quotes ''.
-        `|[ \\t]*\"(?:[a-zA-Z0-9 ,:-_;%!?°]+)\"` + // alphanumerical chars + ,:-_;%!?°  between simple quotes ''.
+        `|[ \\t]*\"(?:[a-zA-Z0-9 ,:-_;%!?°]+)\"` + // alphanumerical chars + ,:-_;%!?°  between double quotes "".
         `|[ \\t]*''(?!')` + // empty simple quotes ''.
-        `|[ \\t]*\"\"(?!\")` + // empty simple quotes ''.
+        `|[ \\t]*\"\"(?!\")` + // empty double quotes "".
         `|[ \\t]*\\d+(\\.\\d+)?))*[ \\t]*;?$`;
 
     const regexExp = new RegExp(regexPattern);
