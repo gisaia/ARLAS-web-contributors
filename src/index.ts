@@ -40,7 +40,7 @@ export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
 export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpression, DateUnitEnum,
     LayerSourceConfig, ColorConfig, MetricConfig } from './models/models';
-export { getSourceName, processPassesAllowList, processRespectsForbidList } from './utils/utils';
+export { getSourceName, processPassesAllowList, validProcess } from './utils/utils';
 export { FieldsConfiguration, ComputeConfig, Column, Detail } from './models/models';
 export { MetricsTableContributor } from './contributors/MetricsTableContributor';
 export { MetricsTable, MetricsTableCell,
