@@ -26,6 +26,7 @@ import {
 import { Observable, from, forkJoin } from 'rxjs';
 import { ComputationRequest, ComputationResponse, Filter, Hits } from 'arlas-api';
 import { ComputeConfig } from '../models/models';
+import { validProcess } from '../utils/utils';
 
 
 /**
@@ -35,11 +36,12 @@ export class ComputeContributor extends Contributor {
 
     /** Array of which metrics & filters will be computed*/
     public metrics: Array<ComputeConfig> = this.getConfigValue('metrics');
-    /** Function to apply to the results of computation metrics*/
+    /** String value of function to apply to the results of computation metrics*/
     public function: string = this.getConfigValue('function');
     /** Title of the contributor*/
     public title: string = this.getConfigValue('title');
-
+    /** Function to apply to the results of computation metrics*/
+    public processFunction: Function;
 
     public metricValue: number;
     /**
@@ -55,6 +57,9 @@ export class ComputeContributor extends Contributor {
         this.collections.push({
             collectionName: collection
         });
+        if (this.function.trim().length > 0 && validProcess(this.function, 'm')) {
+            this.processFunction = new Function('m', '\'use strict\';const r=' + this.function + '; return r;');
+        }
     }
 
     /** return the json schem of this contributor */
@@ -98,9 +103,12 @@ export class ComputeContributor extends Contributor {
                 return (d as Hits).totalnb;
             }
         });
-        // eslint-disable-next-line no-eval
-        const resultValue = eval(this.function);
-        this.metricValue = resultValue;
+        if (this.processFunction) {
+            const resultValue = this.processFunction(m);
+            this.metricValue = resultValue;
+        } else {
+            throw new Error('Invalid compute function: not defined.');
+        }
         return from([]);
     }
 
