@@ -458,15 +458,56 @@ export function notInfinity(value: any) {
 }
 
 export function validProcess(process: string): boolean {
-    return !process.includes('document') &&  !process.includes('window') &&  !process.includes('eval');
+    return !process.includes('document') && !process.includes('window') && !process.includes('eval');
 }
 
-export function processAllowList(variableName: string) {
+export function processRespectsForbidList(process: string): boolean {
+    return !process.includes('document') 
+        && !process.includes('window') 
+        && !process.includes('eval')
+        && !process.includes('localStorage')
+        && !process.includes('this')
+        && !process.includes('function')
+        && !process.includes('Function')
+        && !process.includes('switch')
+        && !process.includes('break')
+        && !process.includes('forEach')
+        && !process.includes('every')
+        && !process.includes('while')
+        && !process.includes('for');
+}
+
+export function validateProcess(processToExecute: string, variableName: string): string {
+    if (processPassesAllowList(processToExecute, variableName) && processRespectsForbidList(processToExecute)) {
+        return processToExecute;
+    } else {
+        return '';
+    }
+}
+
+/**
+ * Verifies if the Javascript code to execute respects the following rules.
+ * Only are allowed
+ * - Date, Math, Number classes
+ * - Date methods (getters & toxxxString methods only)
+ * - Math methods (sqrt, pow, abs, ... you name it !)
+ * - Number methods (parseInt, parseFloat, isNaN, ...)
+ * - String methods (substring, concat, ...)
+ * - Array methods (slice, concat, flat, ...)
+ * - Mathematical operations (+ - % ^ x /)
+ * - Comparison operators (== === != !== < <= > >=)
+ * - The following chars ([ ] ( ) , ; : ? ! .)
+ * - text between simple quotes 'your text'. Only these special chars are allowed : ,:-_;%!?
+ * @param processToExecute A javascript code to execute.
+ * @param variableName 
+ * @returns 
+ */
+export function processPassesAllowList(processToExecute: string, variableName: string): boolean {
     const instanciation = [
         'new'
     ];
 
-    const variables = [variableName];
+    const variables = [variableName, 'undefined', 'tmp'];
     const classes = [
         'Date',
         'Math',
@@ -491,6 +532,7 @@ export function processAllowList(variableName: string) {
         'getUTCMinutes',
         'getUTCSeconds',
         'toDateString',
+        'toGMTString',
         'toISOString',
         'toJSON',
         'toLocaleDateString',
@@ -503,7 +545,7 @@ export function processAllowList(variableName: string) {
         'valueOf'
     ];
 
-    const arraysMethod = [
+    const arrayMethod = [
         'concat',
         'filter',
         'find',
@@ -511,6 +553,7 @@ export function processAllowList(variableName: string) {
         'flat',
         'flatMap',
         'join',
+        'map',
         'keys',
         'includes',
         'reduce',
@@ -566,34 +609,39 @@ export function processAllowList(variableName: string) {
         'parseInt',
         'toExponential',
         'toFixed',
-        'toPrecision'
+        'toPrecision',
+        'isNaN',
+        'isFinite',
+        'isInteger'
     ]
-    
+
     const mathOps = [
-        '+', '-', '/', '*', '%', '^'
+        '+', '\\-', '\\/', '*', '%', '^'
     ];
 
     const chars = [
-        '[', ']', '.', ';', ',', '(', ')', ':', '?'
+        '\\[', '\\]', '.', ';', ',', '(', ')', ':', '?', '!'
     ];
 
     const comparisonOps = [
         '==', '===', '!=', '!==', '<', '<=', '>', '>='
     ]
-    const regexPattern = 
-    `
-    ^([ \t]*(new[ \t]+(?:Date|Math|Number)
-    |(?:result|undefined)
-    |(?:getDate|getDay|getFullYear|getHours|getMilliseconds|getMinutes|getMonth|getSeconds|getTime|getTimezoneOffset|getUTCDate|getUTCDay|getUTCFullYear|getUTCHours|getUTCMilliseconds|getUTCMinutes|getUTCSeconds|toDateString|toISOString|toJSON|toLocaleDateString|toLocaleString|toLocaleTimeString|toMetaDataString|toString|toTimeString|toUTCString|valueOf)
-    |Math\.(?:abs|acos|asin|atan|atan2|ceil|cos|exp|floor|log|max|min|pow|random|round|sin|sqrt|tan|trunc)
-    |Number\.(?:parseFloat|parseInt|toExponential|toFixed|toPrecision)
-    |(?:concat|endsWith|includes|replace|replaceAll|slice|split|startsWith|substring|toLocaleLowerCase|toLocaleUpperCase|toLowerCase|toString|toUpperCase|trim)
-    |(?:concat|filter|find|findIndex|flat|flatMap|join|keys|includes|reduce|slice|toLocaleString|values)
-    |[+\-*\/%^]|[\[\].;,():?]|(?:==|===|!=|!==|<|<=|>|>=)
-    |[ \t]*'(?:[a-zA-Z0-9,:-_;]+)'
-    |[ \t]*''(?!')
-    |[ \t]*\d+(\.\d+)?))*[ \t]*;?$
-    `;
-    const rp = new RegExp(regexPattern, '/')
+    const regexPattern: string = `^([ \\t]*(new[ \\t]+(?:${classes.join('|')})` + // use of new + classes
+        `|(?:${variableName}|undefined|tmp)` + // variables names we can use
+        `|(?:${dateMethods.join('|')})` +
+        `|Math\.(?:${mathMethods.join('|')})` +
+        `|(?:${numberMethods.join('|')})` +
+        `|(?:${stringMethods.join('|')})` +
+        `|(?:${arrayMethod.join('|')})` +
+        `|[${mathOps.join('')}]` +
+        `|[${chars.join('')}]` +
+        `|(?:${comparisonOps.join('|')})` +
+        "|[ \\t]*'(?:[a-zA-Z0-9 ,:-_;%!?]+)'" + // alphanumerical chars + ,:-_;%!?  between simple quotes ''.
+        "|[ \\t]*''(?!')" + // empty simple quotes ''.
+        "|[ \\t]*\\d+(\\.\\d+)?))*[ \\t]*;?$";
+
+    const regexExp = new RegExp(regexPattern);
+    return regexExp.test(processToExecute);
 
 }
+

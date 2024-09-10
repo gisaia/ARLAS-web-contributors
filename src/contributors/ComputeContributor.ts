@@ -26,7 +26,7 @@ import {
 import { Observable, from, forkJoin } from 'rxjs';
 import { ComputationRequest, ComputationResponse, Filter, Hits } from 'arlas-api';
 import { ComputeConfig } from '../models/models';
-import { validProcess } from '../utils/utils';
+import { processRespectsForbidList } from '../utils/utils';
 
 
 /**
@@ -99,13 +99,13 @@ export class ComputeContributor extends Contributor {
                 return (d as Hits).totalnb;
             }
         });
-        if (this.function.trim().length > 0 && this.function.trim().length < 250 && validProcess(this.function)) {
+        if (this.function.trim().length > 0 && this.function.trim().length < 250 && processRespectsForbidList(this.function)) {
             const func = new Function('m', '\'use strict\';const r=' + this.function + '; return r;');
             const resultValue = func(m);
             this.metricValue = resultValue;
         } else if(this.function.trim().length > 250) {
             throw new Error('Invalid compute function: too long or invalid.');
-        } else if(!validProcess(this.function)) {
+        } else if(!processRespectsForbidList(this.function)) {
             throw new Error('Invalid compute function.');
         }
         return from([]);

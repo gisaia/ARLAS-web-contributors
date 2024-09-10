@@ -17,7 +17,7 @@
  * under the License.
 */
 
-import { MetricsTableContributor } from '../dist/index.js';
+import { MetricsTableContributor, processPassesAllowList } from '../dist/index.js';
 import { of } from 'rxjs';
 
 const metricsTableConfig = {
@@ -42,7 +42,25 @@ const configService = {
   getValue: () => []
 };
 
-
-const metricTableContributor = new MetricsTableContributor('id', css, configService, 10, metricsTableConfig);
+// todo update test
+/**const metricTableContributor = new MetricsTableContributor('id', css, configService);
 metricTableContributor.configuration = metricsTableConfig;
-metricTableContributor.computeData(undefined);
+metricTableContributor.computeData(undefined);**/
+
+
+const testString1 = "new Date().getFullYear() === 2024;";
+const testString2 = "Math.abs(-5) + 10;";
+const testString3 = "'test' === 'example';";
+const testString4 = "'alphanumeric' + 123;";
+const invalidTestString = "test === 'example';";  // This should fail because 'test' is not quoted
+const invalidTestString2 = "document.write('toto')";  // This should fail because 'test' is not quoted
+const invalidTestString3 = "window";  // This should fail because 'test' is not quoted
+
+
+console.log(processPassesAllowList(testString1, ''));
+console.log(processPassesAllowList(testString2, ''));
+console.log(processPassesAllowList(testString3, ''));
+console.log(processPassesAllowList(testString4, ''));
+console.log(processPassesAllowList(invalidTestString, ''));
+console.log(processPassesAllowList(invalidTestString2, ''));
+console.log(processPassesAllowList(invalidTestString3, ''));

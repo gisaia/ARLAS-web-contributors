@@ -31,7 +31,7 @@ import {
 } from 'arlas-api';
 import {
     getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex,
-    ASC, getFieldValue, validProcess
+    ASC, getFieldValue, processRespectsForbidList
 } from '../utils/utils';
 import {
     Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
@@ -114,13 +114,13 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                         const process: string = field.process;
                         let resultValue = result;
                         if (process) {
-                            if (process.trim().length > 0 && process.trim().length < 250 && validProcess(process)) {
+                            if (process.trim().length > 0 && process.trim().length < 250 && processRespectsForbidList(process)) {
                                 const func = new Function('result', '\'use strict\';const r=' +
                                     process + '; return r;');
                                 resultValue = func(result);
                             } else if (process.trim().length > 250) {
                                 throw new Error('Invalid process function: too long.');
-                            } else if (!validProcess(process)) {
+                            } else if (!processRespectsForbidList(process)) {
                                 throw new Error('Invalid process function.');
                             }
                         }
@@ -785,14 +785,14 @@ export class ResultListContributor extends Contributor {
                     const process: string = this.columnsProcess[element.columnName];
                     let resultValue = result;
                     if (process) {
-                        if (process.trim().length > 0 && process.trim().length < 250 && validProcess(process)) {
+                        if (process.trim().length > 0 && process.trim().length < 250 && processRespectsForbidList(process)) {
                             const func = Function('result', '\'use strict\';const r='
                                 + this.columnsProcess[element.columnName] + '; return r;');
 
                             resultValue = func(result);
                         } else if (process.trim().length > 250) {
                             throw new Error('Invalid process function: too long.');
-                        } else if (!validProcess(process)) {
+                        } else if (!processRespectsForbidList(process)) {
                             throw new Error('Invalid process function.');
                         }
                     }
@@ -969,7 +969,7 @@ export class ResultListContributor extends Contributor {
                         if (!!urlField && !!this.getConfigValue('process') && this.getConfigValue('process')[urlField] !== undefined) {
                             const processUrlTemplate: string = this.getConfigValue('process')[urlField]['process'];
                             if (processUrlTemplate.trim().length > 0 && processUrlTemplate.trim().length < 250
-                                && validProcess(processUrlTemplate)) {
+                                && processRespectsForbidList(processUrlTemplate)) {
                                 const func = new Function('result', '\'use strict\';const r=' + processUrlTemplate + '; return r;');
                                 urlTemplate = func(urlTemplate);
                             } else if (processUrlTemplate.trim().length > 250) {
@@ -1001,12 +1001,12 @@ export class ResultListContributor extends Contributor {
         const process: string = field.process;
         let resultValue = result;
         if (process) {
-            if (process.trim().length > 0 && process.trim().length < 250 && validProcess(process)) {
+            if (process.trim().length > 0 && process.trim().length < 250 && processRespectsForbidList(process)) {
                 const func = new Function('result', '\'use strict\';const r=' + field.process + '; return r;');
                 resultValue = func(result);
             } else if (process.trim().length > 250) {
                 throw new Error('Invalid process function: too long.');
-            } else if (!validProcess(process)) {
+            } else if (!processRespectsForbidList(process)) {
                 throw new Error('Invalid process function.');
             }
         }
