@@ -458,7 +458,8 @@ export function notInfinity(value: any) {
 }
 
 export function validProcess(process: string, variableName: string): boolean {
-    return !process.includes('document')
+    return !!process && process.length < 250
+        && !process.includes('document')
         && !process.includes('window')
         && !process.includes('eval')
         && !process.includes('localStorage')
@@ -604,7 +605,7 @@ export function processPassesAllowList(processToExecute: string, variableName: s
         '==', '===', '!=', '!==', '<', '<=', '>', '>='
     ];
     const regexPattern: string = `^([ \\t]*(new[ \\t]+(?:${classes.join('|')})` + // use of new + classes
-        `|(?:${variableName}|undefined|tmp)` + // variables names we can use
+        `|(?:${variableName}|undefined|null|tmp)` + // variables names we can use
         `|(?:${dateMethods.join('|')})` +
         `|Math\.(?:${mathMethods.join('|')})` +
         `|(?:${numberMethods.join('|')})` +
