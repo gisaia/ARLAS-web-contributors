@@ -66,7 +66,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             const detailedDataFunctionMap = new Map<string, Function>();
             group.fields.forEach(field => {
                 const process: string = field.process;
-                    if (process && process.trim().length > 0) {
+                    if (process && process.trim().length > 0 && validProcess(process, 'result')) {
                         const func = new Function('result', '\'use strict\';const r=' +
                             process + '; return r;');
                         detailedDataFunctionMap.set(field.label, func);
@@ -310,7 +310,7 @@ export class ResultListContributor extends Contributor {
         });
         this.fieldsList = [];
         this.columns.forEach(column => {
-            if (column.process && column.process.trim().length > 0) {
+            if (column.process && column.process.trim().length > 0 && validProcess(column.process, 'result')) {
                 const func = new Function('result', '\'use strict\';const r='
                     + column.process + '; return r;');
                 this.columnsProcess[column.columnName] = func;
@@ -361,7 +361,7 @@ export class ResultListContributor extends Contributor {
 
         if (this.fieldsConfiguration.titleFieldNames) {
             this.fieldsConfiguration.titleFieldNames.forEach(field => {
-                if (field.process && field.process.trim().length > 0) {
+                if (field.process && field.process.trim().length > 0 && validProcess(field.process, 'result')) {
                     const func = new Function('result', '\'use strict\';const r=' +
                         process + '; return r;');
                     this.titleFunctions.set(field.fieldPath, func);
@@ -370,7 +370,7 @@ export class ResultListContributor extends Contributor {
         }
         if (this.fieldsConfiguration.tooltipFieldNames) {
             this.fieldsConfiguration.tooltipFieldNames.forEach(field => {
-                if (field.process && field.process.trim().length > 0) {
+                if (field.process && field.process.trim().length > 0 && validProcess(field.process, 'result')) {
                     const func = new Function('result', '\'use strict\';const r=' +
                         process + '; return r;');
                     this.tooltipFunctionn.set(field.fieldPath, func);
@@ -1025,7 +1025,6 @@ export class ResultListContributor extends Contributor {
     private setProcessFieldData(h: ArlasHit, field: Field, fieldValueMap: Map<string, ItemDataType>, dataType: string,
         func: Function | undefined): void {
         const result: string = getElementFromJsonObject(h.data, field.fieldPath);
-        const process: string = field.process;
         let resultValue = result;
         if (func) {
             resultValue = func(result);
@@ -1058,7 +1057,7 @@ export class ResultListContributor extends Contributor {
     private getImageUrlTemplateFunction(urlField): Function | undefined {
         if (!!this.getConfigValue('process') && this.getConfigValue('process')[urlField] !== undefined) {
             const processUrlTemplate: string = this.getConfigValue('process')[urlField]['process'];
-            if (processUrlTemplate && processUrlTemplate.trim().length > 0) {
+            if (processUrlTemplate && processUrlTemplate.trim().length > 0 && validProcess(processUrlTemplate, 'result')) {
                 const func = new Function('result', '\'use strict\';const r=' + processUrlTemplate + '; return r;');
                 return func;
             };

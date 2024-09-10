@@ -457,33 +457,17 @@ export function notInfinity(value: any) {
     return value !== 'Infinity' && value !== '-Infinity' && value !== Infinity && value !== -Infinity;
 }
 
-export function validProcess(process: string): boolean {
-    return !process.includes('document') && !process.includes('window') && !process.includes('eval');
-}
-
-export function processRespectsForbidList(process: string): boolean {
+export function validProcess(process: string, variableName: string): boolean {
     return !process.includes('document') 
-        && !process.includes('window') 
+        && !process.includes('window')
         && !process.includes('eval')
         && !process.includes('localStorage')
         && !process.includes('this')
         && !process.includes('function')
         && !process.includes('Function')
-        && !process.includes('switch')
-        && !process.includes('break')
-        && !process.includes('forEach')
-        && !process.includes('every')
-        && !process.includes('while')
-        && !process.includes('for');
+        && processPassesAllowList(process, variableName);
 }
 
-export function validateProcess(processToExecute: string, variableName: string): string {
-    if (processPassesAllowList(processToExecute, variableName) && processRespectsForbidList(processToExecute)) {
-        return processToExecute;
-    } else {
-        return '';
-    }
-}
 
 /**
  * Verifies if the Javascript code to execute respects the following rules.
