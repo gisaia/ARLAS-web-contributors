@@ -57,7 +57,7 @@ export class ComputeContributor extends Contributor {
         this.collections.push({
             collectionName: collection
         });
-        if (this.function.trim().length > 0) {
+        if (this.function.trim().length > 0 && validProcess(this.function, 'm')) {
             this.processFunction = new Function('m', '\'use strict\';const r=' + this.function + '; return r;');
         }
     }
