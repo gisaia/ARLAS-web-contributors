@@ -65,10 +65,10 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         details.forEach(group => {
             const detailedDataFunctionMap = new Map<string, Function>();
             group.fields.forEach(field => {
-                const process: string = field.process;
-                    if (process && process.trim().length > 0 && validProcess(process, 'result')) {
+                const fieldProcess: string = field.process;
+                    if (fieldProcess && fieldProcess.trim().length > 0 && validProcess(fieldProcess, 'result')) {
                         const func = new Function('result', '\'use strict\';const r=' +
-                            process + '; return r;');
+                            fieldProcess + '; return r;');
                         detailedDataFunctionMap.set(field.label, func);
                     }
             });
@@ -129,10 +129,10 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 group.fields.forEach(field => {
                     const result = getFieldValue(field.path, searchData.hits[0].data);
                     if (result !== null && result !== undefined && result !== '') {
-                        const process: Function = this.detailsFunctionMap.get(group.name)?.get(field.label);
+                        const processFunction: Function = this.detailsFunctionMap.get(group.name)?.get(field.label);
                         let resultValue = result;
-                        if (process) {
-                            resultValue = process(result);
+                        if (processFunction) {
+                            resultValue = processFunction(result);
                         }
                         detailedDataMap.set(field.label, resultValue);
                     }
@@ -363,7 +363,7 @@ export class ResultListContributor extends Contributor {
             this.fieldsConfiguration.titleFieldNames.forEach(field => {
                 if (field.process && field.process.trim().length > 0 && validProcess(field.process, 'result')) {
                     const func = new Function('result', '\'use strict\';const r=' +
-                        process + '; return r;');
+                        field.process + '; return r;');
                     this.titleFunctions.set(field.fieldPath, func);
                 }
             });
@@ -372,7 +372,7 @@ export class ResultListContributor extends Contributor {
             this.fieldsConfiguration.tooltipFieldNames.forEach(field => {
                 if (field.process && field.process.trim().length > 0 && validProcess(field.process, 'result')) {
                     const func = new Function('result', '\'use strict\';const r=' +
-                        process + '; return r;');
+                        field.process + '; return r;');
                     this.tooltipFunctionn.set(field.fieldPath, func);
                 }
             });
@@ -820,10 +820,10 @@ export class ResultListContributor extends Contributor {
                 }
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
-                    const process: Function = this.columnsProcess[element.columnName];
+                    const processFunction: Function = this.columnsProcess[element.columnName];
                     let resultValue = result;
-                    if (process) {
-                            resultValue = process(result);
+                    if (processFunction) {
+                            resultValue = processFunction(result);
                     }
                     fieldValueMap.set(element.fieldName, resultValue);
                 });
