@@ -51,7 +51,7 @@ metricTableContributor.computeData(undefined);**/
 const testString1 = "new Date().getFullYear() === 2024;";
 const testString2 = "Math.abs(-5) + 10;";
 const testString3 = "\"\" + (new Date()).getTime() + ''";
-const testString4 = "'alphanumeric' + 123;";
+const testString4 = "'alphanuméric' + 123;";
 const testString5 = "test === \"example\";"; 
 const invalidTestString = "test === 'example';";  // This should fail because 'test' is not quoted
 const invalidTestString2 = "document.write('toto')";  // This should fail because document, write are not allowed
