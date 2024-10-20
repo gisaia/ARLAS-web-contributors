@@ -52,6 +52,8 @@ export interface Action {
     cssClass?: string | string[];
     /** for global actions, even if no item is selected, the action will be enabled */
     alwaysEnabled?: boolean;
+    reverseAction?: Action;
+    icon?: string;
 }
 /**
  * Couple of field/value id product, use to retrieve the product.
