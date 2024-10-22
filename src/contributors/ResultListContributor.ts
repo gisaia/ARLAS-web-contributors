@@ -89,7 +89,6 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 reverseAction: action.reverseAction,
                 icon: action.icon
             };
-            console.log('action contributeur', ac);
             const cssFields = action.cssClass;
             if (cssFields && item.itemData) {
                 if (typeof cssFields === 'string') {
@@ -175,7 +174,8 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                     tooltip: action.tooltip,
                     cssClass: '',
                     collection: this.contributor.collection,
-                    reverseAction: action.reverseAction
+                    reverseAction: action.reverseAction,
+                    icon: action.icon
                 };
                 const cssFields = action.cssClass;
                 if (cssFields) {
