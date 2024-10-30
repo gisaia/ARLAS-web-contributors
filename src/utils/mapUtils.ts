@@ -20,9 +20,8 @@
 import bbox from '@turf/bbox';
 import * as meta from '@turf/meta';
 import { Expression, Filter, Hits, Search } from 'arlas-api';
-import { projType } from 'arlas-web-core';
-import { CollaborativesearchService } from 'arlas-web-core/services/collaborativesearch.service';
-import { ElementIdentifier } from 'models/models';
+import { projType, CollaborativesearchService } from 'arlas-web-core';
+import { ElementIdentifier } from '../models/models';
 import { bboxes } from 'ngeohash';
 import { isNumber } from '@turf/helpers';
 import { Observable } from 'rxjs';
