@@ -27,6 +27,7 @@ releaseProd(){
     fi
 
     echo "=> Get "$BRANCH" branch of ARLAS-web-contributors project"
+    git fetch
     git checkout "$BRANCH"
     git pull origin "$BRANCH"
     echo "=> Test to lint and build the project on "$BRANCH" branch"
@@ -83,7 +84,6 @@ releaseProd(){
     if [ "$BRANCH" == "develop" ] && [ "$STAGE_LOCAL" == "stable" ];
         then
         echo "=> Merge develop into master"
-        git fetch
         git checkout master
         git pull origin master
         git merge origin/develop
