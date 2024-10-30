@@ -47,6 +47,7 @@ import { parse } from 'wellknown';
 */
 export interface DetailedDataRetriever {
     getData(identifier: string): Observable<AdditionalInfo>;
+    getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
 }
 
@@ -66,15 +67,34 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             const detailedDataFunctionMap = new Map<string, Function>();
             group.fields.forEach(field => {
                 const fieldProcess: string = field.process;
-                    if (fieldProcess && fieldProcess.trim().length > 0 && validProcess(fieldProcess, 'result')) {
-                        const func = new Function('result', '\'use strict\';const r=' +
-                            fieldProcess + '; return r;');
-                        detailedDataFunctionMap.set(field.label, func);
-                    }
+                if (fieldProcess && fieldProcess.trim().length > 0 && validProcess(fieldProcess, 'result')) {
+                    const func = new Function('result', '\'use strict\';const r=' +
+                        fieldProcess + '; return r;');
+                    detailedDataFunctionMap.set(field.label, func);
+                }
             });
             this.detailsFunctionMap.set(group.name, detailedDataFunctionMap);
         });
 
+    }
+
+
+    public getValues(identifier: string, fields: string[]): Observable<string[]> {
+        const search: Search = { page: { size: 1 } };
+        const expression: Expression = {
+            field: this.contributor.fieldsConfiguration.idFieldName,
+            op: Expression.OpEnum.Eq,
+            value: identifier
+        };
+        const filterExpression: Filter = {
+            f: [[expression]]
+        };
+        const searchResult: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
+            projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
+            this.contributor.collection, this.contributor.identifier, filterExpression,
+            /** flat */ true, this.contributor.cacheDuration);
+
+        return searchResult.pipe(map(data => fields.map(f => data.hits[0].data[f.replace(/\./g, '_')])));
     }
 
     public getActions(item: any): Observable<Array<Action>> {
@@ -85,7 +105,12 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 label: action.label,
                 tooltip: action.tooltip,
                 cssClass: '',
-                collection: this.contributor.collection
+                collection: this.contributor.collection,
+                reverseAction: action.reverseAction,
+                activated: action.activated,
+                icon: action.icon,
+                show: action.show,
+                fields: action.fields
             };
             const cssFields = action.cssClass;
             if (cssFields && item.itemData) {
@@ -103,6 +128,9 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         });
         return from(new Array(actions));
     }
+
+
+
     /**
     * Method to retrieve detail data of an item
     * @param identifier string id of the item
@@ -171,7 +199,12 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                     label: action.label,
                     tooltip: action.tooltip,
                     cssClass: '',
-                    collection: this.contributor.collection
+                    collection: this.contributor.collection,
+                    reverseAction: action.reverseAction,
+                    activated: action.activated,
+                    icon: action.icon,
+                    show: action.show,
+                    fields: action.fields
                 };
                 const cssFields = action.cssClass;
                 if (cssFields) {
@@ -823,7 +856,7 @@ export class ResultListContributor extends Contributor {
                     const processFunction: Function = this.columnsProcess[element.columnName];
                     let resultValue = result;
                     if (processFunction) {
-                            resultValue = processFunction(result);
+                        resultValue = processFunction(result);
                     }
                     fieldValueMap.set(element.fieldName, resultValue);
                 });

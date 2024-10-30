@@ -50,7 +50,19 @@ export interface Action {
     tooltip?: string;
     collection?: string;
     cssClass?: string | string[];
-    /** for global actions, even if no item is selected, the action will be enabled */
+    /** An action might need a reverse action to go back to an original state.
+   * For instance: add layer to map => reverse => remove layer from map.*/
+    reverseAction?: Action;
+    /** if activated, the action is always displayed (not only on hover). */
+    activated?: boolean;
+    /** An Angular icon name to be used to display the icon button of the action. */
+    icon?: string;
+    /** If this attribute is set, it means that this action needs these fields values in order to be accomplished.
+     * If those fields values don't exist for an item, then the action could not be completed and therefore should be hidden. */
+    fields?: string[];
+    /** Calculated attribute that tells if the action should be shown or not. */
+    show?: boolean;
+    /** For global actions, even if no item is selected, the action will be enabled */
     alwaysEnabled?: boolean;
 }
 /**
@@ -573,7 +585,7 @@ export interface RawGeometryConfig {
 export class FeaturesNormalization implements NormalizationFieldConfig {
     public on: string;
     public per?: string;
-    public minMaxPerKey?= new Map<string, [number, number]>();
+    public minMaxPerKey? = new Map<string, [number, number]>();
     public minMax?: [number, number];
 }
 

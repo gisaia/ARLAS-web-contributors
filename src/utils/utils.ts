@@ -598,7 +598,7 @@ export function processPassesAllowList(processToExecute: string, variableName: s
     ];
 
     const chars = [
-        '\\[', '\\]', '.', ';', ',', '(', ')', ':', '?', '!'
+        '\\[', '\\]', '.', ';', ',', '(', ')', ':', '?', '!','&'
     ];
 
     const comparisonOps = [
@@ -614,8 +614,8 @@ export function processPassesAllowList(processToExecute: string, variableName: s
         `|[${mathOps.join('')}]` +
         `|[${chars.join('')}]` +
         `|(?:${comparisonOps.join('|')})` +
-        `|[ \\t]*'(?:[a-zA-Z0-9 ,:-_;%!?°]+)'` + // alphanumerical chars + ,:-_;%!?°  between simple quotes ''.
-        `|[ \\t]*\"(?:[a-zA-Z0-9 ,:-_;%!?°]+)\"` + // alphanumerical chars + ,:-_;%!?°  between double quotes "".
+        `|[ \\t]*'(?:.+)'` + // match all chars between simple quotes ''.
+        `|[ \\t]*\"(?:.+)\"` + // match all chars  between double quotes "".
         `|[ \\t]*''(?!')` + // empty simple quotes ''.
         `|[ \\t]*\"\"(?!\")` + // empty double quotes "".
         `|[ \\t]*\\d+(\\.\\d+)?))*[ \\t]*;?$`;
