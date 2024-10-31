@@ -1006,7 +1006,7 @@ export class MapContributor extends Contributor {
         });
     }
 
-    public downloadLayerSource(source, layerName, downloadType) {
+    public downloadLayerSource(source: string, layerName: string, downloadType: string, displayFieldNameMap?: Map<string,string>) {
         let sourceData = [];
         if (this.cellsPerSource.has(source)) {
             sourceData = this.downloadClusterSource(source);
@@ -1022,7 +1022,7 @@ export class MapContributor extends Contributor {
             a.download = layerName
                 .concat(new Date().getTime().toString())
                 .concat('.csv');
-            a.href = window.URL.createObjectURL(this.exportSourceAsCSV(sourceData));
+            a.href = window.URL.createObjectURL(this.exportSourceAsCSV(sourceData, displayFieldNameMap));
             a.dataset.downloadurl = [contentType, a.download, a.href].join(':');
             document.body.appendChild(a);
             a.click();
@@ -1118,13 +1118,20 @@ export class MapContributor extends Contributor {
         });
     }
 
-
-    public exportSourceAsCSV(features): Blob {
+    public exportSourceAsCSV(features: any[], displayFieldNameMap?: Map<string, string>): Blob {
         const csvData = new Array<Array<string>>();
         const header = new Array<string>();
         /** Header */
         const f = features[0];
-        Array.from(Object.keys(f.properties)).sort().forEach(k => header.push(k));
+        Array.from(Object.keys(f.properties)).sort().forEach(k => {
+            if(displayFieldNameMap){
+                const nameFromMap = displayFieldNameMap.get(k.replace(/\./g, this.FLAT_CHAR));
+                const title = nameFromMap ? nameFromMap : k;
+                header.push(title);
+            }else{
+                header.push(k);
+            }
+        });
         header.push('geometry');
         csvData.push(header);
         features.forEach(feature => {
