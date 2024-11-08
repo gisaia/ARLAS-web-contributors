@@ -440,7 +440,7 @@ export class MapContributor extends Contributor {
             }
             this.addFilter(countFilter, this.additionalFilter);
             /** Retrieve the list of all window sources to apply ONE search request to the server
-             * This serach request will contain all the geometries, and additional info needed for each window source
+             * This search request will contain all the geometries, and additional info needed for each window source
              * to be properly displayed
             */
             const allWindowSources = [];
@@ -462,7 +462,7 @@ export class MapContributor extends Contributor {
             if (sort && sort.length > 0) {
                 search.page.sort = sort;
             } else {
-                search.page.sort = 'geodistance:' + this.center[0].toString() + ' ' + this.center[1].toString() + ',' +
+                search.page.sort = 'geodistance:' + this.center[1].toString() + ' ' + this.center[0].toString() + ',' +
                     this.collectionParameters.id_path;
             }
             let renderStrategy: RenderStrategy;
