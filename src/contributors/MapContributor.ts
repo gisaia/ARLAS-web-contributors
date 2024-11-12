@@ -440,7 +440,7 @@ export class MapContributor extends Contributor {
             }
             this.addFilter(countFilter, this.additionalFilter);
             /** Retrieve the list of all window sources to apply ONE search request to the server
-             * This serach request will contain all the geometries, and additional info needed for each window source
+             * This search request will contain all the geometries, and additional info needed for each window source
              * to be properly displayed
             */
             const allWindowSources = [];
@@ -462,7 +462,7 @@ export class MapContributor extends Contributor {
             if (sort && sort.length > 0) {
                 search.page.sort = sort;
             } else {
-                search.page.sort = 'geodistance:' + this.center[0].toString() + ' ' + this.center[1].toString() + ',' +
+                search.page.sort = 'geodistance:' + this.center[1].toString() + ' ' + this.center[0].toString() + ',' +
                     this.collectionParameters.id_path;
             }
             let renderStrategy: RenderStrategy;
@@ -903,6 +903,7 @@ export class MapContributor extends Contributor {
                             legendData = { minValue: 'Small', maxValue: 'High' };
                         }
                         this.legendData.set(normalizeField + NORMALIZE_PER_KEY + perField, legendData);
+                        this.legendUpdater.next(this.legendData);
                     } else {
                         const minMax = n.minMax;
                         const featureData = this.featureDataPerSource.get(s);
@@ -914,6 +915,7 @@ export class MapContributor extends Contributor {
                         }
                         const legendData = { minValue, maxValue };
                         this.legendData.set(normalizeField + NORMALIZE, legendData);
+                        this.legendUpdater.next(this.legendData);
                     }
                 });
             }
@@ -1006,7 +1008,7 @@ export class MapContributor extends Contributor {
         });
     }
 
-    public downloadLayerSource(source, layerName, downloadType) {
+    public downloadLayerSource(source: string, layerName: string, downloadType: string, displayFieldNameMap?: Map<string,string>) {
         let sourceData = [];
         if (this.cellsPerSource.has(source)) {
             sourceData = this.downloadClusterSource(source);
@@ -1022,7 +1024,7 @@ export class MapContributor extends Contributor {
             a.download = layerName
                 .concat(new Date().getTime().toString())
                 .concat('.csv');
-            a.href = window.URL.createObjectURL(this.exportSourceAsCSV(sourceData));
+            a.href = window.URL.createObjectURL(this.exportSourceAsCSV(sourceData, displayFieldNameMap));
             a.dataset.downloadurl = [contentType, a.download, a.href].join(':');
             document.body.appendChild(a);
             a.click();
@@ -1118,13 +1120,20 @@ export class MapContributor extends Contributor {
         });
     }
 
-
-    public exportSourceAsCSV(features): Blob {
+    public exportSourceAsCSV(features: any[], displayFieldNameMap?: Map<string, string>): Blob {
         const csvData = new Array<Array<string>>();
         const header = new Array<string>();
         /** Header */
         const f = features[0];
-        Array.from(Object.keys(f.properties)).sort().forEach(k => header.push(k));
+        Array.from(Object.keys(f.properties)).sort().forEach(k => {
+            if(displayFieldNameMap){
+                const nameFromMap = displayFieldNameMap.get(k.replace(/\./g, this.FLAT_CHAR));
+                const title = nameFromMap ? nameFromMap : k;
+                header.push(title);
+            }else{
+                header.push(k);
+            }
+        });
         header.push('geometry');
         csvData.push(header);
         features.forEach(feature => {
@@ -2431,6 +2440,7 @@ export class MapContributor extends Contributor {
         fieldsToKeep.add(flattenColorField + '_color');
         this.legendData.set(flattenColorField + '_arlas__color', colorLegend);
         this.legendData.set(flattenColorField + '_color', colorLegend);
+        this.legendUpdater.next(this.legendData);
     }
 
 
@@ -2457,6 +2467,7 @@ export class MapContributor extends Contributor {
             colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
                 feature.properties[flattenColorField]);
             this.legendData.set(flattenColorField, colorLegend);
+            this.legendUpdater.next(this.legendData);
         }
     }
 
@@ -3043,18 +3054,22 @@ export class MapContributor extends Contributor {
                     } else {
                         feature.properties[k] = (feature.properties[k] - metricStats.min) / (metricStats.max - metricStats.min);
                     }
-                } else if (k.endsWith(NORMALIZED_COUNT)) {
+                }
+
+                if (k.endsWith(NORMALIZED_COUNT)) {
                     const legendData: LegendData = {
                         minValue: '0',
                         maxValue: sourceStats.count + ''
                     };
                     this.legendData.set(k, legendData);
+                    this.legendUpdater.next(this.legendData);
                 } else if (k.endsWith(NORMALIZE) && !k.endsWith(AVG + NORMALIZE)) {
                     const legendData: LegendData = {
                         minValue: metricStats.min,
                         maxValue: metricStats.max
                     };
                     this.legendData.set(k, legendData);
+                    this.legendUpdater.next(this.legendData);
                 }
             } else {
                 if (!this.isBeginingOfKeyInValues(k, providedFields)) {
