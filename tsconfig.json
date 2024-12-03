@@ -5,20 +5,33 @@
         "baseUrl": "src",
         "sourceMap": true,
         "declaration": true,
+        "target": "es6",
+        "module": "es6",
         "moduleResolution": "node",
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "target": "es6",
-        "module": "es6",
         "resolveJsonModule": true,
         "esModuleInterop": true,
+        "stripInternal": true,
+        "skipLibCheck": true,
         "typeRoots": [
             "node_modules/@types",
             "node_modules/@turf"
         ],
         "lib": [
-            "es2016",
+            "es2015",
+            "es6",
             "dom"
         ]
-    }
+    },
+    "files": [
+        "src/index.ts"
+    ],
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
 }
