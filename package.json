@@ -30,24 +30,24 @@
     "@types/file-saver": "^2.0.1",
     "@types/jsonpath": "^0.2.0",
     "@types/tinycolor2": "^1.4.0",
-    "arlas-web-core": "27.0.0-rc.1",
+    "arlas-web-core": "27.0.0-beta.2",
     "file-saver": "^2.0.2",
     "jsonpath": "^1.0.0",
     "moment": "^2.29.4",
     "ngeohash": "^0.6.0",
-    "rxjs": "~7.4.0",
+    "rxjs": "^7.4.0",
     "tinycolor2": "~1.4.1",
     "wellknown": "^0.5.0"
   },
   "devDependencies": {
-    "@types/node": "^18.10.0",
-    "@typescript-eslint/eslint-plugin": "^5.27.1",
-    "@typescript-eslint/parser": "^5.27.1",
-    "eslint": "^8.17.0",
+    "@types/node": "^18.19.1",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint": "^8.57.0",
     "license-check-and-add": "^4.0.5",
-    "node": "^18.10.0",
+    "node": "^18.19.1",
     "rimraf": "^2.6.2",
-    "typescript": "^4.8.2"
+    "typescript": "~5.4.0"
   },
   "bugs": {
     "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/issues"
