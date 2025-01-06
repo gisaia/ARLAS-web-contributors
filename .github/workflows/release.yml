@@ -1,4 +1,5 @@
 name: Release ARLAS-web-contributors
+run-name: Release ARLAS-web-contributors ${{inputs.version}} ${{inputs.stage}} ${{inputs.stage_iteration}}
 
 on:
   workflow_dispatch:
