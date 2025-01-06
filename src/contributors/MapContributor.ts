@@ -903,7 +903,6 @@ export class MapContributor extends Contributor {
                             legendData = { minValue: 'Small', maxValue: 'High' };
                         }
                         this.legendData.set(normalizeField + NORMALIZE_PER_KEY + perField, legendData);
-                        this.legendUpdater.next(this.legendData);
                     } else {
                         const minMax = n.minMax;
                         const featureData = this.featureDataPerSource.get(s);
@@ -915,9 +914,9 @@ export class MapContributor extends Contributor {
                         }
                         const legendData = { minValue, maxValue };
                         this.legendData.set(normalizeField + NORMALIZE, legendData);
-                        this.legendUpdater.next(this.legendData);
                     }
                 });
+                this.legendUpdater.next(this.legendData);
             }
         }
     }
@@ -1004,8 +1003,8 @@ export class MapContributor extends Contributor {
                 });
             }
             this.redrawSource.next({ source: s, data: sourceData });
-            this.legendUpdater.next(this.legendData);
         });
+        this.legendUpdater.next(this.legendData);
     }
 
     public downloadLayerSource(source: string, layerName: string, downloadType: string, displayFieldNameMap?: Map<string,string>) {
@@ -1115,9 +1114,9 @@ export class MapContributor extends Contributor {
                     minValue: '0',
                     maxValue: stats.count + ''
                 });
-                this.legendUpdater.next(this.legendData);
             }
         });
+        this.legendUpdater.next(this.legendData);
     }
 
     public exportSourceAsCSV(features: any[], displayFieldNameMap?: Map<string, string>): Blob {
@@ -1280,9 +1279,9 @@ export class MapContributor extends Contributor {
                     minValue: '0',
                     maxValue: stats.count + ''
                 });
-                this.legendUpdater.next(this.legendData);
             }
         });
+        this.legendUpdater.next(this.legendData);
     }
 
     public downloadClusterSource(source: string) {
@@ -2440,7 +2439,6 @@ export class MapContributor extends Contributor {
         fieldsToKeep.add(flattenColorField + '_color');
         this.legendData.set(flattenColorField + '_arlas__color', colorLegend);
         this.legendData.set(flattenColorField + '_color', colorLegend);
-        this.legendUpdater.next(this.legendData);
     }
 
 
@@ -2467,7 +2465,6 @@ export class MapContributor extends Contributor {
             colorLegend.keysColorsMap.set(feature.properties[flattenLabelField],
                 feature.properties[flattenColorField]);
             this.legendData.set(flattenColorField, colorLegend);
-            this.legendUpdater.next(this.legendData);
         }
     }
 
@@ -3062,14 +3059,12 @@ export class MapContributor extends Contributor {
                         maxValue: sourceStats.count + ''
                     };
                     this.legendData.set(k, legendData);
-                    this.legendUpdater.next(this.legendData);
                 } else if (k.endsWith(NORMALIZE) && !k.endsWith(AVG + NORMALIZE)) {
                     const legendData: LegendData = {
                         minValue: metricStats.min,
                         maxValue: metricStats.max
                     };
                     this.legendData.set(k, legendData);
-                    this.legendUpdater.next(this.legendData);
                 }
             } else {
                 if (!this.isBeginingOfKeyInValues(k, providedFields)) {
