@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+export RELEASE_COMMAND_LINE="$0 $*"
+
 usage(){
 	echo "Usage: ./release.sh -version='1.0.0' -ref_branch=develop --stage=beta|rc|stable"
 	echo " -version     arlas-web-contributors version release,level of evolution"
@@ -117,6 +119,7 @@ releaseProd(){
     if [ "$STAGE_LOCAL" == "stable" ] || [ "$STAGE_LOCAL" == "rc" ];
         then
         send_chat_message "Release of arlas-web-contributors, version ${VERSION}"
+        send_chat_message "${RELEASE_COMMAND_LINE}"
     fi
 
 }
