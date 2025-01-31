@@ -494,7 +494,7 @@ export class MapContributor extends Contributor {
     }
 
     public getWideModeData(rawTestExtent: string, wrapTestExtent: string, mapLoadExtent: number[],
-            mapLoadRawExtent: number[], zoom: number, visibleSources: Set<string>): void {
+        mapLoadRawExtent: number[], zoom: number, visibleSources: Set<string>): void {
         const countFilter = this.getFilterForCount(rawTestExtent, wrapTestExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
@@ -984,21 +984,7 @@ export class MapContributor extends Contributor {
                             delete feature.properties[k];
                         }
                     });
-
-                    switch ((feature.geometry as any).type) {
-                        case 'LineString':
-                            (feature.geometry as any).coordinates = fix180thMeridian((feature.geometry as any).coordinates);
-                            break;
-                        case 'Polygon':
-                            (feature.geometry as any).coordinates[0] = fix180thMeridian((feature.geometry as any).coordinates[0]);
-                            break;
-                        case 'MultiPolygon':
-                            (feature.geometry as any).coordinates.forEach(c => {
-                                c[0] = fix180thMeridian(c[0]);
-                            });
-                            break;
-                    }
-
+                    this.fix180thMeridianGeom(feature);
                     sourceData.push(feature);
                 });
             }
@@ -1007,7 +993,23 @@ export class MapContributor extends Contributor {
         this.legendUpdater.next(this.legendData);
     }
 
-    public downloadLayerSource(source: string, layerName: string, downloadType: string, displayFieldNameMap?: Map<string,string>) {
+    private fix180thMeridianGeom(feature: Feature) {
+        switch ((feature.geometry as any).type) {
+            case 'LineString':
+                (feature.geometry as any).coordinates = fix180thMeridian((feature.geometry as any).coordinates);
+                break;
+            case 'Polygon':
+                (feature.geometry as any).coordinates[0] = fix180thMeridian((feature.geometry as any).coordinates[0]);
+                break;
+            case 'MultiPolygon':
+                (feature.geometry as any).coordinates.forEach(c => {
+                    c[0] = fix180thMeridian(c[0]);
+                });
+                break;
+        }
+    }
+
+    public downloadLayerSource(source: string, layerName: string, downloadType: string, displayFieldNameMap?: Map<string, string>) {
         let sourceData = [];
         if (this.cellsPerSource.has(source)) {
             sourceData = this.downloadClusterSource(source);
@@ -1103,6 +1105,7 @@ export class MapContributor extends Contributor {
                             });
                         }
                     }
+                    this.fix180thMeridianGeom(feature);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
                     this.normalizeAvgForTopology(s, feature);
                     sourceData.push(feature);
@@ -1125,11 +1128,11 @@ export class MapContributor extends Contributor {
         /** Header */
         const f = features[0];
         Array.from(Object.keys(f.properties)).sort().forEach(k => {
-            if(displayFieldNameMap){
+            if (displayFieldNameMap) {
                 const nameFromMap = displayFieldNameMap.get(k.replace(/\./g, this.FLAT_CHAR));
                 const title = nameFromMap ? nameFromMap : k;
                 header.push(title);
-            }else{
+            } else {
                 header.push(k);
             }
         });
@@ -1208,6 +1211,7 @@ export class MapContributor extends Contributor {
                             });
                         }
                     }
+                    this.fix180thMeridianGeom(feature);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep, true);
                     sourceData.push(feature);
                 });
@@ -2497,7 +2501,7 @@ export class MapContributor extends Contributor {
                 let type: Aggregation.TypeEnum;
                 if (aggType === ClusterAggType.geohash) {
                     type = Aggregation.TypeEnum.Geohash;
-                } else if (aggType === ClusterAggType.tile)  {
+                } else if (aggType === ClusterAggType.tile) {
                     type = Aggregation.TypeEnum.Geotile;
                 } else {
                     type = Aggregation.TypeEnum.Geohex;
