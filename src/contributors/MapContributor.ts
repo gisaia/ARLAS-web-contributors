@@ -765,7 +765,7 @@ export class MapContributor extends Contributor {
     public getFeatureToHightLight(elementidentifier: ElementIdentifier) {
         let isleaving = false;
         let id = elementidentifier.idValue;
-        if (id.split('-')[0] === 'leave') {
+        if (elementidentifier?.event  && elementidentifier.event=== 'leave') {
             id = id.split('leave-', 2)[1];
             isleaving = true;
         }

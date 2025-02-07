@@ -65,6 +65,11 @@ export interface Action {
     /** For global actions, even if no item is selected, the action will be enabled */
     alwaysEnabled?: boolean;
 }
+
+/**
+ *  element identifier event
+ */
+export type ElementIdentifierEventType = 'leave' | 'click' | 'hover';
 /**
  * Couple of field/value id product, use to retrieve the product.
  * - id field name.
@@ -73,6 +78,7 @@ export interface Action {
 export interface ElementIdentifier {
     idFieldName: string;
     idValue: string;
+    event?: ElementIdentifierEventType;
 }
 
 /**
