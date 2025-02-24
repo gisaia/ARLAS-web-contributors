@@ -208,9 +208,13 @@ export class MapContributor extends Contributor {
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
     */
-    public constructor(public identifier, public collaborativeSearcheService: CollaborativesearchService, public configService: ConfigService,
+    public constructor(
+        public identifier: string,
+        public collaborativeSearcheService: CollaborativesearchService,
+        public configService: ConfigService,
         public collection: string,
-        public colorGenerator?: ColorGeneratorLoader) {
+        public colorGenerator?: ColorGeneratorLoader
+    ) {
         super(identifier, configService, collaborativeSearcheService, collection);
         this.collections = [];
         this.collections.push({
@@ -888,7 +892,7 @@ export class MapContributor extends Contributor {
             }
         }
     }
-    public setLegendSearchData(s): void {
+    public setLegendSearchData(s: string): void {
         if (this.searchNormalizations) {
             const featuresNormalization = this.searchNormalizations.get(s);
             if (featuresNormalization) {
@@ -948,7 +952,7 @@ export class MapContributor extends Contributor {
                     if (colorFields) {
                         colorFields.forEach(colorField => {
                             const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = feature.properties[flattenColorField] || 'UNKOWN';
+                            feature.properties[flattenColorField] = this.getValueOrFirstArrayValueFromFeature(f, flattenColorField) || 'UNKOWN';
                             this.setColorFieldLegend(colorField, feature, fieldsToKeep);
                         });
                     }
@@ -973,6 +977,17 @@ export class MapContributor extends Contributor {
                             feature.properties[flattenShortField + SHORT_VALUE] = numToString(+feature.properties[flattenShortField]);
                         });
                     }
+
+                    // For manual color fields that are lists, the key in properties is {field}_0
+                    const includedFields = this.featureLayerSourcesIndex.get(s).includeFields;
+                    if (includedFields) {
+                        includedFields.forEach(f => {
+                            const flattenedIncludedField = f.replace(/\./g, this.FLAT_CHAR);
+                            feature.properties[flattenedIncludedField] =
+                                this.getValueOrFirstArrayValueFromFeature(feature, flattenedIncludedField);
+                        });
+                    }
+
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
                     delete feature.properties.md;
@@ -3687,7 +3702,8 @@ export class MapContributor extends Contributor {
             this.abortControllers.set(requestId, controller);
         }
     }
-    private getValueFromFeature(f: Feature, field: string, flattenedField): any {
+
+    private getValueFromFeature(f: Feature, field: string, flattenedField: string): any {
         let value = +f.properties[flattenedField];
         if (isNaN(value)) {
             if (this.dateFieldFormatMap.get(field)) {
@@ -3708,6 +3724,16 @@ export class MapContributor extends Contributor {
             }
         }
     }
+
+    /**
+     * @param f Feature to get the value of the field from
+     * @param flattenedField Flattened field
+     * @returns Either the value of the field, or the value of the first item of the list of values of the corresponding field
+     */
+    private getValueOrFirstArrayValueFromFeature(f: Feature, flattenedField: string) {
+        return f.properties[flattenedField] || f.properties[flattenedField + '_0'];
+    }
+
     private getBboxsForQuery(newBbox: Array<Object>) {
         const bboxArray: Array<string> = [];
         const numberOfBbox = newBbox.length;
