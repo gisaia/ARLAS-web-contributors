@@ -116,17 +116,11 @@ export const DESC = 'desc';
  * @param idFieldName id field name to append to the `sortString`
  */
 export function appendIdToSort(sortString: string, order: string = ASC, idFieldName: string): string {
-    let sortStringWithId = sortString;
-    const regex = new RegExp('-?' + idFieldName + ',?');
-    const match = sortString.match(regex);
-    if (match !== null) {
-        match.forEach(m => {
-            sortStringWithId = sortString.replace(m, '');
-        });
-    }
-    if (sortStringWithId.endsWith(',')) {
-        sortStringWithId = sortStringWithId.substring(0, sortStringWithId.length - 1);
-    }
+    const fieldNameMatcher = new RegExp('^-?' + idFieldName + '$');
+    const sortFields = sortString.split(',').filter(f => !fieldNameMatcher.exec(f));
+
+    let sortStringWithId = sortFields.join(',');
+
     const idFieldToAppend = (order === DESC) ? '-' + idFieldName : idFieldName;
     if (sortStringWithId !== '') {
         sortStringWithId += ',';
