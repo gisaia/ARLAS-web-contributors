@@ -20,7 +20,7 @@
 import * as FileSaver from 'file-saver';
 import jp from 'jsonpath/jsonpath.min';
 import { Hits, Aggregation } from 'arlas-api';
-import { mix } from 'tinycolor2';
+import tinycolor from 'tinycolor2';
 import { LayerSourceConfig } from '../models/models';
 
 
@@ -395,7 +395,7 @@ export function getHexColor(key: string, saturationWeight: number): string {
     // int to rgb
     let hex = (hash & 0x00FFFFFF).toString(16).toUpperCase();
     hex = '00000'.substring(0, 6 - hex.length) + hex;
-    const color = mix(hex, hex);
+    const color = tinycolor.mix(hex, hex);
     color.lighten(5);
     const saturation = color.toHsv().s;
     if (saturation < (1 - saturationWeight) * 100) {
@@ -407,7 +407,7 @@ export function getHexColor(key: string, saturationWeight: number): string {
 }
 
 export function rgbToHex(rgb: string): string {
-    const color = mix(rgb, rgb);
+    const color = tinycolor.mix(rgb, rgb);
     return color.toHexString();
 }
 
