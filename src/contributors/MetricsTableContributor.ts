@@ -83,9 +83,10 @@ export class MetricsTableContributor extends Contributor {
     public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService
+        configService: ConfigService,
+        collection: string
     ) {
-        super(identifier, configService, collaborativeSearcheService);
+        super(identifier, configService, collaborativeSearcheService, collection);
         this.sort = this.getConfigValue('sort');
         this.configuration = this.getConfigValue('configuration');
         this.nbTerms = this.getConfigValue('numberOfBuckets');
@@ -94,6 +95,7 @@ export class MetricsTableContributor extends Contributor {
             field: v.configuration.termfield,
             collectionName: v.collection
         }));
+        this.collaborativeSearcheService.registerCollections(this);
     }
 
     /** @override */
