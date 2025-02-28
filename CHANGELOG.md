@@ -1,5 +1,14 @@
 # Change Log
 
+## [v27.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.1) (2025-02-28)
+
+[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0...v27.0.1)
+
+**Fixed bugs:**
+
+- Search request can be badly constructed [\#609](https://github.com/gisaia/ARLAS-web-contributors/issues/609)
+- Flattened values from arrays are not used for map features [\#608](https://github.com/gisaia/ARLAS-web-contributors/issues/608)
+
 ## [v27.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0) (2025-01-31)
 
 [Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0-rc.3...v27.0.0)
