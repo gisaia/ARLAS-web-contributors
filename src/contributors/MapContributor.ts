@@ -435,9 +435,9 @@ export class MapContributor extends Contributor {
 
     /**
      * Fetches the data for the Window-render-mode. The data will be fetched taking into account the current collaboration
-     * of this map contributor + the given extent. The windowExtentGeometry will defines the operation to apply between the 
+     * of this map contributor + the given extent. The windowExtentGeometry will defines the operation to apply between the
      * given raw extent and the data geometry to use.
-     * 
+     *
      * @param wrapExtent Wrapped format of the rawExtent (wrapped to the range [-180, 180]).
      * @param rawExtent The extent of the map. The data will be fetched using this extent.
      * @param visibleSources Set of visible source identifiers.
