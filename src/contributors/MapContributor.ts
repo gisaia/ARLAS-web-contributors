@@ -33,7 +33,8 @@ import {
 import {
     OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
-    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode, ItemDataType
+    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode, ItemDataType,
+    ExtentFilterGeometry
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
@@ -108,6 +109,9 @@ export class MapContributor extends Contributor {
     private DEFAULT_SEARCH_SORT = '';
     private DEFAULT_DRAW_PRECISION = 6;
     private DEFAULT_IS_FLAT = true;
+
+    private WINDOW_EXTENT_GEOMETRY = 'window_extent_geometry';
+    public windowExtentGeometry: ExtentFilterGeometry;
 
     private clusterLayersIndex: Map<string, LayerClusterSource>;
     private topologyLayersIndex: Map<string, LayerTopologySource>;
@@ -228,6 +232,7 @@ export class MapContributor extends Contributor {
         const searchSortConfig = this.getConfigValue(this.SEARCH_SORT_KEY);
         const drawPrecisionConfig = this.getConfigValue(this.DRAW_PRECISION_KEY);
         const isFlatConfig = this.getConfigValue(this.IS_FLAT_KEY);
+        const windoExtentGeometry = this.getConfigValue(this.WINDOW_EXTENT_GEOMETRY);
         if (!colorGenerator) {
             this.colorGenerator = new ColorGeneratorLoader();
         }
@@ -257,6 +262,7 @@ export class MapContributor extends Contributor {
         }
         this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
         this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
+        this.windowExtentGeometry = !!windoExtentGeometry ? windoExtentGeometry : ExtentFilterGeometry.centroid;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
         this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
         this.granularityClusterFunctions.set(Granularity.coarse, coarseGranularity);
@@ -428,17 +434,32 @@ export class MapContributor extends Contributor {
     }
 
     /**
-     * Fetches the data for the `Simple mode`
-     * @param includeFeaturesFields properties to include in geojson features
+     * Fetches the data for the Window-render-mode. The data will be fetched taking into account the current collaboration
+     * of this map contributor + the given extent. The windowExtentGeometry will defines the operation to apply between the 
+     * given raw extent and the data geometry to use.
+     * 
+     * @param wrapExtent Wrapped format of the rawExtent (wrapped to the range [-180, 180]).
+     * @param rawExtent The extent of the map. The data will be fetched using this extent.
+     * @param visibleSources Set of visible source identifiers.
      * @param sort comma separated field names on which feature are sorted.
-     * @param afterParam comma seperated field values from which next/previous data is fetched
-     * @param whichPage Whether to fetch next or previous set.
-     * @param fromParam (page.from in arlas api) an offset from which fetching hits starts. It's ignored if `afterParam` is set.
+     * @param keepOldData Whether to keep already fetched data or the clean them.
+     * @param afterParam comma seperated field values from which next/previous data is fetched.
+     * @param whichPage Whether to fetch next or previous set of data.
+     * @param maxPages Maximum number of pages to keep on the map. A page being the size of a single geosearch request.
+     * @param fromParam The offset from which the data will be fetched. It is to be used alternatively, if afterParam is not set.
+     * Otherwise, the priority is always to afterParam.
      */
     public getWindowModeData(wrapExtent, rawExtent, visibleSources: Set<string>, sort: string, keepOldData = true,
         afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?): void {
         if (!!visibleSources && visibleSources.size > 0) {
-            const countFilter: Filter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
+            let operation = Expression.OpEnum.Within;
+            let geometryField = this.collectionParameters.centroid_path;
+            /** If the windowExtentGeometry is geometry, then we fetch data whose geometry_path intersect the given rawExtent. */
+            if (this.windowExtentGeometry === ExtentFilterGeometry.geometry) {
+                operation = Expression.OpEnum.Intersects;
+                geometryField = this.collectionParameters.geometry_path;
+            }
+            const countFilter: Filter = this.getExtentFilter(rawExtent, wrapExtent, geometryField, operation);
             if (this.expressionFilter !== undefined) {
                 countFilter.f.push([this.expressionFilter]);
             }
@@ -2043,21 +2064,31 @@ export class MapContributor extends Contributor {
         };
     }
 
-    public getFilterForCount(rawExtent: string, wrappedExtent: string, countGeoField: string, ignoreCollab = false): Filter {
+    /**
+     * Returns an arlas filter that includes the expression: the geoOp operation will be performed between the geoField and the rawExtent.
+     * This filter will optionnaly contain the collaboration of this contributor.
+     * @param rawExtent The extent of the map.
+     * @param wrappedExtent Wrapped format of the rawExtent (wrapped to the range [-180, 180]).
+     * @param geoField The geometry field to use for the geoOp with rawExtent
+     * @param geoOp The geographical operation to perform (within, intersects, not_within, not_intersects)
+     * @param ignoreCollab Whether to ignore the collaboration of this contributor or to add it to the returned filter.
+     * @returns Arlas Filter
+     */
+    public getExtentFilter(rawExtent: string, wrappedExtent: string, geoField: string, geoOp: Expression.OpEnum, ignoreCollab = false): Filter {
         // west, south, east, north
         const finalExtends = getCanonicalExtents(rawExtent, wrappedExtent);
         let filter: Filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         const defaultQueryExpressions: Array<Expression> = [];
         defaultQueryExpressions.push({
-            field: countGeoField,
-            op: Expression.OpEnum.Within,
+            field: geoField,
+            op: geoOp,
             value: finalExtends[0]
         });
         if (finalExtends[1]) {
             defaultQueryExpressions.push({
-                field: countGeoField,
-                op: Expression.OpEnum.Within,
+                field: geoField,
+                op: geoOp,
                 value: finalExtends[1]
             });
         }
@@ -2148,6 +2179,20 @@ export class MapContributor extends Contributor {
             };
         }
         return filter;
+    }
+
+    /**
+     * This filter is used to count how many features are within the given extent using the geoField.
+     * Returns an arlas filter that includes the expression: the geoField is WITHIN the rawExtent.
+     * This filter will optionnaly contain the collaboration of this contributor.
+     * @param rawExtent The extent of the map.
+     * @param wrappedExtent Wrapped format of the rawExtent (wrapped to the range [-180, 180]).
+     * @param geoField The geometry field to use for the WITHIN operation with the rawExtent
+     * @param ignoreCollab Whether to ignore the collaboration of this contributor or to add it to the returned filter.
+     * @returns Arlas Filter
+     */
+    public getFilterForCount(rawExtent: string, wrappedExtent: string, countGeoField: string, ignoreCollab = false): Filter {
+        return this.getExtentFilter(rawExtent, wrappedExtent, countGeoField, Expression.OpEnum.Within, ignoreCollab);
     }
 
     public clearData(s: string) {

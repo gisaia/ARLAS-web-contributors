@@ -225,6 +225,15 @@ export enum FeatureRenderMode {
 
 }
 
+/** Geometry used as a filter to fetch features on a given extent
+ * If 'centroid', features whose centroid_path are within the extent are fetched
+ * if 'geometry', features whose geometry_path intersect the extent are fetched.
+ */
+export enum ExtentFilterGeometry {
+    centroid = 'centroid',
+    geometry = 'geometry'
+}
+
 export interface LayerSourceConfig {
     /** common config to all types */
     id: string;

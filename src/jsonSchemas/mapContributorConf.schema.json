@@ -175,6 +175,14 @@
                 }
             }
         },
+        "window_extent_geometry": {
+            "description": "Geometry used as a filter to fetch features on a given extent for Window rendering mode.",
+            "type": "string",
+            "enum": [
+                "centroid",
+                "geometry"
+            ]
+        },
         "geo_query_field": {
             "description": "Geometry field used for geo query",
             "type": "string"
