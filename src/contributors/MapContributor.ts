@@ -262,7 +262,7 @@ export class MapContributor extends Contributor {
         }
         this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
         this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
-        this.windowExtentGeometry = !!windoExtentGeometry ? windoExtentGeometry : ExtentFilterGeometry.centroid;
+        this.windowExtentGeometry = !!windoExtentGeometry ? windoExtentGeometry : ExtentFilterGeometry.centroid_path;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
         this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
         this.granularityClusterFunctions.set(Granularity.coarse, coarseGranularity);
@@ -442,15 +442,15 @@ export class MapContributor extends Contributor {
      * @param rawExtent The extent of the map. The data will be fetched using this extent.
      * @param visibleSources Set of visible source identifiers.
      * @param sort comma separated field names on which feature are sorted.
-     * @param keepOldData Whether to keep already fetched data or the clean them.
+     * @param keepOldData Whether to keep already fetched data or to clean them.
      * @param afterParam comma seperated field values from which next/previous data is fetched.
      * @param whichPage Whether to fetch next or previous set of data.
      * @param maxPages Maximum number of pages to keep on the map. A page being the size of a single geosearch request.
      * @param fromParam The offset from which the data will be fetched. It is to be used alternatively, if afterParam is not set.
      * Otherwise, the priority is always to afterParam.
      */
-    public getWindowModeData(wrapExtent, rawExtent, visibleSources: Set<string>, sort: string, keepOldData = true,
-        afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?): void {
+    public getWindowModeData(wrapExtent: string, rawExtent: string, visibleSources: Set<string>, sort: string, keepOldData = true,
+        afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?: number): void {
         if (!!visibleSources && visibleSources.size > 0) {
             let operation = Expression.OpEnum.Within;
             let geometryField = this.collectionParameters.centroid_path;
@@ -2069,8 +2069,8 @@ export class MapContributor extends Contributor {
      * This filter will optionnaly contain the collaboration of this contributor.
      * @param rawExtent The extent of the map.
      * @param wrappedExtent Wrapped format of the rawExtent (wrapped to the range [-180, 180]).
-     * @param geoField The geometry field to use for the geoOp with rawExtent
-     * @param geoOp The geographical operation to perform (within, intersects, not_within, not_intersects)
+     * @param geoField The geometry field to use for the geoOp with rawExtent.
+     * @param geoOp The geographical operation to perform.
      * @param ignoreCollab Whether to ignore the collaboration of this contributor or to add it to the returned filter.
      * @returns Arlas Filter
      */
