@@ -454,8 +454,8 @@ export class MapContributor extends Contributor {
         if (!!visibleSources && visibleSources.size > 0) {
             let operation = Expression.OpEnum.Within;
             let geometryField = this.collectionParameters.centroid_path;
-            /** If the windowExtentGeometry is geometry, then we fetch data whose geometry_path intersect the given rawExtent. */
-            if (this.windowExtentGeometry === ExtentFilterGeometry.geometry) {
+            /** If the windowExtentGeometry is geometry_path, then we fetch data whose geometry_path intersect the given rawExtent. */
+            if (this.windowExtentGeometry === ExtentFilterGeometry.geometry_path) {
                 operation = Expression.OpEnum.Intersects;
                 geometryField = this.collectionParameters.geometry_path;
             }
