@@ -91,26 +91,26 @@ export class MapContributor extends Contributor {
     public drawPrecision: number;
     public isFlat: boolean;
 
-    private CLUSTER_SOURCE = 'cluster';
-    private TOPOLOGY_SOURCE = 'feature-metric';
-    private FEATURE_SOURCE = 'feature';
+    private readonly CLUSTER_SOURCE = 'cluster';
+    private readonly TOPOLOGY_SOURCE = 'feature-metric';
+    private readonly FEATURE_SOURCE = 'feature';
 
-    private LAYERS_SOURCES_KEY = 'layers_sources';
-    private SIMPLE_MODE_ACCUMULATIVE_KEY = 'simple_mode_accumulative';
-    private GEO_QUERY_OP_KEY = 'geo_query_op';
-    private GEO_QUERY_FIELD_KEY = 'geo_query_field';
-    private SEARCH_SIZE_KEY = 'search_size';
-    private SEARCH_SORT_KEY = 'search_sort';
-    private DRAW_PRECISION_KEY = 'draw_precision';
-    private IS_FLAT_KEY = 'is_flat';
+    private readonly LAYERS_SOURCES_KEY = 'layers_sources';
+    private readonly SIMPLE_MODE_ACCUMULATIVE_KEY = 'simple_mode_accumulative';
+    private readonly GEO_QUERY_OP_KEY = 'geo_query_op';
+    private readonly GEO_QUERY_FIELD_KEY = 'geo_query_field';
+    private readonly SEARCH_SIZE_KEY = 'search_size';
+    private readonly SEARCH_SORT_KEY = 'search_sort';
+    private readonly DRAW_PRECISION_KEY = 'draw_precision';
+    private readonly IS_FLAT_KEY = 'is_flat';
 
 
-    private DEFAULT_SEARCH_SIZE = 100;
-    private DEFAULT_SEARCH_SORT = '';
-    private DEFAULT_DRAW_PRECISION = 6;
-    private DEFAULT_IS_FLAT = true;
+    private readonly DEFAULT_SEARCH_SIZE = 100;
+    private readonly DEFAULT_SEARCH_SORT = '';
+    private readonly DEFAULT_DRAW_PRECISION = 6;
+    private readonly DEFAULT_IS_FLAT = true;
 
-    private WINDOW_EXTENT_GEOMETRY = 'window_extent_geometry';
+    private readonly WINDOW_EXTENT_GEOMETRY = 'window_extent_geometry';
     public windowExtentGeometry: ExtentFilterGeometry;
 
     private clusterLayersIndex: Map<string, LayerClusterSource>;
@@ -247,22 +247,11 @@ export class MapContributor extends Contributor {
         } else {
             this.isSimpleModeAccumulative = true;
         }
-        if (geoQueryOpConfig !== undefined) {
-            if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Within.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Within;
-            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notwithin.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Notwithin;
-            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Intersects.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Intersects;
-            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notintersects.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Notintersects;
-            }
-        } else {
-            this.geoQueryOperation = Expression.OpEnum.Within;
-        }
+
+        this.initGeoQueryOperation(geoQueryOpConfig);
         this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
         this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
-        this.windowExtentGeometry = !!windoExtentGeometry ? windoExtentGeometry : ExtentFilterGeometry.centroid_path;
+        this.windowExtentGeometry = windoExtentGeometry !== undefined ? windoExtentGeometry : ExtentFilterGeometry.centroid_path;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
         this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
         this.granularityClusterFunctions.set(Granularity.coarse, coarseGranularity);
@@ -286,6 +275,26 @@ export class MapContributor extends Contributor {
                 this.geoQueryField = geoQueryFieldConfig !== undefined ? geoQueryFieldConfig : this.collectionParameters.centroid_path;
             }
             );
+    }
+
+    /**
+     * Inits the default geoquery operation to apply in this contributor collaborations.
+     * @param geoQueryOpConfig Configuration value of the geoquery.
+     */
+    private initGeoQueryOperation(geoQueryOpConfig: any): void {
+        if (geoQueryOpConfig !== undefined) {
+            if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Within.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Within;
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notwithin.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Notwithin;
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Intersects.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Intersects;
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notintersects.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Notintersects;
+            }
+        } else {
+            this.geoQueryOperation = Expression.OpEnum.Within;
+        }
     }
 
     public isUpdateEnabledOnOwnCollaboration() {
