@@ -232,7 +232,7 @@ export class MapContributor extends Contributor {
         const searchSortConfig = this.getConfigValue(this.SEARCH_SORT_KEY);
         const drawPrecisionConfig = this.getConfigValue(this.DRAW_PRECISION_KEY);
         const isFlatConfig = this.getConfigValue(this.IS_FLAT_KEY);
-        const windoExtentGeometry = this.getConfigValue(this.WINDOW_EXTENT_GEOMETRY);
+        const windowExtentGeometryConfig = this.getConfigValue(this.WINDOW_EXTENT_GEOMETRY);
         if (!colorGenerator) {
             this.colorGenerator = new ColorGeneratorLoader();
         }
@@ -247,11 +247,10 @@ export class MapContributor extends Contributor {
         } else {
             this.isSimpleModeAccumulative = true;
         }
-
         this.initGeoQueryOperation(geoQueryOpConfig);
         this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
         this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
-        this.windowExtentGeometry = windoExtentGeometry !== undefined ? windoExtentGeometry : ExtentFilterGeometry.centroid_path;
+        this.windowExtentGeometry = windowExtentGeometryConfig !== undefined ? windowExtentGeometryConfig : ExtentFilterGeometry.centroid_path;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
         this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
         this.granularityClusterFunctions.set(Granularity.coarse, coarseGranularity);
