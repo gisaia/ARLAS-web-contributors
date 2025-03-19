@@ -33,7 +33,8 @@ import {
 import {
     OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
     LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
-    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode, ItemDataType
+    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode, ItemDataType,
+    ExtentFilterGeometry
 } from '../models/models';
 import {
     appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
@@ -90,24 +91,27 @@ export class MapContributor extends Contributor {
     public drawPrecision: number;
     public isFlat: boolean;
 
-    private CLUSTER_SOURCE = 'cluster';
-    private TOPOLOGY_SOURCE = 'feature-metric';
-    private FEATURE_SOURCE = 'feature';
+    private readonly CLUSTER_SOURCE = 'cluster';
+    private readonly TOPOLOGY_SOURCE = 'feature-metric';
+    private readonly FEATURE_SOURCE = 'feature';
 
-    private LAYERS_SOURCES_KEY = 'layers_sources';
-    private SIMPLE_MODE_ACCUMULATIVE_KEY = 'simple_mode_accumulative';
-    private GEO_QUERY_OP_KEY = 'geo_query_op';
-    private GEO_QUERY_FIELD_KEY = 'geo_query_field';
-    private SEARCH_SIZE_KEY = 'search_size';
-    private SEARCH_SORT_KEY = 'search_sort';
-    private DRAW_PRECISION_KEY = 'draw_precision';
-    private IS_FLAT_KEY = 'is_flat';
+    private readonly LAYERS_SOURCES_KEY = 'layers_sources';
+    private readonly SIMPLE_MODE_ACCUMULATIVE_KEY = 'simple_mode_accumulative';
+    private readonly GEO_QUERY_OP_KEY = 'geo_query_op';
+    private readonly GEO_QUERY_FIELD_KEY = 'geo_query_field';
+    private readonly SEARCH_SIZE_KEY = 'search_size';
+    private readonly SEARCH_SORT_KEY = 'search_sort';
+    private readonly DRAW_PRECISION_KEY = 'draw_precision';
+    private readonly IS_FLAT_KEY = 'is_flat';
 
 
-    private DEFAULT_SEARCH_SIZE = 100;
-    private DEFAULT_SEARCH_SORT = '';
-    private DEFAULT_DRAW_PRECISION = 6;
-    private DEFAULT_IS_FLAT = true;
+    private readonly DEFAULT_SEARCH_SIZE = 100;
+    private readonly DEFAULT_SEARCH_SORT = '';
+    private readonly DEFAULT_DRAW_PRECISION = 6;
+    private readonly DEFAULT_IS_FLAT = true;
+
+    private readonly WINDOW_EXTENT_GEOMETRY = 'window_extent_geometry';
+    public windowExtentGeometry: ExtentFilterGeometry;
 
     private clusterLayersIndex: Map<string, LayerClusterSource>;
     private topologyLayersIndex: Map<string, LayerTopologySource>;
@@ -228,6 +232,7 @@ export class MapContributor extends Contributor {
         const searchSortConfig = this.getConfigValue(this.SEARCH_SORT_KEY);
         const drawPrecisionConfig = this.getConfigValue(this.DRAW_PRECISION_KEY);
         const isFlatConfig = this.getConfigValue(this.IS_FLAT_KEY);
+        const windowExtentGeometryConfig = this.getConfigValue(this.WINDOW_EXTENT_GEOMETRY);
         if (!colorGenerator) {
             this.colorGenerator = new ColorGeneratorLoader();
         }
@@ -242,21 +247,10 @@ export class MapContributor extends Contributor {
         } else {
             this.isSimpleModeAccumulative = true;
         }
-        if (geoQueryOpConfig !== undefined) {
-            if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Within.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Within;
-            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notwithin.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Notwithin;
-            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Intersects.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Intersects;
-            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notintersects.toString()) {
-                this.geoQueryOperation = Expression.OpEnum.Notintersects;
-            }
-        } else {
-            this.geoQueryOperation = Expression.OpEnum.Within;
-        }
+        this.initGeoQueryOperation(geoQueryOpConfig);
         this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
         this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
+        this.windowExtentGeometry = windowExtentGeometryConfig !== undefined ? windowExtentGeometryConfig : ExtentFilterGeometry.centroid_path;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
         this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
         this.granularityClusterFunctions.set(Granularity.coarse, coarseGranularity);
@@ -280,6 +274,26 @@ export class MapContributor extends Contributor {
                 this.geoQueryField = geoQueryFieldConfig !== undefined ? geoQueryFieldConfig : this.collectionParameters.centroid_path;
             }
             );
+    }
+
+    /**
+     * Inits the default geoquery operation to apply in this contributor collaborations.
+     * @param geoQueryOpConfig Configuration value of the geoquery.
+     */
+    private initGeoQueryOperation(geoQueryOpConfig: any): void {
+        if (geoQueryOpConfig !== undefined) {
+            if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Within.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Within;
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notwithin.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Notwithin;
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Intersects.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Intersects;
+            } else if (Expression.OpEnum[geoQueryOpConfig].toString() === Expression.OpEnum.Notintersects.toString()) {
+                this.geoQueryOperation = Expression.OpEnum.Notintersects;
+            }
+        } else {
+            this.geoQueryOperation = Expression.OpEnum.Within;
+        }
     }
 
     public isUpdateEnabledOnOwnCollaboration() {
@@ -428,17 +442,32 @@ export class MapContributor extends Contributor {
     }
 
     /**
-     * Fetches the data for the `Simple mode`
-     * @param includeFeaturesFields properties to include in geojson features
+     * Fetches the data for the Window-render-mode. The data will be fetched taking into account the current collaboration
+     * of this map contributor + the given extent. The windowExtentGeometry will defines the operation to apply between the
+     * given raw extent and the data geometry to use.
+     *
+     * @param wrapExtent Wrapped format of the rawExtent (wrapped to the range [-180, 180]).
+     * @param rawExtent The extent of the map. The data will be fetched using this extent.
+     * @param visibleSources Set of visible source identifiers.
      * @param sort comma separated field names on which feature are sorted.
-     * @param afterParam comma seperated field values from which next/previous data is fetched
-     * @param whichPage Whether to fetch next or previous set.
-     * @param fromParam (page.from in arlas api) an offset from which fetching hits starts. It's ignored if `afterParam` is set.
+     * @param keepOldData Whether to keep already fetched data or to clean them.
+     * @param afterParam comma seperated field values from which next/previous data is fetched.
+     * @param whichPage Whether to fetch next or previous set of data.
+     * @param maxPages Maximum number of pages to keep on the map. A page being the size of a single geosearch request.
+     * @param fromParam The offset from which the data will be fetched. It is to be used alternatively, if afterParam is not set.
+     * Otherwise, the priority is always to afterParam.
      */
-    public getWindowModeData(wrapExtent, rawExtent, visibleSources: Set<string>, sort: string, keepOldData = true,
-        afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?): void {
+    public getWindowModeData(wrapExtent: string, rawExtent: string, visibleSources: Set<string>, sort: string, keepOldData = true,
+        afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?: number): void {
         if (!!visibleSources && visibleSources.size > 0) {
-            const countFilter: Filter = this.getFilterForCount(rawExtent, wrapExtent, this.collectionParameters.centroid_path);
+            let operation = Expression.OpEnum.Within;
+            let geometryField = this.collectionParameters.centroid_path;
+            /** If the windowExtentGeometry is geometry_path, then we fetch data whose geometry_path intersect the given rawExtent. */
+            if (this.windowExtentGeometry === ExtentFilterGeometry.geometry_path) {
+                operation = Expression.OpEnum.Intersects;
+                geometryField = this.collectionParameters.geometry_path;
+            }
+            const countFilter: Filter = this.getExtentFilter(rawExtent, wrapExtent, geometryField, operation);
             if (this.expressionFilter !== undefined) {
                 countFilter.f.push([this.expressionFilter]);
             }
@@ -2043,21 +2072,31 @@ export class MapContributor extends Contributor {
         };
     }
 
-    public getFilterForCount(rawExtent: string, wrappedExtent: string, countGeoField: string, ignoreCollab = false): Filter {
+    /**
+     * Returns an arlas filter that includes the expression: the geoOp operation will be performed between the geoField and the rawExtent.
+     * This filter will optionnaly contain the collaboration of this contributor.
+     * @param rawExtent The extent of the map.
+     * @param wrappedExtent Wrapped format of the rawExtent (wrapped to the range [-180, 180]).
+     * @param geoField The geometry field to use for the geoOp with rawExtent.
+     * @param geoOp The geographical operation to perform.
+     * @param ignoreCollab Whether to ignore the collaboration of this contributor or to add it to the returned filter.
+     * @returns Arlas Filter
+     */
+    public getExtentFilter(rawExtent: string, wrappedExtent: string, geoField: string, geoOp: Expression.OpEnum, ignoreCollab = false): Filter {
         // west, south, east, north
         const finalExtends = getCanonicalExtents(rawExtent, wrappedExtent);
         let filter: Filter = {};
         const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
         const defaultQueryExpressions: Array<Expression> = [];
         defaultQueryExpressions.push({
-            field: countGeoField,
-            op: Expression.OpEnum.Within,
+            field: geoField,
+            op: geoOp,
             value: finalExtends[0]
         });
         if (finalExtends[1]) {
             defaultQueryExpressions.push({
-                field: countGeoField,
-                op: Expression.OpEnum.Within,
+                field: geoField,
+                op: geoOp,
                 value: finalExtends[1]
             });
         }
@@ -2148,6 +2187,20 @@ export class MapContributor extends Contributor {
             };
         }
         return filter;
+    }
+
+    /**
+     * This filter is used to count how many features are within the given extent using the geoField.
+     * Returns an arlas filter that includes the expression: the geoField is WITHIN the rawExtent.
+     * This filter will optionnaly contain the collaboration of this contributor.
+     * @param rawExtent The extent of the map.
+     * @param wrappedExtent Wrapped format of the rawExtent (wrapped to the range [-180, 180]).
+     * @param geoField The geometry field to use for the WITHIN operation with the rawExtent
+     * @param ignoreCollab Whether to ignore the collaboration of this contributor or to add it to the returned filter.
+     * @returns Arlas Filter
+     */
+    public getFilterForCount(rawExtent: string, wrappedExtent: string, countGeoField: string, ignoreCollab = false): Filter {
+        return this.getExtentFilter(rawExtent, wrappedExtent, countGeoField, Expression.OpEnum.Within, ignoreCollab);
     }
 
     public clearData(s: string) {

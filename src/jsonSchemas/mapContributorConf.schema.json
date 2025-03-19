@@ -175,6 +175,14 @@
                 }
             }
         },
+        "window_extent_geometry": {
+            "description": "The data geometry type used in the arlas filter to fetch features on a given extent for Window rendering mode.",
+            "type": "string",
+            "enum": [
+                "centroid_path",
+                "geometry_path"
+            ]
+        },
         "geo_query_field": {
             "description": "Geometry field used for geo query",
             "type": "string"

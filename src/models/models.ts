@@ -225,6 +225,15 @@ export enum FeatureRenderMode {
 
 }
 
+/** The data geometry type used in the arlas filter to fetch features on a given extent for Window rendering mode.
+ * If 'centroid_path', features whose centroid_path are within the extent are fetched
+ * if 'geometry_path', features whose geometry_path intersect the extent are fetched.
+ */
+export enum ExtentFilterGeometry {
+    centroid_path = 'centroid_path',
+    geometry_path = 'geometry_path'
+}
+
 export interface LayerSourceConfig {
     /** common config to all types */
     id: string;

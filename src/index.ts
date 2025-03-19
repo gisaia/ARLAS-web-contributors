@@ -39,7 +39,7 @@ export { DetailedHistogramContributor } from './contributors/DetailedHistogramCo
 export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
 export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpression, DateUnitEnum,
-    LayerSourceConfig, ColorConfig, MetricConfig } from './models/models';
+    LayerSourceConfig, ColorConfig, MetricConfig, ExtentFilterGeometry } from './models/models';
 export { getSourceName, processPassesAllowList, validProcess } from './utils/utils';
 export { FieldsConfiguration, ComputeConfig, Column, Detail } from './models/models';
 export { MetricsTableContributor } from './contributors/MetricsTableContributor';
