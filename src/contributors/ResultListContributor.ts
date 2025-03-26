@@ -43,12 +43,33 @@ import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
 import { parse } from 'wellknown';
 
 /**
+ * Possible operations on field values based on string or numerical fields
+ */
+export enum Operations {
+    Eq,
+    Gte,
+    Gt,
+    Lte,
+    Lt,
+    Like,
+    Ne,
+    Range
+}
+
+export interface ActionFilter {
+    field: string;
+    op: Operations;
+    value: string;
+}
+
+/**
 * Interface defined in Arlas-web-components
 */
 export interface DetailedDataRetriever {
     getData(identifier: string): Observable<AdditionalInfo>;
     getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
+    getMatch(identifier: string, filters: ActionFilter[]): Observable<boolean>;
 }
 
 /**
@@ -95,6 +116,30 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             /** flat */ true, this.contributor.cacheDuration);
 
         return searchResult.pipe(map(data => fields.map(f => data.hits[0].data[f.replace(/\./g, '_')])));
+    }
+
+    public getMatch(identifier: string, filters: ActionFilter[]): Observable<boolean> {
+        const search: Search = { page: { size: 1 } };
+        const expression: Expression = {
+            field: this.contributor.fieldsConfiguration.idFieldName,
+            op: Expression.OpEnum.Eq,
+            value: identifier
+        };
+        const filterExpression: Filter = {
+            f: [[expression]]
+        };
+        filters.forEach(f => filterExpression.f[0].push({
+            field: f.field,
+            op: Expression.OpEnum[f.op.toString()],
+            value: f.value
+        }));
+
+        const searchResult: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
+            projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
+            this.contributor.collection, this.contributor.identifier, filterExpression,
+            /** flat */ true, this.contributor.cacheDuration);
+
+        return searchResult.pipe(map(data => data.hits?.length !== 0));
     }
 
     public getActions(item: any): Observable<Array<Action>> {
