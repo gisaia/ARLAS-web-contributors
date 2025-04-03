@@ -17,8 +17,8 @@
  * under the License.
  */
 
+import { Aggregation, Filter, Metric, RawGeometry, Search } from 'arlas-api';
 import moment from 'moment';
-import { Metric, RawGeometry, Aggregation, Search, Filter } from 'arlas-api';
 
 /**
 * Enum of sorting value define in Arlas-web-components
@@ -39,6 +39,27 @@ export enum triggerType {
 export enum ClusterAggType {
     tile = 'tile', geohash = 'geohash', h3 = 'h3'
 }
+
+/**
+ * Possible operations on field values based on string or numerical fields
+ */
+export enum Operations {
+    Eq,
+    Gte,
+    Gt,
+    Lte,
+    Lt,
+    Like,
+    Ne,
+    Range
+}
+
+export interface ActionFilter {
+    field: string;
+    op: Operations;
+    value: string;
+}
+
 /**
  * Action trigger by a contributor through the app or another contributor.
  * - id of action.
@@ -60,6 +81,11 @@ export interface Action {
     /** If this attribute is set, it means that this action needs these fields values in order to be accomplished.
      * If those fields values don't exist for an item, then the action could not be completed and therefore should be hidden. */
     fields?: string[];
+    /** If this attribute is set, it means that this action needs for the conditions described to be true in order to be accomplished.
+   * If the conditions are not met, then the action could not be completed and therefore should be hidden. */
+    filters?: Array<Array<ActionFilter>>;
+    /** Indicates what array of filters has been matched based on the queries made */
+    matched?: Array<boolean>;
     /** Calculated attribute that tells if the action should be shown or not. */
     show?: boolean;
     /** For global actions, even if no item is selected, the action will be enabled */
