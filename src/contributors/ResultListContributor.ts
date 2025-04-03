@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, from } from 'rxjs';
+import { Observable, from, zip } from 'rxjs';
 import { filter, map, finalize } from 'rxjs/operators';
 
 import {
@@ -36,31 +36,11 @@ import {
 import {
     Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
     PageEnum, AdditionalInfo, Attachment, AttachmentConfig, ItemDataType,
-    ExportedColumn
+    ExportedColumn,
+    ActionFilter
 } from '../models/models';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
-import { parse } from 'wellknown';
-
-/**
- * Possible operations on field values based on string or numerical fields
- */
-export enum Operations {
-    Eq,
-    Gte,
-    Gt,
-    Lte,
-    Lt,
-    Like,
-    Ne,
-    Range
-}
-
-export interface ActionFilter {
-    field: string;
-    op: Operations;
-    value: string;
-}
 
 /**
 * Interface defined in Arlas-web-components
@@ -69,7 +49,7 @@ export interface DetailedDataRetriever {
     getData(identifier: string): Observable<AdditionalInfo>;
     getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
-    getMatch(identifier: string, filters: ActionFilter[]): Observable<boolean>;
+    getMatch(identifier: string, filters: ActionFilter[][]): Observable<Array<boolean>>;
 }
 
 /**
@@ -118,28 +98,32 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         return searchResult.pipe(map(data => fields.map(f => data.hits[0].data[f.replace(/\./g, '_')])));
     }
 
-    public getMatch(identifier: string, filters: ActionFilter[]): Observable<boolean> {
+    public getMatch(identifier: string, filters: ActionFilter[][]): Observable<Array<boolean>> {
         const search: Search = { page: { size: 1 } };
         const expression: Expression = {
             field: this.contributor.fieldsConfiguration.idFieldName,
             op: Expression.OpEnum.Eq,
             value: identifier
         };
-        const filterExpression: Filter = {
-            f: [[expression]]
-        };
-        filters.forEach(f => filterExpression.f[0].push({
-            field: f.field,
-            op: Expression.OpEnum[f.op.toString()],
-            value: f.value
-        }));
 
-        const searchResult: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
-            projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
-            this.contributor.collection, this.contributor.identifier, filterExpression,
-            /** flat */ true, this.contributor.cacheDuration);
+        // This makes a AND
+        return zip(filters.map(f => {
+            const filterExpression: Filter = {
+                f: [[expression]]
+            };
+            f.forEach(c => {
+                filterExpression.f.push([{
+                    field: c.field,
+                    op: Expression.OpEnum[c.op.toString()],
+                    value: c.value
+                }]);
+            });
 
-        return searchResult.pipe(map(data => data.hits?.length !== 0));
+            return this.contributor.collaborativeSearcheService.resolveHits([
+                projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
+                this.contributor.collection, this.contributor.identifier, filterExpression,
+                /** flat */ true, this.contributor.cacheDuration);
+        })).pipe(map(hits => hits.map(h => h.hits?.length !== 0)));
     }
 
     public getActions(item: any): Observable<Array<Action>> {
@@ -155,7 +139,8 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 activated: action.activated,
                 icon: action.icon,
                 show: action.show,
-                fields: action.fields
+                fields: action.fields,
+                filters: action.filters
             };
             const cssFields = action.cssClass;
             if (cssFields && item.itemData) {
