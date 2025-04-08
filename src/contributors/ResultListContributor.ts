@@ -42,6 +42,11 @@ import {
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
 
+export interface MatchInfo {
+    matched: Array<boolean>;
+    data: Map<string, ItemDataType>;
+}
+
 /**
 * Interface defined in Arlas-web-components
 */
@@ -49,7 +54,7 @@ export interface DetailedDataRetriever {
     getData(identifier: string): Observable<AdditionalInfo>;
     getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
-    getMatch(identifier: string, filters: ActionFilter[][]): Observable<Array<boolean>>;
+    getMatch(identifier: string, filters: ActionFilter[][]): Observable<MatchInfo>;
 }
 
 /**
@@ -98,7 +103,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         return searchResult.pipe(map(data => fields.map(f => data.hits[0].data[f.replace(/\./g, '_')])));
     }
 
-    public getMatch(identifier: string, filters: ActionFilter[][]): Observable<Array<boolean>> {
+    public getMatch(identifier: string, filters: ActionFilter[][]): Observable<MatchInfo> {
         const search: Search = { page: { size: 1 } };
         const expression: Expression = {
             field: this.contributor.fieldsConfiguration.idFieldName,
@@ -123,7 +128,10 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
                 this.contributor.collection, this.contributor.identifier, filterExpression,
                 /** flat */ true, this.contributor.cacheDuration);
-        })).pipe(map(hits => hits.map(h => h.hits?.length !== 0)));
+        })).pipe(map(hits => ({
+                matched: hits.map(h => h.hits?.length !== 0),
+                data: hits.find(h => h.hits?.length !== 0).hits[0].data
+            })));
     }
 
     public getActions(item: any): Observable<Array<Action>> {
