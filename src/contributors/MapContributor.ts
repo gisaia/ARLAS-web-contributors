@@ -954,7 +954,7 @@ export class MapContributor extends Contributor {
                     if (colorFields) {
                         colorFields.forEach(colorField => {
                             const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = this.getValueOrFirstArrayValueFromFeature(f, flattenColorField) || 'UNKOWN';
+                            feature.properties[flattenColorField] = this.getValueOrFirstArrayValueFromFeature(f, flattenColorField) ?? 'UNKOWN';
                             this.setColorFieldLegend(colorField, feature, fieldsToKeep);
                         });
                     }
@@ -963,11 +963,11 @@ export class MapContributor extends Contributor {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
                             feature.properties[flattenColorField] = feature.properties[flattenColorField]
-                                || this.colorGenerator.getColor('UNKNOWN');
+                                ?? this.colorGenerator.getColor('UNKNOWN');
                             if (pf.label && pf.label.length > 0) {
                                 const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
                                 feature.properties[flattenLabelField] = feature.properties[flattenLabelField]
-                                    || 'UNKNOWN';
+                                    ?? 'UNKNOWN';
                             }
                             this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
                         });
@@ -1081,7 +1081,7 @@ export class MapContributor extends Contributor {
                     if (colorFields) {
                         colorFields.forEach(colorField => {
                             const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] || 'UNKNOWN';
+                            feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] ?? 'UNKNOWN';
                             this.setColorFieldLegend(colorField, feature, fieldsToKeep);
                         });
                     }
@@ -1090,10 +1090,10 @@ export class MapContributor extends Contributor {
                         providedFields.forEach(pf => {
                             const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
                             feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField]
-                                || this.colorGenerator.getColor('UNKNOWN');
+                                ?? this.colorGenerator.getColor('UNKNOWN');
                             if (pf.label && pf.label.length > 0) {
                                 const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                                feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] || 'UNKNOWN';
+                                feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] ?? 'UNKNOWN';
                             }
                             /** set the key-to-color map to be displayed on the legend. */
                             this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
@@ -1366,7 +1366,7 @@ export class MapContributor extends Contributor {
                 if (colorFields) {
                     colorFields.forEach(colorField => {
                         const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] || 'UNKNOWN';
+                        feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] ?? 'UNKNOWN';
                     });
                 }
                 const providedFields = this.topologyLayersIndex.get(s).providedFields;
@@ -1374,10 +1374,10 @@ export class MapContributor extends Contributor {
                     providedFields.forEach(pf => {
                         const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
                         feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField]
-                            || this.colorGenerator.getColor('UNKNOWN');
+                            ?? this.colorGenerator.getColor('UNKNOWN');
                         if (pf.label && pf.label.length > 0) {
                             const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] || 'UNKNOWN';
+                            feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] ?? 'UNKNOWN';
                         }
                         /** set the key-to-color map to be displayed on the legend. */
                     });
@@ -1426,7 +1426,7 @@ export class MapContributor extends Contributor {
                 if (colorFields) {
                     colorFields.forEach(colorField => {
                         const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenColorField] = feature.properties[flattenColorField] || 'UNKOWN';
+                        feature.properties[flattenColorField] = feature.properties[flattenColorField] ?? 'UNKOWN';
                     });
                 }
                 const providedFields = this.featureLayerSourcesIndex.get(s).providedFields;
@@ -1434,11 +1434,11 @@ export class MapContributor extends Contributor {
                     providedFields.forEach(pf => {
                         const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
                         feature.properties[flattenColorField] = feature.properties[flattenColorField]
-                            || this.colorGenerator.getColor('UNKNOWN');
+                            ?? this.colorGenerator.getColor('UNKNOWN');
                         if (pf.label && pf.label.length > 0) {
                             const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
                             feature.properties[flattenLabelField] = feature.properties[flattenLabelField]
-                                || 'UNKNOWN';
+                                ?? 'UNKNOWN';
                         }
                     });
                 }
@@ -1968,7 +1968,7 @@ export class MapContributor extends Contributor {
                 case RenderStrategy.scroll:
                     if (maxPages !== undefined && maxPages !== null && whichPage !== undefined && whichPage !== null) {
                         sources.forEach(source => {
-                            const sourceData = this.featureDataPerSource.get(source) || [];
+                            const sourceData = this.featureDataPerSource.get(source) ?? [];
                             if (maxPages !== -1) {
                                 if (whichPage === PageEnum.next) {
                                     f.forEach(d => {
@@ -2243,9 +2243,9 @@ export class MapContributor extends Contributor {
         topologyLayer.geometryId = ls.geometry_id;
         topologyLayer.metrics = ls.metrics;
         topologyLayer.granularity = <any>ls.granularity;
-        topologyLayer.includeFields = new Set(ls.include_fields || []);
+        topologyLayer.includeFields = new Set(ls.include_fields ?? []);
         topologyLayer.providedFields = ls.provided_fields;
-        topologyLayer.colorFields = new Set(ls.colors_from_fields || []);
+        topologyLayer.colorFields = new Set(ls.colors_from_fields ?? []);
         topologyLayer.networkFetchingLevel = ls.network_fetching_level;
         if (topologyLayer.networkFetchingLevel === undefined) {
             topologyLayer.networkFetchingLevel = DEFAULT_FETCH_NETWORK_LEVEL;
@@ -2267,10 +2267,10 @@ export class MapContributor extends Contributor {
         featureLayerSource.sourceMaxFeatures = ls.maxfeatures;
         featureLayerSource.normalizationFields = ls.normalization_fields;
         featureLayerSource.shortFormLabels = ls.short_form_fields;
-        featureLayerSource.includeFields = new Set(ls.include_fields || []);
+        featureLayerSource.includeFields = new Set(ls.include_fields ?? []);
         featureLayerSource.returnedGeometry = ls.returned_geometry;
         featureLayerSource.providedFields = ls.provided_fields;
-        featureLayerSource.colorFields = new Set(ls.colors_from_fields || []);
+        featureLayerSource.colorFields = new Set(ls.colors_from_fields ?? []);
         return featureLayerSource;
     }
 
@@ -3757,7 +3757,7 @@ export class MapContributor extends Contributor {
      * @returns Either the value of the field, or the value of the first item of the list of values of the corresponding field
      */
     private getValueOrFirstArrayValueFromFeature(f: Feature, flattenedField: string) {
-        return f.properties[flattenedField] || f.properties[flattenedField + '_0'];
+        return f.properties[flattenedField] ?? f.properties[flattenedField + '_0'];
     }
 
     private getGeometriesForQuery(features: Array<helpers.Feature<helpers.Geometry>>) {
