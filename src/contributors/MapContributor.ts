@@ -3619,6 +3619,7 @@ export class MapContributor extends Contributor {
                 return {f: bboxPolygon([w, s, e, n]), str: box.trim().toLocaleLowerCase()};
             } else {
                 // Properly orientate features
+                // Internal polygons (rings) are not reversed as they are not supported
                 if (!isClockwise((<any>f.geometry).coordinates[0], 'Polygon')) {
                     const list = [];
                     (<any>f.geometry).coordinates[0]
