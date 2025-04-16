@@ -831,25 +831,8 @@ export class MapContributor extends Contributor {
         const geoFilter: Array<string> = new Array();
         fc = truncate(fc, { precision: this.drawPrecision });
         if (fc.features.length > 0) {
-            const bboxFeatures = fc.features.filter(f => f.properties.source === 'bbox');
-            if (bboxFeatures.length > 0) {
-                const bboxs: Array<string> = this.getBboxsForQuery(bboxFeatures);
-                bboxs.forEach(f => geoFilter.push(f));
-            }
-            const features = new Array<any>();
-            fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
-                if (isClockwise((<any>f.geometry).coordinates[0], 'Polygon')) {
-                    features.push(f);
-                } else {
-                    const list = [];
-                    (<any>f.geometry).coordinates[0]
-                        .forEach((c) => list.push(c));
-                    const reverseList = list.reverse();
-                    f.geometry.coordinates[0] = reverseList;
-                    features.push(f);
-                }
-            });
-            features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
+            this.getGeometriesForQuery(fc.features).forEach(f => geoFilter.push(f));
+
             switch (this.geoQueryOperation) {
                 case Expression.OpEnum.Notintersects:
                 case Expression.OpEnum.Notwithin:
@@ -3777,26 +3760,38 @@ export class MapContributor extends Contributor {
         return f.properties[flattenedField] || f.properties[flattenedField + '_0'];
     }
 
-    private getBboxsForQuery(newBbox: Array<helpers.Feature<helpers.Geometry>>) {
-        const bboxArray: Array<string> = [];
+    private getGeometriesForQuery(features: Array<helpers.Feature<helpers.Geometry>>) {
+        const geometries: Array<string> = [];
 
-        // Compute list of anti-meridian fixed bbox features and their string representation
-        const bboxFeatures = newBbox.map(bbox => {
-            const coord = bbox['geometry']['coordinates'][0];
-            const n = coord[1][1];
-            const w = this.wrap(coord[2][0], -180, 180);
-            const s = coord[0][1];
-            const e = this.wrap(coord[0][0], -180, 180);
-            const box = w + ',' + s + ',' + e + ',' + n;
-            return {f: bboxPolygon([w, s, e, n]), str: box};
+        const polygonFeatures = features.map(f => {
+            if (f.properties.source === 'bbox') {
+                // Compute list of anti-meridian fixed bbox features and their string representation
+                const coord = f.geometry.coordinates[0];
+                const n = coord[1][1];
+                const w = this.wrap(coord[2][0], -180, 180);
+                const s = coord[0][1];
+                const e = this.wrap(coord[0][0], -180, 180);
+                const box = w + ',' + s + ',' + e + ',' + n;
+                return {f: bboxPolygon([w, s, e, n]), str: box.trim().toLocaleLowerCase()};
+            } else {
+                // Properly orientate features
+                if (!isClockwise((<any>f.geometry).coordinates[0], 'Polygon')) {
+                    const list = [];
+                    (<any>f.geometry).coordinates[0]
+                        .forEach((c) => list.push(c));
+                    const reverseList = list.reverse();
+                    f.geometry.coordinates[0] = reverseList;
+                }
+                return {f, str: stringify(f.geometry)};
+            }
         });
 
-        // Find all the bbox that are not contained by another bbox
-        bboxFeatures.filter((bbox, idx) => bboxFeatures
-            .filter((bbox2, idx2) => idx !== idx2 && booleanContains(bbox2.f, bbox.f)).length === 0)
-            .forEach(bbox => bboxArray.push(bbox.str.trim().toLocaleLowerCase()));
+        // Find all the geometries that are not contained by another bbox
+        polygonFeatures.filter((f, idx) => polygonFeatures
+            .filter((f2, idx2) => idx !== idx2 && booleanContains(f2.f, f.f)).length === 0)
+            .forEach(f => geometries.push(f.str));
 
-        return bboxArray;
+        return geometries;
     }
 
     private intToString(value: number): string {
