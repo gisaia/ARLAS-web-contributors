@@ -17,46 +17,37 @@
  * under the License.
  */
 
-import { Observable, Subject, from, of } from 'rxjs';
-import { map, finalize, mergeAll, tap, takeUntil } from 'rxjs/operators';
-
-import {
-    CollaborativesearchService, Contributor,
-    ConfigService, Collaboration,
-    projType, GeohashAggregation, TiledSearch, CollaborationEvent, GeoTileAggregation
-} from 'arlas-web-core';
-import {
-    Search, Expression, Hits, CollectionReferenceParameters,
-    Aggregation, Filter, FeatureCollection, Feature, Metric,
-    ComputationRequest, ComputationResponse
-} from 'arlas-api';
-import {
-    OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
-    LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
-    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode, ItemDataType,
-    ExtentFilterGeometry
-} from '../models/models';
-import {
-    appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
-    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity,
-    mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity, networkFetchingLevelGranularity
-} from '../utils/utils';
-import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
-
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import {
-    getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString,
-    getCanonicalExtents,
-    fix180thMeridian
-} from './../utils/mapUtils';
-
 import * as helpers from '@turf/helpers';
-import { stringify, parse } from 'wellknown';
-import moment from 'moment';
-import { stringToExtent, numToString } from '../utils/mapUtils';
-import { notInfinity, download } from '../utils/utils';
+import {
+    Aggregation, CollectionReferenceParameters, ComputationRequest, ComputationResponse,
+    Expression, Feature, FeatureCollection, Filter, Hits, Metric, Search
+} from 'arlas-api';
+import {
+    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService,
+    Contributor, GeoTileAggregation, GeohashAggregation, TiledSearch, projType
+} from 'arlas-web-core';
 import * as FileSaver from 'file-saver';
+import moment from 'moment';
+import { Observable, Subject, from, of } from 'rxjs';
+import { finalize, map, mergeAll, takeUntil, tap } from 'rxjs/operators';
+import { parse, stringify } from 'wellknown';
+import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
+import {
+    ClusterAggType, ColorConfig, ElementIdentifier, ExtentFilterGeometry, FeatureRenderMode,
+    FeaturesNormalization, Granularity, ItemDataType, LayerClusterSource, LayerFeatureSource,
+    LayerSourceConfig, LayerTopologySource, MetricConfig, OnMoveResult, PageEnum, SourcesAgg, SourcesSearch
+} from '../models/models';
+import { numToString, stringToExtent } from '../utils/mapUtils';
+import {
+    ASC, ColorGeneratorLoader, appendIdToSort, coarseGranularity, coarseTopoGranularity, fineGranularity,
+    fineTopoGranularity, finestGranularity, finestTopoGranularity, mediumGranularity, mediumTopoGranularity,
+    networkFetchingLevelGranularity, notInfinity, removePageFromIndex, rgbToHex
+} from '../utils/utils';
+import {
+    extentToGeohashes, extentToString, fix180thMeridian, getBounds, getCanonicalExtents, isClockwise, stringToTile, tileToString, truncate, xyz
+} from './../utils/mapUtils';
 
 export enum DataMode {
     simple,
@@ -159,7 +150,7 @@ export class MapContributor extends Contributor {
       * the agg changes. */
     private abortControllers: Map<string, AbortController> = new Map();
 
-    public geojsondraw: { type: string; features: Array<any>; } = {
+    public geojsondraw: { type: string; features: Array<helpers.Feature<helpers.Geometry>>; } = {
         'type': 'FeatureCollection',
         'features': []
     };
@@ -700,12 +691,12 @@ export class MapContributor extends Contributor {
     public setDrawings(collaboration: Collaboration): void {
         if (collaboration !== null) {
             let filter: Filter;
-            if (collaboration.filters && collaboration.filters.get(this.collection)) {
+            if (collaboration.filters?.get(this.collection)) {
                 filter = collaboration.filters.get(this.collection)[0];
             }
             const polygonGeojsons = [];
             const aois: string[] = [];
-            if (filter && filter.f) {
+            if (filter?.f) {
                 const operation = filter.f[0][0].op;
                 const field = filter.f[0][0].field;
                 this.setGeoQueryField(field);
@@ -718,7 +709,7 @@ export class MapContributor extends Contributor {
                     });
                 });
             }
-            if (aois && aois.length > 0) {
+            if (aois.length > 0) {
                 let index = 1;
                 aois.forEach(aoi => {
                     if (aoi.indexOf('POLYGON') < 0) {
@@ -833,29 +824,28 @@ export class MapContributor extends Contributor {
 
     /**
      * Runs when a geometry (bbox, polygon, ...) is drawn, removed or changed
-     * @beta This method is being tested. It will replace `onChangeBbox` and `onRemoveBbox`
      * @param fc FeatureCollection object
      */
-    public onChangeAoi(fc: helpers.FeatureCollection) {
+    public onChangeAoi(fc: helpers.FeatureCollection<helpers.Geometry>) {
         let filters: Filter;
         const geoFilter: Array<string> = new Array();
         fc = truncate(fc, { precision: this.drawPrecision });
         if (fc.features.length > 0) {
-            if (fc.features.filter(f => f.properties.source === 'bbox').length > 0) {
-                const bboxs: Array<string> = this.getBboxsForQuery(fc.features
-                    .filter(f => f.properties.source === 'bbox'));
+            const bboxFeatures = fc.features.filter(f => f.properties.source === 'bbox');
+            if (bboxFeatures.length > 0) {
+                const bboxs: Array<string> = this.getBboxsForQuery(bboxFeatures);
                 bboxs.forEach(f => geoFilter.push(f));
             }
             const features = new Array<any>();
             fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
-                if (isClockwise((<any>(f.geometry)).coordinates[0], 'Polygon')) {
+                if (isClockwise((<any>f.geometry).coordinates[0], 'Polygon')) {
                     features.push(f);
                 } else {
                     const list = [];
-                    (<any>(f.geometry)).coordinates[0]
+                    (<any>f.geometry).coordinates[0]
                         .forEach((c) => list.push(c));
                     const reverseList = list.reverse();
-                    (<any>(f.geometry)).coordinates[0] = reverseList;
+                    f.geometry.coordinates[0] = reverseList;
                     features.push(f);
                 }
             });
@@ -3787,33 +3777,25 @@ export class MapContributor extends Contributor {
         return f.properties[flattenedField] || f.properties[flattenedField + '_0'];
     }
 
-    private getBboxsForQuery(newBbox: Array<Object>) {
+    private getBboxsForQuery(newBbox: Array<helpers.Feature<helpers.Geometry>>) {
         const bboxArray: Array<string> = [];
-        const numberOfBbox = newBbox.length;
-        const lastBbox = newBbox[numberOfBbox - 1];
-        const lastCoord = lastBbox['geometry']['coordinates'][0];
-        const north = lastCoord[1][1];
-        const west = this.wrap(lastCoord[2][0], -180, 180);
-        const south = lastCoord[0][1];
-        const east = this.wrap(lastCoord[0][0], -180, 180);
-        const lastBboxWSEN = west + ',' + south + ',' + east + ',' + north;
-        const lastBboxFeature = bboxPolygon([west, south, east, north]);
-        for (let i = 0; i < numberOfBbox - 1; i++) {
-            const v = newBbox[i];
-            const coord = v['geometry']['coordinates'][0];
+
+        // Compute list of anti-meridian fixed bbox features and their string representation
+        const bboxFeatures = newBbox.map(bbox => {
+            const coord = bbox['geometry']['coordinates'][0];
             const n = coord[1][1];
             const w = this.wrap(coord[2][0], -180, 180);
             const s = coord[0][1];
             const e = this.wrap(coord[0][0], -180, 180);
             const box = w + ',' + s + ',' + e + ',' + n;
-            const bboxFeature = bboxPolygon([w, s, e, n]);
-            const isbboxInclude = booleanContains(lastBboxFeature, bboxFeature);
-            const isLastBboxInclude = booleanContains(bboxFeature, lastBboxFeature);
-            if (!isbboxInclude && !isLastBboxInclude) {
-                bboxArray.push(box.trim().toLocaleLowerCase());
-            }
-        }
-        bboxArray.push(lastBboxWSEN.trim().toLocaleLowerCase());
+            return {f: bboxPolygon([w, s, e, n]), str: box};
+        });
+
+        // Find all the bbox that are not contained by another bbox
+        bboxFeatures.filter((bbox, idx) => bboxFeatures
+            .filter((bbox2, idx2) => idx !== idx2 && booleanContains(bbox2.f, bbox.f)).length === 0)
+            .forEach(bbox => bboxArray.push(bbox.str.trim().toLocaleLowerCase()));
+
         return bboxArray;
     }
 
