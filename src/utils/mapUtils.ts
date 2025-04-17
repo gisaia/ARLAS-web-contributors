@@ -50,14 +50,14 @@ export function getBounds(
                 const geojsonData = getElementFromJsonObject(h.hits[0].md, 'geometry');
                 switch (geojsonData.type) {
                     case 'LineString':
-                        geojsonData.coordinates = fix180thMeridian(geojsonData.coordinates);
+                        geojsonData.coordinates = fix180thMeridian(geojsonData.coordinates, 'LineString');
                         break;
                     case 'Polygon':
-                        geojsonData.coordinates[0] = fix180thMeridian(geojsonData.coordinates[0]);
+                        geojsonData.coordinates[0] = fix180thMeridian(geojsonData.coordinates[0], 'Polygon');
                         break;
                     case 'MultiPolygon':
                         geojsonData.coordinates.forEach(c => {
-                            c[0] = fix180thMeridian(c[0]);
+                            c[0] = fix180thMeridian(c[0], 'Polygon');
                         });
                         break;
                 }
@@ -258,14 +258,12 @@ export function truncateCoords(coords, factor, coordinates) {
 }
 
 
-export function isClockwise(poly) {
-    let sum = 0;
-    for (let i = 0; i < poly.length - 1; i++) {
-        const cur = poly[i];
-        const next = poly[i + 1];
-        sum += (next[0] - cur[0]) * (next[1] + cur[1]);
+export function isClockwise(coordinates: Array<Array<number>>, type: 'Polygon' | 'LineString') {
+    if (type === 'LineString') {
+        return linestringMeridian(coordinates);
+    } else {
+        return polygonArea(coordinates) < 0;
     }
-    return sum > 0;
 }
 
 /**
@@ -369,24 +367,32 @@ export function formatNumber(x, formatChar = ' ', roundPrecision?: number): stri
  * by allowing data's longitude to be outside of [-180, 180]
  * @param coordinates Coordinates of a geometry (Polygon or Linestring)
  */
-export function fix180thMeridian(coordinates: Array<Array<number>>) {
-    const isClockwise = polygonArea(coordinates) < 0;
-    if (isClockwise) {
-        coordinates.forEach((point, idx) => {
-            if (idx <= coordinates.length - 2) {
-                if (point[0] - coordinates[idx + 1][0] > 180) {
-                    coordinates[idx + 1][0] += 360;
-                } else if (coordinates[idx + 1][0] - point[0] > 180) {
-                    coordinates[idx + 1][0] += -360;
-                }
-            }
-        });
+export function fix180thMeridian(coordinates: Array<Array<number>>, type: 'Polygon' | 'LineString') {
+    if (isClockwise(coordinates, type)) {
+      coordinates.forEach((point, idx) => {
+        if (idx <= coordinates.length - 2) {
+          if (point[0] - coordinates[idx + 1][0] > 180) {
+            coordinates[idx + 1][0] += 360;
+          } else if (coordinates[idx + 1][0] - point[0] > 180) {
+            coordinates[idx + 1][0] += -360;
+          }
+        }
+      });
     }
     return coordinates;
 }
 
+export function linestringMeridian(coordinates: Array<Array<number>>) {
+    let sum = 0;
+    for (let i = 0; i < coordinates.length; i++) {
+      const p1 = coordinates[i];
+      const p2 = coordinates[(i + 1) % coordinates.length];
+      sum += (p2[0] - p1[0]) * (p2[1] + p1[1]);
+    }
+    return sum < 0;
+  }
 
-function polygonArea(coordinates) {
+export function polygonArea(coordinates: Array<Array<number>>) {
     let area = 0;
     for (let i = 0; i < coordinates.length; i++) {
         const j = (i + 1) % coordinates.length;

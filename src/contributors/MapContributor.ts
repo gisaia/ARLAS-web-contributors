@@ -848,7 +848,7 @@ export class MapContributor extends Contributor {
             }
             const features = new Array<any>();
             fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
-                if (isClockwise((<any>(f.geometry)).coordinates[0])) {
+                if (isClockwise((<any>(f.geometry)).coordinates[0], 'Polygon')) {
                     features.push(f);
                 } else {
                     const list = [];
@@ -1040,14 +1040,14 @@ export class MapContributor extends Contributor {
     private fix180thMeridianGeom(feature: Feature) {
         switch ((feature.geometry as any).type) {
             case 'LineString':
-                (feature.geometry as any).coordinates = fix180thMeridian((feature.geometry as any).coordinates);
+                (feature.geometry as any).coordinates = fix180thMeridian((feature.geometry as any).coordinates, 'LineString');
                 break;
             case 'Polygon':
-                (feature.geometry as any).coordinates[0] = fix180thMeridian((feature.geometry as any).coordinates[0]);
+                (feature.geometry as any).coordinates[0] = fix180thMeridian((feature.geometry as any).coordinates[0], 'Polygon');
                 break;
             case 'MultiPolygon':
                 (feature.geometry as any).coordinates.forEach(c => {
-                    c[0] = fix180thMeridian(c[0]);
+                    c[0] = fix180thMeridian(c[0], 'Polygon');
                 });
                 break;
         }
