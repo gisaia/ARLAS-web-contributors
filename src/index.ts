@@ -41,6 +41,7 @@ export { ComputeContributor } from './contributors/ComputeContributor';
 export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpression, DateUnitEnum,
     LayerSourceConfig, ColorConfig, MetricConfig, ExtentFilterGeometry } from './models/models';
 export { getSourceName, processPassesAllowList, validProcess } from './utils/utils';
+export { fix180thMeridian, isClockwise } from './utils/mapUtils';
 export { FieldsConfiguration, ComputeConfig, Column, Detail } from './models/models';
 export { MetricsTableContributor } from './contributors/MetricsTableContributor';
 export { MetricsTable, MetricsTableCell,
