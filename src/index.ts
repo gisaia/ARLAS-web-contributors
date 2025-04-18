@@ -34,7 +34,7 @@ export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
-export { DEFAULT_FETCH_NETWORK_LEVEL, MapContributor } from './contributors/MapContributor';
+export { DEFAULT_FETCH_NETWORK_LEVEL, LegendData, MapContributor } from './contributors/MapContributor';
 export { MetricsTableContributor } from './contributors/MetricsTableContributor';
 export { MatchInfo, ResultListContributor } from './contributors/ResultListContributor';
 export { SearchContributor } from './contributors/SearchContributor';
@@ -44,11 +44,11 @@ export {
     MetricsTable, MetricsTableCell, MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig
 } from './models/metrics-table.config';
 export {
-    Action, ColorConfig, Column, ComputeConfig, DateExpression, DateUnitEnum, Detail, ElementIdentifier,
+    Action, ActionFilter, ColorConfig, Column, ComputeConfig, DateExpression, DateUnitEnum, Detail, ElementIdentifier,
     ExtentFilterGeometry, FeatureRenderMode, FieldsConfiguration, LayerSourceConfig, MetricConfig, triggerType
 } from './models/models';
 export { fix180thMeridian, isClockwise } from './utils/mapUtils';
-export { getSourceName, processPassesAllowList, validProcess } from './utils/utils';
+export { getElementFromJsonObject, getSourceName, processPassesAllowList, validProcess } from './utils/utils';
 
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);
