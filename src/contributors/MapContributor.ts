@@ -17,46 +17,37 @@
  * under the License.
  */
 
-import { Observable, Subject, from, of } from 'rxjs';
-import { map, finalize, mergeAll, tap, takeUntil } from 'rxjs/operators';
-
-import {
-    CollaborativesearchService, Contributor,
-    ConfigService, Collaboration,
-    projType, GeohashAggregation, TiledSearch, CollaborationEvent, GeoTileAggregation
-} from 'arlas-web-core';
-import {
-    Search, Expression, Hits, CollectionReferenceParameters,
-    Aggregation, Filter, FeatureCollection, Feature, Metric,
-    ComputationRequest, ComputationResponse
-} from 'arlas-api';
-import {
-    OnMoveResult, ElementIdentifier, PageEnum, FeaturesNormalization,
-    LayerClusterSource, LayerTopologySource, LayerFeatureSource, Granularity,
-    SourcesAgg, MetricConfig, SourcesSearch, LayerSourceConfig, ColorConfig, ClusterAggType, FeatureRenderMode, ItemDataType,
-    ExtentFilterGeometry
-} from '../models/models';
-import {
-    appendIdToSort, ASC, fineGranularity, coarseGranularity, finestGranularity,
-    removePageFromIndex, ColorGeneratorLoader, rgbToHex, mediumGranularity, coarseTopoGranularity,
-    mediumTopoGranularity, fineTopoGranularity, finestTopoGranularity, networkFetchingLevelGranularity
-} from '../utils/utils';
-import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
-
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import {
-    getBounds, truncate, isClockwise, tileToString, stringToTile, xyz, extentToGeohashes, extentToString,
-    getCanonicalExtents,
-    fix180thMeridian
-} from './../utils/mapUtils';
-
 import * as helpers from '@turf/helpers';
-import { stringify, parse } from 'wellknown';
-import moment from 'moment';
-import { stringToExtent, numToString } from '../utils/mapUtils';
-import { notInfinity, download } from '../utils/utils';
+import {
+    Aggregation, CollectionReferenceParameters, ComputationRequest, ComputationResponse,
+    Expression, Feature, FeatureCollection, Filter, Hits, Metric, Search
+} from 'arlas-api';
+import {
+    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService,
+    Contributor, GeoTileAggregation, GeohashAggregation, TiledSearch, projType
+} from 'arlas-web-core';
 import * as FileSaver from 'file-saver';
+import moment from 'moment';
+import { Observable, Subject, from, of } from 'rxjs';
+import { finalize, map, mergeAll, takeUntil, tap } from 'rxjs/operators';
+import { parse, stringify } from 'wellknown';
+import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
+import {
+    ClusterAggType, ColorConfig, ElementIdentifier, ExtentFilterGeometry, FeatureRenderMode,
+    FeaturesNormalization, Granularity, ItemDataType, LayerClusterSource, LayerFeatureSource,
+    LayerSourceConfig, LayerTopologySource, MetricConfig, OnMoveResult, PageEnum, SourcesAgg, SourcesSearch
+} from '../models/models';
+import { numToString, stringToExtent } from '../utils/mapUtils';
+import {
+    ASC, ColorGeneratorLoader, appendIdToSort, coarseGranularity, coarseTopoGranularity, fineGranularity,
+    fineTopoGranularity, finestGranularity, finestTopoGranularity, mediumGranularity, mediumTopoGranularity,
+    networkFetchingLevelGranularity, notInfinity, removePageFromIndex, rgbToHex
+} from '../utils/utils';
+import {
+    extentToGeohashes, extentToString, fix180thMeridian, getBounds, getCanonicalExtents, isClockwise, stringToTile, tileToString, truncate, xyz
+} from './../utils/mapUtils';
 
 export enum DataMode {
     simple,
@@ -159,7 +150,7 @@ export class MapContributor extends Contributor {
       * the agg changes. */
     private abortControllers: Map<string, AbortController> = new Map();
 
-    public geojsondraw: { type: string; features: Array<any>; } = {
+    public geojsondraw: { type: string; features: Array<helpers.Feature<helpers.Geometry>>; } = {
         'type': 'FeatureCollection',
         'features': []
     };
@@ -700,12 +691,12 @@ export class MapContributor extends Contributor {
     public setDrawings(collaboration: Collaboration): void {
         if (collaboration !== null) {
             let filter: Filter;
-            if (collaboration.filters && collaboration.filters.get(this.collection)) {
+            if (collaboration.filters?.get(this.collection)) {
                 filter = collaboration.filters.get(this.collection)[0];
             }
             const polygonGeojsons = [];
             const aois: string[] = [];
-            if (filter && filter.f) {
+            if (filter?.f) {
                 const operation = filter.f[0][0].op;
                 const field = filter.f[0][0].field;
                 this.setGeoQueryField(field);
@@ -718,7 +709,7 @@ export class MapContributor extends Contributor {
                     });
                 });
             }
-            if (aois && aois.length > 0) {
+            if (aois.length > 0) {
                 let index = 1;
                 aois.forEach(aoi => {
                     if (aoi.indexOf('POLYGON') < 0) {
@@ -833,33 +824,15 @@ export class MapContributor extends Contributor {
 
     /**
      * Runs when a geometry (bbox, polygon, ...) is drawn, removed or changed
-     * @beta This method is being tested. It will replace `onChangeBbox` and `onRemoveBbox`
      * @param fc FeatureCollection object
      */
-    public onChangeAoi(fc: helpers.FeatureCollection) {
+    public onChangeAoi(fc: helpers.FeatureCollection<helpers.Geometry>) {
         let filters: Filter;
         const geoFilter: Array<string> = new Array();
         fc = truncate(fc, { precision: this.drawPrecision });
         if (fc.features.length > 0) {
-            if (fc.features.filter(f => f.properties.source === 'bbox').length > 0) {
-                const bboxs: Array<string> = this.getBboxsForQuery(fc.features
-                    .filter(f => f.properties.source === 'bbox'));
-                bboxs.forEach(f => geoFilter.push(f));
-            }
-            const features = new Array<any>();
-            fc.features.filter(f => f.properties.source !== 'bbox').forEach(f => {
-                if (isClockwise((<any>(f.geometry)).coordinates[0], 'Polygon')) {
-                    features.push(f);
-                } else {
-                    const list = [];
-                    (<any>(f.geometry)).coordinates[0]
-                        .forEach((c) => list.push(c));
-                    const reverseList = list.reverse();
-                    (<any>(f.geometry)).coordinates[0] = reverseList;
-                    features.push(f);
-                }
-            });
-            features.map(f => stringify(f.geometry)).forEach(wkt => geoFilter.push(wkt));
+            this.getGeometriesForQuery(fc.features).forEach(f => geoFilter.push(f));
+
             switch (this.geoQueryOperation) {
                 case Expression.OpEnum.Notintersects:
                 case Expression.OpEnum.Notwithin:
@@ -968,58 +941,17 @@ export class MapContributor extends Contributor {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
+
                     const normalizations = this.searchNormalizations.get(s);
                     if (normalizations) {
                         normalizations.forEach(n => this.normalize(feature, n));
                     }
-                    // Loop through all the feature to transform string date to number date to interpolate colot ticket #410
-                    Object.keys(feature.properties).forEach(k => {
-                        feature.properties[k] = this.getValueFromFeature(feature, k.replace(/\_/g, '.'), k);
-                    });
-                    const colorFields = this.featureLayerSourcesIndex.get(s).colorFields;
-                    const fieldsToKeep = new Set<string>();
-                    if (colorFields) {
-                        colorFields.forEach(colorField => {
-                            const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = this.getValueOrFirstArrayValueFromFeature(f, flattenColorField) || 'UNKOWN';
-                            this.setColorFieldLegend(colorField, feature, fieldsToKeep);
-                        });
-                    }
-                    const providedFields = this.featureLayerSourcesIndex.get(s).providedFields;
-                    if (providedFields) {
-                        providedFields.forEach(pf => {
-                            const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = feature.properties[flattenColorField]
-                                || this.colorGenerator.getColor('UNKNOWN');
-                            if (pf.label && pf.label.length > 0) {
-                                const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                                feature.properties[flattenLabelField] = feature.properties[flattenLabelField]
-                                    || 'UNKNOWN';
-                            }
-                            this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
-                        });
-                    }
-                    const shortFormatLabels = this.featureLayerSourcesIndex.get(s).shortFormLabels;
-                    if (shortFormatLabels) {
-                        shortFormatLabels.forEach(sfl => {
-                            const flattenShortField = sfl.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenShortField + SHORT_VALUE] = numToString(+feature.properties[flattenShortField]);
-                        });
-                    }
 
-                    // For manual color fields that are lists, the key in properties is {field}_0
-                    const includedFields = this.featureLayerSourcesIndex.get(s).includeFields;
-                    if (includedFields) {
-                        includedFields.forEach(f => {
-                            const flattenedIncludedField = f.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenedIncludedField] =
-                                this.getValueOrFirstArrayValueFromFeature(feature, flattenedIncludedField);
-                        });
-                    }
-
+                    this.processSearchFeature(s, feature, true);
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
                     delete feature.properties.md;
+
                     const metricsKeys = this.searchSourcesMetrics.get(s);
                     const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
                         this.collectionParameters.id_path;
@@ -1102,53 +1034,9 @@ export class MapContributor extends Contributor {
                     const properties = Object.assign({}, f.properties);
                     const feature = Object.assign({}, f);
                     feature.properties = properties;
-                    const fieldsToKeep = new Set<string>();
-                    /** set the key-to-color map to be displayed on the legend. */
-                    const colorFields = this.topologyLayersIndex.get(s).colorFields;
-                    if (colorFields) {
-                        colorFields.forEach(colorField => {
-                            const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] || 'UNKNOWN';
-                            this.setColorFieldLegend(colorField, feature, fieldsToKeep);
-                        });
-                    }
-                    const providedFields = this.topologyLayersIndex.get(s).providedFields;
-                    if (providedFields) {
-                        providedFields.forEach(pf => {
-                            const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField]
-                                || this.colorGenerator.getColor('UNKNOWN');
-                            if (pf.label && pf.label.length > 0) {
-                                const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                                feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] || 'UNKNOWN';
-                            }
-                            /** set the key-to-color map to be displayed on the legend. */
-                            this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
-                        });
-                    }
-                    const includeFields = this.topologyLayersIndex.get(s).includeFields;
-                    if (includeFields) {
-                        includeFields.forEach(includeField => {
-                            const flattenField = includeField.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
-                            fieldsToKeep.add(flattenField);
-                        });
-                    }
-                    const fetchHits = this.topologyLayersIndex.get(s).fetchedHits;
-                    if (fetchHits) {
-                        fetchHits.fields.forEach(field => {
-                            const flattenField = field.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
-                            fieldsToKeep.add(flattenField);
-                        });
-                        if (fetchHits.short_form_fields) {
-                            fetchHits.short_form_fields.forEach(field => {
-                                const flattenField = field.replace(/\./g, this.FLAT_CHAR);
-                                feature.properties[flattenField + SHORT_VALUE] = numToString(+feature.properties[flattenField]);
-                                fieldsToKeep.add(flattenField + SHORT_VALUE);
-                            });
-                        }
-                    }
+
+                    const fieldsToKeep = this.processTopologyFeature(s, feature, true);
+
                     this.fix180thMeridianGeom(feature);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
                     this.normalizeAvgForTopology(s, feature);
@@ -1388,48 +1276,8 @@ export class MapContributor extends Contributor {
                 const properties = Object.assign({}, f.properties);
                 const feature = Object.assign({}, f);
                 feature.properties = properties;
-                /** set the key-to-color map to be displayed on the legend. */
-                const colorFields = this.topologyLayersIndex.get(s).colorFields;
-                if (colorFields) {
-                    colorFields.forEach(colorField => {
-                        const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] || 'UNKNOWN';
-                    });
-                }
-                const providedFields = this.topologyLayersIndex.get(s).providedFields;
-                if (providedFields) {
-                    providedFields.forEach(pf => {
-                        const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField]
-                            || this.colorGenerator.getColor('UNKNOWN');
-                        if (pf.label && pf.label.length > 0) {
-                            const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] || 'UNKNOWN';
-                        }
-                        /** set the key-to-color map to be displayed on the legend. */
-                    });
-                }
-                const includeFields = this.topologyLayersIndex.get(s).includeFields;
-                if (includeFields) {
-                    includeFields.forEach(includeField => {
-                        const flattenField = includeField.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
-                    });
-                }
-                const fetchHits = this.topologyLayersIndex.get(s).fetchedHits;
-                if (fetchHits) {
-                    fetchHits.fields.forEach(field => {
-                        const flattenField = field.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
-                    });
-                    if (fetchHits.short_form_fields) {
-                        fetchHits.short_form_fields.forEach(field => {
-                            const flattenField = field.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenField + SHORT_VALUE] = numToString(+feature.properties[flattenField]);
-                        });
-                    }
-                }
-                // feature.properties['point_count_abreviated'] = this.intToString(feature.properties.count);
+
+                this.processTopologyFeature(s, feature, false);
                 sourceData.push(feature);
             });
         }
@@ -1445,41 +1293,10 @@ export class MapContributor extends Contributor {
                 const properties = Object.assign({}, f.properties);
                 const feature = Object.assign({}, f);
                 feature.properties = properties;
-                // Loop through all the feature to transform string date to number date to interpolate colot ticket #410
-                Object.keys(feature.properties).forEach(k => {
-                    feature.properties[k] = this.getValueFromFeature(feature, k.replace(/\_/g, '.'), k);
-                });
-                const colorFields = this.featureLayerSourcesIndex.get(s).colorFields;
-                if (colorFields) {
-                    colorFields.forEach(colorField => {
-                        const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenColorField] = feature.properties[flattenColorField] || 'UNKOWN';
-                    });
-                }
-                const providedFields = this.featureLayerSourcesIndex.get(s).providedFields;
-                if (providedFields) {
-                    providedFields.forEach(pf => {
-                        const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenColorField] = feature.properties[flattenColorField]
-                            || this.colorGenerator.getColor('UNKNOWN');
-                        if (pf.label && pf.label.length > 0) {
-                            const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
-                            feature.properties[flattenLabelField] = feature.properties[flattenLabelField]
-                                || 'UNKNOWN';
-                        }
-                    });
-                }
-                const shortFormatLabels = this.featureLayerSourcesIndex.get(s).shortFormLabels;
-                if (shortFormatLabels) {
-                    shortFormatLabels.forEach(sfl => {
-                        const flattenShortField = sfl.replace(/\./g, this.FLAT_CHAR);
-                        feature.properties[flattenShortField + SHORT_VALUE] = numToString(+feature.properties[flattenShortField]);
-                    });
-                }
+
+                this.processSearchFeature(s, feature, false);
                 delete feature.properties.md;
-                const metricsKeys = this.searchSourcesMetrics.get(s);
-                const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
-                    this.collectionParameters.id_path;
+
                 sourceData.push(feature);
             });
         }
@@ -1995,7 +1812,7 @@ export class MapContributor extends Contributor {
                 case RenderStrategy.scroll:
                     if (maxPages !== undefined && maxPages !== null && whichPage !== undefined && whichPage !== null) {
                         sources.forEach(source => {
-                            const sourceData = this.featureDataPerSource.get(source) || [];
+                            const sourceData = this.featureDataPerSource.get(source) ?? [];
                             if (maxPages !== -1) {
                                 if (whichPage === PageEnum.next) {
                                     f.forEach(d => {
@@ -2270,9 +2087,9 @@ export class MapContributor extends Contributor {
         topologyLayer.geometryId = ls.geometry_id;
         topologyLayer.metrics = ls.metrics;
         topologyLayer.granularity = <any>ls.granularity;
-        topologyLayer.includeFields = new Set(ls.include_fields || []);
+        topologyLayer.includeFields = new Set(ls.include_fields ?? []);
         topologyLayer.providedFields = ls.provided_fields;
-        topologyLayer.colorFields = new Set(ls.colors_from_fields || []);
+        topologyLayer.colorFields = new Set(ls.colors_from_fields ?? []);
         topologyLayer.networkFetchingLevel = ls.network_fetching_level;
         if (topologyLayer.networkFetchingLevel === undefined) {
             topologyLayer.networkFetchingLevel = DEFAULT_FETCH_NETWORK_LEVEL;
@@ -2294,10 +2111,10 @@ export class MapContributor extends Contributor {
         featureLayerSource.sourceMaxFeatures = ls.maxfeatures;
         featureLayerSource.normalizationFields = ls.normalization_fields;
         featureLayerSource.shortFormLabels = ls.short_form_fields;
-        featureLayerSource.includeFields = new Set(ls.include_fields || []);
+        featureLayerSource.includeFields = new Set(ls.include_fields ?? []);
         featureLayerSource.returnedGeometry = ls.returned_geometry;
         featureLayerSource.providedFields = ls.provided_fields;
-        featureLayerSource.colorFields = new Set(ls.colors_from_fields || []);
+        featureLayerSource.colorFields = new Set(ls.colors_from_fields ?? []);
         return featureLayerSource;
     }
 
@@ -3784,37 +3601,42 @@ export class MapContributor extends Contributor {
      * @returns Either the value of the field, or the value of the first item of the list of values of the corresponding field
      */
     private getValueOrFirstArrayValueFromFeature(f: Feature, flattenedField: string) {
-        return f.properties[flattenedField] || f.properties[flattenedField + '_0'];
+        return f.properties[flattenedField] ?? f.properties[flattenedField + '_0'];
     }
 
-    private getBboxsForQuery(newBbox: Array<Object>) {
-        const bboxArray: Array<string> = [];
-        const numberOfBbox = newBbox.length;
-        const lastBbox = newBbox[numberOfBbox - 1];
-        const lastCoord = lastBbox['geometry']['coordinates'][0];
-        const north = lastCoord[1][1];
-        const west = this.wrap(lastCoord[2][0], -180, 180);
-        const south = lastCoord[0][1];
-        const east = this.wrap(lastCoord[0][0], -180, 180);
-        const lastBboxWSEN = west + ',' + south + ',' + east + ',' + north;
-        const lastBboxFeature = bboxPolygon([west, south, east, north]);
-        for (let i = 0; i < numberOfBbox - 1; i++) {
-            const v = newBbox[i];
-            const coord = v['geometry']['coordinates'][0];
-            const n = coord[1][1];
-            const w = this.wrap(coord[2][0], -180, 180);
-            const s = coord[0][1];
-            const e = this.wrap(coord[0][0], -180, 180);
-            const box = w + ',' + s + ',' + e + ',' + n;
-            const bboxFeature = bboxPolygon([w, s, e, n]);
-            const isbboxInclude = booleanContains(lastBboxFeature, bboxFeature);
-            const isLastBboxInclude = booleanContains(bboxFeature, lastBboxFeature);
-            if (!isbboxInclude && !isLastBboxInclude) {
-                bboxArray.push(box.trim().toLocaleLowerCase());
+    private getGeometriesForQuery(features: Array<helpers.Feature<helpers.Geometry>>) {
+        const geometries: Array<string> = [];
+
+        const polygonFeatures = features.map(f => {
+            if (f.properties.source === 'bbox') {
+                // Compute list of anti-meridian fixed bbox features and their string representation
+                const coord = f.geometry.coordinates[0];
+                const n = coord[1][1];
+                const w = this.wrap(coord[2][0], -180, 180);
+                const s = coord[0][1];
+                const e = this.wrap(coord[0][0], -180, 180);
+                const box = w + ',' + s + ',' + e + ',' + n;
+                return {f: bboxPolygon([w, s, e, n]), str: box.trim().toLocaleLowerCase()};
+            } else {
+                // Properly orientate features
+                // Internal polygons (rings) are not reversed as they are not supported
+                if (!isClockwise((<any>f.geometry).coordinates[0], 'Polygon')) {
+                    const list = [];
+                    (<any>f.geometry).coordinates[0]
+                        .forEach((c) => list.push(c));
+                    const reverseList = list.reverse();
+                    f.geometry.coordinates[0] = reverseList;
+                }
+                return {f, str: stringify(f.geometry)};
             }
-        }
-        bboxArray.push(lastBboxWSEN.trim().toLocaleLowerCase());
-        return bboxArray;
+        });
+
+        // Find all the geometries that are not contained by another bbox
+        polygonFeatures.filter((f, idx) => polygonFeatures
+            .filter((f2, idx2) => idx !== idx2 && booleanContains(f2.f, f.f)).length === 0)
+            .forEach(f => geometries.push(f.str));
+
+        return geometries;
     }
 
     private intToString(value: number): string {
@@ -3867,7 +3689,6 @@ export class MapContributor extends Contributor {
 
     }
 
-
     private isBeginingOfKeyInValues(value: string, values: Set<string>): boolean {
         let isInSet = false;
         values.forEach(v => {
@@ -3876,6 +3697,137 @@ export class MapContributor extends Contributor {
             }
         });
         return isInSet;
+    }
+
+    /**
+     * From a source and a feature, process the raw data for rendering or download
+     * @param s Source id
+     * @param feature Feature to process
+     * @param setLegend Whether to set the legend while processing
+     * @returns The list of fields to keep for further processing
+     */
+    private processSearchFeature(s: string, feature: Feature, setLegend: boolean) {
+        const fieldsToKeep = new Set<string>();
+
+        // Loop through all the feature to transform string date to number date to interpolate colot ticket #410
+        Object.keys(feature.properties).forEach(k => {
+            feature.properties[k] = this.getValueFromFeature(feature, k.replace(/\_/g, '.'), k);
+        });
+
+        const colorFields = this.featureLayerSourcesIndex.get(s).colorFields;
+        if (colorFields) {
+            colorFields.forEach(colorField => {
+                const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
+                feature.properties[flattenColorField] = this.getValueOrFirstArrayValueFromFeature(feature, flattenColorField) ?? 'UNKOWN';
+                if (setLegend) {
+                    this.setColorFieldLegend(colorField, feature, fieldsToKeep);
+                }
+            });
+        }
+
+        const providedFields = this.featureLayerSourcesIndex.get(s).providedFields;
+        if (providedFields) {
+            providedFields.forEach(pf => {
+                const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
+                feature.properties[flattenColorField] = feature.properties[flattenColorField]
+                    ?? this.colorGenerator.getColor('UNKNOWN');
+                if (pf.label && pf.label.length > 0) {
+                    const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
+                    feature.properties[flattenLabelField] = feature.properties[flattenLabelField]
+                        ?? 'UNKNOWN';
+                }
+                if (setLegend) {
+                    this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
+                }
+            });
+        }
+
+        const shortFormatLabels = this.featureLayerSourcesIndex.get(s).shortFormLabels;
+        if (shortFormatLabels) {
+            shortFormatLabels.forEach(sfl => {
+                const flattenShortField = sfl.replace(/\./g, this.FLAT_CHAR);
+                feature.properties[flattenShortField + SHORT_VALUE] = numToString(+feature.properties[flattenShortField]);
+            });
+        }
+
+        // For manual color fields that are lists, the key in properties is {field}_0
+        const includedFields = this.featureLayerSourcesIndex.get(s).includeFields;
+        if (includedFields) {
+            includedFields.forEach(f => {
+                const flattenedIncludedField = f.replace(/\./g, this.FLAT_CHAR);
+                feature.properties[flattenedIncludedField] =
+                    this.getValueOrFirstArrayValueFromFeature(feature, flattenedIncludedField);
+            });
+        }
+
+        return fieldsToKeep;
+    }
+
+    /**
+     * From a source and a feature, process the raw data for rendering or download
+     * @param s Source id
+     * @param feature Feature to process
+     * @param setLegend Whether to set the legend while processing
+     * @returns The list of fields to keep for further processing
+     */
+    private processTopologyFeature(s: string, feature: Feature, setLegend: boolean) {
+        const fieldsToKeep = new Set<string>();
+
+        const colorFields = this.topologyLayersIndex.get(s).colorFields;
+        if (colorFields) {
+            colorFields.forEach(colorField => {
+                const flattenColorField = colorField.replace(/\./g, this.FLAT_CHAR);
+                feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField] ?? 'UNKNOWN';
+                if (setLegend) {
+                    /** set the key-to-color map to be displayed on the legend. */
+                    this.setColorFieldLegend(colorField, feature, fieldsToKeep);
+                }
+            });
+        }
+
+        const providedFields = this.topologyLayersIndex.get(s).providedFields;
+        if (providedFields) {
+            providedFields.forEach(pf => {
+                const flattenColorField = pf.color.replace(/\./g, this.FLAT_CHAR);
+                feature.properties[flattenColorField] = feature.properties['hits_0_' + flattenColorField]
+                    ?? this.colorGenerator.getColor('UNKNOWN');
+                if (pf.label && pf.label.length > 0) {
+                    const flattenLabelField = pf.label.replace(/\./g, this.FLAT_CHAR);
+                    feature.properties[flattenLabelField] = feature.properties['hits_0_' + flattenLabelField] ?? 'UNKNOWN';
+                }
+                if (setLegend) {
+                    /** set the key-to-color map to be displayed on the legend. */
+                    this.setProvidedFieldLegend(pf, feature, fieldsToKeep);
+                }
+            });
+        }
+
+        const includeFields = this.topologyLayersIndex.get(s).includeFields;
+        if (includeFields) {
+            includeFields.forEach(includeField => {
+                const flattenField = includeField.replace(/\./g, this.FLAT_CHAR);
+                feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                fieldsToKeep.add(flattenField);
+            });
+        }
+
+        const fetchHits = this.topologyLayersIndex.get(s).fetchedHits;
+        if (fetchHits) {
+            fetchHits.fields.forEach(field => {
+                const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                feature.properties[flattenField] = feature.properties['hits_0_' + flattenField];
+                fieldsToKeep.add(flattenField);
+            });
+            if (fetchHits.short_form_fields) {
+                fetchHits.short_form_fields.forEach(field => {
+                    const flattenField = field.replace(/\./g, this.FLAT_CHAR);
+                    feature.properties[flattenField + SHORT_VALUE] = numToString(+feature.properties[flattenField]);
+                    fieldsToKeep.add(flattenField + SHORT_VALUE);
+                });
+            }
+        }
+
+        return fieldsToKeep;
     }
 }
 
