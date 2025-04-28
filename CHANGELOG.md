@@ -1,12 +1,22 @@
 # Change Log
 
+## [v27.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.3) (2025-04-28)
+
+**New stuff:**
+
+- simplify geometries for geoFilters based on inclusion [\#616](https://github.com/gisaia/ARLAS-web-contributors/issues/616)
+
+**Miscellaneous:**
+
+- Enhance changelog genrator command [\#621](https://github.com/gisaia/ARLAS-web-contributors/issues/621)
+
 ## [v27.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.2) (2025-03-19)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.1...v27.0.2)
+**New stuff:**
+
+- \[Map\] New configuration to specify on which geometry the extent filter is applied [\#620](https://github.com/gisaia/ARLAS-web-contributors/issues/620)
 
 ## [v27.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.1) (2025-02-28)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0...v27.0.1)
 
 **Fixed bugs:**
 
@@ -15,248 +25,73 @@
 
 ## [v27.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0) (2025-01-31)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0-rc.3...v27.0.0)
-
-## [v27.0.0-rc.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0-rc.3) (2025-01-07)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.6...v27.0.0-rc.3)
-
 ## [v26.0.6](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.6) (2025-01-06)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0-rc.2...v26.0.6)
-
-## [v27.0.0-rc.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0-rc.2) (2024-12-18)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0-beta.4...v27.0.0-rc.2)
-
-## [v27.0.0-beta.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0-beta.4) (2024-12-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0-beta.3...v27.0.0-beta.4)
-
-## [v27.0.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0-beta.3) (2024-12-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0-rc.1...v27.0.0-beta.3)
-
-## [v27.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0-rc.1) (2024-12-03)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0-beta.2...v27.0.0-rc.1)
-
-## [v27.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0-beta.2) (2024-11-14)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.5...v27.0.0-beta.2)
 
 ## [v26.0.5](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.5) (2024-11-12)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.4...v26.0.5)
-
 ## [v26.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.4) (2024-10-30)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v27.0.0-beta.1...v26.0.4)
-
-## [v27.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.0-beta.1) (2024-10-29)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.4-beta.1...v27.0.0-beta.1)
-
-## [v26.0.4-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.4-beta.1) (2024-09-30)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.3...v26.0.4-beta.1)
 
 ## [v26.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.3) (2024-09-11)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.2...v26.0.3)
-
 ## [v26.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.2) (2024-09-10)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.1...v26.0.2)
 
 ## [v26.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.1) (2024-09-06)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0...v26.0.1)
-
 ## [v26.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0) (2024-08-30)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0-rc.4...v26.0.0)
-
-## [v26.0.0-rc.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-rc.4) (2024-08-29)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0-rc.3...v26.0.0-rc.4)
-
-## [v26.0.0-rc.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-rc.3) (2024-08-29)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0-rc.2...v26.0.0-rc.3)
-
-## [v26.0.0-rc.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-rc.2) (2024-08-23)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0-rc.1...v26.0.0-rc.2)
-
-## [v26.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-rc.1) (2024-08-20)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0-beta.2...v26.0.0-rc.1)
 
 **New stuff:**
 
-- Add an attribute to fieldsConfiguration that template the details title [\#565](https://github.com/gisaia/ARLAS-web-contributors/issues/565)
 - Support H3 grids in map contributors [\#456](https://github.com/gisaia/ARLAS-web-contributors/issues/456)
-
-## [v26.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-beta.2) (2024-07-18)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v26.0.0-beta.1...v26.0.0-beta.2)
-
-## [v26.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v26.0.0-beta.1) (2024-07-15)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.1.0...v26.0.0-beta.1)
 
 ## [v25.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.1.0) (2024-07-05)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.2...v25.1.0)
-
 ## [v25.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.2) (2024-06-06)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.1...v25.0.2)
 
 ## [v25.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.1) (2024-05-15)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.0-rc.0...v25.0.1)
-
-## [v25.0.0-rc.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.0-rc.0) (2024-05-03)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.0-beta.4...v25.0.0-rc.0)
-
-**New stuff:**
-
-- Add input to enrich thumbnail request headers [\#547](https://github.com/gisaia/ARLAS-web-contributors/issues/547)
-
-## [v25.0.0-beta.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.0-beta.4) (2024-05-02)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.0...v25.0.0-beta.4)
-
 ## [v25.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.0) (2024-04-25)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.3.3...v25.0.0)
 
 ## [v24.3.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.3.3) (2024-04-19)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.0-beta.3...v24.3.3)
-
-## [v25.0.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.0-beta.3) (2024-03-25)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v25.0.0-beta.2...v25.0.0-beta.3)
-
-## [v25.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v25.0.0-beta.2) (2024-03-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.3.2...v25.0.0-beta.2)
-
 ## [v24.3.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.3.2) (2024-03-01)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.3.1...v24.3.2)
 
 ## [v24.3.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.3.1) (2024-01-25)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.3.0...v24.3.1)
-
 ## [v24.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.3.0) (2023-12-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.3.0-rc.2...v24.3.0)
-
-## [v24.3.0-rc.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.3.0-rc.2) (2023-12-07)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.3.0-rc.1...v24.3.0-rc.2)
-
-## [v24.3.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.3.0-rc.1) (2023-11-30)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.2.0...v24.3.0-rc.1)
 
 ## [v24.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.2.0) (2023-11-22)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.2.0-beta.1...v24.2.0)
-
-## [v24.2.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.2.0-beta.1) (2023-11-21)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.3...v24.2.0-beta.1)
-
 ## [v24.1.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.3) (2023-07-21)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.2...v24.1.3)
 
 ## [v24.1.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.2) (2023-07-12)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.1...v24.1.2)
-
 ## [v24.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.1) (2023-06-19)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.0...v24.1.1)
 
 ## [v24.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.0) (2023-06-01)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.0-beta.3...v24.1.0)
-
-## [v24.1.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.0-beta.3) (2023-05-30)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.0-beta.2...v24.1.0-beta.3)
-
-**New stuff:**
-
-- Delegate collaboration consumption to the contributor abstract class [\#530](https://github.com/gisaia/ARLAS-web-contributors/issues/530)
-
-## [v24.1.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.0-beta.2) (2023-05-17)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.1.0-beta.1...v24.1.0-beta.2)
-
-## [v24.1.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.1.0-beta.1) (2023-05-10)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.0.1...v24.1.0-beta.1)
-
 ## [v24.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.0.1) (2023-04-25)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.0.0...v24.0.1)
 
 ## [v24.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.0.0) (2023-04-19)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v24.0.0-beta.1...v24.0.0)
-
-## [v24.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v24.0.0-beta.1) (2023-04-07)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.2.1...v24.0.0-beta.1)
-
 ## [v23.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.2.1) (2023-03-03)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.2.0...v23.2.1)
 
 ## [v23.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.2.0) (2023-02-10)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.1.1-doc...v23.2.0)
-
 ## [v23.1.1-doc](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.1.1-doc) (2022-12-22)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.1.1...v23.1.1-doc)
 
 ## [v23.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.1.1) (2022-11-28)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.1.0...v23.1.1)
-
 ## [v23.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.1.0) (2022-11-28)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.1...v23.1.0)
 
 ## [v20.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.1.1) (2022-09-29)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.2.1...v20.1.1)
-
 ## [v19.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.2.1) (2022-09-29)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.3...v19.2.1)
 
 ## [v22.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.3) (2022-09-28)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.3...v22.0.3)
-
 ## [v23.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.3) (2022-09-27)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.2...v23.0.3)
-
 ## [v23.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.2) (2022-09-27)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.1...v23.0.2)
 
 **Fixed bugs:**
 
@@ -265,85 +100,32 @@
 
 ## [v23.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.1) (2022-08-31)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.2...v23.0.1)
-
 **Fixed bugs:**
 
 - Fix normalization of avg in network analytics [\#506](https://github.com/gisaia/ARLAS-web-contributors/issues/506)
 
 ## [v22.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.2) (2022-07-11)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0...v22.0.2)
-
 ## [v23.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0) (2022-07-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-rc.1...v23.0.0)
-
-## [v23.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-rc.1) (2022-07-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-beta.2...v23.0.0-rc.1)
-
-## [v23.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.2) (2022-07-08)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v23.0.0-beta.1...v23.0.0-beta.2)
-
-**New stuff:**
-
-- Add 'Count' metric [\#497](https://github.com/gisaia/ARLAS-web-contributors/issues/497)
-- Limit number of fetched buckets when bucket are units. [\#496](https://github.com/gisaia/ARLAS-web-contributors/issues/496)
-
-## [v23.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v23.0.0-beta.1) (2022-07-06)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.1...v23.0.0-beta.1)
 
 **New stuff:**
 
 - Protect histograms from generating oversized number of buckets [\#492](https://github.com/gisaia/ARLAS-web-contributors/issues/492)
+- Histogram: make configurable the list of collections included in the histogram collaboration [\#489](https://github.com/gisaia/ARLAS-web-contributors/issues/489)
+- Add 'Count' metric [\#497](https://github.com/gisaia/ARLAS-web-contributors/issues/497)
+- Limit number of fetched buckets when bucket are units. [\#496](https://github.com/gisaia/ARLAS-web-contributors/issues/496)
 
 ## [v22.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.1) (2022-07-05)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v22.0.0...v22.0.1)
-
-**New stuff:**
-
-- Histogram: make configurable the list of collections included in the histogram collaboration [\#489](https://github.com/gisaia/ARLAS-web-contributors/issues/489)
-
 ## [v22.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v22.0.0) (2022-05-24)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v21.0.0...v22.0.0)
 
 ## [v21.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v21.0.0) (2022-04-05)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v21.0.0-beta.1...v21.0.0)
-
-## [v21.0.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v21.0.0-beta.1) (2022-03-14)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.1.1...v21.0.0-beta.1)
-
-**New stuff:**
-
-- Support 'sort' in powerbars [\#459](https://github.com/gisaia/ARLAS-web-contributors/issues/459)
-
-**Fixed bugs:**
-
-- Fix average merging in mapcontributors [\#478](https://github.com/gisaia/ARLAS-web-contributors/issues/478)
-- \[MapContributors\] Geograhical filters are duplicated in the case of Feature-metric layers [\#343](https://github.com/gisaia/ARLAS-web-contributors/issues/343)
-
 ## [v19.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.1.1) (2022-02-28)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.0...v19.1.1)
 
 ## [v20.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.1.0) (2022-02-18)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.1.0-beta.1...v20.1.0)
-
-## [v20.1.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.1.0-beta.1) (2022-02-15)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.0.0...v20.1.0-beta.1)
-
 ## [v20.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.0.0) (2022-02-01)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.0.0-rc.1...v20.0.0)
 
 **New stuff:**
 
@@ -354,29 +136,13 @@
 - Stringify values of identifiers field in map and resultlist contributors [\#463](https://github.com/gisaia/ARLAS-web-contributors/issues/463)
 - Using regex with Lookbehind causes the application to crash on Safari [\#461](https://github.com/gisaia/ARLAS-web-contributors/issues/461)
 
-## [v20.0.0-rc.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.0.0-rc.1) (2022-01-07)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v20.0.0-beta.7...v20.0.0-rc.1)
-
-**Miscellaneous:**
-
-- Upgrade dependencies [\#457](https://github.com/gisaia/ARLAS-web-contributors/issues/457)
-
-## [v20.0.0-beta.7](https://github.com/gisaia/ARLAS-web-contributors/tree/v20.0.0-beta.7) (2022-01-03)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.2.0...v20.0.0-beta.7)
-
 ## [v19.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.2.0) (2021-12-06)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.1.0...v19.2.0)
 
 **Fixed bugs:**
 
 - Fix quickloock/thumbnail enabling [\#452](https://github.com/gisaia/ARLAS-web-contributors/issues/452)
 
 ## [v19.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.1.0) (2021-10-25)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.3...v19.1.0)
 
 **Fixed bugs:**
 
@@ -386,8 +152,6 @@
 
 ## [v19.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.3) (2021-10-11)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.2...v19.0.3)
-
 **Fixed bugs:**
 
 - Layers with Provided colors have wrong labels in the legend [\#439](https://github.com/gisaia/ARLAS-web-contributors/issues/439)
@@ -395,8 +159,6 @@
 - Donuts and Powerbars are wrongly populated due to change of tree structure [\#436](https://github.com/gisaia/ARLAS-web-contributors/issues/436)
 
 ## [v19.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.2) (2021-10-05)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.1...v19.0.2)
 
 **New stuff:**
 
@@ -408,11 +170,7 @@
 
 ## [v19.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.1) (2021-09-30)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.0...v19.0.1)
-
 ## [v19.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.0) (2021-09-27)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.3...v19.0.0)
 
 **New stuff:**
 
@@ -420,23 +178,11 @@
 
 ## [v12.7.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.3) (2021-09-23)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v19.0.0-beta.3...v12.7.3)
-
-## [v19.0.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v19.0.0-beta.3) (2021-09-20)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.1.2...v19.0.0-beta.3)
-
 ## [v18.1.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.1.2) (2021-09-14)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.1.1...v18.1.2)
 
 ## [v18.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.1.1) (2021-09-13)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.1.0...v18.1.1)
-
 ## [v18.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.1.0) (2021-09-10)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.0.1...v18.1.0)
 
 **New stuff:**
 
@@ -449,19 +195,11 @@
 
 ## [v18.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.0.1) (2021-08-06)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.2.1...v18.0.1)
-
 ## [v17.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.2.1) (2021-08-03)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.2.1...v17.2.1)
 
 ## [v18.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.2.1) (2021-08-03)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v18.0.0...v18.2.1)
-
 ## [v18.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v18.0.0) (2021-07-08)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.2.0...v18.0.0)
 
 **New stuff:**
 
@@ -473,15 +211,9 @@
 
 ## [v17.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.2.0) (2021-06-24)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.1.1...v17.2.0)
-
 ## [v17.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.1.1) (2021-06-18)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.1.0...v17.1.1)
-
 ## [v17.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.1.0) (2021-06-04)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.0.0...v17.1.0)
 
 **New stuff:**
 
@@ -489,20 +221,12 @@
 
 ## [v17.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.0.0) (2021-05-19)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v17.0.0-beta.0...v17.0.0)
-
 **New stuff:**
 
 - Add geotile aggreation in map contributor [\#404](https://github.com/gisaia/ARLAS-web-contributors/issues/404)
 - Support multi-collection for map and all widgets [\#403](https://github.com/gisaia/ARLAS-web-contributors/issues/403)
 
-## [v17.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v17.0.0-beta.0) (2021-05-10)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.1.1...v17.0.0-beta.0)
-
 ## [v16.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.1.1) (2021-04-29)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.1.0...v16.1.1)
 
 **New stuff:**
 
@@ -514,8 +238,6 @@
 - \[MAP\] dashboards with old generated colors are not handled [\#398](https://github.com/gisaia/ARLAS-web-contributors/issues/398)
 
 ## [v16.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.1.0) (2021-04-21)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.3...v16.1.0)
 
 **New stuff:**
 
@@ -533,11 +255,7 @@
 
 ## [v16.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.3) (2021-04-13)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.2...v16.0.3)
-
 ## [v16.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.2) (2021-04-12)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.1...v16.0.2)
 
 **Fixed bugs:**
 
@@ -545,11 +263,7 @@
 
 ## [v16.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.1) (2021-03-31)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v16.0.0...v16.0.1)
-
 ## [v16.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v16.0.0) (2021-03-23)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.2...v16.0.0)
 
 **New stuff:**
 
@@ -561,19 +275,13 @@
 
 ## [v15.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.2) (2021-02-25)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.1...v15.0.2)
-
 **New stuff:**
 
 - \[TREE\] allow an order by metric [\#364](https://github.com/gisaia/ARLAS-web-contributors/issues/364)
 
 ## [v15.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.1) (2021-02-23)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0...v15.0.1)
-
 ## [v15.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0) (2021-02-18)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0-beta.2...v15.0.0)
 
 **New stuff:**
 
@@ -583,29 +291,13 @@
 
 - Data in Network-analytics mode are reloaded after zooming [\#355](https://github.com/gisaia/ARLAS-web-contributors/issues/355)
 
-## [v15.0.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0-beta.2) (2021-02-12)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v15.0.0-beta.0...v15.0.0-beta.2)
-
-## [v15.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v15.0.0-beta.0) (2021-02-03)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.3.1...v15.0.0-beta.0)
-
 ## [v14.3.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.3.1) (2021-02-03)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.3.0...v14.3.1)
 
 ## [v14.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.3.0) (2021-01-29)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.2.0...v14.3.0)
-
 ## [v14.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.2.0) (2021-01-18)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.1.1...v14.2.0)
-
 ## [v14.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.1.1) (2020-12-18)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.1.0...v14.1.1)
 
 **New stuff:**
 
@@ -613,27 +305,9 @@
 
 ## [v14.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.1.0) (2020-12-07)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.1.0-beta.0...v14.1.0)
-
-## [v14.1.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.1.0-beta.0) (2020-12-01)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v14.0.0...v14.1.0-beta.0)
-
-**New stuff:**
-
-- Enhance mapping the zoom levels to aggregation precision [\#345](https://github.com/gisaia/ARLAS-web-contributors/issues/345)
-
-**Fixed bugs:**
-
-- Fix sortColum list function [\#335](https://github.com/gisaia/ARLAS-web-contributors/issues/335)
-
 ## [v14.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v14.0.0) (2020-11-09)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v13.0.1...v14.0.0)
-
 ## [v13.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v13.0.1) (2020-07-10)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.2...v13.0.1)
 
 **Fixed bugs:**
 
@@ -641,15 +315,11 @@
 
 ## [v12.7.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.2) (2020-06-30)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v13.0.0...v12.7.2)
-
 **Fixed bugs:**
 
 - \[MAP\] array fields are not correctly flatenned [\#333](https://github.com/gisaia/ARLAS-web-contributors/issues/333)
 
 ## [v13.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v13.0.0) (2020-06-17)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.1...v13.0.0)
 
 **Breaking changes:**
 
@@ -670,15 +340,11 @@
 
 ## [v12.7.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.1) (2020-05-13)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.7.0...v12.7.1)
-
 **Fixed bugs:**
 
 - GetActions function for list not working with boolean field for cssClass [\#306](https://github.com/gisaia/ARLAS-web-contributors/issues/306)
 
 ## [v12.7.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.7.0) (2020-04-10)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.6.0...v12.7.0)
 
 **New stuff:**
 
@@ -687,15 +353,11 @@
 
 ## [v12.6.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.6.0) (2020-03-12)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.3...v12.6.0)
-
 **Breaking changes:**
 
 - Swimlane: Refactor data structure fetched for swimlanes  [\#299](https://github.com/gisaia/ARLAS-web-contributors/issues/299)
 
 ## [v12.5.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.3) (2020-03-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.2...v12.5.3)
 
 **Fixed bugs:**
 
@@ -704,23 +366,17 @@
 
 ## [v12.5.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.2) (2020-03-03)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.1...v12.5.2)
-
 **Fixed bugs:**
 
 - set the appropriate geohash agg in cluster mode [\#293](https://github.com/gisaia/ARLAS-web-contributors/issues/293)
 
 ## [v12.5.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.1) (2020-02-24)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.5.0...v12.5.1)
-
 **Fixed bugs:**
 
 - TOPOMAP: Cluster mode is not fetched properly [\#289](https://github.com/gisaia/ARLAS-web-contributors/issues/289)
 
 ## [v12.5.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.5.0) (2020-02-13)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.4.0...v12.5.0)
 
 **New stuff:**
 
@@ -735,16 +391,12 @@
 
 ## [v12.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.4.0) (2020-02-06)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.3.0...v12.4.0)
-
 **New stuff:**
 
 - Make filtering data with a WKT optional [\#276](https://github.com/gisaia/ARLAS-web-contributors/issues/276)
 - \[MAP\] Enhance tiled geoaggregation rendering [\#274](https://github.com/gisaia/ARLAS-web-contributors/issues/274)
 
 ## [v12.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.3.0) (2020-01-27)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.2...v12.3.0)
 
 **New stuff:**
 
@@ -756,15 +408,11 @@
 
 ## [v11.5.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.2) (2020-01-21)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.1...v11.5.2)
-
 **Fixed bugs:**
 
 - Fix bug filter aoi wkt [\#271](https://github.com/gisaia/ARLAS-web-contributors/pull/271) ([mbarbet](https://github.com/mbarbet))
 
 ## [v11.5.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.1) (2020-01-21)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.5.0...v11.5.1)
 
 **Breaking changes:**
 
@@ -783,8 +431,6 @@
 
 ## [v11.5.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.5.0) (2020-01-17)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.2.0...v11.5.0)
-
 **Breaking changes:**
 
 - Centralize all the fields configuration \(for search\) in ChipsSearchContributor [\#257](https://github.com/gisaia/ARLAS-web-contributors/issues/257)
@@ -800,8 +446,6 @@
 
 ## [v12.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.2.0) (2020-01-06)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.1.0...v12.2.0)
-
 **New stuff:**
 
 - MAP: normalize numeric and date values [\#251](https://github.com/gisaia/ARLAS-web-contributors/issues/251)
@@ -813,8 +457,6 @@
 - Remove yarn.lock [\#247](https://github.com/gisaia/ARLAS-web-contributors/issues/247)
 
 ## [v12.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.1.0) (2019-12-04)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.0.2...v12.1.0)
 
 **New stuff:**
 
@@ -828,23 +470,17 @@
 
 ## [v12.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.0.2) (2019-11-22)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.0.1...v12.0.2)
-
 **New stuff:**
 
 - \[ComputeContributor\] Add a process function to be applied to metricValue [\#237](https://github.com/gisaia/ARLAS-web-contributors/issues/237)
 
 ## [v12.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.0.1) (2019-11-21)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v12.0.0...v12.0.1)
-
 **New stuff:**
 
 - Update build target to `es6` [\#235](https://github.com/gisaia/ARLAS-web-contributors/issues/235)
 
 ## [v12.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v12.0.0) (2019-11-20)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.1...v12.0.0)
 
 **Breaking changes:**
 
@@ -860,15 +496,11 @@
 
 ## [v11.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.4.1) (2019-10-23)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.4.0...v11.4.1)
-
 **New stuff:**
 
 - Optimize call to setSelection [\#216](https://github.com/gisaia/ARLAS-web-contributors/pull/216) ([mbarbet](https://github.com/mbarbet))
 
 ## [v11.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.4.0) (2019-10-16)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.3.0...v11.4.0)
 
 **New stuff:**
 
@@ -880,8 +512,6 @@
 
 ## [v11.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.3.0) (2019-10-09)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.2.0...v11.3.0)
-
 **New stuff:**
 
 - Add getActions method to DetailedDataRetriever interface [\#212](https://github.com/gisaia/ARLAS-web-contributors/pull/212) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
@@ -891,8 +521,6 @@
 - yearShortcuts option doesn't work with number items [\#211](https://github.com/gisaia/ARLAS-web-contributors/issues/211)
 
 ## [v11.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.2.0) (2019-10-02)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.1.1...v11.2.0)
 
 **New stuff:**
 
@@ -904,11 +532,7 @@
 
 ## [v11.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.1.1) (2019-09-16)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.1.0...v11.1.1)
-
 ## [v11.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.1.0) (2019-09-16)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.0.1...v11.1.0)
 
 **New stuff:**
 
@@ -916,8 +540,6 @@
 - Change tree search filter [\#199](https://github.com/gisaia/ARLAS-web-contributors/pull/199) ([mbarbet](https://github.com/mbarbet))
 
 ## [v11.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.0.1) (2019-07-29)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v11.0.0...v11.0.1)
 
 **New stuff:**
 
@@ -929,8 +551,6 @@
 - \[RESULTLIST\] geosort does not append the identifier  [\#194](https://github.com/gisaia/ARLAS-web-contributors/issues/194)
 
 ## [v11.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v11.0.0) (2019-07-25)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.2.1...v11.0.0)
 
 **New stuff:**
 
@@ -946,15 +566,11 @@
 
 ## [v10.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.2.1) (2019-07-08)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.2.0...v10.2.1)
-
 **Fixed bugs:**
 
 - Fix typo in mapcontributor [\#181](https://github.com/gisaia/ARLAS-web-contributors/pull/181) ([mbarbet](https://github.com/mbarbet))
 
 ## [v10.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.2.0) (2019-07-04)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.1.0...v10.2.0)
 
 **New stuff:**
 
@@ -965,11 +581,7 @@
 
 ## [v10.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.1.0) (2019-05-22)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.0.1...v10.1.0)
-
 ## [v10.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.0.1) (2019-05-07)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.2...v10.0.1)
 
 **Fixed bugs:**
 
@@ -980,15 +592,11 @@
 
 ## [v9.2.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.2) (2019-04-26)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v10.0.0...v9.2.2)
-
 **New stuff:**
 
 - Active process in detail of list [\#153](https://github.com/gisaia/ARLAS-web-contributors/issues/153)
 
 ## [v10.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v10.0.0) (2019-04-01)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/10.0.0-beta.0...v10.0.0)
 
 **Breaking changes:**
 
@@ -999,21 +607,13 @@
 - Remove $ from configuration package name [\#130](https://github.com/gisaia/ARLAS-web-contributors/issues/130)
 - Remove unused \[dataType\] attribute from Histogram contributor [\#126](https://github.com/gisaia/ARLAS-web-contributors/issues/126)
 
-## [10.0.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/10.0.0-beta.0) (2019-03-06)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.1...10.0.0-beta.0)
-
 ## [v9.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.1) (2019-02-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0...v9.2.1)
 
 **New stuff:**
 
 - Active process in detail [\#154](https://github.com/gisaia/ARLAS-web-contributors/pull/154) ([mbarbet](https://github.com/mbarbet))
 
 ## [v9.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0) (2019-02-05)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.3...v9.2.0)
 
 **New stuff:**
 
@@ -1026,45 +626,9 @@
 
 - TreeContrbutor fix : include search filter when fetching data [\#148](https://github.com/gisaia/ARLAS-web-contributors/pull/148) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
-## [v9.2.0-beta.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0-beta.3) (2019-02-01)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.2...v9.2.0-beta.3)
-
-**New stuff:**
-
-- Enhance setSelection of TreeContributor [\#147](https://github.com/gisaia/ARLAS-web-contributors/pull/147) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
-
-**Fixed bugs:**
-
-- Fix bug icon title field value missing [\#146](https://github.com/gisaia/ARLAS-web-contributors/pull/146) ([mbarbet](https://github.com/mbarbet))
-
-## [v9.2.0-beta.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0-beta.2) (2019-01-31)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.1...v9.2.0-beta.2)
-
-## [v9.2.0-beta.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0-beta.1) (2019-01-30)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.2.0-beta.0...v9.2.0-beta.1)
-
-**Fixed bugs:**
-
-- Fix json schema import in TreeContributor [\#145](https://github.com/gisaia/ARLAS-web-contributors/pull/145) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
-
-## [v9.2.0-beta.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.2.0-beta.0) (2019-01-30)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.1.3...v9.2.0-beta.0)
-
-**Fixed bugs:**
-
--  Fix the selected nodes list construction [\#135](https://github.com/gisaia/ARLAS-web-contributors/pull/135) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
-
 ## [v9.1.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.3) (2019-01-25)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.1.2...v9.1.3)
-
 ## [v9.1.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.2) (2019-01-11)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.1.1...v9.1.2)
 
 **Fixed bugs:**
 
@@ -1072,11 +636,7 @@
 
 ## [v9.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.1) (2019-01-09)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.1.0...v9.1.1)
-
 ## [v9.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.1.0) (2019-01-09)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.0.1...v9.1.0)
 
 **New stuff:**
 
@@ -1089,15 +649,11 @@
 
 ## [v9.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.0.1) (2018-11-28)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v9.0.0...v9.0.1)
-
 **New stuff:**
 
 - Upgrade rxjs to 6 [\#123](https://github.com/gisaia/ARLAS-web-contributors/issues/123)
 
 ## [v9.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v9.0.0) (2018-11-28)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v8.0.1...v9.0.0)
 
 **Miscellaneous:**
 
@@ -1105,11 +661,7 @@
 
 ## [v8.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v8.0.1) (2018-11-27)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v8.0.0...v8.0.1)
-
 ## [v8.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v8.0.0) (2018-10-17)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.4.1...v8.0.0)
 
 **New stuff:**
 
@@ -1120,8 +672,6 @@
 
 ## [v7.4.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.4.1) (2018-10-17)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.4.0...v7.4.1)
-
 **Fixed bugs:**
 
 - Map Bug : multi BBOx is broken [\#116](https://github.com/gisaia/ARLAS-web-contributors/issues/116)
@@ -1131,8 +681,6 @@
 - Fix \#112 [\#113](https://github.com/gisaia/ARLAS-web-contributors/pull/113) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.4.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.4.0) (2018-09-14)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.5...v7.4.0)
 
 **New stuff:**
 
@@ -1147,8 +695,6 @@
 
 ## [v7.3.5](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.5) (2018-08-09)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.7...v7.3.5)
-
 **New stuff:**
 
 - MAP: enhance getBoundsTofit with all geomtry type [\#95](https://github.com/gisaia/ARLAS-web-contributors/issues/95)
@@ -1160,11 +706,7 @@
 
 ## [v7.0.7](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.7) (2018-08-06)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.6...v7.0.7)
-
 ## [v7.0.6](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.6) (2018-08-06)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.4...v7.0.6)
 
 **Fixed bugs:**
 
@@ -1172,15 +714,11 @@
 
 ## [v7.3.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.4) (2018-07-27)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.3...v7.3.4)
-
 **Fixed bugs:**
 
 - Apply sort/geosort when on new collaborations [\#91](https://github.com/gisaia/ARLAS-web-contributors/pull/91) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [v7.3.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.3) (2018-07-26)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.2...v7.3.3)
 
 **Fixed bugs:**
 
@@ -1188,15 +726,11 @@
 
 ## [v7.3.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.2) (2018-07-26)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.1...v7.3.2)
-
 **Fixed bugs:**
 
 - Add id field in data map [\#89](https://github.com/gisaia/ARLAS-web-contributors/pull/89) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.3.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.1) (2018-07-25)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.3.0...v7.3.1)
 
 **Fixed bugs:**
 
@@ -1204,15 +738,11 @@
 
 ## [v7.3.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.3.0) (2018-07-25)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.2.1...v7.3.0)
-
 **New stuff:**
 
 - Add Analytics contributor [\#85](https://github.com/gisaia/ARLAS-web-contributors/pull/85) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.2.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.2.1) (2018-07-25)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.2.0...v7.2.1)
 
 **Fixed bugs:**
 
@@ -1220,8 +750,6 @@
 - Add timeLabel property. It's calculated after : [\#82](https://github.com/gisaia/ARLAS-web-contributors/pull/82) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [v7.2.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.2.0) (2018-07-23)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.1.0...v7.2.0)
 
 **New stuff:**
 
@@ -1237,8 +765,6 @@
 
 ## [v7.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.1.0) (2018-07-11)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.5...v7.1.0)
-
 **New stuff:**
 
 - Update ARLAS-web-core version to 7.1.0 [\#76](https://github.com/gisaia/ARLAS-web-contributors/issues/76)
@@ -1249,8 +775,6 @@
 
 ## [v7.0.5](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.5) (2018-06-26)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.4...v7.0.5)
-
 **Fixed bugs:**
 
 - RANGE : condition on existance of min&max in a rangeResponse is wrong [\#66](https://github.com/gisaia/ARLAS-web-contributors/issues/66)
@@ -1258,15 +782,11 @@
 
 ## [v7.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.4) (2018-06-25)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.3...v7.0.4)
-
 **Fixed bugs:**
 
 - Improrve mapcontributor layer switcher [\#65](https://github.com/gisaia/ARLAS-web-contributors/pull/65) ([mbarbet](https://github.com/mbarbet))
 
 ## [v7.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.3) (2018-06-22)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.2...v7.0.3)
 
 **Fixed bugs:**
 
@@ -1275,15 +795,11 @@
 
 ## [v7.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.2) (2018-06-20)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v7.0.1...v7.0.2)
-
 **Fixed bugs:**
 
 - Add moment library to package-release.json [\#62](https://github.com/gisaia/ARLAS-web-contributors/pull/62) ([MohamedHamouGisaia](https://github.com/MohamedHamouGisaia))
 
 ## [v7.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v7.0.1) (2018-06-20)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.4...v7.0.1)
 
 **New stuff:**
 
@@ -1296,15 +812,11 @@
 
 ## [v6.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.4) (2018-06-05)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.3...v6.0.4)
-
 **Fixed bugs:**
 
 - Fix set new map extend [\#51](https://github.com/gisaia/ARLAS-web-contributors/pull/51) ([mbarbet](https://github.com/mbarbet))
 
 ## [v6.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.3) (2018-05-31)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.2...v6.0.3)
 
 **Fixed bugs:**
 
@@ -1312,15 +824,11 @@
 
 ## [v6.0.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.2) (2018-05-31)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.1...v6.0.2)
-
 **Fixed bugs:**
 
 - Fix set current map extend [\#48](https://github.com/gisaia/ARLAS-web-contributors/pull/48) ([mbarbet](https://github.com/mbarbet))
 
 ## [v6.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.1) (2018-05-29)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v6.0.0...v6.0.1)
 
 **New stuff:**
 
@@ -1329,8 +837,6 @@
 
 ## [v6.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v6.0.0) (2018-05-23)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v5.1.1...v6.0.0)
-
 **New stuff:**
 
 - ResultListContributor : emit event when data change. [\#42](https://github.com/gisaia/ARLAS-web-contributors/issues/42)
@@ -1338,15 +844,11 @@
 
 ## [v5.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v5.1.1) (2018-05-21)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v5.1.0...v5.1.1)
-
 **Fixed bugs:**
 
 - Fix bbox bug anti-meridien [\#40](https://github.com/gisaia/ARLAS-web-contributors/pull/40) ([mbarbet](https://github.com/mbarbet))
 
 ## [v5.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v5.1.0) (2018-04-27)
-
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v5.0.0...v5.1.0)
 
 **New stuff:**
 
@@ -1354,19 +856,17 @@
 
 ## [v5.0.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v5.0.0) (2018-04-23)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v4.0.1...v5.0.0)
-
 **Breaking changes:**
 
 - Update core dependency to 5.0.\* [\#37](https://github.com/gisaia/ARLAS-web-contributors/pull/37) ([sebbousquet](https://github.com/sebbousquet))
 
 ## [v4.0.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v4.0.1) (2018-04-11)
 
-[Full Changelog](https://github.com/gisaia/ARLAS-web-contributors/compare/v3.1.2...v4.0.1)
-
 **Fixed bugs:**
 
 - Map Contributors : Features are sometimes removed when changing zoom levels in this mode  [\#35](https://github.com/gisaia/ARLAS-web-contributors/issues/35)
+
+## [v3.1.2](https://github.com/gisaia/ARLAS-web-contributors/tree/v3.1.2) (2018-04-11)
 
 
 
