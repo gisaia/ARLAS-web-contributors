@@ -46,6 +46,7 @@ import { parse } from 'wellknown';
 * Interface defined in Arlas-web-components
 */
 export interface DetailedDataRetriever {
+    detailsConfig: Array<Detail>;
     getData(identifier: string): Observable<AdditionalInfo>;
     getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
@@ -60,9 +61,11 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     */
     private contributor: ResultListContributor;
     private detailsFunctionMap = new Map<string, Map<string, Function>>();
+    public detailsConfig;
     public constructor(contributor: ResultListContributor) {
         this.contributor = contributor;
         const details: Array<Detail> = this.contributor.getConfigValue('details');
+        this.detailsConfig = details;
         details.forEach(group => {
             const detailedDataFunctionMap = new Map<string, Function>();
             group.fields.forEach(field => {
