@@ -17,35 +17,39 @@
  * under the License.
  */
 
-import { HistogramContributor } from './contributors/HistogramContributor';
-import { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
-import { SwimLaneContributor } from './contributors/SwimLaneContributor';
-import { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
-import { SearchContributor } from './contributors/SearchContributor';
-import { MapContributor } from './contributors/MapContributor';
-import { ResultListContributor } from './contributors/ResultListContributor';
 import { AnalyticsContributor } from './contributors/AnalyticsContributor';
-import { TreeContributor } from './contributors/TreeContributor';
+import { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 import { ComputeContributor } from './contributors/ComputeContributor';
+import { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
+import { HistogramContributor } from './contributors/HistogramContributor';
+import { MapContributor } from './contributors/MapContributor';
 import { MetricsTableContributor } from './contributors/MetricsTableContributor';
-export { TreeContributor } from './contributors/TreeContributor';
-export { HistogramContributor } from './contributors/HistogramContributor';
-export { ResultListContributor } from './contributors/ResultListContributor';
-export { MapContributor, DEFAULT_FETCH_NETWORK_LEVEL } from './contributors/MapContributor';
+import { ResultListContributor } from './contributors/ResultListContributor';
+import { SearchContributor } from './contributors/SearchContributor';
+import { SwimLaneContributor } from './contributors/SwimLaneContributor';
+import { TreeContributor } from './contributors/TreeContributor';
+
+export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
+export { ComputeContributor } from './contributors/ComputeContributor';
+export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
+export { HistogramContributor } from './contributors/HistogramContributor';
+export { DEFAULT_FETCH_NETWORK_LEVEL, LegendData, MapContributor } from './contributors/MapContributor';
+export { MetricsTableContributor } from './contributors/MetricsTableContributor';
+export { MatchInfo, ResultListContributor } from './contributors/ResultListContributor';
 export { SearchContributor } from './contributors/SearchContributor';
 export { SwimLaneContributor } from './contributors/SwimLaneContributor';
-export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
-export { AnalyticsContributor } from './contributors/AnalyticsContributor';
-export { ComputeContributor } from './contributors/ComputeContributor';
-export { Action, FeatureRenderMode, ElementIdentifier, triggerType, DateExpression, DateUnitEnum,
-    LayerSourceConfig, ColorConfig, MetricConfig, ExtentFilterGeometry } from './models/models';
-export { getSourceName, processPassesAllowList, validProcess } from './utils/utils';
+export { TreeContributor } from './contributors/TreeContributor';
+export {
+    MetricsTable, MetricsTableCell, MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig
+} from './models/metrics-table.config';
+export {
+    Action, ActionFilter, ColorConfig, Column, ComputeConfig, DateExpression, DateUnitEnum, Detail, ElementIdentifier,
+    ExtentFilterGeometry, FeatureRenderMode, FieldsConfiguration, LayerSourceConfig, MetricConfig, triggerType
+} from './models/models';
 export { fix180thMeridian, isClockwise } from './utils/mapUtils';
-export { FieldsConfiguration, ComputeConfig, Column, Detail } from './models/models';
-export { MetricsTableContributor } from './contributors/MetricsTableContributor';
-export { MetricsTable, MetricsTableCell,
-     MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig } from './models/metrics-table.config';
+export { getElementFromJsonObject, getSourceName, processPassesAllowList, validProcess } from './utils/utils';
+
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);
 contributors.set('detailedhistogram', DetailedHistogramContributor);
@@ -59,8 +63,4 @@ contributors.set('tree', TreeContributor);
 contributors.set('metric', ComputeContributor);
 contributors.set('metricstable', MetricsTableContributor);
 
-export {contributors};
-
-
-
-
+export { contributors };

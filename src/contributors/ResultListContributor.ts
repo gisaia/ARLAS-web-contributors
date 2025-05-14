@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Observable, from } from 'rxjs';
+import { Observable, from, zip } from 'rxjs';
 import { filter, map, finalize } from 'rxjs/operators';
 
 import {
@@ -36,11 +36,16 @@ import {
 import {
     Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
     PageEnum, AdditionalInfo, Attachment, AttachmentConfig, ItemDataType,
-    ExportedColumn
+    ExportedColumn,
+    ActionFilter
 } from '../models/models';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
 import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
-import { parse } from 'wellknown';
+
+export interface MatchInfo {
+    matched: Array<boolean>;
+    data: Map<string, ItemDataType>;
+}
 
 /**
 * Interface defined in Arlas-web-components
@@ -49,6 +54,7 @@ export interface DetailedDataRetriever {
     getData(identifier: string): Observable<AdditionalInfo>;
     getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
+    getMatch(identifier: string, filters: ActionFilter[][]): Observable<MatchInfo>;
 }
 
 /**
@@ -97,6 +103,37 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         return searchResult.pipe(map(data => fields.map(f => data.hits[0].data[f.replace(/\./g, '_')])));
     }
 
+    public getMatch(identifier: string, filters: ActionFilter[][]): Observable<MatchInfo> {
+        const search: Search = { page: { size: 1 } };
+        const expression: Expression = {
+            field: this.contributor.fieldsConfiguration.idFieldName,
+            op: Expression.OpEnum.Eq,
+            value: identifier
+        };
+
+        // This makes a AND
+        return zip(filters.map(f => {
+            const filterExpression: Filter = {
+                f: [[expression]]
+            };
+            f.forEach(c => {
+                filterExpression.f.push([{
+                    field: c.field,
+                    op: Expression.OpEnum[c.op.toString()],
+                    value: c.value
+                }]);
+            });
+
+            return this.contributor.collaborativeSearcheService.resolveHits([
+                projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
+                this.contributor.collection, this.contributor.identifier, filterExpression,
+                /** flat */ true, this.contributor.cacheDuration);
+        })).pipe(map(hits => ({
+                matched: hits.map(h => h.hits?.length !== 0),
+                data: hits.find(h => h.hits?.length !== 0).hits[0].data
+            })));
+    }
+
     public getActions(item: any): Observable<Array<Action>> {
         const actions = new Array<Action>();
         this.contributor.actionToTriggerOnClick.forEach(action => {
@@ -110,7 +147,8 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 activated: action.activated,
                 icon: action.icon,
                 show: action.show,
-                fields: action.fields
+                fields: action.fields,
+                filters: action.filters
             };
             const cssFields = action.cssClass;
             if (cssFields && item.itemData) {
