@@ -130,7 +130,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 /** flat */ true, this.contributor.cacheDuration);
         })).pipe(map(hits => ({
                 matched: hits.map(h => h.hits?.length !== 0),
-                data: hits.find(h => h.hits?.length !== 0).hits[0].data
+                data: hits.find(h => h.hits?.length !== 0)?.hits?.[0].data
             })));
     }
 
