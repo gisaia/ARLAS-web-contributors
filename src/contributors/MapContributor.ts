@@ -954,17 +954,19 @@ export class MapContributor extends Contributor {
                     const metricsKeys = this.searchSourcesMetrics.get(s);
                     const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
                         this.collectionParameters.id_path;
-                    Object.keys(feature.properties).forEach(k => {
-                        if (metricsKeys && !this.isBeginingOfKeyInValues(k, metricsKeys) && k !== 'id' && k !== idPath) {
-                            delete feature.properties[k];
-                        }
-                    });
+
                     const arlasTimestamp = this.getTimestampFromMD(feature.properties.md);
                     if (arlasTimestamp) {
+                        /** todo use const */
                         feature.properties['_arlas-timestamp_'] = arlasTimestamp;
                     }
                     delete feature.properties.md;
-
+                    Object.keys(feature.properties).forEach(k => {
+                        if (metricsKeys && !this.isBeginingOfKeyInValues(k, metricsKeys) &&
+                            k !== 'id' && k !== idPath && k !== '_arlas-timestamp_') {
+                            delete feature.properties[k];
+                        }
+                    });
                     this.fix180thMeridianGeom(feature);
                     sourceData.push(feature);
                 });
@@ -977,11 +979,9 @@ export class MapContributor extends Contributor {
 
     private getTimestampFromMD(mdValue: string): number {
         // Define a regular expression pattern to match the timestamp
-        const pattern = /timestamp=(\d+)(?=-|$)/;
-
+        const pattern = /timestamp=(\d+)/;
         // Use the match method to extract the timestamp value
-        const match = mdValue.match(pattern);
-
+        const match = mdValue?.match(pattern);
         if (match && match[1]) {
             const timestampValue = +match[1];
             return timestampValue;
