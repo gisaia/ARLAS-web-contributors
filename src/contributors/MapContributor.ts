@@ -65,6 +65,7 @@ export const SUM = '_sum_';
 export const MIN = '_min_';
 export const MAX = '_max_';
 export const DEFAULT_FETCH_NETWORK_LEVEL = 3;
+export const ARLAS_TIMESTAMP = '_arlas-timestamp_';
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -957,13 +958,12 @@ export class MapContributor extends Contributor {
 
                     const arlasTimestamp = this.getTimestampFromMD(feature.properties.md);
                     if (arlasTimestamp) {
-                        /** todo use const */
-                        feature.properties['_arlas-timestamp_'] = arlasTimestamp;
+                        feature.properties[ARLAS_TIMESTAMP] = arlasTimestamp;
                     }
                     delete feature.properties.md;
                     Object.keys(feature.properties).forEach(k => {
                         if (metricsKeys && !this.isBeginingOfKeyInValues(k, metricsKeys) &&
-                            k !== 'id' && k !== idPath && k !== '_arlas-timestamp_') {
+                            k !== 'id' && k !== idPath && k !== ARLAS_TIMESTAMP) {
                             delete feature.properties[k];
                         }
                     });
