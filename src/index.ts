@@ -34,7 +34,7 @@ export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
 export { HistogramContributor } from './contributors/HistogramContributor';
-export { DEFAULT_FETCH_NETWORK_LEVEL, LegendData, MapContributor } from './contributors/MapContributor';
+export { ARLAS_TIMESTAMP, DEFAULT_FETCH_NETWORK_LEVEL, LegendData, MapContributor } from './contributors/MapContributor';
 export { MetricsTableContributor } from './contributors/MetricsTableContributor';
 export { MatchInfo, ResultListContributor } from './contributors/ResultListContributor';
 export { SearchContributor } from './contributors/SearchContributor';

@@ -65,6 +65,7 @@ export const SUM = '_sum_';
 export const MIN = '_min_';
 export const MAX = '_max_';
 export const DEFAULT_FETCH_NETWORK_LEVEL = 3;
+export const ARLAS_TIMESTAMP = '_arlas-timestamp_';
 /**
  * This contributor works with the Angular MapComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -950,13 +951,19 @@ export class MapContributor extends Contributor {
                     this.processSearchFeature(s, feature, true);
                     delete feature.properties.geometry_path;
                     delete feature.properties.feature_type;
-                    delete feature.properties.md;
 
                     const metricsKeys = this.searchSourcesMetrics.get(s);
                     const idPath = this.isFlat ? this.collectionParameters.id_path.replace(/\./g, this.FLAT_CHAR) :
                         this.collectionParameters.id_path;
+
+                    const arlasTimestamp = this.getTimestampFromMD(feature.properties.md);
+                    if (arlasTimestamp) {
+                        feature.properties[ARLAS_TIMESTAMP] = arlasTimestamp;
+                    }
+                    delete feature.properties.md;
                     Object.keys(feature.properties).forEach(k => {
-                        if (metricsKeys && !this.isBeginingOfKeyInValues(k, metricsKeys) && k !== 'id' && k !== idPath) {
+                        if (metricsKeys && !this.isBeginingOfKeyInValues(k, metricsKeys) &&
+                            k !== 'id' && k !== idPath && k !== ARLAS_TIMESTAMP) {
                             delete feature.properties[k];
                         }
                     });
@@ -967,6 +974,20 @@ export class MapContributor extends Contributor {
             this.redrawSource.next({ source: s, data: sourceData });
         });
         this.legendUpdater.next(this.legendData);
+    }
+
+
+    private getTimestampFromMD(mdValue: string): number {
+        // Define a regular expression pattern to match the timestamp
+        const pattern = /timestamp=(\d+)/;
+        // Use the match method to extract the timestamp value
+        const match = mdValue?.match(pattern);
+        if (match && match[1]) {
+            const timestampValue = +match[1];
+            return timestampValue;
+        } else {
+            return undefined;
+        }
     }
 
     private fix180thMeridianGeom(feature: Feature) {
@@ -3616,7 +3637,7 @@ export class MapContributor extends Contributor {
                 const s = coord[0][1];
                 const e = this.wrap(coord[0][0], -180, 180);
                 const box = w + ',' + s + ',' + e + ',' + n;
-                return {f: bboxPolygon([w, s, e, n]), str: box.trim().toLocaleLowerCase()};
+                return { f: bboxPolygon([w, s, e, n]), str: box.trim().toLocaleLowerCase() };
             } else {
                 // Properly orientate features
                 // Internal polygons (rings) are not reversed as they are not supported
@@ -3627,7 +3648,7 @@ export class MapContributor extends Contributor {
                     const reverseList = list.reverse();
                     f.geometry.coordinates[0] = reverseList;
                 }
-                return {f, str: stringify(f.geometry)};
+                return { f, str: stringify(f.geometry) };
             }
         });
 
