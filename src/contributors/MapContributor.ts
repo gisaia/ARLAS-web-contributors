@@ -241,10 +241,10 @@ export class MapContributor extends Contributor {
         }
         this.initGeoQueryOperation(geoQueryOpConfig);
         this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
-        this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
-        this.windowExtentGeometry = windowExtentGeometryConfig !== undefined ? windowExtentGeometryConfig : ExtentFilterGeometry.centroid_path;
+        this.searchSort = searchSortConfig ?? this.DEFAULT_SEARCH_SORT;
+        this.windowExtentGeometry = windowExtentGeometryConfig ?? ExtentFilterGeometry.geometry_path;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
-        this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
+        this.isFlat = isFlatConfig ?? this.DEFAULT_IS_FLAT;
         this.granularityClusterFunctions.set(Granularity.coarse, coarseGranularity);
         this.granularityClusterFunctions.set(Granularity.medium, mediumGranularity);
         this.granularityClusterFunctions.set(Granularity.fine, fineGranularity);
@@ -1111,7 +1111,7 @@ export class MapContributor extends Contributor {
                 // (so in models interfaces properties are are camel case)
                 const replacement = {};
                 for (const k in value) {
-                    if (Object.hasOwnProperty.call(value, k)) {
+                    if (Object.hasOwn(value, k)) {
                         replacement[
                             k.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
                                 .map(x => x.toLowerCase())
@@ -2267,7 +2267,7 @@ export class MapContributor extends Contributor {
         search.form = {
             flat: false
         };
-        const includes = new Set();
+        const includes = new Set<string>();
         if (ls.includeFields) {
             ls.includeFields.forEach(f => {
                 includes.add(f);
@@ -2290,7 +2290,7 @@ export class MapContributor extends Contributor {
         search.projection = {
             includes: Array.from(includes).join(',')
         };
-        const geometries = new Set();
+        const geometries = new Set<string>();
         geometries.add(ls.returnedGeometry);
         search.returned_geometries = Array.from(geometries).join(',');
         return search;
