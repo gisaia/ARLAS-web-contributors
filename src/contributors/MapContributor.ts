@@ -1111,7 +1111,7 @@ export class MapContributor extends Contributor {
                 // (so in models interfaces properties are are camel case)
                 const replacement = {};
                 for (const k in value) {
-                    if (Object.hasOwnProperty.call(value, k)) {
+                    if (Object.hasOwn(value, k)) {
                         replacement[
                             k.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
                                 .map(x => x.toLowerCase())
@@ -2267,7 +2267,7 @@ export class MapContributor extends Contributor {
         search.form = {
             flat: false
         };
-        const includes = new Set();
+        const includes = new Set<string>();
         if (ls.includeFields) {
             ls.includeFields.forEach(f => {
                 includes.add(f);
@@ -2290,7 +2290,7 @@ export class MapContributor extends Contributor {
         search.projection = {
             includes: Array.from(includes).join(',')
         };
-        const geometries = new Set();
+        const geometries = new Set<string>();
         geometries.add(ls.returnedGeometry);
         search.returned_geometries = Array.from(geometries).join(',');
         return search;
