@@ -241,10 +241,10 @@ export class MapContributor extends Contributor {
         }
         this.initGeoQueryOperation(geoQueryOpConfig);
         this.searchSize = searchSizeConfig !== undefined ? searchSizeConfig : this.DEFAULT_SEARCH_SIZE;
-        this.searchSort = searchSortConfig !== undefined ? searchSortConfig : this.DEFAULT_SEARCH_SORT;
-        this.windowExtentGeometry = windowExtentGeometryConfig !== undefined ? windowExtentGeometryConfig : ExtentFilterGeometry.centroid_path;
+        this.searchSort = searchSortConfig ?? this.DEFAULT_SEARCH_SORT;
+        this.windowExtentGeometry = windowExtentGeometryConfig ?? ExtentFilterGeometry.geometry_path;
         this.drawPrecision = drawPrecisionConfig !== undefined ? drawPrecisionConfig : this.DEFAULT_DRAW_PRECISION;
-        this.isFlat = isFlatConfig !== undefined ? isFlatConfig : this.DEFAULT_IS_FLAT;
+        this.isFlat = isFlatConfig ?? this.DEFAULT_IS_FLAT;
         this.granularityClusterFunctions.set(Granularity.coarse, coarseGranularity);
         this.granularityClusterFunctions.set(Granularity.medium, mediumGranularity);
         this.granularityClusterFunctions.set(Granularity.fine, fineGranularity);
