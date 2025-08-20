@@ -1,5 +1,11 @@
 # Change Log
 
+## [v27.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.4) (2025-08-20)
+
+**New stuff:**
+
+- \[MAP-LIST-INTERACTION\] Set the windowExtentGeometry default value to ExtentFilterGeometry.geometry\_path [\#628](https://github.com/gisaia/ARLAS-web-contributors/issues/628)
+
 ## [v27.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.3) (2025-04-28)
 
 **New stuff:**
