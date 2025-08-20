@@ -66,8 +66,9 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
     * Contributor which the ResultListDetailedDataRetriever works
     */
     private contributor: ResultListContributor;
-    private detailsFunctionMap = new Map<string, Map<string, Function>>();
-    public detailsConfig;
+    private readonly detailsFunctionMap = new Map<string, Map<string, Function>>();
+    public detailsConfig: Array<Detail>;
+
     public constructor(contributor: ResultListContributor) {
         this.contributor = contributor;
         const details: Array<Detail> = this.contributor.getConfigValue('details');
@@ -84,9 +85,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             });
             this.detailsFunctionMap.set(group.name, detailedDataFunctionMap);
         });
-
     }
-
 
     public getValues(identifier: string, fields: string[]): Observable<string[]> {
         const search: Search = { page: { size: 1 } };
@@ -357,12 +356,12 @@ export class ResultListContributor extends Contributor {
     private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
     private columnsProcess = {};
     /** CONSTANTS */
-    private NEXT_AFTER = '_nextAfter';
-    private PREVIOUS_AFTER = '_previousAfter';
-    private urlImageTemplateFunction: Function | undefined;
-    private urlThumbnailTemplateFunction: Function | undefined;
-    private titleFunctions = new Map<string, Function>();
-    private tooltipFunctionn = new Map<string, Function>();
+    private readonly NEXT_AFTER = '_nextAfter';
+    private readonly PREVIOUS_AFTER = '_previousAfter';
+    private readonly urlImageTemplateFunction: Function | undefined;
+    private readonly urlThumbnailTemplateFunction: Function | undefined;
+    private readonly titleFunctions = new Map<string, Function>();
+    private readonly tooltipFunctionn = new Map<string, Function>();
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -389,6 +388,7 @@ export class ResultListContributor extends Contributor {
                     + column.process + '; return r;');
                 this.columnsProcess[column.columnName] = func;
             }
+
             this.fieldsList.push(column);
             this.includesvalues.push(column.fieldName);
             if (column.dropdown) {
@@ -892,6 +892,15 @@ export class ResultListContributor extends Contributor {
                         fieldValueMap.set(md, resultValue);
                     });
                 }
+
+                if (this.fieldsConfiguration.idFieldName) {
+                    let resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.idFieldName);
+                    if (resultValue !== undefined) {
+                        resultValue = resultValue.toString();
+                    }
+                    fieldValueMap.set(this.fieldsConfiguration.idFieldName, resultValue);
+                }
+
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
                     const processFunction: Function = this.columnsProcess[element.columnName];
@@ -901,13 +910,7 @@ export class ResultListContributor extends Contributor {
                     }
                     fieldValueMap.set(element.fieldName, resultValue);
                 });
-                if (this.fieldsConfiguration.idFieldName) {
-                    let resultValue: string = getElementFromJsonObject(h.data, this.fieldsConfiguration.idFieldName);
-                    if (resultValue !== undefined) {
-                        resultValue = resultValue.toString();
-                    }
-                    fieldValueMap.set(this.fieldsConfiguration.idFieldName, resultValue);
-                }
+
                 if (this.fieldsConfiguration.titleFieldNames) {
                     this.fieldsConfiguration.titleFieldNames.forEach(field => {
                         this.setProcessFieldData(h, field, fieldValueMap, 'title', this.titleFunctions.get(field.fieldPath));
