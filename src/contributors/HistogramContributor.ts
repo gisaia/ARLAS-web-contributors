@@ -306,9 +306,13 @@ export class HistogramContributor extends Contributor {
         aggResponses.forEach(aggResponse => {
             if (aggResponse.elements !== undefined) {
                 aggResponse.elements.forEach(element => {
-                    const value = jp.query(element, this.json_path)[0];
+                    let value = jp.query(element, this.json_path)[0];
                     if (this.maxValue <= value) {
                         this.maxValue = value;
+                    }
+                    /** In case the count is 0 and the configured metric to display is not the count, then set the metric value to Infinity*/
+                    if (this.json_path !== '$.count' && element.count === 0) {
+                        value = 'Infinity';
                     }
                     dataTab.push({ key: element.key, value: value, chartId: aggResponse['collection'] });
                 });
