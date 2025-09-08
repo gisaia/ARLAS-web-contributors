@@ -1,5 +1,18 @@
 # Change Log
 
+## [v27.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.1.0) (2025-09-08)
+
+**New stuff:**
+
+- Set the metric value to 'Infinity' when the bucket count is 0 [\#634](https://github.com/gisaia/ARLAS-web-contributors/issues/634)
+- \[MAP-LIST-INTERACTION\] Set the windowExtentGeometry default value to ExtentFilterGeometry.geometry\_path [\#628](https://github.com/gisaia/ARLAS-web-contributors/issues/628)
+- Add detailsConfig entry in DetailedDataRetriever [\#627](https://github.com/gisaia/ARLAS-web-contributors/issues/627)
+- Add new '\_arlas-timestamp\_' in features sources [\#626](https://github.com/gisaia/ARLAS-web-contributors/issues/626)
+
+**Fixed bugs:**
+
+- Fix rootContributorConf.schema.json / histogramContributorConf.schema.json [\#220](https://github.com/gisaia/ARLAS-web-contributors/issues/220)
+
 ## [v27.0.4](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.4) (2025-08-20)
 
 ## [v27.0.3](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.0.3) (2025-04-28)
