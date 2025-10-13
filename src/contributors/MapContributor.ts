@@ -718,21 +718,21 @@ export class MapContributor extends Contributor {
                         /** BBOX mode */
                         const box = aoi.split(',');
                         let coordinates = [];
-                        if (parseFloat(box[0]) < parseFloat(box[2])) {
+                        if (Number.parseFloat(box[0]) < Number.parseFloat(box[2])) {
                             coordinates = [[
-                                [parseFloat(box[2]), parseFloat(box[1])],
-                                [parseFloat(box[2]), parseFloat(box[3])],
-                                [parseFloat(box[0]), parseFloat(box[3])],
-                                [parseFloat(box[0]), parseFloat(box[1])],
-                                [parseFloat(box[2]), parseFloat(box[1])]
+                                [Number.parseFloat(box[2]), Number.parseFloat(box[1])],
+                                [Number.parseFloat(box[2]), Number.parseFloat(box[3])],
+                                [Number.parseFloat(box[0]), Number.parseFloat(box[3])],
+                                [Number.parseFloat(box[0]), Number.parseFloat(box[1])],
+                                [Number.parseFloat(box[2]), Number.parseFloat(box[1])]
                             ]];
                         } else {
                             coordinates = [[
-                                [(parseFloat(box[2]) + 360), parseFloat(box[1])],
-                                [(parseFloat(box[2]) + 360), parseFloat(box[3])],
-                                [(parseFloat(box[0])), parseFloat(box[3])],
-                                [(parseFloat(box[0])), parseFloat(box[1])],
-                                [(parseFloat(box[2]) + 360), parseFloat(box[1])]
+                                [(Number.parseFloat(box[2]) + 360), Number.parseFloat(box[1])],
+                                [(Number.parseFloat(box[2]) + 360), Number.parseFloat(box[3])],
+                                [(Number.parseFloat(box[0])), Number.parseFloat(box[3])],
+                                [(Number.parseFloat(box[0])), Number.parseFloat(box[1])],
+                                [(Number.parseFloat(box[2]) + 360), Number.parseFloat(box[1])]
                             ]];
                         }
                         const polygonGeojson = {
@@ -1027,7 +1027,7 @@ export class MapContributor extends Contributor {
             a.dataset.downloadurl = [contentType, a.download, a.href].join(':');
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
+            a.remove();
         } else {
             const geojson = {
                 type: 'FeatureCollection',
@@ -3572,7 +3572,7 @@ export class MapContributor extends Contributor {
 
     private getValueFromFeature(f: Feature, field: string, flattenedField: string): any {
         let value = +f.properties[flattenedField];
-        if (isNaN(value)) {
+        if (Number.isNaN(value)) {
             if (this.dateFieldFormatMap.get(field)) {
                 /** Moment Format character for days is `D` while the one given by ARLAS-server is `d`
                  * Thus, we replace the `d` with `D` to adapt to Moment library.
@@ -3644,7 +3644,7 @@ export class MapContributor extends Contributor {
             const suffixNum = Math.floor(('' + value).length / 4);
             let shortValue: number;
             for (let precision = 3; precision >= 1; precision--) {
-                shortValue = parseFloat((suffixNum !== 0 ? (value / Math.pow(1000, suffixNum)) : value)
+                shortValue = Number.parseFloat((suffixNum !== 0 ? (value / Math.pow(1000, suffixNum)) : value)
                     .toPrecision(precision));
                 const dotLessShortValue = (shortValue + '').replace(/[^a-zA-Z 0-9]+/g, '');
                 if (dotLessShortValue.length <= 2) {

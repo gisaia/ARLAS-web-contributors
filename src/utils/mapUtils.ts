@@ -217,8 +217,8 @@ export function truncate(geojson, options) {
     let coordinates = options.coordinates;
     const mutate = options.mutate;
     // default params
-    precision = (precision === undefined || precision === null || isNaN(precision)) ? 6 : precision;
-    coordinates = (coordinates === undefined || coordinates === null || isNaN(coordinates)) ? 3 : coordinates;
+    precision = (precision === undefined || precision === null || Number.isNaN(precision)) ? 6 : precision;
+    coordinates = (coordinates === undefined || coordinates === null || Number.isNaN(coordinates)) ? 3 : coordinates;
     // validation
     if (!geojson) {
         throw new Error('<geojson> is required');
@@ -280,8 +280,8 @@ export function isClockwise(coordinates: Array<Array<number>>, type: 'Polygon' |
  */
 export function getCanonicalExtents(rawExtent: string, wrappedExtent: string): string[] {
     const finalExtends = [];
-    const wrapExtentTab = wrappedExtent.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
-    const rawExtentTab = rawExtent.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
+    const wrapExtentTab = wrappedExtent.split(',').map(d => Number.parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
+    const rawExtentTab = rawExtent.split(',').map(d => Number.parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
     const rawExtentForTest = rawExtentTab.join(',');
     const wrapExtentForTest = wrapExtentTab.join(',');
 
@@ -310,10 +310,10 @@ export function getCanonicalExtents(rawExtent: string, wrappedExtent: string): s
 }
 
 
-export function numToString(num: number, p?: number): string {
+export function numToString(num: number): string {
     // what tier? (determines SI symbol)
     const suffixes = ['', 'k', 'M', 'b', 't'];
-    const suffixNum = Math.log10(Math.abs(num)) / 3 | 0;
+    const suffixNum = Math.trunc(Math.log10(Math.abs(num)) / 3);
 
     if (suffixNum === 0) {
         if (Math.abs(num) < 0.1) {
@@ -330,7 +330,7 @@ export function numToString(num: number, p?: number): string {
     return scaled.toFixed(1) + suffix;
 }
 
-export function formatNumber(x, formatChar = ' ', roundPrecision?: number): string {
+export function formatNumber(x: number, formatChar = ' ', roundPrecision?: number): string {
     if (isNumber(x)) {
         const trunc = Math.trunc(x);
         const integerFraction = (x + '').split('.');
@@ -365,7 +365,7 @@ export function formatNumber(x, formatChar = ' ', roundPrecision?: number): stri
             return spacedNumberString;
         }
     }
-    return x;
+    return x + '';
 }
 
 /**
