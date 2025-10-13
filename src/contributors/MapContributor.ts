@@ -39,7 +39,7 @@ import {
     FeaturesNormalization, Granularity, ItemDataType, LayerClusterSource, LayerFeatureSource,
     LayerSourceConfig, LayerTopologySource, MetricConfig, OnMoveResult, PageEnum, SourcesAgg, SourcesSearch
 } from '../models/models';
-import { numToString, stringToExtent } from '../utils/mapUtils';
+import { extentToTiles, numToString, stringToExtent } from '../utils/mapUtils';
 import {
     ASC, ColorGeneratorLoader, appendIdToSort, coarseGranularity, coarseTopoGranularity, fineGranularity,
     fineTopoGranularity, finestGranularity, finestTopoGranularity, mediumGranularity, mediumTopoGranularity,
@@ -367,6 +367,7 @@ export class MapContributor extends Contributor {
 
             }
         });
+
         if (this.updateData) {
             if (recalculateWindow) {
                 this.getWindowModeData(wrappedTestExtent, rawTestExtent, windowVisibleSources,
@@ -1064,6 +1065,7 @@ export class MapContributor extends Contributor {
                     sourceData.push(feature);
                 });
             }
+
             this.redrawSource.next({ source: s, data: sourceData });
             if (!!stats) {
                 this.legendData.set('count', {
@@ -1484,6 +1486,7 @@ export class MapContributor extends Contributor {
             let count = 0;
             const newVisitedTiles = this.getVisitedTiles(extent, rawExtent, zoom, granularity, networkFetchingLevel, aggSource, aggType);
             const totalcount = newVisitedTiles.size;
+
             if (totalcount > 0) {
                 this.collaborativeSearcheService.ongoingSubscribe.next(1);
                 const lastCall = this.lastCalls.get(aggId);
@@ -1587,10 +1590,7 @@ export class MapContributor extends Contributor {
                         topologySource.rawGeometry.geometry === feature.properties.geometry_ref;
 
                 }).forEach(source => {
-                    let topologyData = this.topologyDataPerSource.get(source);
-                    if (!topologyData) {
-                        topologyData = new Array();
-                    }
+                    const topologyData: Feature[] = this.topologyDataPerSource.get(source) ?? new Array();
                     this.calculateAggMetricsStatsExceptAvg(source, feature);
                     this.calculatesAvgStatsForTopology(source, feature);
                     topologyData.push(feature);
@@ -3484,53 +3484,28 @@ export class MapContributor extends Contributor {
         return newVisitedTiles;
     }
 
-    private getVisitedTiles(extent, rawExtent, zoom: number, granularity: Granularity,
-        networkFetchingLevel: number, aggSource: SourcesAgg, aggType) {
-        let visitedTiles;
+    private getVisitedTiles(extent: number[], rawExtent: number[], zoom: number, granularity: Granularity,
+        networkFetchingLevel: number, aggSource: SourcesAgg, aggType: string) {
+        let visitedTiles: Set<string>;
         let precisions;
-        const finalExtents = getCanonicalExtents(extentToString(rawExtent), extentToString(extent));
+
+        const finalExtents = getCanonicalExtents(extentToString(rawExtent), extentToString(extent))
+            .map(e => stringToExtent(e));
         if (aggType === this.TOPOLOGY_SOURCE) {
-            if (finalExtents.length === 1) {
-                visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((networkFetchingLevel)))
-                    .map(t => t.x + '_' + t.y + '_' + t.z));
-            } else {
-                const e1 = stringToExtent(finalExtents[0]);
-                const e2 = stringToExtent(finalExtents[1]);
-                const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.ceil((networkFetchingLevel)))
-                    .map(t => t.x + '_' + t.y + '_' + t.z));
-                const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.ceil((networkFetchingLevel)))
-                    .map(t => t.x + '_' + t.y + '_' + t.z));
-                visitedTiles = new Set([...v1, ...v2]);
-            }
+            visitedTiles = finalExtents.map(e => extentToTiles(e, networkFetchingLevel))
+                .reduce((a, b) => new Set([...a, ...b]), new Set());
             precisions = Object.assign({}, networkFetchingLevelGranularity(networkFetchingLevel));
         } else {
             if (aggSource.agg.type === Aggregation.TypeEnum.Geohash) {
-                if (finalExtents.length === 1) {
-                    visitedTiles = extentToGeohashes(extent, zoom, this.granularityClusterFunctions.get(granularity));
-                } else {
-                    const e1 = stringToExtent(finalExtents[0]);
-                    const e2 = stringToExtent(finalExtents[1]);
-                    const v1 = extentToGeohashes(e1, zoom, this.granularityClusterFunctions.get(granularity));
-                    const v2 = extentToGeohashes(e2, zoom, this.granularityClusterFunctions.get(granularity));
-                    visitedTiles = new Set([...v1, ...v2]);
-                }
+                visitedTiles = finalExtents.map(e => extentToGeohashes(e, zoom, this.granularityClusterFunctions.get(granularity)))
+                    .reduce((a, b) => new Set([...a, ...b]), new Set());
             } else {
-                if (finalExtents.length === 1) {
-                    visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((zoom) - 1))
-                        .map(t => t.x + '_' + t.y + '_' + t.z));
-                } else {
-                    const e1 = stringToExtent(finalExtents[0]);
-                    const e2 = stringToExtent(finalExtents[1]);
-                    const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.ceil((zoom) - 1))
-                        .map(t => t.x + '_' + t.y + '_' + t.z));
-                    const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.ceil((zoom) - 1))
-                        .map(t => t.x + '_' + t.y + '_' + t.z));
-                    visitedTiles = new Set([...v1, ...v2]);
-                }
+                visitedTiles = finalExtents.map(e => extentToTiles(e, zoom - 1))
+                    .reduce((a, b) => new Set([...a, ...b]), new Set());
             }
             precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggSource.agg.type));
-
         }
+
         let oldPrecisions;
         aggSource.sources.forEach(s => {
             const p = Object.assign({}, this.sourcesPrecisions.get(s));
@@ -3544,7 +3519,7 @@ export class MapContributor extends Contributor {
         if (!oldPrecisions) {
             oldPrecisions = {};
         }
-        let newVisitedTiles: Set<string> = new Set();
+        let newVisitedTiles = new Set<string>();
         if (oldPrecisions.tilesPrecision !== precisions.tilesPrecision ||
             oldPrecisions.requestsPrecision !== precisions.requestsPrecision) {
             /** precision changed, need to clean tiles index */
@@ -3559,7 +3534,8 @@ export class MapContributor extends Contributor {
             let start = true;
             aggSource.sources.forEach(s => {
                 if (start) {
-                    start = false; tiles = this.sourcesVisitedTiles.get(s);
+                    start = false;
+                    tiles = this.sourcesVisitedTiles.get(s);
                 } else {
                     if (this.sourcesVisitedTiles.get(s).size < tiles.size) {
                         tiles = this.sourcesVisitedTiles.get(s);

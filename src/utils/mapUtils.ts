@@ -129,6 +129,11 @@ export function stringToTile(tileString: string): { x: number; y: number; z: num
     return { x: +numbers[0], y: +numbers[1], z: +numbers[2] };
 }
 
+export function extentToTiles(extent: number[], minZoom: number): Set<string> {
+    return new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil(minZoom))
+        .map(t => t.x + '_' + t.y + '_' + t.z));
+}
+
 function tiled(num: number): number {
     return Math.floor(num / 256);
 }
@@ -152,7 +157,7 @@ export function project(lat: number, lng: number, zoom: number): { x: number; y:
 
     return point;
 }
-export function getTiles(bounds: Array<Array<number>>, zoom: number): Array<{ x: number; y: number; z: number; }> {
+export function getTiles(bounds: number[][], zoom: number): Array<{ x: number; y: number; z: number; }> {
     // north,west
     const min = project(bounds[1][1], bounds[0][0], zoom);
     // south,east
@@ -171,9 +176,9 @@ export function getTiles(bounds: Array<Array<number>>, zoom: number): Array<{ x:
     return tiles;
 }
 
-export function xyz(bounds, minZoom, maxZoom?): Array<{ x: number; y: number; z: number; }> {
-    let min;
-    let max;
+export function xyz(bounds: number[][], minZoom: number, maxZoom?: number): Array<{ x: number; y: number; z: number; }> {
+    let min: number;
+    let max: number;
     let tiles = [];
 
     if (!maxZoom) {
@@ -279,8 +284,9 @@ export function getCanonicalExtents(rawExtent: string, wrappedExtent: string): s
     const rawExtentTab = rawExtent.split(',').map(d => parseFloat(d)).map(n => Math.floor(n * 100000) / 100000);
     const rawExtentForTest = rawExtentTab.join(',');
     const wrapExtentForTest = wrapExtentTab.join(',');
+
     if (rawExtentTab[0] < -180 && rawExtentTab[2] > 180) {
-        finalExtends.push('-180' + ',' + '-90' + ',' + '180' + ',' + '90');
+        finalExtends.push('-180,-90,180,90');
     } else if (rawExtentForTest === wrapExtentForTest) {
         finalExtends.push(wrappedExtent.trim());
     } else {
