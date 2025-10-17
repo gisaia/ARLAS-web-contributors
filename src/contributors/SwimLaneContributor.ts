@@ -17,22 +17,15 @@
  * under the License.
  */
 
+import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Expression, Filter } from 'arlas-api';
 import {
-    Collaboration,
-    CollaborationEvent,
-    CollaborativesearchService,
-    ConfigService,
-    Contributor,
-    OperationEnum,
-    projType
+    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { Observable, from } from 'rxjs';
-import { map, flatMap } from 'rxjs/operators';
-
-import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Filter, Expression } from 'arlas-api';
-import { getAggregationPrecision } from '../utils/histoswimUtils';
-import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
 import jp from 'jsonpath/jsonpath.min';
+import { Observable, from } from 'rxjs';
+import { map, mergeMap } from 'rxjs/operators';
+import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
+import { adjustHistogramInterval, getAggregationPrecision, MAX_BUCKETS } from '../utils/histoswimUtils';
 
 export interface LaneStats {
     min?: number;
@@ -94,6 +87,10 @@ export class SwimLaneContributor extends Contributor {
     * Number of buckets in the swimlane. If not specified, the interval in the aggregagtion model is used instead.
     */
     private nbBuckets: number = this.getConfigValue('numberOfBuckets');
+
+    /** Maximum number of buckets for a swimlane */
+    public maxBuckets = MAX_BUCKETS;
+
     /**
     * Wether use UTC for display time
     */
@@ -171,28 +168,30 @@ export class SwimLaneContributor extends Contributor {
             collaborations.set(v, k);
         });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
-            if (this.nbBuckets) {
-                return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-                <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
-                    collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
-                    .pipe(
-                        map((computationResponse: ComputationResponse) => {
-                            const dataRange = !!computationResponse.value ? computationResponse.value : 0;
-                            this.range = !!computationResponse.value ? computationResponse : null;
+            return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
+            <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
+                collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
+                .pipe(
+                    map((computationResponse: ComputationResponse) => {
+                        const dataRange = !!computationResponse.value ? computationResponse.value : 0;
+                        this.range = !!computationResponse.value ? computationResponse : null;
+                        /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
+                        if (this.nbBuckets) {
                             this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
-                        }),
-                        flatMap(() =>
-                            this.collaborativeSearcheService.resolveButNotAggregation(
-                                [projType.aggregate, this.aggregations], collaborations,
-                                this.collection, this.identifier, {}, false, this.cacheDuration)
-                        )
+                        } else {
+                            /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
+                            const initialInterval = this.aggregations[1].interval;
+                            this.aggregations[1].interval = adjustHistogramInterval(this.aggregations[1].type,
+                                this.maxBuckets, initialInterval, dataRange);
+                        }
+                    }),
+                    mergeMap(() =>
+                        this.collaborativeSearcheService.resolveButNotAggregation(
+                            [projType.aggregate, this.aggregations], collaborations,
+                            this.collection, this.identifier, {}, false, this.cacheDuration)
                     )
-                );
-            } else {
-                return this.collaborativeSearcheService.resolveButNotAggregation(
-                    [projType.aggregate, this.aggregations], this.collaborativeSearcheService.collaborations,
-                    this.collection, this.identifier, {}, false, this.cacheDuration);
-            }
+                )
+            );
         } else {
             return from([]);
         }

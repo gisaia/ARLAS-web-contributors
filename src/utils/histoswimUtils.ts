@@ -430,3 +430,6 @@ export function adjustHistogramInterval(histogramType: Aggregation.TypeEnum,
         }
     }
 }
+
+/** Maximum number of buckets for a swimlane or an histogram */
+export const MAX_BUCKETS = 200;
