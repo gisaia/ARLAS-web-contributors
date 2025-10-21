@@ -1,5 +1,7 @@
 # Change Log
 
+## [v27.1.1](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.1.1) (2025-10-21)
+
 ## [v27.1.0](https://github.com/gisaia/ARLAS-web-contributors/tree/v27.1.0) (2025-09-08)
 
 **New stuff:**
