@@ -617,6 +617,8 @@ export class MapContributor extends Contributor {
                     this.fetchAggSources(mapLoadExtent, mapLoadRawExtent, zoom, clusterAggsBuilder, this.CLUSTER_SOURCE);
                     this.fetchTiledSearchSources(mapLoadExtent, mapLoadRawExtent, featureSearchBuilder);
                 });
+            } else {
+                this.collaborativeSearcheService.ongoingSubscribe.next(-1);
             }
         }
     }
@@ -1440,8 +1442,8 @@ export class MapContributor extends Contributor {
                             }
                         }),
                         finalize(() => {
-                            this.renderSearchSources(searchSource.sources);
                             this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                            this.renderSearchSources(searchSource.sources);
                         })
                     ).subscribe(data => data);
             }
@@ -1457,6 +1459,7 @@ export class MapContributor extends Contributor {
                 .pipe(
                     map(f => this.computeSimpleModeFeature(f, searchSource.sources, renderStrategy, maxPages, whichPage)),
                     finalize(() => {
+                        this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                         // todo manage same source but in different visualisation set
                         searchSource.sources.forEach(s => {
                             this.sourceToLayerIndex.get(s).forEach(
@@ -1467,7 +1470,6 @@ export class MapContributor extends Contributor {
                         });
                         this.visibilityUpdater.next(this.visibilityStatus);
                         this.renderSearchSources(searchSource.sources);
-                        this.collaborativeSearcheService.ongoingSubscribe.next(-1);
                     })
                 ).subscribe(data => data);
 
@@ -1517,8 +1519,8 @@ export class MapContributor extends Contributor {
                             }
                         }),
                         finalize(() => {
-                            this.renderAggSources(aggSource.sources, true);
                             this.collaborativeSearcheService.ongoingSubscribe.next(-1);
+                            this.renderAggSources(aggSource.sources, true);
                         })
                     ).subscribe(data => data);
             }
