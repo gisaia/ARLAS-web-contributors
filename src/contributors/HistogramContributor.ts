@@ -17,23 +17,18 @@
  * under the License.
  */
 
-import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Filter } from 'arlas-api';
+import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Filter, Interval } from 'arlas-api';
 import {
-    Collaboration,
-    CollaborationEvent,
-    CollaborativesearchService,
-    ConfigService,
-    Contributor,
-    OperationEnum,
-    projType
+    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
 import { CollectionAggField } from 'arlas-web-core/utils/utils';
 import jp from 'jsonpath/jsonpath.min';
-import { Observable, Subject, from, zip } from 'rxjs';
-import { flatMap, map } from 'rxjs/operators';
+import { from, map, mergeMap, Observable, Subject, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
-import { adjustHistogramInterval, getAggregationPrecision, getSelectionToSet, getSelectionFromValues } from '../utils/histoswimUtils';
+import {
+    adjustHistogramInterval, getAggregationPrecision, getSelectionFromValues, getSelectionToSet, MAX_BUCKETS
+} from '../utils/histoswimUtils';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import { DetailedHistogramContributor } from './DetailedHistogramContributor';
 
@@ -112,14 +107,14 @@ export class HistogramContributor extends Contributor {
     /**
     * Labels of the timelines
     */
-    public timeLabel;
+    public timeLabel: string;
     /**
     * Wether use UTC for display time
     */
     public useUtc = this.getConfigValue('useUtc') !== undefined ? this.getConfigValue('useUtc') : true;
 
-    /** to be set in the toolkit when creating the contributor */
-    public maxBuckets = 200;
+    /** Maximum number of buckets for a swimlane */
+    public maxBuckets = MAX_BUCKETS;
 
     public detailedHistrogramContributor!: DetailedHistogramContributor;
     /**
@@ -367,7 +362,7 @@ export class HistogramContributor extends Contributor {
             .pipe(
                 map((computationResponses: ComputationResponse[]) => {
                     const dataRange = Math.max(...computationResponses.map(d => (!!d.value) ? d.value : 0));
-                    let histogramInterval;
+                    let histogramInterval: Interval;
                     /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
                     if (this.nbBuckets) {
                         histogramInterval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
@@ -398,7 +393,7 @@ export class HistogramContributor extends Contributor {
                         return this.resolveHistogramAgg(identifier, [aggregation], collaborations, additionalFilter, ac);
                     }));
                 })),
-                flatMap(a => a)
+                mergeMap(a => a)
             );
 
         return agg;
