@@ -121,7 +121,7 @@ export class SearchContributor extends Contributor {
             f: [[{
                 field: this.autoCompleteField,
                 op: Expression.OpEnum.Like,
-                value: search
+                value: search.replace(/\\\+/g, '+') // remove escape char before '+' if present
             }]]
         };
 
