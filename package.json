@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors.git"
+    "url": "https://github.com/gisaia/ARLAS-web-contributors.git"
   },
   "author": "gisaia",
   "license": "Apache-2.0",
@@ -50,9 +50,9 @@
     "typescript": "~5.4.0"
   },
   "bugs": {
-    "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/issues"
+    "url": "https://github.com/gisaia/ARLAS-web-contributors/issues"
   },
-  "homepage": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors/blob/master/README.md",
+  "homepage": "https://github.com/gisaia/ARLAS-web-contributors/blob/master/README.md",
   "overrides": {
     "cross-spawn": "~7.0.5"
   }
