@@ -3410,12 +3410,12 @@ export class MapContributor extends Contributor {
         const finalExtents = getCanonicalExtents(extentToString(rawExtent), extentToString(extent));
         let visitedTiles;
         if (finalExtents.length === 1) {
-            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((this.zoom) - 1)));
+            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
         } else {
             const e1 = stringToExtent(finalExtents[0]);
             const e2 = stringToExtent(finalExtents[1]);
-            const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.ceil((this.zoom) - 1)));
-            const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.ceil((this.zoom) - 1)));
+            const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
+            const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
             visitedTiles = new Set([...v1, ...v2]);
         }
         let tiles = new Set<string>();
@@ -3495,14 +3495,14 @@ export class MapContributor extends Contributor {
                 }
             } else {
                 if (finalExtents.length === 1) {
-                    visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((zoom) - 1))
+                    visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.max(Math.ceil(zoom - 1), 0))
                         .map(t => t.x + '_' + t.y + '_' + t.z));
                 } else {
                     const e1 = stringToExtent(finalExtents[0]);
                     const e2 = stringToExtent(finalExtents[1]);
-                    const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.ceil((zoom) - 1))
+                    const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.max(Math.ceil(zoom - 1), 0))
                         .map(t => t.x + '_' + t.y + '_' + t.z));
-                    const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.ceil((zoom) - 1))
+                    const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.max(Math.ceil(zoom - 1), 0))
                         .map(t => t.x + '_' + t.y + '_' + t.z));
                     visitedTiles = new Set([...v1, ...v2]);
                 }
@@ -3616,7 +3616,7 @@ export class MapContributor extends Contributor {
                 const s = coord[0][1];
                 const e = this.wrap(coord[0][0], -180, 180);
                 const box = w + ',' + s + ',' + e + ',' + n;
-                return {f: bboxPolygon([w, s, e, n]), str: box.trim().toLocaleLowerCase()};
+                return { f: bboxPolygon([w, s, e, n]), str: box.trim().toLocaleLowerCase() };
             } else {
                 // Properly orientate features
                 // Internal polygons (rings) are not reversed as they are not supported
@@ -3627,7 +3627,7 @@ export class MapContributor extends Contributor {
                     const reverseList = list.reverse();
                     f.geometry.coordinates[0] = reverseList;
                 }
-                return {f, str: stringify(f.geometry)};
+                return { f, str: stringify(f.geometry) };
             }
         });
 
