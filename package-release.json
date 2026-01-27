@@ -8,6 +8,9 @@
     "type": "git",
     "url": "https://gitlab.com/GISAIA.ARLAS/ARLAS-web-contributors.git"
   },
+  "publishConfig": {
+    "tag": "27.0.x"
+  },
   "author": "gisaia-team",
   "license": " Apache-2.0",
   "dependencies": {
