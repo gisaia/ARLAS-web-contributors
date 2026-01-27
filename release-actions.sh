@@ -90,7 +90,7 @@ releaseProd(){
         echo "  -- tagged as ${STAGE_LOCAL}"
         npm publish --tag=${STAGE_LOCAL}
     else
-        npm publish --tag=27.0.x
+        npm publish
     fi
     cd ..
     rm -rf dist
