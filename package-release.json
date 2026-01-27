@@ -6,7 +6,7 @@
   "typings": "./index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/gisaia/ARLAS-web-contributors.git"
+    "url": "https://github.com/gisaia/ARLAS-web-contributors.git"
   },
   "publishConfig": {
     "tag": "27.0.x"
@@ -32,7 +32,7 @@
     "wellknown": "^0.5.0"
   },
   "bugs": {
-    "url": "https://gitlab.com/gisaia/ARLAS-web-contributors/issues"
+    "url": "https://github.com/gisaia/ARLAS-web-contributors/issues"
   },
-  "homepage": "https://gitlab.com/gisaia/ARLAS-web-contributors/blob/master/README.md"
+  "homepage": "https://github.com/gisaia/ARLAS-web-contributors/blob/master/README.md"
 }
