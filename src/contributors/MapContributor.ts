@@ -3431,12 +3431,12 @@ export class MapContributor extends Contributor {
         const finalExtents = getCanonicalExtents(extentToString(rawExtent), extentToString(extent));
         let visitedTiles;
         if (finalExtents.length === 1) {
-            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.ceil((this.zoom) - 1)));
+            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
         } else {
             const e1 = stringToExtent(finalExtents[0]);
             const e2 = stringToExtent(finalExtents[1]);
-            const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.ceil((this.zoom) - 1)));
-            const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.ceil((this.zoom) - 1)));
+            const v1 = new Set(xyz([[e1[1], e1[2]], [e1[3], e1[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
+            const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
             visitedTiles = new Set([...v1, ...v2]);
         }
         let tiles = new Set<string>();
@@ -3500,7 +3500,7 @@ export class MapContributor extends Contributor {
                 visitedTiles = finalExtents.map(e => extentToGeohashes(e, zoom, this.granularityClusterFunctions.get(granularity)))
                     .reduce((a, b) => new Set([...a, ...b]), new Set());
             } else {
-                visitedTiles = finalExtents.map(e => extentToTiles(e, zoom - 1))
+                visitedTiles = finalExtents.map(e => extentToTiles(e, Math.max((zoom - 1), 0)))
                     .reduce((a, b) => new Set([...a, ...b]), new Set());
             }
             precisions = Object.assign({}, this.granularityClusterFunctions.get(granularity)(zoom, aggSource.agg.type));
