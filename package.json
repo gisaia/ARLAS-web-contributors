@@ -7,7 +7,6 @@
   "scripts": {
     "build-release-watch": "tsc -p tsconfig.json --watch && npm run copy-root-schema && npm run copy-npm-readme",
     "build-release": "tsc -p tsconfig.json && npm run copy-root-schema && npm run copy-npm-readme",
-    "build-test": "tsc -p tsconfig.json && npm run copy-root-schema && npm run copy-npm-readme && cp package-test.json dist/package.json && cd dist && npm install && cd ..",
     "clean": "npm cache clear && rimraf -- dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts",
@@ -30,7 +29,7 @@
     "@types/file-saver": "^2.0.1",
     "@types/jsonpath": "^0.2.0",
     "@types/tinycolor2": "^1.4.0",
-    "arlas-web-core": "28.0.0-beta.2",
+    "arlas-web-core": "28.0.0-rc.1",
     "file-saver": "^2.0.2",
     "jsonpath": "^1.0.0",
     "moment": "^2.29.4",
@@ -57,6 +56,7 @@
   "overrides": {
     "license-check-and-add": {
       "globby": "^11.0.0"
-    }
+    },
+    "underscore": "^1.13.8"
   }
 }
