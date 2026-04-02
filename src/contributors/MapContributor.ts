@@ -934,7 +934,6 @@ export class MapContributor extends Contributor {
      */
     public renderSearchSources(sources: Array<string>): void {
         sources.forEach(s => {
-            this.redrawSource.next({ source: s, data: [] });
             this.setLegendSearchData(s);
             const featureRawData = this.featureDataPerSource.get(s);
             const sourceData = [];
@@ -1047,7 +1046,6 @@ export class MapContributor extends Contributor {
      */
     public renderTopologySources(sources: Array<string>): void {
         sources.forEach(s => {
-            this.redrawSource.next({ source: s, data: [] });
             const topologyRawData = this.topologyDataPerSource.get(s);
             const stats = this.aggSourcesStats.get(s);
             const sourceData = [];
@@ -1134,7 +1132,6 @@ export class MapContributor extends Contributor {
      */
     public renderClusterSources(sources: Array<string>, isLastCall = false): void {
         sources.forEach(s => {
-            this.redrawSource.next({ source: s, data: [] });
             const sourceCells = this.cellsPerSource.get(s);
             const stats = this.aggSourcesStats.get(s);
             const metricsKeys = this.aggSourcesMetrics.get(s);
