@@ -17,21 +17,13 @@
  * under the License.
  */
 
+import { Filter, Hits } from 'arlas-api';
+import {
+    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, OperationEnum, projType
+} from 'arlas-web-core';
 import { Observable, Subject, from } from 'rxjs';
 import { map, mergeAll } from 'rxjs/operators';
-
-
-import {
-    Collaboration,
-    CollaborativesearchService,
-    ConfigService,
-    Contributor,
-    OperationEnum,
-    projType, CollaborationEvent
-} from 'arlas-web-core';
-import { Hits, Filter } from 'arlas-api';
-import jsonSchema from '../jsonSchemas/chipssearchContributorConf.schema.json';
-import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
+import jsonSchema from '../jsonSchemas/chipssearchContributorConf.schema.json' with { type: 'json' };
 /**
  * This contributor must work with SearchContributor and a component
  * to display several chips label from SearchComponent.

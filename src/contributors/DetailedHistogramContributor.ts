@@ -18,15 +18,12 @@
  */
 
 import { Aggregation, AggregationResponse, Filter } from 'arlas-api';
-import { Collaboration, CollaborationEvent, OperationEnum } from 'arlas-web-core';
-import jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json';
-import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
-import { getAggregationPrecision, adjustHistogramInterval } from '../utils/histoswimUtils';
-import { HistogramContributor } from './HistogramContributor';
-
-import { CollectionAggField } from 'arlas-web-core/utils/utils';
+import { Collaboration, CollaborationEvent, CollectionAggField, OperationEnum } from 'arlas-web-core';
 import { Observable, from } from 'rxjs';
+import jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json' with { type: 'json' };
 import { DateExpression, SelectedOutputValues } from '../models/models';
+import { adjustHistogramInterval, getAggregationPrecision } from '../utils/histoswimUtils';
+import { HistogramContributor } from './HistogramContributor';
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.

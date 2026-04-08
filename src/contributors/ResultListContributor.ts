@@ -17,30 +17,21 @@
  * under the License.
  */
 
-import { Observable, from, zip } from 'rxjs';
-import { filter, map, finalize } from 'rxjs/operators';
-
 import {
-    CollaborativesearchService, Contributor,
-    ConfigService, projType, Collaboration, CollaborationEvent
-} from 'arlas-web-core';
-import {
-    Search,
-    Projection, Hits,
-    Filter, Aggregation, Expression, ArlasHit
+    Aggregation, ArlasHit, Expression, Filter, Hits, Projection, Search
 } from 'arlas-api';
 import {
-    getElementFromJsonObject, isArray, download, appendIdToSort, removePageFromIndex,
-    ASC, getFieldValue, validProcess
-} from '../utils/utils';
+    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, FilterOnCollection, projType
+} from 'arlas-web-core';
+import { Observable, filter, finalize, from, map, zip } from 'rxjs';
+import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json' with { type: 'json' };
 import {
-    Action, ElementIdentifier, SortEnum, Column, Detail, Field, FieldsConfiguration,
-    PageEnum, AdditionalInfo, Attachment, AttachmentConfig, ItemDataType,
-    ExportedColumn,
-    ActionFilter
+    Action, ActionFilter, AdditionalInfo, Attachment, AttachmentConfig, Column, Detail,
+    ElementIdentifier, ExportedColumn, Field, FieldsConfiguration, ItemDataType, PageEnum, SortEnum
 } from '../models/models';
-import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json';
-import { FilterOnCollection } from 'arlas-web-core/models/collaboration';
+import {
+    ASC, appendIdToSort, download, getElementFromJsonObject, getFieldValue, isArray, removePageFromIndex, validProcess
+} from '../utils/utils';
 
 export interface MatchInfo {
     matched: Array<boolean>;
@@ -100,7 +91,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         const searchResult: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
             this.contributor.collection, this.contributor.identifier, filterExpression,
-            /** flat */ true, this.contributor.cacheDuration);
+            /** flat */ true, this.contributor.getCacheDuration());
 
         return searchResult.pipe(map(data => fields.map(f => data.hits[0].data[f.replace(/\./g, '_')])));
     }
@@ -129,7 +120,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             return this.contributor.collaborativeSearcheService.resolveHits([
                 projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
                 this.contributor.collection, this.contributor.identifier, filterExpression,
-                /** flat */ true, this.contributor.cacheDuration);
+                /** flat */ true, this.contributor.getCacheDuration());
         })).pipe(map(hits => ({
                 matched: hits.map(h => h.hits?.length !== 0),
                 data: hits.find(h => h.hits?.length !== 0)?.hits?.[0].data
@@ -188,7 +179,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         };
         const searchResult: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
-            this.contributor.collection, this.contributor.identifier, filterExpression, false, this.contributor.cacheDuration);
+            this.contributor.collection, this.contributor.identifier, filterExpression, false, this.contributor.getCacheDuration());
         const obs: Observable<AdditionalInfo> = searchResult.pipe(map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details: Array<Detail> = this.contributor.getConfigValue('details');
@@ -344,8 +335,6 @@ export class ResultListContributor extends Contributor {
      * geoSort parameter of the list.
     */
     public geoOrderSort = '';
-
-    public cacheDuration = this.cacheDuration;
 
     public highlightItems = new Set<string>();
 
@@ -1000,8 +989,12 @@ export class ResultListContributor extends Contributor {
                 this.dropDownMapValues.set(co.fieldName, from([[]]));
             }
         });
-
     }
+
+    public getCacheDuration() {
+        return this.cacheDuration;
+    }
+
     /**
      * Returns an observable of Hits
      * @param includesvalues List of field names to include in the Hits

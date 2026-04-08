@@ -18,14 +18,13 @@
  */
 
 import bbox from '@turf/bbox';
-import * as meta from '@turf/meta';
-import { Expression, Filter, Hits, Search } from 'arlas-api';
-import { projType, CollaborativesearchService } from 'arlas-web-core';
-import { ElementIdentifier } from '../models/models';
-import { bboxes } from 'ngeohash';
 import { isNumber } from '@turf/helpers';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/internal/operators/map';
+import { coordEach } from '@turf/meta';
+import { Expression, Filter, Hits, Search } from 'arlas-api';
+import { CollaborativesearchService, projType } from 'arlas-web-core';
+import ngeohash from 'ngeohash';
+import { map, Observable } from 'rxjs';
+import { ElementIdentifier } from '../models/models';
 import { getElementFromJsonObject } from './utils';
 
 export function getBounds(
@@ -78,32 +77,32 @@ export function extentToGeohashes(extent: Array<number>, zoom: number,
     const south = extent[2];
     const north = extent[0];
     if (west < -180 && east > 180) {
-        geohashList = bboxes(Math.min(south, north),
+        geohashList = ngeohash.bboxes(Math.min(south, north),
             -180,
             Math.max(south, north),
             180, Math.max(granularityFunction(zoom).tilesPrecision, 1));
     } else if (west < -180 && east < 180) {
-        const geohashList1: Array<string> = bboxes(Math.min(south, north),
+        const geohashList1: Array<string> = ngeohash.bboxes(Math.min(south, north),
             Math.min(-180, west + 360),
             Math.max(south, north),
             Math.max(-180, west + 360), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-        const geohashList2: Array<string> = bboxes(Math.min(south, north),
+        const geohashList2: Array<string> = ngeohash.bboxes(Math.min(south, north),
             Math.min(east, 180),
             Math.max(south, north),
             Math.max(east, 180), Math.max(granularityFunction(zoom).tilesPrecision, 1));
         geohashList = geohashList1.concat(geohashList2);
     } else if (east > 180 && west > -180) {
-        const geohashList1: Array<string> = bboxes(Math.min(south, north),
+        const geohashList1: Array<string> = ngeohash.bboxes(Math.min(south, north),
             Math.min(180, east - 360),
             Math.max(south, north),
             Math.max(180, east - 360), Math.max(granularityFunction(zoom).tilesPrecision, 1));
-        const geohashList2: Array<string> = bboxes(Math.min(south, north),
+        const geohashList2: Array<string> = ngeohash.bboxes(Math.min(south, north),
             Math.min(west, -180),
             Math.max(south, north),
             Math.max(west, -180), Math.max(granularityFunction(zoom).tilesPrecision, 1));
         geohashList = geohashList1.concat(geohashList2);
     } else {
-        geohashList = bboxes(Math.min(south, north),
+        geohashList = ngeohash.bboxes(Math.min(south, north),
             Math.min(east, west),
             Math.max(south, north),
             Math.max(east, west), Math.max(granularityFunction(zoom).tilesPrecision, 1));
@@ -236,7 +235,7 @@ export function truncate(geojson, options) {
     }
     const factor = Math.pow(10, precision);
     // Truncate Coordinates
-    meta.coordEach(geojson, function (coords) {
+    coordEach(geojson, function (coords) {
         truncateCoords(coords, factor, coordinates);
     });
     return geojson;

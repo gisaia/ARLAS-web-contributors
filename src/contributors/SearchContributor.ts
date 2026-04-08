@@ -17,18 +17,13 @@
  * under the License.
  */
 
-import { Observable, Subject, from } from 'rxjs';
+import { Aggregation, AggregationResponse, Expression, Filter, Hits } from 'arlas-api';
 import {
-    Collaboration,
-    CollaborativesearchService,
-    ConfigService,
-    Contributor,
-    CollaborationEvent,
-    projType
+    Collaboration, CollaborationEvent, CollaborativesearchService,
+    ConfigService, Contributor, projType
 } from 'arlas-web-core';
-import { Hits } from 'arlas-api';
-import jsonSchema from '../jsonSchemas/searchContributorConf.schema.json';
-import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
+import { Observable, Subject, from } from 'rxjs';
+import jsonSchema from '../jsonSchemas/searchContributorConf.schema.json' with { type: 'json' };
 
 export class SearchContributor extends Contributor {
 

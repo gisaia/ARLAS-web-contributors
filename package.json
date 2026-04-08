@@ -6,9 +6,8 @@
   "typings": "dist/index.d.ts",
   "scripts": {
     "build-release-watch": "tsc -p tsconfig.json --watch && npm run copy-root-schema && npm run copy-npm-readme",
-    "build-release": "tsc -p tsconfig.json && npm run copy-root-schema && npm run copy-npm-readme",
+    "build-release": "tsc -p tsconfig.json && tsc-alias && npm run copy-root-schema && npm run copy-npm-readme",
     "clean": "npm cache clear && rimraf -- dist",
-    "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts",
     "copy-root-schema": "cp src/jsonSchemas/rootContributorConf.schema.json dist/jsonSchemas",
     "copy-npm-readme": "cp README-NPM.md dist/README.md",
@@ -40,6 +39,7 @@
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.6.1",
+    "@types/ngeohash": "^0.6.8",
     "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
@@ -47,16 +47,14 @@
     "globals": "^16.5.0",
     "license-check-and-add": "^4.0.5",
     "node": "^24.10.1",
-    "typescript": "~5.8.0"
+    "tsc-alias": "^1.8.16",
+    "typescript": "~5.9.3"
   },
   "bugs": {
     "url": "https://github.com/gisaia/ARLAS-web-contributors/issues"
   },
   "homepage": "https://github.com/gisaia/ARLAS-web-contributors/blob/master/README.md",
   "overrides": {
-    "license-check-and-add": {
-      "globby": "^11.0.0"
-    },
     "underscore": "^1.13.8"
   }
 }

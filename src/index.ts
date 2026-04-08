@@ -44,11 +44,12 @@ export {
     MetricsTable, MetricsTableCell, MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig
 } from './models/metrics-table.config';
 export {
-    Action, ActionFilter, ColorConfig, Column, ComputeConfig, DateExpression, DateUnitEnum, Detail, ElementIdentifier,
-    ExtentFilterGeometry, FeatureRenderMode, FieldsConfiguration, LayerSourceConfig, MetricConfig, triggerType
+    Action, ActionFilter, ColorConfig, Column, ComputeConfig, DateExpression, DateUnitEnum, Detail, ElementIdentifier, ExtentFilterGeometry,
+    FeatureRenderMode, FieldsConfiguration, LayerSourceConfig, MetricConfig, SelectedOutputValues, StringifiedTimeShortcut, triggerType
 } from './models/models';
+export { getAggregationPrecision } from './utils/histoswimUtils';
 export { fix180thMeridian, isClockwise } from './utils/mapUtils';
-export { getElementFromJsonObject, getSourceName, processPassesAllowList, validProcess } from './utils/utils';
+export { getElementFromJsonObject, getFieldValue, getSourceName, processPassesAllowList, validProcess } from './utils/utils';
 
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);

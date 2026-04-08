@@ -5,8 +5,8 @@
         "baseUrl": "src",
         "sourceMap": true,
         "declaration": true,
-        "target": "es6",
-        "module": "es6",
+        "target": "esnext",
+        "module": "esnext",
         "moduleResolution": "node",
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
@@ -19,7 +19,7 @@
             "node_modules/@turf"
         ],
         "lib": [
-            "es2022",
+            "ESNext",
             "dom"
         ]
     },
@@ -34,5 +34,9 @@
         "node_modules",
         "dist",
         "eslint.config.mjs"
-    ]
+    ],
+    "tsc-alias": {
+        "resolveFullPaths": true,
+        "verbose": false
+    }
 }

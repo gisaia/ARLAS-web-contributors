@@ -17,14 +17,14 @@
  * under the License.
  */
 
-import jsonSchema from '../jsonSchemas/analyticsContributorConf.schema.json';
-import jp from 'jsonpath/jsonpath.min';
-import {
-    Contributor, CollaborativesearchService, ConfigService,
-    CollaborationEvent, projType, OperationEnum, Collaboration
-} from 'arlas-web-core';
 import { Aggregation, AggregationResponse } from 'arlas-api';
+import {
+    Collaboration, CollaborationEvent, CollaborativesearchService,
+    ConfigService, Contributor, OperationEnum, projType
+} from 'arlas-web-core';
+import jp from 'jsonpath';
 import { Observable, from } from 'rxjs';
+import jsonSchema from '../jsonSchemas/analyticsContributorConf.schema.json' with { type: 'json' };
 
 /**
 * This contributor works with the Angular Analytic board of the Arlas-web-components project.

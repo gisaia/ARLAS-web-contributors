@@ -18,8 +18,7 @@
  */
 
 import { Aggregation, Expression, Filter, Interval } from 'arlas-api';
-import { Collaboration, CollaborativesearchService } from 'arlas-web-core';
-import { CollectionAggField } from 'arlas-web-core/utils/utils';
+import { Collaboration, CollaborativesearchService, CollectionAggField } from 'arlas-web-core';
 import { DateExpression, SelectedOutputValues } from '../models/models';
 
 /** Extract from all the selected intervals the latest interval.
@@ -74,11 +73,12 @@ export function getSelectionFromValues(selections: SelectedOutputValues[],
     };
     collaborativeSearcheService.setFilter(identifier, collaboration);
 
+    // TODO: check that it works as expected
     // Retrieve the last selection on the chart
     const intervalSelection = selections[selections.length - 1];
     if (Number(intervalSelection.startvalue).toString() === 'NaN') {
-        intervalSelection.startvalue = DateExpression.toDateExpression(<string>intervalSelection.startvalue).toMillisecond(false, useUtc);
-        intervalSelection.endvalue = DateExpression.toDateExpression(<string>intervalSelection.endvalue).toMillisecond(true, useUtc);
+        intervalSelection.startvalue = DateExpression.toDateExpression(intervalSelection.startvalue.toString()).toMillisecond(false, useUtc);
+        intervalSelection.endvalue = DateExpression.toDateExpression(intervalSelection.endvalue.toString()).toMillisecond(true, useUtc);
     }
 
     // startValue and endValue already are strings based on their construction

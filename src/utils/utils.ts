@@ -17,9 +17,9 @@
  * under the License.
  */
 
+import { Aggregation, Hits } from 'arlas-api';
 import * as FileSaver from 'file-saver';
-import jp from 'jsonpath/jsonpath.min';
-import { Hits, Aggregation } from 'arlas-api';
+import jp from 'jsonpath';
 import tinycolor from 'tinycolor2';
 import { LayerSourceConfig } from '../models/models';
 

@@ -30,10 +30,9 @@ import {
 } from 'arlas-web-core';
 import * as FileSaver from 'file-saver';
 import moment from 'moment';
-import { Observable, Subject, from, of } from 'rxjs';
-import { finalize, map, mergeAll, takeUntil, tap } from 'rxjs/operators';
+import { Observable, Subject, finalize, from, map, mergeAll, of, takeUntil, tap } from 'rxjs';
 import { parse, stringify } from 'wellknown';
-import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json';
+import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json' with { type: 'json' };
 import {
     ClusterAggType, ColorConfig, ElementIdentifier, ExtentFilterGeometry, FeatureRenderMode,
     FeaturesNormalization, Granularity, ItemDataType, LayerClusterSource, LayerFeatureSource,

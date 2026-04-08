@@ -19,12 +19,11 @@
 
 import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Filter, Interval } from 'arlas-api';
 import {
-    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, OperationEnum, projType
+    Collaboration, CollaborationEvent, CollaborativesearchService, CollectionAggField, ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { CollectionAggField } from 'arlas-web-core/utils/utils';
-import jp from 'jsonpath/jsonpath.min';
+import jp from 'jsonpath';
 import { from, map, mergeMap, Observable, Subject, zip } from 'rxjs';
-import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json';
+import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json' with { type: 'json' };
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
 import {
     adjustHistogramInterval, getAggregationPrecision, getSelectionFromValues, getSelectionToSet, MAX_BUCKETS
