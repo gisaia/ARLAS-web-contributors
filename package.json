@@ -54,6 +54,7 @@
   },
   "homepage": "https://github.com/gisaia/ARLAS-web-contributors/blob/master/README.md",
   "overrides": {
-    "cross-spawn": "~7.0.5"
+    "cross-spawn": "~7.0.5",
+    "underscore": "^1.13.8"
   }
 }
