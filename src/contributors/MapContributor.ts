@@ -3428,7 +3428,8 @@ export class MapContributor extends Contributor {
         const finalExtents = getCanonicalExtents(extentToString(rawExtent), extentToString(extent));
         let visitedTiles;
         if (finalExtents.length === 1) {
-            visitedTiles = new Set(xyz([[extent[1], extent[2]], [extent[3], extent[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
+            const e = stringToExtent(finalExtents[0]);
+            visitedTiles = new Set(xyz([[e[1], e[2]], [e[3], e[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
         } else {
             const e1 = stringToExtent(finalExtents[0]);
             const e2 = stringToExtent(finalExtents[1]);
