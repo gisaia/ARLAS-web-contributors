@@ -19,7 +19,6 @@
 
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanContains from '@turf/boolean-contains';
-import * as helpers from '@turf/helpers';
 import {
     Aggregation, CollectionReferenceParameters, ComputationRequest, ComputationResponse,
     Expression, Feature, FeatureCollection, Filter, Hits, Metric, Search
@@ -28,10 +27,10 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService,
     Contributor, GeoTileAggregation, GeohashAggregation, TiledSearch, projType
 } from 'arlas-web-core';
+import { geoJSONToWkt, wktToGeoJSON } from 'betterknown';
 import * as FileSaver from 'file-saver';
 import moment from 'moment';
 import { Observable, Subject, finalize, from, map, mergeAll, of, takeUntil, tap } from 'rxjs';
-import { parse, stringify } from 'wellknown';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json' with { type: 'json' };
 import {
     ClusterAggType, ColorConfig, ElementIdentifier, ExtentFilterGeometry, FeatureRenderMode,
@@ -52,6 +51,8 @@ export enum DataMode {
     simple,
     dynamic
 }
+
+export type ArlasGeometry = GeoJSON.Point | GeoJSON.MultiPoint | GeoJSON.Polygon | GeoJSON.MultiPolygon | GeoJSON.LineString | GeoJSON.MultiLineString;
 
 export const NORMALIZE = ':normalized';
 export const SHORT_VALUE = ':_arlas__short_format';
@@ -150,7 +151,7 @@ export class MapContributor extends Contributor {
       * the agg changes. */
     private abortControllers: Map<string, AbortController> = new Map();
 
-    public geojsondraw: { type: string; features: Array<helpers.Feature<helpers.Geometry>>; } = {
+    public geojsondraw: { type: string; features: Array<GeoJSON.Feature<ArlasGeometry>>; } = {
         'type': 'FeatureCollection',
         'features': []
     };
@@ -180,7 +181,7 @@ export class MapContributor extends Contributor {
      */
     public expressionFilter: Expression;
 
-    public redrawSource: Subject<{ source: string; data: helpers.Feature[]; }> = new Subject();
+    public redrawSource: Subject<{ source: string; data: GeoJSON.Feature[]; }> = new Subject();
     public legendUpdater: Subject<Map<string, LegendData>> = new Subject();
     public legendData: Map<string, LegendData> = new Map();
     public visibilityUpdater: Subject<Map<string, boolean>> = new Subject();
@@ -748,7 +749,7 @@ export class MapContributor extends Contributor {
                         polygonGeojsons.push(polygonGeojson);
                     } else {
                         /** WKT mode */
-                        const geojsonWKT = parse(aoi);
+                        const geojsonWKT = wktToGeoJSON(aoi);
                         const feature = {
                             type: 'Feature',
                             geometry: geojsonWKT,
@@ -827,7 +828,7 @@ export class MapContributor extends Contributor {
      * Runs when a geometry (bbox, polygon, ...) is drawn, removed or changed
      * @param fc FeatureCollection object
      */
-    public onChangeAoi(fc: helpers.FeatureCollection<helpers.Geometry>) {
+    public onChangeAoi(fc: GeoJSON.FeatureCollection<ArlasGeometry>) {
         let filters: Filter;
         const geoFilter: Array<string> = new Array();
         fc = truncate(fc, { precision: this.drawPrecision });
@@ -3598,7 +3599,7 @@ export class MapContributor extends Contributor {
         return f.properties[flattenedField] ?? f.properties[flattenedField + '_0'];
     }
 
-    private getGeometriesForQuery(features: Array<helpers.Feature<helpers.Geometry>>) {
+    private getGeometriesForQuery(features: Array<GeoJSON.Feature<ArlasGeometry>>) {
         const geometries: Array<string> = [];
 
         const polygonFeatures = features.map(f => {
@@ -3621,7 +3622,7 @@ export class MapContributor extends Contributor {
                     const reverseList = list.reverse();
                     f.geometry.coordinates[0] = reverseList;
                 }
-                return { f, str: stringify(f.geometry) };
+                return { f, str: geoJSONToWkt(f.geometry) };
             }
         });
 

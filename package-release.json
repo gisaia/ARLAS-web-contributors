@@ -11,22 +11,20 @@
   "author": "gisaia",
   "license": " Apache-2.0",
   "dependencies": {
-    "@turf/bbox": "^6.5.0",
-    "@turf/bbox-polygon": "^6.5.0",
-    "@turf/boolean-contains": "^6.5.0",
-    "@turf/helpers": "^6.5.0",
-    "@turf/meta": "^6.5.0",
+    "@turf/bbox": "^7.3.0",
+    "@turf/bbox-polygon": "^7.3.0",
+    "@turf/boolean-contains": "^7.3.0",
     "@types/file-saver": "^2.0.1",
     "@types/jsonpath": "^0.2.0",
     "@types/tinycolor2": "^1.4.0",
     "arlas-web-core": "28.0.0-rc.1",
+    "betterknown": "^1.2.0",
     "file-saver": "^2.0.2",
     "jsonpath": "^1.0.0",
     "moment": "^2.29.4",
     "ngeohash": "^0.6.0",
     "rxjs": "^7.4.0",
-    "tinycolor2": "~1.4.1",
-    "wellknown": "^0.5.0"
+    "tinycolor2": "~1.4.1"
   },
   "bugs": {
     "url": "https://github.com/gisaia/ARLAS-web-contributors/issues"
