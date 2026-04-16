@@ -18,13 +18,13 @@
  */
 
 
-import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json';
+import { ComputationRequest, ComputationResponse, Hits } from 'arlas-api';
 import {
-    Contributor, CollaborativesearchService, ConfigService,
-    CollaborationEvent, projType, OperationEnum, Collaboration
+    Collaboration, CollaborationEvent, CollaborativesearchService,
+    ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { Observable, from, forkJoin } from 'rxjs';
-import { ComputationRequest, ComputationResponse, Filter, Hits } from 'arlas-api';
+import { Observable, forkJoin, from } from 'rxjs';
+import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json' with { type: 'json' };
 import { ComputeConfig } from '../models/models';
 import { validProcess } from '../utils/utils';
 

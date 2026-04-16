@@ -17,21 +17,17 @@
  * under the License.
  */
 
+import { Expression, Filter } from 'arlas-api';
 import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { Filter, Expression } from 'arlas-api';
+import { forkJoin, from, map, mergeMap, Observable, of, Subject, take } from 'rxjs';
+import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json' with { type: 'json' };
 import {
-    MetricsVectors,
-    MetricsTable,
-    MetricsTableRow, MetricsTableSortConfig,
-    ComputableResponse,
-    MetricsTableResponse,
-    MetricsVectorConfig
+    ComputableResponse, MetricsTable, MetricsTableRow,
+    MetricsTableSortConfig, MetricsVectorConfig, MetricsVectors
 } from '../models/metrics-table.config';
-import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json';
-import { Observable, forkJoin, map, of, mergeMap, from, Subject, take } from 'rxjs';
 
 
 /**

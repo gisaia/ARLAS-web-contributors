@@ -14,10 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node 18
+      - name: Use Node 24
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
 
       - name: Cache node modules
         id: cache-nodemodules
@@ -37,9 +37,3 @@ jobs:
         run: npm run license-check
       - name: Build
         run: npm run build-release
-      - name: Documentation
-        env:
-          # secrets are defined here : https://github.com/organizations/gisaia/settings/secrets/actions
-          DOCKER_USERNAME: ${{ secrets.DOCKER_HUB_USER }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-        run: ./mkDocs.sh

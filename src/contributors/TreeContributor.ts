@@ -17,16 +17,15 @@
  * under the License.
  */
 
-import { Observable, from, Subject, of, zip, map } from 'rxjs';
-
+import { Aggregation, AggregationResponse, Expression, Filter } from 'arlas-api';
 import {
-    Contributor, ConfigService, CollaborativesearchService, CollaborationEvent,
-    OperationEnum, projType, Collaboration
+    Collaboration, CollaborationEvent, CollaborativesearchService,
+    ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import { TreeNode, SimpleNode } from '../models/models';
-import { Aggregation, AggregationResponse, Filter, Expression } from 'arlas-api';
-import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json';
-import jp from 'jsonpath/jsonpath.min';
+import jp from 'jsonpath';
+import { Observable, Subject, from, map, of, zip } from 'rxjs';
+import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json' with { type: 'json' };
+import { SimpleNode, TreeNode } from '../models/models';
 
 /**
  * This contributor fetches data from multiple term aggregations and format the data as a tree.

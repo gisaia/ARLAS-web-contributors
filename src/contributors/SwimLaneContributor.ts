@@ -21,10 +21,9 @@ import { Aggregation, AggregationResponse, ComputationRequest, ComputationRespon
 import {
     Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import jp from 'jsonpath/jsonpath.min';
-import { Observable, from } from 'rxjs';
-import { map, mergeMap } from 'rxjs/operators';
-import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json';
+import jp from 'jsonpath';
+import { from, map, mergeMap, Observable } from 'rxjs';
+import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json' with { type: 'json' };
 import { adjustHistogramInterval, getAggregationPrecision, MAX_BUCKETS } from '../utils/histoswimUtils';
 
 export interface LaneStats {
@@ -40,7 +39,7 @@ export interface SwimlaneStats {
     /** stats for all all the swimlane */
     globalStats: LaneStats;
     /** number of terms */
-    nbLanes?: number;
+    nbLanes: number;
     /** min value of the bucket key */
     minBorder?: number;
     /** max value of the bucket key */
