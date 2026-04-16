@@ -52,7 +52,8 @@ export enum DataMode {
     dynamic
 }
 
-export type ArlasGeometry = GeoJSON.Point | GeoJSON.MultiPoint | GeoJSON.Polygon | GeoJSON.MultiPolygon | GeoJSON.LineString | GeoJSON.MultiLineString;
+export type ArlasGeometry = GeoJSON.Point | GeoJSON.MultiPoint | GeoJSON.Polygon | GeoJSON.MultiPolygon
+    | GeoJSON.LineString | GeoJSON.MultiLineString;
 
 export const NORMALIZE = ':normalized';
 export const SHORT_VALUE = ':_arlas__short_format';

@@ -73,7 +73,6 @@ export function getSelectionFromValues(selections: SelectedOutputValues[],
     };
     collaborativeSearcheService.setFilter(identifier, collaboration);
 
-    // TODO: check that it works as expected
     // Retrieve the last selection on the chart
     const intervalSelection = selections[selections.length - 1];
     if (Number(intervalSelection.startvalue).toString() === 'NaN') {
