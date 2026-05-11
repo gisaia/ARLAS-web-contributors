@@ -106,9 +106,9 @@ export class MapContributor extends Contributor {
     private readonly WINDOW_EXTENT_GEOMETRY = 'window_extent_geometry';
     public windowExtentGeometry: ExtentFilterGeometry;
 
-    private clusterLayersIndex: Map<string, LayerClusterSource>;
-    private topologyLayersIndex: Map<string, LayerTopologySource>;
-    private featureLayerSourcesIndex: Map<string, LayerFeatureSource>;
+    private clusterLayersIndex = new Map<string, LayerClusterSource>();
+    private topologyLayersIndex = new Map<string, LayerTopologySource>();
+    private featureLayerSourcesIndex = new Map<string, LayerFeatureSource>();
 
     private sourcesTypesIndex: Map<string, string> = new Map();
     private layerToSourceIndex: Map<string, string> = new Map();
@@ -139,7 +139,7 @@ export class MapContributor extends Contributor {
         { tilesPrecision: number; requestsPrecision: number; }> = new Map();
     private granularityTopologyFunctions: Map<Granularity, (zoom: number) =>
         { tilesPrecision: number; requestsPrecision: number; }> = new Map();
-    private collectionParameters: CollectionReferenceParameters;
+    private collectionParameters?: CollectionReferenceParameters;
     private featuresIdsIndex = new Map<string, Set<string>>();
     private featuresOldExtent = new Map<string, any>();
 
@@ -452,7 +452,12 @@ export class MapContributor extends Contributor {
      * Otherwise, the priority is always to afterParam.
      */
     public getWindowModeData(wrapExtent: string, rawExtent: string, visibleSources: Set<string>, sort: string, keepOldData = true,
-        afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?: number): void {
+            afterParam?: string, whichPage?: PageEnum, maxPages?: number, fromParam?: number): void {
+        if (!this.collectionParameters) {
+            console.warn('Could not execute "getWindowModeData", no collection parameters are defined');
+            return;
+        }
+
         if (!!visibleSources && visibleSources.size > 0) {
             let operation = Expression.OpEnum.Within;
             let geometryField = this.collectionParameters.centroid_path;
@@ -470,7 +475,7 @@ export class MapContributor extends Contributor {
              * This search request will contain all the geometries, and additional info needed for each window source
              * to be properly displayed
             */
-            const allWindowSources = [];
+            const allWindowSources = new Array<string>();
             this.featureLayerSourcesIndex.forEach((ls, s) => {
                 if (ls.renderMode === FeatureRenderMode.window) {
                     allWindowSources.push(s);
@@ -521,7 +526,11 @@ export class MapContributor extends Contributor {
     }
 
     public getWideModeData(rawTestExtent: string, wrapTestExtent: string, mapLoadExtent: number[],
-        mapLoadRawExtent: number[], zoom: number, visibleSources: Set<string>): void {
+            mapLoadRawExtent: number[], zoom: number, visibleSources: Set<string>): void {
+        if (!this.collectionParameters) {
+            console.warn('Could not execute "getWideModeData", no collection parameters are defined');
+            return;
+        }
         const countFilter = this.getFilterForCount(rawTestExtent, wrapTestExtent, this.collectionParameters.centroid_path);
         this.addFilter(countFilter, this.additionalFilter);
         /** Get displayable sources using zoom visibility rules only.
