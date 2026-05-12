@@ -23,14 +23,15 @@ import {
 import {
     Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, FilterOnCollection, projType
 } from 'arlas-web-core';
-import { Observable, filter, finalize, from, map, zip } from 'rxjs';
+import { BehaviorSubject, Observable, filter, finalize, from, map, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json' with { type: 'json' };
 import {
     Action, ActionFilter, AdditionalInfo, Attachment, AttachmentConfig, Column, Detail,
     ElementIdentifier, ExportedColumn, Field, FieldsConfiguration, ItemDataType, PageEnum, SortEnum
 } from '../models/models';
+import { ProcessError, validProcess } from '../utils/process';
 import {
-    ASC, appendIdToSort, download, getElementFromJsonObject, getFieldValue, isArray, removePageFromIndex, validProcess
+    ASC, appendIdToSort, download, getElementFromJsonObject, getFieldValue, isArray, removePageFromIndex
 } from '../utils/utils';
 
 export interface MatchInfo {
@@ -273,6 +274,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         this.contributor = contributor;
     }
 }
+
 /**
  * This contributor works with the Angular ResultListComponent of the Arlas-web-components project.
  * This class make the brigde between the component which displays the data and the
@@ -338,12 +340,17 @@ export class ResultListContributor extends Contributor {
 
     public highlightItems = new Set<string>();
 
+    /**
+     * Emits when an error occurs when applying a process
+     */
+    public processErrorBus = new BehaviorSubject<ProcessError | undefined>(undefined);
+
     private includesvalues = new Array<string>();
     private isImageEnabled = false;
     private isThumbnailEnabled = false;
     private isDetailsTitleEnabled = false;
-    private columns: Array<Column> = (this.getConfigValue('columns') !== undefined) ? (this.getConfigValue('columns')) : ([]);
-    private columnsProcess = {};
+    private readonly columns: Array<Column> = this.getConfigValue('columns') || [];
+    private columnsProcess: Record<string, Function> = {};
     /** CONSTANTS */
     private readonly NEXT_AFTER = '_nextAfter';
     private readonly PREVIOUS_AFTER = '_previousAfter';
@@ -373,9 +380,17 @@ export class ResultListContributor extends Contributor {
         this.fieldsList = [];
         this.columns.forEach(column => {
             if (column.process && column.process.trim().length > 0 && validProcess(column.process, 'result')) {
-                const func = new Function('result', '\'use strict\';const r='
-                    + column.process + '; return r;');
-                this.columnsProcess[column.columnName] = func;
+                try {
+                    const func = new Function('result', '\'use strict\';const r='
+                        + column.process + '; return r;');
+                    this.columnsProcess[column.columnName] = func;
+                } catch (error) {
+                    this.processErrorBus.next({
+                        column: column.columnName,
+                        context: 'create',
+                        error
+                    });
+                }
             }
 
             this.fieldsList.push(column);
@@ -892,10 +907,19 @@ export class ResultListContributor extends Contributor {
 
                 this.fieldsList.forEach(element => {
                     const result: string = getElementFromJsonObject(h.data, element.fieldName);
-                    const processFunction: Function = this.columnsProcess[element.columnName];
+                    const processFunction = this.columnsProcess[element.columnName];
                     let resultValue = result;
                     if (processFunction) {
-                        resultValue = processFunction(result);
+                        try {
+                            resultValue = processFunction(result);
+                        } catch (error) {
+                            this.processErrorBus.next({
+                                column: element.columnName,
+                                context: 'apply',
+                                value: result,
+                                error
+                            });
+                        }
                     }
                     fieldValueMap.set(element.fieldName, resultValue);
                 });

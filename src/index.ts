@@ -49,7 +49,8 @@ export {
 } from './models/models';
 export { getAggregationPrecision } from './utils/histoswimUtils';
 export { fix180thMeridian, isClockwise } from './utils/mapUtils';
-export { getElementFromJsonObject, getFieldValue, getSourceName, processPassesAllowList, validProcess } from './utils/utils';
+export { processPassesAllowList, validProcess } from './utils/process';
+export { getElementFromJsonObject, getFieldValue, getSourceName } from './utils/utils';
 
 const contributors = new Map<string, any>();
 contributors.set('histogram', HistogramContributor);
