@@ -22,7 +22,7 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, projType
 } from 'arlas-web-core';
-import { Observable, Subject, from } from 'rxjs';
+import { Observable, from } from 'rxjs';
 import jsonSchema from '../jsonSchemas/searchContributorConf.schema.json' with { type: 'json' };
 
 export class SearchContributor extends Contributor {
@@ -42,8 +42,6 @@ export class SearchContributor extends Contributor {
      */
     public autoCompleteSize: number = this.getAutoCompleteSize();
 
-    public lastBackspaceBus: Subject<boolean>;
-
     public searching = false;
 
     private AUTOCOMPLETE_DEFAULT_SIZE = 20;
@@ -51,9 +49,9 @@ export class SearchContributor extends Contributor {
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param  lastBackspaceBus bus from searchcomponent properties, send if the input is empty on backspace
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
+    * @param collection Collection of the contributor
     */
     public constructor(
         identifier: string,

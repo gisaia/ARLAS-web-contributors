@@ -19,6 +19,7 @@
 
 import { Aggregation, Expression, Filter, Interval } from 'arlas-api';
 import { Collaboration, CollaborativesearchService, CollectionAggField } from 'arlas-web-core';
+import { BucketData } from 'contributors/SwimLaneContributor';
 import { DateExpression, SelectedOutputValues } from '../models/models';
 
 /** Extract from all the selected intervals the latest interval.
@@ -28,11 +29,11 @@ export function getSelectionFromValues(selections: SelectedOutputValues[],
     identifier: string,
     collaborativeSearcheService: CollaborativesearchService, useUtc: boolean
 ): [SelectedOutputValues, string, string] {
-    let startValue;
-    let endValue;
+    let startValue: string | number | Date | undefined;
+    let endValue: string | number | Date | undefined;
     let rangeExpressionValue = '';
     // Construct the filter to use for the collaborative search service
-    selections.forEach(s => {
+    for (const s of selections) {
         let start = s.startvalue;
         let end = s.endvalue;
         if ((typeof (<Date>end).getMonth === 'function') && (typeof (<Date>start).getMonth === 'function')) {
@@ -50,21 +51,24 @@ export function getSelectionFromValues(selections: SelectedOutputValues[],
             endValue = end;
         }
         rangeExpressionValue = rangeExpressionValue + '[' + start.toString() + '<' + end.toString() + '],';
-    });
+    }
     rangeExpressionValue = rangeExpressionValue.substring(0, rangeExpressionValue.length - 1);
 
     // Notify the collaborative search service of this new filter
     const collabFilters = new Map<string, Filter[]>();
     collections.forEach(c => {
-        const filterValue: Filter = {
-            f: new Array<Array<Expression>>()
-        };
+        if (!c.field) {
+            return;
+        }
+
         const rangeExpression: Expression = {
             field: c.field,
             op: Expression.OpEnum.Range,
             value: rangeExpressionValue
         };
-        filterValue.f.push([rangeExpression]);
+        const filterValue: Filter = {
+            f: [[rangeExpression]]
+        };
         collabFilters.set(c.collectionName, [filterValue]);
     });
     const collaboration: Collaboration = {
@@ -80,67 +84,61 @@ export function getSelectionFromValues(selections: SelectedOutputValues[],
         intervalSelection.endvalue = DateExpression.toDateExpression(intervalSelection.endvalue.toString()).toMillisecond(true, useUtc);
     }
 
+    if (!startValue || !endValue) {
+        throw new Error('Could not find any start or end in the given selections');
+    }
+
     // startValue and endValue already are strings based on their construction
     return [intervalSelection, startValue.toString(), endValue.toString()];
 }
 
-export function getSelectionToSet(data: Array<{ key: number; value: number; }> | Map<string, Array<{ key: number; value: number; }>>,
+export function getSelectionToSet(data: BucketData[] | Map<string, BucketData[]>,
     collection: string, collaboration: Collaboration, useUtc: boolean
-): any[] {
-    let intervalListSelection;
+): [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined] {
+    let intervalListSelection: SelectedOutputValues[];
     let intervalSelection;
     let startValue;
     let endValue;
-    let isArray: boolean;
-    data = !!data ? data : [];
-    if (data instanceof Array) {
-        isArray = true;
-    } else {
-        isArray = false;
-    }
-    let currentIntervalSelected = {
-        startvalue: null,
-        endvalue: null
-    };
+    data ??= [];
+
+    let currentIntervalSelected = {} as SelectedOutputValues;
     if (collaboration) {
-        let f: Filter;
-        if (collaboration.filters && collaboration.filters.get(collection)) {
-            f = collaboration.filters.get(collection)[0];
+        let f: Filter | undefined;
+        const filters = collaboration.filters.get(collection);
+        if (filters) {
+            f = filters[0];
         }
         if (!f) {
-            if (isArray) {
-                if ((<Array<{ key: number; value: number; }>>data).length > 0) {
-                    currentIntervalSelected.startvalue = <number>data[0].key;
-                    currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number; value: number; }>>data).length - 1].key;
-                    if ((<Array<{ key: number; value: number; }>>data).length > 1) {
-                        const dataInterval = getDataInterval(<Array<{ key: number; value: number; }>>data);
+            if (Array.isArray(data)) {
+                if (data.length > 0) {
+                    currentIntervalSelected.startvalue = data[0].key;
+                    currentIntervalSelected.endvalue = data[data.length - 1].key;
+                    if (data.length > 1) {
+                        const dataInterval = getDataInterval(data);
                         currentIntervalSelected.endvalue += dataInterval;
                     }
                 }
             } else {
-                const minMax = getMinMax(<Map<string, Array<{ key: number; value: number; }>>>data);
+                const minMax = getMinMax(data);
                 currentIntervalSelected.startvalue = minMax[0];
                 currentIntervalSelected.endvalue = minMax[1];
             }
             intervalListSelection = [];
         } else {
-            const intervals = [];
-            const invtervalFilterList = f.f[0];
+            const intervals = new Array<SelectedOutputValues>();
+            const invtervalFilterList = f.f?.[0];
             let d = 0;
-            invtervalFilterList.forEach(k => {
+            invtervalFilterList?.forEach(k => {
                 let c = 0;
                 d++;
                 k.value.split(',').forEach(i => {
                     c++;
                     const start = i.split('<')[0].substring(1);
                     const end = i.split('<')[1].substring(0, i.split('<')[1].length - 1);
-                    const intervalOfSelection = {
-                        startvalue: null,
-                        endvalue: null
-                    };
+                    const intervalOfSelection = {} as SelectedOutputValues;
                     if (Number(start).toString() !== 'NaN' && Number(end).toString() !== 'NaN') {
-                        intervalOfSelection.startvalue = <number>parseFloat(start);
-                        intervalOfSelection.endvalue = <number>parseFloat(end);
+                        intervalOfSelection.startvalue = Number.parseFloat(start);
+                        intervalOfSelection.endvalue = Number.parseFloat(end);
                     } else {
                         intervalOfSelection.startvalue = DateExpression.toDateExpression(start).toMillisecond(false, useUtc);
                         intervalOfSelection.endvalue = DateExpression.toDateExpression(end).toMillisecond(true, useUtc);
@@ -149,12 +147,10 @@ export function getSelectionToSet(data: Array<{ key: number; value: number; }> |
                     }
                     if (k.value.split(',').length > c) {
                         intervals.push(intervalOfSelection);
+                    } else if (d < invtervalFilterList.length) {
+                        intervals.push(intervalOfSelection);
                     } else {
-                        if (d < invtervalFilterList.length) {
-                            intervals.push(intervalOfSelection);
-                        } else {
-                            currentIntervalSelected = intervalOfSelection;
-                        }
+                        currentIntervalSelected = intervalOfSelection;
                     }
                 });
             });
@@ -165,23 +161,24 @@ export function getSelectionToSet(data: Array<{ key: number; value: number; }> |
             }
         }
     } else {
-        if (isArray) {
-            if ((<Array<{ key: number; value: number; }>>data).length > 0) {
-                currentIntervalSelected.startvalue = <number>data[0].key;
-                currentIntervalSelected.endvalue = <number>data[(<Array<{ key: number; value: number; }>>data).length - 1].key;
-                if ((<Array<{ key: number; value: number; }>>data).length > 1) {
-                    const dataInterval = getDataInterval(<Array<{ key: number; value: number; }>>data);
+        if (Array.isArray(data)) {
+            if (data.length > 0) {
+                currentIntervalSelected.startvalue = data[0].key;
+                currentIntervalSelected.endvalue = data[data.length - 1].key;
+                if (data.length > 1) {
+                    const dataInterval = getDataInterval(data);
                     currentIntervalSelected.endvalue += dataInterval;
                 }
             }
         } else {
-            const minMax = getMinMax(<Map<string, Array<{ key: number; value: number; }>>>data);
+            const minMax = getMinMax(data);
             currentIntervalSelected.startvalue = minMax[0];
             currentIntervalSelected.endvalue = minMax[1];
 
         }
         intervalListSelection = [];
     }
+
     if (currentIntervalSelected.endvalue !== null && currentIntervalSelected.startvalue !== null) {
         intervalSelection = currentIntervalSelected;
         if (!startValue && !endValue) {
@@ -193,37 +190,33 @@ export function getSelectionToSet(data: Array<{ key: number; value: number; }> |
     return [intervalListSelection, intervalSelection, startValue, endValue];
 }
 
-function getMinMax(data: Map<string, Array<{ key: number; value: number; }>>): Array<number> {
-    let min;
-    let max;
-    let dataInterval;
+function getMinMax(data: Map<string, BucketData[]>): Array<number> {
+    let min: number = Number.POSITIVE_INFINITY;
+    let max: number = Number.NEGATIVE_INFINITY;
+    let dataInterval: number | undefined;
+
     data = !!data ? data : new Map();
     data.forEach((k, v) => {
-        if (min === undefined) {
+        if (k.map(kv => kv.key).sort()[0] < min) {
             min = k.map(kv => kv.key).sort()[0];
-        } else {
-            if (k.map(kv => kv.key).sort()[0] < min) {
-                min = k.map(kv => kv.key).sort()[0];
-            }
         }
-        if (max === undefined) {
+
+        if (k.map(kv => kv.key).sort()[k.length - 1] > max) {
             max = k.map(kv => kv.key).sort()[k.length - 1];
-        } else {
-            if (k.map(kv => kv.key).sort()[k.length - 1] > max) {
-                max = k.map(kv => kv.key).sort()[k.length - 1];
-            }
         }
+
         if (k.length > 1 && dataInterval === undefined) {
-            dataInterval = <number>k[1].key - <number>k[0].key;
+            dataInterval = k[1].key - k[0].key;
         }
     });
+
     if (dataInterval !== undefined) {
         max += dataInterval;
     }
     return [min, max];
 }
 
-function getDataInterval(data: Array<{ key: number; value: number; }>): number {
+function getDataInterval(data: BucketData[]): number {
     let interval = Number.MAX_VALUE;
     if (data.length > 1) {
         /** We need to get the smallest difference between 2 buckets that is different from 0 */
@@ -317,7 +310,7 @@ export function getAggregationPrecision(nbBuckets: number, range: number, aggreg
                     value = allIntervals[i];
                 }
             }
-            return timestampToInterval.get(value);
+            return timestampToInterval.get(value) as Interval;
         } else {
             // Apply log10 on bucketInterval to get the power order
             const order = Math.log10(bucketInterval);
@@ -368,7 +361,7 @@ export function getAggregationPrecision(nbBuckets: number, range: number, aggreg
     }
 }
 
-function roundToNearestMultiple(i, multiple) {
+function roundToNearestMultiple(i: number, multiple: number) {
     return ((i % multiple) > multiple / 2) ? i + multiple - i % multiple : i - i % multiple;
 }
 
@@ -382,7 +375,8 @@ function roundToNearestMultiple(i, multiple) {
  * @returns a histogram `Interval` that respects the `maxBuckets` limit.
  */
 export function adjustHistogramInterval(histogramType: Aggregation.TypeEnum,
-    maxBuckets: number, initialInterval: Interval, range: number): Interval {
+    maxBuckets: number, initialInterval: Interval | undefined, range: number
+): Interval {
     if (histogramType === Aggregation.TypeEnum.Datehistogram) {
         const unitToTimestamp = new Map<Interval.UnitEnum, number>();
         unitToTimestamp.set(Interval.UnitEnum.Second, 1000);
@@ -393,40 +387,43 @@ export function adjustHistogramInterval(histogramType: Aggregation.TypeEnum,
         unitToTimestamp.set(Interval.UnitEnum.Month, 1000 * 60 * 60 * 24 * 30);
         unitToTimestamp.set(Interval.UnitEnum.Quarter, 1000 * 60 * 60 * 24 * 30 * 3);
         unitToTimestamp.set(Interval.UnitEnum.Year, 1000 * 60 * 60 * 24 * 365);
-        const initialTimestampInterval = +initialInterval.value * unitToTimestamp.get(initialInterval.unit);
-        const maxTimestampInterval = range / maxBuckets;
-        if (initialTimestampInterval > 0.9 * maxTimestampInterval) {
-            // todo : communicate to the component the exact interval, otherwise, the contrib (agg) interval and d3 interval may differ
+        if (initialInterval?.unit) {
+            const initialTimestampInterval = +initialInterval.value * (unitToTimestamp.get(initialInterval.unit) as number);
+            const maxTimestampInterval = range / maxBuckets;
 
-            // if (initialInterval.unit === Interval.UnitEnum.Year) {
-            //     initialInterval.unit = Interval.UnitEnum.Day;
-            //     initialInterval.value = (initialInterval.value as number) * 365;
-            // } else if (initialInterval.unit === Interval.UnitEnum.Quarter) {
-            //     initialInterval.unit = Interval.UnitEnum.Day;
-            //     initialInterval.value = (initialInterval.value as number) * 90;
-            // } else if (initialInterval.unit === Interval.UnitEnum.Month) {
-            //     initialInterval.unit = Interval.UnitEnum.Day;
-            //     initialInterval.value = (initialInterval.value as number) * 30;
-            // } else if (initialInterval.unit === Interval.UnitEnum.Week) {
-            //     initialInterval.unit = Interval.UnitEnum.Day;
-            //     initialInterval.value = (initialInterval.value as number) * 7;
-            // }
-            // return initialInterval;
-            /** for now we approximate the preferred interval to the configured interval. This way there is concordancy
-             * between agg interval and d3 interval  */
-            return getAggregationPrecision(maxBuckets, initialTimestampInterval * maxBuckets, histogramType);
-        } else {
-            /** the initial interval will generate more than maxBuckets; we need to enlarge it  */
-            return getAggregationPrecision(maxBuckets, range, histogramType);
+            if (initialTimestampInterval > 0.9 * maxTimestampInterval) {
+                // todo : communicate to the component the exact interval, otherwise, the contrib (agg) interval and d3 interval may differ
+
+                // if (initialInterval.unit === Interval.UnitEnum.Year) {
+                //     initialInterval.unit = Interval.UnitEnum.Day;
+                //     initialInterval.value = (initialInterval.value as number) * 365;
+                // } else if (initialInterval.unit === Interval.UnitEnum.Quarter) {
+                //     initialInterval.unit = Interval.UnitEnum.Day;
+                //     initialInterval.value = (initialInterval.value as number) * 90;
+                // } else if (initialInterval.unit === Interval.UnitEnum.Month) {
+                //     initialInterval.unit = Interval.UnitEnum.Day;
+                //     initialInterval.value = (initialInterval.value as number) * 30;
+                // } else if (initialInterval.unit === Interval.UnitEnum.Week) {
+                //     initialInterval.unit = Interval.UnitEnum.Day;
+                //     initialInterval.value = (initialInterval.value as number) * 7;
+                // }
+                // return initialInterval;
+                /** for now we approximate the preferred interval to the configured interval. This way there is concordancy
+                 * between agg interval and d3 interval  */
+                return getAggregationPrecision(maxBuckets, initialTimestampInterval * maxBuckets, histogramType);
+            }
         }
+
+        return getAggregationPrecision(maxBuckets, range, histogramType);
     } else {
-        const initialIntervalValue = +initialInterval.value;
-        const maxIntervalValue = range / maxBuckets;
-        if (initialIntervalValue > 0.9 * maxIntervalValue) {
-            return initialInterval;
-        } else {
-            return getAggregationPrecision(maxBuckets, range, histogramType);
+        if (initialInterval) {
+            const initialIntervalValue = +initialInterval.value;
+            const maxIntervalValue = range / maxBuckets;
+            if (initialIntervalValue > 0.9 * maxIntervalValue) {
+                return initialInterval;
+            }
         }
+        return getAggregationPrecision(maxBuckets, range, histogramType);
     }
 }
 

@@ -24,8 +24,15 @@ import { Expression, Filter, Hits, Search } from 'arlas-api';
 import { CollaborativesearchService, projType } from 'arlas-web-core';
 import ngeohash from 'ngeohash';
 import { map, Observable } from 'rxjs';
+import { GranularityClusterFunction } from '../contributors/MapContributor';
 import { ElementIdentifier } from '../models/models';
 import { getElementFromJsonObject } from './utils';
+
+export interface Tile {
+    x: number;
+    y: number;
+    z: number;
+}
 
 export function getBounds(
     elementidentifier: ElementIdentifier,
@@ -46,7 +53,7 @@ export function getBounds(
     return searchResult
         .pipe(
             map(h => {
-                const geojsonData = getElementFromJsonObject(h.hits[0].md, 'geometry');
+                const geojsonData = getElementFromJsonObject(h.hits?.[0].md, 'geometry') as GeoJSON.GeoJSON;
                 switch (geojsonData.type) {
                     case 'LineString':
                         geojsonData.coordinates = fix180thMeridian(geojsonData.coordinates, 'LineString');
@@ -69,8 +76,7 @@ export function getBounds(
             }));
 }
 
-export function extentToGeohashes(extent: Array<number>, zoom: number,
-    granularityFunction: (zoom: number, clusterType?) => { tilesPrecision: number; requestsPrecision: number; }): Set<string> {
+export function extentToGeohashes(extent: Array<number>, zoom: number, granularityFunction: GranularityClusterFunction): Set<string> {
     let geohashList = [];
     const west = extent[1];
     const east = extent[3];
@@ -110,7 +116,7 @@ export function extentToGeohashes(extent: Array<number>, zoom: number,
     return new Set(geohashList);
 }
 
-export function tileToString(tile: { x: number; y: number; z: number; }): string {
+export function tileToString(tile: Tile): string {
     return tile.x.toString() + '_' + tile.y.toString() + '_' + tile.z.toString();
 }
 
@@ -123,7 +129,7 @@ export function stringToExtent(s: string): Array<number> {
     return [+ss[3], +ss[0], +ss[1], +ss[2]];
 }
 
-export function stringToTile(tileString: string): { x: number; y: number; z: number; } {
+export function stringToTile(tileString: string): Tile {
     const numbers = tileString.split('_');
     return { x: +numbers[0], y: +numbers[1], z: +numbers[2] };
 }
@@ -156,7 +162,7 @@ export function project(lat: number, lng: number, zoom: number): { x: number; y:
 
     return point;
 }
-export function getTiles(bounds: number[][], zoom: number): Array<{ x: number; y: number; z: number; }> {
+export function getTiles(bounds: number[][], zoom: number): Tile[] {
     // north,west
     const min = project(bounds[1][1], bounds[0][0], zoom);
     // south,east
@@ -175,10 +181,10 @@ export function getTiles(bounds: number[][], zoom: number): Array<{ x: number; y
     return tiles;
 }
 
-export function xyz(bounds: number[][], minZoom: number, maxZoom?: number): Array<{ x: number; y: number; z: number; }> {
+export function xyz(bounds: number[][], minZoom: number, maxZoom?: number): Tile[] {
     let min: number;
     let max: number;
-    let tiles = [];
+    let tiles = new Array<Tile>();
 
     if (!maxZoom) {
         max = min = minZoom;
@@ -197,17 +203,17 @@ export function xyz(bounds: number[][], minZoom: number, maxZoom?: number): Arra
 /**
  * Takes a GeoJSON Feature or FeatureCollection and truncates the precision of the geometry.
  *
- * @name truncate
- * @param {GeoJSON} geojson any GeoJSON Feature, FeatureCollection, Geometry or GeometryCollection.
- * @param {Object} [options={}] Optional parameters
- * @param {number} [options.precision=6] coordinate decimal precision
- * @param {number} [options.coordinates=3] maximum number of coordinates (primarly used to remove z coordinates)
- * @param {boolean} [options.mutate=false] allows GeoJSON input to be mutated (significant performance increase if true)
- * @returns {GeoJSON} layer with truncated geometry
- * @example
+ * @param geojson GeoJSON Feature, FeatureCollection, Geometry or GeometryCollection.
+ * @param [options={}] Optional parameters
+ * @param [options.precision=6] coordinate decimal precision
+ * @param [options.coordinates=3] maximum number of coordinates (primarly used to remove z coordinates)
+ * @param [options.mutate=false] allows GeoJSON input to be mutated (significant performance increase if true)
+ * @returns layer with truncated geometry
  */
 
-export function truncate(geojson, options) {
+export function truncate(geojson: GeoJSON.FeatureCollection<GeoJSON.Polygon>,
+    options: { precision?: number; coordinates?: number; mutate?: boolean; }
+): GeoJSON.FeatureCollection<GeoJSON.Polygon> {
     if (options === void 0) {
         options = {};
     }
@@ -243,13 +249,12 @@ export function truncate(geojson, options) {
 /**
  * Truncate Coordinates - Mutates coordinates in place
  *
- * @private
- * @param {Array<any>} coords Geometry Coordinates
- * @param {number} factor rounding factor for coordinate decimal precision
- * @param {number} coordinates maximum number of coordinates (primarly used to remove z coordinates)
- * @returns {Array<any>} mutated coordinates
+ * @param coords Geometry Coordinates
+ * @param factor rounding factor for coordinate decimal precision
+ * @param coordinates maximum number of coordinates (primarly used to remove z coordinates)
+ * @returns mutated coordinates
  */
-export function truncateCoords(coords, factor, coordinates) {
+export function truncateCoords(coords: number[], factor: number, coordinates: number) {
     // Remove extra coordinates (usually elevation coordinates and more)
     if (coords.length > coordinates) {
         coords.splice(coordinates, coords.length);

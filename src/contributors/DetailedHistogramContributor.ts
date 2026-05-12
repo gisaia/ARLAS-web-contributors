@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Aggregation, AggregationResponse, Filter } from 'arlas-api';
+import { Aggregation, AggregationResponse, Expression, Filter, Interval } from 'arlas-api';
 import { Collaboration, CollaborationEvent, CollectionAggField, OperationEnum } from 'arlas-web-core';
 import { Observable, from } from 'rxjs';
 import jsonSchema from '../jsonSchemas/detailedHistogramContributorConf.schema.json' with { type: 'json' };
@@ -46,7 +46,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
     /**
      * The current selection on the main histogram
      */
-    public currentSelectedInterval: SelectedOutputValues;
+    public currentSelectedInterval?: SelectedOutputValues;
 
     /**
     * @returns Package name for the configuration service.
@@ -62,7 +62,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse[]> {
         this.maxValue = 0;
         let additionalFilters;
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
+        if (collaborationEvent && (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove)) {
             const annexedContributorCollaboration = this.collaborativeSearcheService.collaborations.get(this.annexedContributorId);
             if (this.annexedContributorId && annexedContributorCollaboration) {
                 additionalFilters = this.cloneAnnexedContributorFilter(annexedContributorCollaboration);
@@ -89,14 +89,14 @@ export class DetailedHistogramContributor extends HistogramContributor {
                                 }
 
                                 // Compute the bucket interval to truncate the filter with the desired offset
-                                let histogramBucketInterval;
+                                let histogramBucketInterval: number;
                                 /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
                                 if (this.nbBuckets) {
                                     histogramBucketInterval = getAggregationPrecision(
                                         this.nbBuckets, max - min, this.aggregations[0].type).value;
                                 } else {
                                     /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
-                                    const initialInterval = this.aggregations[0].interval;
+                                    const initialInterval = this.aggregations[0].interval as Interval;
                                     histogramBucketInterval = adjustHistogramInterval(
                                         this.aggregations[0].type, this.maxBuckets, initialInterval, max - min).value;
                                 }
@@ -119,8 +119,8 @@ export class DetailedHistogramContributor extends HistogramContributor {
         }
     }
 
-    public init(aggregations: Array<Aggregation>, field: string, jsonPath: string, additionalCollections: CollectionAggField[]) {
-        const aggs = [];
+    public init(aggregations: Array<Aggregation>, field: string, jsonPath: string, additionalCollections: Required<CollectionAggField>[]) {
+        const aggs = new Array<Aggregation>();
         aggregations.forEach(agg => {
             const aggregationCopy: Aggregation = {
                 field: agg.field,
@@ -140,8 +140,8 @@ export class DetailedHistogramContributor extends HistogramContributor {
         this.aggregations = aggs;
         this.field = field;
         this.json_path = jsonPath;
-        if (!!additionalCollections) {
-            if (!!this.collections) {
+        if (additionalCollections) {
+            if (this.collections) {
                 this.collections = this.collections.concat(additionalCollections);
             }
         }
@@ -159,12 +159,12 @@ export class DetailedHistogramContributor extends HistogramContributor {
                 let collabFilter: Filter;
                 const collabFilters = annexedContributorColloaboration.filters.get(c.collectionName);
                 if (!!collabFilters && collabFilters.length > 0) {
-                    collabFilter = annexedContributorColloaboration.filters.get(c.collectionName)[0];
-                    if (collabFilter && collabFilter.f) {
-                        const filter = { f: [] };
+                    collabFilter = collabFilters[0];
+                    if (collabFilter?.f) {
+                        const filter: { f: Expression[][]; } = { f: [] };
                         const temporaryF = collabFilter.f;
                         temporaryF.forEach(f => {
-                            const expressionsList = [];
+                            const expressionsList = new Array<Expression>();
                             f.forEach(expression => {
                                 expressionsList.push({ field: expression.field, op: expression.op, value: expression.value });
                             });

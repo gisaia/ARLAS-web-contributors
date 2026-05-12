@@ -17,11 +17,11 @@
  * under the License.
  */
 
-import { Aggregation, Hits } from 'arlas-api';
+import { Aggregation } from 'arlas-api';
 import * as FileSaver from 'file-saver';
 import jp from 'jsonpath';
 import tinycolor from 'tinycolor2';
-import { LayerSourceConfig } from '../models/models';
+import { ClusterLayerCourceConfig, FeatureLayerSourceConfig, LayerSourceConfig, TopologyLayerSourceConfig } from '../models/models';
 
 
 export class ColorGeneratorLoader {
@@ -73,7 +73,7 @@ export class ColorGeneratorLoader {
 */
 export function getElementFromJsonObject(jsonObject: any, pathstring: string): any {
     const path = pathstring.split('.');
-    if (jsonObject == null) {
+    if (jsonObject === null || jsonObject === undefined) {
         return null;
     }
     if (path.length === 0) {
@@ -149,13 +149,13 @@ export function invertSortDirection(sortString: string): string {
 }
 
 /**
- *
- * @param fromIndex remove `pageSize` elements from `data` array starting from `fromIndex`
+ * Removes `pageSize` elements from `data` array starting from `fromIndex`
+ * @param fromIndex start index
  * @param data the data list from which pages are removed
  * @param pageSize how many hits/features are inside each page
  * @param maxPages Maximum number of pages to keep in `data` list
  */
-export function removePageFromIndex(fromIndex, data: Array<any>, pageSize: number, maxPages: number): void {
+export function removePageFromIndex(fromIndex: number, data: Array<any>, pageSize: number, maxPages: number): void {
     if (data.length > pageSize * maxPages) {
         data.splice(fromIndex, pageSize);
     }
@@ -166,16 +166,13 @@ export function removePageFromIndex(fromIndex, data: Array<any>, pageSize: numbe
  * @param field Field to find in the data JSON
  * @param data JSON data to explore
  */
-export function getFieldValue(field: string, data: Hits): any {
+export function getFieldValue(field: string | undefined, data: Object): any {
     let result;
     if (field) {
-        if (field.indexOf('.') < 0) {
-            const query = jp.stringify(['$', field]);
-            result = jp.query(data, query);
-        } else {
+        if (field.includes('.')) {
             let query = '$.';
             let composePath = '';
-            let lastElementLength: number;
+            let lastElementLength = 0;
             let isDataArray = false;
             let dataElement: any;
             field.split('.').forEach(pathElment => {
@@ -196,6 +193,9 @@ export function getFieldValue(field: string, data: Hits): any {
             });
             query = query.substring(0, query.length - lastElementLength);
             result = jp.query(data, query);
+        } else {
+            const query = jp.stringify(['$', field]);
+            result = jp.query(data, query);
         }
 
         if (result.length === 1) {
@@ -207,25 +207,29 @@ export function getFieldValue(field: string, data: Hits): any {
     return result;
 }
 
-export function coarseTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
+export function coarseTopoGranularity(zoom: number): Precision {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function mediumTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
+export function mediumTopoGranularity(zoom: number): Precision {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function fineTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
+export function fineTopoGranularity(zoom: number): Precision {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
-export function finestTopoGranularity(zoom: number): { tilesPrecision: number; requestsPrecision: number; } {
+export function finestTopoGranularity(zoom: number): Precision {
     return { tilesPrecision: 2, requestsPrecision: 2 };
 }
 
+export interface Precision {
+    tilesPrecision: number;
+    requestsPrecision: number;
+}
 
-export function networkFetchingLevelGranularity(precision): { tilesPrecision: number; requestsPrecision: number; } {
+export function networkFetchingLevelGranularity(precision: number): Precision {
     return { tilesPrecision: precision, requestsPrecision: precision };
 }
 
-export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
+export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): Precision {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -253,10 +257,11 @@ export function coarseGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
             return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 3, 0)), 15) };
         }
     }
+    throw new Error(`Aggregation type must be geohash, geotile or geohex. Got ${type}`);
 }
 
 
-export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
+export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): Precision {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -284,9 +289,10 @@ export function mediumGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
             return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 2, 0)), 15) };
         }
     }
+    throw new Error(`Aggregation type must be geohash, geotile or geohex. Got ${type}`);
 }
 
-export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
+export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): Precision {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -315,9 +321,10 @@ export function fineGranularity(zoom: number, type?: Aggregation.TypeEnum): { ti
             return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(Math.max(zoom - 1, 0)), 15) };
         }
     }
+    throw new Error(`Aggregation type must be geohash, geotile or geohex. Got ${type}`);
 }
 
-export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { tilesPrecision: number; requestsPrecision: number; } {
+export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): Precision {
     if (!type) {
         type = Aggregation.TypeEnum.Geohash;
     }
@@ -348,10 +355,15 @@ export function finestGranularity(zoom: number, type?: Aggregation.TypeEnum): { 
             return { tilesPrecision: Math.trunc(zoom) + 1, requestsPrecision: Math.min(Math.trunc(zoom), 15) };
         }
     }
+    throw new Error(`Aggregation type must be geohash, geotile or geohex. Got ${type}`);
 }
 
 
 export function featurestTilesGranularity(zoom: number): number {
+    if (zoom < 0 || zoom >= 25) {
+        throw new Error(`Zoom is outside of allowed range [0, 25[. Got ${zoom}`);
+    }
+
     if (zoom >= 0 && zoom < 3) {
         return 2;
     } else if (zoom >= 3 && zoom < 5) {
@@ -374,7 +386,7 @@ export function featurestTilesGranularity(zoom: number): number {
         return 20;
     } else if (zoom >= 21 && zoom < 23) {
         return 22;
-    } else if (zoom >= 23 && zoom < 25) {
+    } else {
         return 24;
     }
 }
@@ -408,21 +420,22 @@ export function rgbToHex(rgb: string): string {
 
 export function getSourceName(ls: LayerSourceConfig): string {
     let sourceType = 'cluster';
-    if (ls.returned_geometry) {
+    if ((ls as any).returned_geometry) {
         sourceType = 'feature';
-    } else if (ls.geometry_id) {
+    } else if ((ls as any).geometry_id) {
         sourceType = 'feature-metric';
     }
     const sourceNameComponents = [];
     sourceNameComponents.push(sourceType);
     switch (sourceType) {
         case 'cluster':
+            ls = ls as ClusterLayerCourceConfig;
             sourceNameComponents.push(ls.agg_geo_field);
             sourceNameComponents.push(ls.granularity);
             sourceNameComponents.push(ls.aggType);
             if (ls.aggregated_geometry) {
                 sourceNameComponents.push(ls.aggregated_geometry);
-            } else {
+            } else if (ls.raw_geometry) {
                 sourceNameComponents.push(ls.raw_geometry.geometry);
                 sourceNameComponents.push(ls.raw_geometry.sort);
             }
@@ -431,15 +444,19 @@ export function getSourceName(ls: LayerSourceConfig): string {
             }
             break;
         case 'feature-metric':
+            ls = ls as TopologyLayerSourceConfig;
             sourceNameComponents.push(ls.geometry_id);
-            sourceNameComponents.push(ls.raw_geometry.geometry);
-            sourceNameComponents.push(ls.raw_geometry.sort);
+            if (ls.raw_geometry) {
+                sourceNameComponents.push(ls.raw_geometry.geometry);
+                sourceNameComponents.push(ls.raw_geometry.sort);
+            }
             sourceNameComponents.push(ls.network_fetching_level);
-            if (ls.fetched_hits && ls.fetched_hits.sorts) {
+            if (ls.fetched_hits?.sorts) {
                 sourceNameComponents.push(ls.fetched_hits.sorts.join('_'));
             }
             break;
         case 'feature':
+            ls = ls as FeatureLayerSourceConfig;
             sourceNameComponents.push(ls.returned_geometry);
             sourceNameComponents.push(ls.render_mode);
             break;

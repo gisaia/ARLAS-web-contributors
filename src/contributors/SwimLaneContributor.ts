@@ -27,10 +27,10 @@ import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json' with
 import { adjustHistogramInterval, getAggregationPrecision, MAX_BUCKETS } from '../utils/histoswimUtils';
 
 export interface LaneStats {
-    min?: number;
-    max?: number;
-    sum?: number;
-    count?: number;
+    min: number;
+    max: number;
+    sum: number;
+    count: number;
 }
 
 export interface SwimlaneStats {
@@ -48,9 +48,14 @@ export interface SwimlaneStats {
     bucketLength?: number;
 }
 
+export interface BucketData {
+    key: number;
+    value: number;
+}
+
 export interface SwimlaneData {
     stats: SwimlaneStats;
-    lanes: Map<string, Array<{ key: number; value: number; }>>;
+    lanes: Map<string, BucketData[]>;
 }
 
 
@@ -62,17 +67,17 @@ export class SwimLaneContributor extends Contributor {
      *      - The value of a lane is a histogram represented as an array.
      * - stats: stats summerizing the swimlane data
      */
-    public swimData: SwimlaneData;
+    public swimData?: SwimlaneData;
 
     /**
      * selectedSwimlanes is the list of selected terms (lanes) in the swimlane.
      */
-    public selectedSwimlanes: Set<string>;
+    public selectedSwimlanes = new Set<string>();
 
     /**
      * The range of data that this contributor fetches.
      */
-    public range: ComputationResponse;
+    public range?: ComputationResponse;
 
     /**
      * List of aggregation models used to fetch data
@@ -135,7 +140,7 @@ export class SwimLaneContributor extends Contributor {
      * @param selectedSwimlanes List of selected lanes of the swimlane
      */
     public valueChanged(selectedSwimlanes: Set<string>) {
-        const filterValue: Filter = { f: [] };
+        const filterValue = { f: new Array<Expression[]>() };
         const equalExpression: Expression = {
             field: this.getTermField(),
             op: Expression.OpEnum.Eq,
@@ -168,12 +173,12 @@ export class SwimLaneContributor extends Contributor {
         });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-            <ComputationRequest>{ filter: null, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
+            <ComputationRequest>{ filter: undefined, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
                 collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
                 .pipe(
                     map((computationResponse: ComputationResponse) => {
                         const dataRange = !!computationResponse.value ? computationResponse.value : 0;
-                        this.range = !!computationResponse.value ? computationResponse : null;
+                        this.range = computationResponse.value ? computationResponse : undefined;
                         /** if nbBuckets is defined, we calculate the needed bucket interval to obtain this number. */
                         if (this.nbBuckets) {
                             this.aggregations[1].interval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[1].type);
@@ -197,7 +202,7 @@ export class SwimLaneContributor extends Contributor {
     }
 
     public computeData(aggResponse: AggregationResponse): SwimlaneData {
-        const mapResponse = new Map<string, Array<{ key: number; value: number; }>>();
+        const mapResponse = new Map<string, BucketData[]>();
         const responseStats: SwimlaneStats = {
             columnStats: new Map<number, LaneStats>(),
             globalStats: {
@@ -213,10 +218,10 @@ export class SwimLaneContributor extends Contributor {
         if (aggResponse.elements !== undefined) {
             aggResponse.elements.forEach(element => {
                 const key = element.key;
-                const dataTab = new Array<{ key: number; value: number; }>();
+                const dataTab = new Array<BucketData>();
                 responseStats.nbLanes++;
-                element.elements.forEach(e => {
-                    e.elements.forEach(el => {
+                element.elements?.forEach(e => {
+                    e.elements?.forEach(el => {
                         const value = jp.query(el, this.json_path)[0];
                         dataTab.push({ key: el.key, value: value });
                         this.updateStats(responseStats, +el.key, value);
@@ -246,20 +251,21 @@ export class SwimLaneContributor extends Contributor {
 
     public setSelection(data: SwimlaneData, collaboration: Collaboration): any {
         if (collaboration) {
-            let f: Filter;
-            if (collaboration.filters && collaboration.filters.get(this.collection)) {
-                f = collaboration.filters.get(this.collection)[0];
+            let f: Filter | undefined;
+            const filters = collaboration.filters.get(this.collection);
+            if (filters) {
+                f = filters[0];
             }
-            if (!f) {
+            if (f) {
+                const selectedSwimlanesAsArray = f.f?.[0];
                 this.selectedSwimlanes = new Set();
-            } else {
-                const selectedSwimlanesAsArray = f.f[0];
-                this.selectedSwimlanes = new Set();
-                selectedSwimlanesAsArray.forEach(termsList => {
+                selectedSwimlanesAsArray?.forEach(termsList => {
                     termsList.value.split(',').forEach(term => {
                         this.selectedSwimlanes.add(term);
                     });
                 });
+            } else {
+                this.selectedSwimlanes = new Set();
             }
         } else {
             this.selectedSwimlanes = new Set();
@@ -315,7 +321,7 @@ export class SwimLaneContributor extends Contributor {
         return '';
     }
 
-    private fillBlanks(mapResponse: Map<string, Array<{ key: number; value: number; }>>, keys: Array<number>): void {
+    private fillBlanks(mapResponse: Map<string, BucketData[]>, keys: Array<number>): void {
         mapResponse.forEach((v, k) => {
             const minV = v[0].key;
             const maxV = v[v.length - 1].key;
@@ -337,14 +343,7 @@ export class SwimLaneContributor extends Contributor {
     private updateStats(stat: SwimlaneStats, key: number, value: number): void {
         const columnStat = stat.columnStats.get(key);
         const isValueValid = this.isValueValid(value);
-        if (!columnStat) {
-            const stats = {
-                max: isValueValid ? value : -Number.MAX_VALUE,
-                min: isValueValid ? value : Number.MAX_VALUE,
-                sum: isValueValid ? value : 0
-            };
-            stat.columnStats.set(key, stats);
-        } else {
+        if (columnStat) {
             if (isValueValid) {
                 if (value < columnStat.min) {
                     columnStat.min = value;
@@ -355,7 +354,16 @@ export class SwimLaneContributor extends Contributor {
                 columnStat.sum += value;
             }
             stat.columnStats.set(key, columnStat);
+        } else {
+            const stats = {
+                max: isValueValid ? value : -Number.MAX_VALUE,
+                min: isValueValid ? value : Number.MAX_VALUE,
+                sum: isValueValid ? value : 0,
+                count: isValueValid ? 1 : 0
+            };
+            stat.columnStats.set(key, stats);
         }
+
         if (isValueValid) {
             if (value < stat.globalStats.min) {
                 stat.globalStats.min = value;
