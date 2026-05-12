@@ -24,9 +24,9 @@ import {
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
 import { Observable, forkJoin, from } from 'rxjs';
+import { validProcess } from 'utils/process';
 import jsonSchema from '../jsonSchemas/computeContributorConf.schema.json' with { type: 'json' };
 import { ComputeConfig } from '../models/models';
-import { validProcess } from '../utils/utils';
 
 
 /**
