@@ -913,7 +913,6 @@ export class ResultListContributor extends Contributor {
                         try {
                             resultValue = processFunction(result);
                         } catch (error) {
-                            console.log('hello');
                             this.processErrorBus.next({
                                 column: element.columnName,
                                 context: 'apply',
