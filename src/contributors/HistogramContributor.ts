@@ -30,6 +30,15 @@ import {
 } from '../utils/histoswimUtils';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import { DetailedHistogramContributor } from './DetailedHistogramContributor';
+import { BucketData } from './SwimLaneContributor';
+
+export interface ChartData extends BucketData {
+    chartId?: string;
+}
+
+export interface AggregationResponseWithCollection extends AggregationResponse {
+    collection: string;
+}
 
 /**
 * This contributor works with the Angular HistogramComponent of the Arlas-web-components project.
@@ -41,15 +50,14 @@ export class HistogramContributor extends Contributor {
     * New data need to be draw on the histogram (could be set to
     @Input() data of HistogramComponent
     */
-    public chartData: Array<{ key: number; value: number; chartId?: string; }> =
-        new Array<{ key: number; value: number; chartId?: string; }>();
+    public chartData = new Array<ChartData>();
 
-    public chartDataEvent: Subject<{ key: number; value: number; chartId?: string; }[]> = new Subject();
+    public chartDataEvent: Subject<ChartData[]> = new Subject();
     /**
     * New selection current need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
     */
-    public intervalSelection: SelectedOutputValues;
+    public intervalSelection?: SelectedOutputValues;
     /**
     * New selections need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
@@ -59,7 +67,7 @@ export class HistogramContributor extends Contributor {
     /**
     * List of all the predefined time shortcuts
     */
-    public timeShortcuts: Array<StringifiedTimeShortcut>;
+    public timeShortcuts: StringifiedTimeShortcut[] = [];
 
     /**
      * List of shortcuts labels to fetch from the predefined time shortcuts list
@@ -74,7 +82,7 @@ export class HistogramContributor extends Contributor {
     /**
      * Histogram's range
     */
-    public range: number;
+    public range?: number;
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
@@ -90,15 +98,15 @@ export class HistogramContributor extends Contributor {
     /**
     * ARLAS Server field of aggregation used to draw the chart, retrieve from Aggregation
     */
-    protected field: string = (!!this.aggregations) ? (this.aggregations[this.aggregations.length - 1].field) : (undefined);
+    protected field: string;
     /**
     * Start value of selection use to the display of filterDisplayName
     */
-    protected startValue: string;
+    protected startValue?: string;
     /**
     * End value of selection use to the display of filterDisplayName
     */
-    protected endValue: string;
+    protected endValue?: string;
     /**
     * Max value of all bucketn use for oneDimension histogram palette
     */
@@ -106,7 +114,7 @@ export class HistogramContributor extends Contributor {
     /**
     * Labels of the timelines
     */
-    public timeLabel: string;
+    public timeLabel?: string;
     /**
     * Wether use UTC for display time
     */
@@ -116,6 +124,8 @@ export class HistogramContributor extends Contributor {
     public maxBuckets = MAX_BUCKETS;
 
     public detailedHistrogramContributor!: DetailedHistogramContributor;
+
+    public collections: Required<CollectionAggField>[];
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -126,12 +136,16 @@ export class HistogramContributor extends Contributor {
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService, collection: string, protected isOneDimension?: boolean,
-        public additionalCollections?: Array<{ collectionName: string; field: string; }>
+        public additionalCollections?:  Required<CollectionAggField>[]
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
-        const lastAggregation: Aggregation = !!this.aggregations ? this.aggregations[this.aggregations.length - 1] : undefined;
-        if (!!lastAggregation && lastAggregation.type.toString().toLocaleLowerCase() ===
-            Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
+
+        if (!this.aggregations || this.aggregations.length === 0) {
+            throw new Error('Histogram Contributor must have at least one `aggregationmodels`.');
+        }
+
+        const lastAggregation = this.aggregations.at(-1) as Aggregation;
+        if (lastAggregation.type.toString().toLocaleLowerCase() === Aggregation.TypeEnum.Datehistogram.toString().toLocaleLowerCase()) {
             this.timeShortcuts = getPredefinedTimeShortcuts()
                 .filter(ts => ts.type.indexOf('year') < 0);
             if (this.timeShortcutsLabels) {
@@ -146,6 +160,7 @@ export class HistogramContributor extends Contributor {
         }
         this.collections = this.getAllCollections();
         this.collaborativeSearcheService.registerCollections(this);
+        this.field = lastAggregation.field;
     }
 
     public isUpdateEnabledOnOwnCollaboration() {
@@ -164,7 +179,7 @@ export class HistogramContributor extends Contributor {
         return this.field;
     }
 
-    public setField(field) {
+    public setField(field: string) {
         this.field = field;
     }
 
@@ -175,15 +190,15 @@ export class HistogramContributor extends Contributor {
     public getAggregations() {
         const aggregations: Aggregation[] = [];
         /** clone the aggregations to avoid side effects by external code */
-        if (!!this.aggregations) {
+        if (this.aggregations) {
             this.aggregations.forEach(agg => {
-                let interval;
+                let interval: Interval;
                 const aggregation: Aggregation = {
                     type: agg.type,
                     field: agg.field,
                     metrics: agg.metrics
                 };
-                if (!!agg.interval) {
+                if (agg.interval) {
                     interval = {
                         value: agg.interval.value
                     };
@@ -244,7 +259,7 @@ export class HistogramContributor extends Contributor {
             if (strangerCollections.length > 0) {
                 const is = strangerCollections.length > 1 ? 'are' : 'is';
                 const plural = strangerCollections.length > 1 ? 's' : '';
-                throw Error(`Collection${plural} '${strangerCollections.join(' ')}'
+                throw new Error(`Collection${plural} '${strangerCollections.join(' ')}'
                     ${is} not declared in the ${this.getName()} contributor `);
             }
 
@@ -259,7 +274,7 @@ export class HistogramContributor extends Contributor {
         this.timeLabel = this.getShortcutLabel(this.intervalSelection, this.startValue, this.endValue);
     }
 
-    public getShortcutLabel(intervalSelection: SelectedOutputValues, startValue: string, endValue: string): string {
+    public getShortcutLabel(intervalSelection?: SelectedOutputValues, startValue?: string, endValue?: string): string {
         if (this.timeShortcuts) {
             const labels = this.timeShortcuts.filter(t => (t.from === startValue) && (t.to === endValue)).map(t => t.label);
             if (labels.length === 1) {
@@ -280,7 +295,7 @@ export class HistogramContributor extends Contributor {
 
     public fetchData(collaborationEvent?: CollaborationEvent): Observable<AggregationResponse[]> {
         this.maxValue = 0;
-        if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
+        if (collaborationEvent && (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove)) {
             return this.fetchDataGivenFilter(this.identifier);
         } else {
             return from([]);
@@ -289,13 +304,13 @@ export class HistogramContributor extends Contributor {
 
 
     public getAllCollections() {
-        return (!!this.additionalCollections ? this.additionalCollections : []).concat({
+        return (this.additionalCollections ?? []).concat({
             collectionName: this.collection,
             field: this.field
         });
     }
 
-    public computeData(aggResponses: AggregationResponse[]): Array<{ key: number; value: number; chartId: string; }> {
+    public computeData(aggResponses: AggregationResponseWithCollection[]): Array<{ key: number; value: number; chartId: string; }> {
         const dataTab = new Array<{ key: number; value: number; chartId: string; }>();
         aggResponses.forEach(aggResponse => {
             if (aggResponse.elements !== undefined) {
@@ -308,7 +323,8 @@ export class HistogramContributor extends Contributor {
                     if (this.json_path !== '$.count' && element.count === 0) {
                         value = 'Infinity';
                     }
-                    dataTab.push({ key: element.key, value: value, chartId: aggResponse['collection'] });
+                    // TODO: Missing collection field
+                    dataTab.push({ key: element.key, value: value, chartId: aggResponse.collection });
                 });
             }
         });
@@ -316,7 +332,7 @@ export class HistogramContributor extends Contributor {
         return dataTab.sort((a, b) => a.key < b.key ? -1 : (a.key > b.key ? 1 : 0));
     }
 
-    public setData(data: Array<{ key: number; value: number; chartId?: string; }>): Array<{ key: number; value: number; chartId?: string; }> {
+    public setData(data: ChartData[]): ChartData[] {
         if (!this.isOneDimension || this.isOneDimension === undefined) {
             this.chartData = data;
         } else {
@@ -334,7 +350,7 @@ export class HistogramContributor extends Contributor {
         return this.chartData;
     }
 
-    public setSelection(data: Array<{ key: number; value: number; chartId?: string; }>, collaboration: Collaboration): any {
+    public setSelection(data: ChartData[], collaboration: Collaboration) {
         const resultList = getSelectionToSet(data, this.collection, collaboration, this.useUtc);
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
@@ -355,7 +371,7 @@ export class HistogramContributor extends Contributor {
             .map(ac => {
                 const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
                 return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-                <ComputationRequest>{ filter: null, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
+                    { filter: undefined, field: ac.field, metric: ComputationRequest.MetricEnum.SPANNING }],
                     collaborations, ac.collectionName, identifier, additionalFilter, false, this.cacheDuration);
             }))
             .pipe(
@@ -367,7 +383,7 @@ export class HistogramContributor extends Contributor {
                         histogramInterval = getAggregationPrecision(this.nbBuckets, dataRange, this.aggregations[0].type);
                     } else {
                         /** Otherwise we use the interval; that we adjust in case it generates more than `maxBuckets` buckets */
-                        const initialInterval = aggregations[0].interval;
+                        const initialInterval = aggregations[0].interval as Interval;
                         histogramInterval = adjustHistogramInterval(this.aggregations[0].type,
                             this.maxBuckets, initialInterval, dataRange);
                     }
@@ -379,17 +395,17 @@ export class HistogramContributor extends Contributor {
                 }),
                 map((r => {
                     this.range = r.dataRange;
-                    const aggregation: Aggregation = {
-                        type: aggregations[0].type,
-                        interval: r.aggregationPrecision
-                    };
-                    if (aggregations[0].metrics) {
-                        aggregation.metrics = aggregations[0].metrics;
-                    }
                     return zip(...Array.from(this.collections).map(ac => {
-                        aggregation.field = ac.field;
-                        const additionalFilter = !!additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
-                        return this.resolveHistogramAgg(identifier, [aggregation], collaborations, additionalFilter, ac);
+                        const aggregation: Aggregation = {
+                            type: aggregations[0].type,
+                            interval: r.aggregationPrecision,
+                            field: ac.field
+                        };
+                        if (aggregations[0].metrics) {
+                            aggregation.metrics = aggregations[0].metrics;
+                        }
+                        const additionalFilter = additionalFilters ? additionalFilters.get(ac.collectionName) : undefined;
+                        return this.resolveHistogramAgg(identifier, [aggregation], collaborations, ac, additionalFilter);
                     }));
                 })),
                 mergeMap(a => a)
@@ -399,13 +415,12 @@ export class HistogramContributor extends Contributor {
     }
 
     protected resolveHistogramAgg(identifier: string, aggregations: Array<Aggregation>, collaborations: Map<string, Collaboration>,
-        additionalFilter: Filter, ac: CollectionAggField): Observable<AggregationResponse> {
+        ac: CollectionAggField, additionalFilter?: Filter
+    ): Observable<AggregationResponseWithCollection> {
         return this.collaborativeSearcheService.resolveButNotAggregation(
-            [projType.aggregate, aggregations], collaborations,
-            ac.collectionName, identifier, additionalFilter, false, this.cacheDuration).pipe(map(d => {
-                d['collection'] = ac.collectionName;
-                return d;
-            }));
+                [projType.aggregate, aggregations], collaborations,
+                ac.collectionName, identifier, additionalFilter, false,this.cacheDuration)
+            .pipe(map(d => ({ ...d, collection: ac.collectionName })));
     }
 
 }

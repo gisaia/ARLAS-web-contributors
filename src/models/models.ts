@@ -215,7 +215,7 @@ export interface TreeNode {
     fieldName: string;
     fieldValue: string;
     isOther: boolean;
-    size?: number;
+    size: number;
     metricValue?: number;
     children?: Array<TreeNode>;
     color?: string;
@@ -256,7 +256,6 @@ export enum FeatureRenderMode {
      */
     window = 'window',
     /** This mode fetches data globally. In this case the data undergoes the visibilty rules imposed by maxzoom/maxfeatures */
-    // todo: choose a name validated by all the team
     wide = 'wide'
 
 }
@@ -270,47 +269,59 @@ export enum ExtentFilterGeometry {
     geometry_path = 'geometry_path'
 }
 
-export interface LayerSourceConfig {
-    /** common config to all types */
+export interface CoreLayerSourceConfig {
     id: string;
     name?: string;
     source: string;
     minzoom: number;
     maxzoom: number;
     filters?: Array<any>;
-    /** **************************************** */
-    /** feature (Geometric-features) only */
-    returned_geometry?: string;
+}
+
+export interface FeatureLayerSourceConfig extends CoreLayerSourceConfig {
+    returned_geometry: string;
     normalization_fields?: Array<NormalizationFieldConfig>;
     short_form_fields?: Array<string>;
-    render_mode?: FeatureRenderMode;
-    /** **************************************** */
-    /** feature-metric (Network-analytics only) */
-    geometry_id?: string;
-    network_fetching_level?: number;
-    /** @deprecated */
-    geometry_support?: string;
-    /** **************************************** */
-    /** cluster only */
-    agg_geo_field?: string;
-    aggregated_geometry?: string;
-    aggType?: ClusterAggType;
-    minfeatures?: number;
-    /** **************************************** */
-    /** feature & feature-metric only */
-    maxfeatures?: number;
+    render_mode: FeatureRenderMode;
+
+    maxfeatures: number;
     colors_from_fields?: Array<string>;
     include_fields?: Array<string>;
     provided_fields?: Array<ColorConfig>;
-    /** **************************************** */
-    /** cluster & feature-metric only */
-    raw_geometry?: RawGeometryConfig;
-    granularity?: string;
-    metrics?: Array<MetricConfig>;
-    fetched_hits?: FetchedHitsConfig;
-    /** **************************************** */
 }
 
+export interface TopologyLayerSourceConfig extends CoreLayerSourceConfig {
+    geometry_id: string;
+    network_fetching_level?: number;
+    /** @deprecated */
+    geometry_support?: string;
+
+    maxfeatures: number;
+    colors_from_fields?: Array<string>;
+    include_fields?: Array<string>;
+    provided_fields?: Array<ColorConfig>;
+
+    raw_geometry?: RawGeometryConfig;
+    granularity: Granularity;
+    metrics: Array<MetricConfig>;
+    fetched_hits: FetchedHitsConfig;
+}
+
+export interface ClusterLayerCourceConfig extends CoreLayerSourceConfig {
+    agg_geo_field: string;
+    aggregated_geometry: Aggregation.AggregatedGeometriesEnum;
+    aggType: ClusterAggType;
+    minfeatures: number;
+
+    raw_geometry?: RawGeometryConfig;
+    granularity: Granularity;
+    metrics: Array<MetricConfig>;
+    fetched_hits?: FetchedHitsConfig;
+}
+
+export type LayerSourceConfig = FeatureLayerSourceConfig | TopologyLayerSourceConfig | ClusterLayerCourceConfig;
+
+// TODO: is everything undefined ??
 export interface FetchedHitsConfig {
     sorts?: string[];
     fields?: string[];
@@ -333,16 +344,17 @@ export enum DateUnitEnum {
 }
 
 export enum PageEnum {
-    next = 'next', previous = 'previous'
+    next = 'next',
+    previous = 'previous'
 }
 
 export class DateExpression {
-    public anchorDate: number | string;
-    public translationDuration: number;
-    public translationUnit: DateUnitEnum;
-    public roundingUnit: DateUnitEnum;
+    public anchorDate?: number | string;
+    public translationDuration?: number;
+    public translationUnit?: DateUnitEnum;
+    public roundingUnit?: DateUnitEnum;
 
-    public constructor(anchorDate?, translationDuration?, translationUnit?, roundingUnit?: DateUnitEnum) {
+    public constructor(anchorDate?: number | string, translationDuration?: number, translationUnit?: DateUnitEnum, roundingUnit?: DateUnitEnum) {
         this.anchorDate = anchorDate;
         this.translationDuration = translationDuration;
         this.translationUnit = translationUnit;
@@ -350,6 +362,10 @@ export class DateExpression {
     }
 
     public toString(): string {
+        if (!this.anchorDate) {
+            return '';
+        }
+
         let stringifiedExpression = this.anchorDate.toString();
         if (this.anchorDate !== 'now') {
             if (!Number.isNaN(this.anchorDate)) {
@@ -627,59 +643,57 @@ export interface RawGeometryConfig {
  * 2. `per` : (Optional) Choose the **keyword** field in order to normalize the `"on"` values per keyword.
  * An object of this class stores the **min** and **max** values of the `"on"` field (given the `"per"` field)
  */
-export class FeaturesNormalization implements NormalizationFieldConfig {
-    public on: string;
-    public per?: string;
-    public minMaxPerKey? = new Map<string, [number, number]>();
-    public minMax?: [number, number];
+export interface FeaturesNormalization extends NormalizationFieldConfig {
+    minMaxPerKey?: Map<string, [number, number]>;
+    minMax?: [number, number];
 }
 
-export class LayerSource {
-    public id: string;
-    public source: string;
-    public layerMinzoom: number;
-    public layerMaxzoom: number;
-    public sourceMinzoom: number;
-    public sourceMaxzoom: number;
+export interface LayerSource {
+    id: string;
+    source: string;
+    layerMinzoom: number;
+    layerMaxzoom: number;
+    sourceMinzoom: number;
+    sourceMaxzoom: number;
 }
 
-export class LayerFeatureSource extends LayerSource {
-    public renderMode: FeatureRenderMode;
-    public maxfeatures: number;
-    public sourceMaxFeatures: number;
-    public normalizationFields: Array<NormalizationFieldConfig>;
-    public shortFormLabels: Array<string>;
-    public includeFields: Set<string>;
-    public providedFields: Array<ColorConfig>;
-    public colorFields: Set<string>;
-    public returnedGeometry: string;
+export interface LayerFeatureSource extends LayerSource {
+    renderMode: FeatureRenderMode;
+    maxfeatures: number;
+    sourceMaxFeatures: number;
+    normalizationFields: Array<NormalizationFieldConfig>;
+    shortFormLabels: Array<string>;
+    includeFields: Set<string>;
+    providedFields: Array<ColorConfig>;
+    colorFields: Set<string>;
+    returnedGeometry: string;
 }
 
-export class LayerClusterSource extends LayerSource {
-    public minfeatures: number;
-    public sourceMinFeatures: number;
-    public aggGeoField: string;
-    public granularity: Granularity;
-    public aggregatedGeometry: Aggregation.AggregatedGeometriesEnum;
-    public rawGeometry: RawGeometry;
-    public metrics: Array<MetricConfig>;
-    public type: ClusterAggType;
-    public fetchedHits: FetchedHitsConfig;
+export interface LayerClusterSource extends LayerSource {
+    minfeatures: number;
+    sourceMinFeatures: number;
+    aggGeoField: string;
+    granularity: Granularity;
+    aggregatedGeometry?: Aggregation.AggregatedGeometriesEnum;
+    rawGeometry?: RawGeometry;
+    metrics: Array<MetricConfig>;
+    type: ClusterAggType;
+    fetchedHits?: FetchedHitsConfig;
 }
 
 /** Topology = feature-metric */
-export class LayerTopologySource extends LayerSource {
-    public maxfeatures: number;
-    public sourceMaxFeatures: number;
-    public metrics: Array<MetricConfig>;
-    public geometryId: string;
-    public rawGeometry: RawGeometry;
-    public granularity: Granularity;
-    public providedFields: Array<ColorConfig>;
-    public colorFields: Set<string>;
-    public includeFields: Set<string>;
-    public networkFetchingLevel: number;
-    public fetchedHits: FetchedHitsConfig;
+export interface LayerTopologySource extends LayerSource {
+    maxfeatures: number;
+    sourceMaxFeatures: number;
+    metrics: Array<MetricConfig>;
+    geometryId: string;
+    rawGeometry?: RawGeometry;
+    granularity: Granularity;
+    providedFields: Array<ColorConfig>;
+    colorFields: Set<string>;
+    includeFields: Set<string>;
+    networkFetchingLevel: number;
+    fetchedHits: FetchedHitsConfig;
 }
 
 export enum Granularity {
@@ -696,11 +710,13 @@ export interface MetricConfig {
     short_format?: boolean;
 }
 
+// TODO: rename ??
 export interface SourcesAgg {
     agg: Aggregation;
     sources: Array<string>;
 }
 
+// TODO: rename ??
 export interface SourcesSearch {
     search: Search;
     sources: Array<string>;

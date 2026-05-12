@@ -53,20 +53,20 @@ export class ChipsSearchContributor extends Contributor {
     /**
      * Global query based on all concatenate chips word
      */
-    public query: string;
+    public query = '';
     /**
      * Map of string/number, label/count of all chips, use in input of component
      */
     public chipMapData: Map<string, number> = new Map<string, number>();
 
-    public lastBackspaceBus: Subject<boolean>;
+    public lastBackspaceBus?: Subject<boolean>;
 
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
-    * @param  lastBackspaceBus bus from searchcomponent properties, send if the input is empty on backspace
     * @param collaborativeSearcheService  Instance of CollaborativesearchService from Arlas-web-core.
     * @param configService  Instance of ConfigService from Arlas-web-core.
+    * @param collection Collection on which to search
     */
     public constructor(
         identifier: string,
@@ -94,18 +94,23 @@ export class ChipsSearchContributor extends Contributor {
         if (collaborationEvent.id !== this.identifier) {
             let f = new Array<string>();
             const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
-            if (collaboration != null) {
-                let filter: Filter;
-                if (collaboration.filters && collaboration.filters.get(this.collection)) {
-                    filter = collaboration.filters.get(this.collection)[0];
-                }
-                f = Array.from(this.chipMapData.keys());
-                f.forEach(k => {
-                    if (filter.q[0].indexOf(k) < 0) {
-                        this.chipMapData.delete((k));
+            if (collaboration?.filters) {
+                const filters = collaboration.filters.get(this.collection);
+                if (filters) {
+                    const filter = filters[0];
+
+                    f = Array.from(this.chipMapData.keys());
+                    f.forEach(k => {
+                        if (filter.q && !filter.q[0].includes(k)) {
+                            this.chipMapData.delete((k));
+                        }
+                    });
+
+                    if (filter.q) {
+                        f = filter.q[0];
                     }
-                });
-                f = filter.q[0];
+                }
+
             }
             if (f.length > 0) {
                 f.forEach((k) => {
@@ -142,7 +147,7 @@ export class ChipsSearchContributor extends Contributor {
     public computeData(data: { label: string; hits: Hits; }): { label: string; hits: Hits; } {
         return data;
     }
-    public setData(data: { label: string; hits: Hits; }): any {
+    public setData(data: { label: string; hits: Hits; }): Observable<any[]> {
         this.chipMapData.set(data.label, data.hits.totalnb);
         let query = '';
         this.chipMapData.forEach((k, q) => {
@@ -152,7 +157,7 @@ export class ChipsSearchContributor extends Contributor {
         return from([]);
 
     }
-    public setSelection(collaboration: Collaboration): any {
+    public setSelection(collaboration: Collaboration): Observable<any[]> {
         return from([]);
     }
 
@@ -188,6 +193,7 @@ export class ChipsSearchContributor extends Contributor {
                 );
                 countData.subscribe(
                     count => {
+                        // TODO: typing of Hits
                         this.chipMapData.set(value, count.totalnb);
                     }
                 );
@@ -232,7 +238,7 @@ export class ChipsSearchContributor extends Contributor {
      */
     private setFilterFromMap() {
         let strquery = '';
-        const tabquery = [];
+        const tabquery = new Array<string>();
 
         this.chipMapData.forEach((k, q) => {
             tabquery.push(q);
