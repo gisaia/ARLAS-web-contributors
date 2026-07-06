@@ -720,13 +720,13 @@ export class MapContributor extends Contributor {
     public setData(data: any) {
     }
 
-    public setSelection(data: any, collaboration: Collaboration): any {
+    public setSelection(data: any, collaboration: Collaboration | undefined): any {
         this.setDrawings(collaboration);
         return from([]);
     }
 
-    public setDrawings(collaboration: Collaboration): void {
-        if (collaboration !== null) {
+    public setDrawings(collaboration: Collaboration | undefined): void {
+        if (collaboration !== undefined) {
             const filters = collaboration.filters.get(this.collection);
             if (!filters) {
                 return;
@@ -914,10 +914,6 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public onMove(newMove: OnMoveResult, recalculateWindow: boolean) {
-        this.onMapMoved(newMove, recalculateWindow);
-    }
-
     /**
      * Renders the data of the given agg sources.
      * @param sources List of sources names (sources must be of the same type : cluster OR topology)
@@ -1047,7 +1043,7 @@ export class MapContributor extends Contributor {
         }
     }
 
-    public downloadLayerSource(source: string, layerName: string, downloadType: string, displayFieldNameMap?: Map<string, string>) {
+    public downloadLayerSource(source: string, layerName: string, downloadType: string, displayFieldNameMap?: Map<string, string | undefined>) {
         let sourceData = [];
         if (this.cellsPerSource.has(source)) {
             sourceData = this.downloadClusterSource(source);
@@ -1115,7 +1111,7 @@ export class MapContributor extends Contributor {
         this.legendUpdater.next(this.legendData);
     }
 
-    public exportSourceAsCSV(features: any[], displayFieldNameMap?: Map<string, string>): Blob {
+    public exportSourceAsCSV(features: any[], displayFieldNameMap?: Map<string, string | undefined>): Blob {
         const csvData = new Array<Array<string>>();
         const header = new Array<string>();
         /** Header */
