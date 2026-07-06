@@ -37,27 +37,22 @@ import {
  */
 export class MetricsTableContributor extends Contributor {
 
-    /** @field */
     /** An object that simplifies building arlas-api aggregation requests from the table
      * configuration.
      */
     public table: MetricsVectors;
-    /** @param */
     /** Number of terms fetched for each collection. The resulted table
      * might have terms between `numberOfBuckets` and `nbCollection * numberOfBuckets`.
      */
     public nbTerms: number;
-    /** @param */
     /** Configuration of the table. It includes what the term fields are for each collection and which
      * metrics to display.
      */
     public configuration: MetricsVectorConfig[];
 
-    /** @param */
     /** Configuration of the sort to apply to the metrics table. */
     public sort: MetricsTableSortConfig;
 
-    /** @param */
     /** Type of operator for the filter : equal or not equal */
     private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') === undefined ?
         Expression.OpEnum.Eq : Expression.OpEnum[this.getConfigValue('filterOperator')] as unknown as Expression.OpEnum;

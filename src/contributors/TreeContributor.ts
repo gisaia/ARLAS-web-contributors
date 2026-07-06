@@ -196,12 +196,13 @@ export class TreeContributor extends Contributor {
 
     public setSelection(data: TreeNode, collaboration: Collaboration | undefined) {
         if (!this.treeData) {
+            this.selectedNodesPathsList = [];
             return of([]);
         }
 
         const fieldsList = new Array<string>();
         const mapFiledValues = new Map();
-        if (collaboration) {
+        if (collaboration?.enabled) {
             let filter: Filter | undefined;
             const filters = collaboration.filters.get(this.collection);
             if (filters) {
@@ -252,9 +253,11 @@ export class TreeContributor extends Contributor {
                     }
                 });
                 this.selectedNodesPathsList = selectedPaths;
+            } else {
+                this.selectedNodesPathsList = [];
             }
         } else {
-            this.selectedNodesPathsList = new Array<Array<SimpleNode>>();
+            this.selectedNodesPathsList = [];
         }
 
         // This part of code is only used for the powerbars utilisation of the tree contributor
@@ -269,7 +272,7 @@ export class TreeContributor extends Contributor {
                 });
             });
         }
-        const selectedNodesPaths = this.selectedNodesPathsList.map(s => s.map(n => n.fieldValue)).flat();
+        const selectedNodesPaths = this.selectedNodesPathsList.flatMap(s => s.map(n => n.fieldValue));
         const missingLeaf = new Array<string>();
         selectedNodesPaths.forEach(f => {
             if ((data.children ?? []).map(d => d.fieldValue).indexOf(f) < 0) {
@@ -394,19 +397,16 @@ export class TreeContributor extends Contributor {
       * @param selectedNodesPath This path is transmitted to next node level to be enriched if children
       * nodes are to be selected before adding it to `selectedNodesPathsList`
       */
-    private getSelectedNodesPaths(fieldsList: Array<string>, mapFieldValues: Map<string, Set<string>>, data: TreeNode,
-        selectedNodesPathsList?: Array<Array<SimpleNode>>, selectedNodesPath?: Array<SimpleNode>):
-        Array<Array<SimpleNode>> {
-        if (!selectedNodesPathsList) {
-            selectedNodesPathsList = new Array();
-        }
+    private getSelectedNodesPaths(fieldsList: string[], mapFieldValues: Map<string, Set<string>>, data: TreeNode,
+        selectedNodesPathsList?: SimpleNode[][], selectedNodesPath?: SimpleNode[]
+    ): SimpleNode[][] {
+        selectedNodesPathsList ??= new Array();
         const field = fieldsList.length > 0 ? fieldsList[0] : undefined;
         if (field) {
             mapFieldValues.get(field)?.forEach(value => {
-                const currentLevelPath = selectedNodesPath ? selectedNodesPath : [];
+                const currentLevelPath = selectedNodesPath ?? [];
                 const node = this.getNode(field, value, data);
-                const pathToAddInList: Array<SimpleNode> = [];
-                Object.assign(pathToAddInList, currentLevelPath);
+                const pathToAddInList = [...currentLevelPath];
                 if (node) {
                     pathToAddInList.push({ fieldName: node.fieldName, fieldValue: node.fieldValue });
                     if (!node.children || node.children.length === 0) {

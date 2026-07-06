@@ -102,7 +102,7 @@ export interface MetricsTableSortConfig {
 
 /**
  * |                             MetricsVectors                            |
- * |        |      MetricsVector 1        |          MetricsVector 2         |
+ * |        |      MetricsVector 1       |          MetricsVector 2        |
  * |        | (c1,f1,m1)  |  (c1,f2,m2)  |  (c2,f'1,m'2)  |  (c2,f'2,m'2)  |
  * | term 1 |      x      |      x       |      x         |      x         |
  * | term 2 |      x      |      x       |      x         |      x         |

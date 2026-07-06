@@ -634,7 +634,7 @@ export interface NormalizationFieldConfig {
 
 export interface RawGeometryConfig {
     geometry: string;
-    sort: string;
+    sort?: string;
 }
 
 /**

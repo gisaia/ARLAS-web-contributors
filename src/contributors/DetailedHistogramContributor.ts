@@ -119,7 +119,7 @@ export class DetailedHistogramContributor extends HistogramContributor {
         }
     }
 
-    public init(aggregations: Array<Aggregation>, field: string, jsonPath: string, additionalCollections: Required<CollectionAggField>[]) {
+    public init(aggregations: Array<Aggregation>, field: string, jsonPath: string, additionalCollections: CollectionAggField[]) {
         const aggs = new Array<Aggregation>();
         aggregations.forEach(agg => {
             const aggregationCopy: Aggregation = {
@@ -140,10 +140,17 @@ export class DetailedHistogramContributor extends HistogramContributor {
         this.aggregations = aggs;
         this.field = field;
         this.json_path = jsonPath;
+
         if (additionalCollections) {
-            if (this.collections) {
-                this.collections = this.collections.concat(additionalCollections);
+            const additionalCollectionsWithField = new Array<Required<CollectionAggField>>();
+            for (const ac of additionalCollections) {
+                if (ac.field) {
+                    additionalCollectionsWithField.push({ collectionName: ac.collectionName, field: ac.field });
+                } else {
+                    console.warn(`[ARLAS][HISTOGRAM] Ignoring additional collection ${ac.collectionName} as no field is defined for it`);
+                }
             }
+            this.collections = this.collections.concat(additionalCollectionsWithField);
         }
         this.collections.forEach(c => {
             if (c.collectionName === this.collection && !c.field) {

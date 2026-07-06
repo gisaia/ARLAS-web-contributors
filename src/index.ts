@@ -33,7 +33,7 @@ export { AnalyticsContributor } from './contributors/AnalyticsContributor';
 export { ChipsSearchContributor } from './contributors/ChipsSearchContributor';
 export { ComputeContributor } from './contributors/ComputeContributor';
 export { DetailedHistogramContributor } from './contributors/DetailedHistogramContributor';
-export { HistogramContributor } from './contributors/HistogramContributor';
+export { AggregationResponseWithCollection, ChartData, HistogramContributor } from './contributors/HistogramContributor';
 export { ARLAS_TIMESTAMP, DEFAULT_FETCH_NETWORK_LEVEL, LegendData, MapContributor } from './contributors/MapContributor';
 export { MetricsTableContributor } from './contributors/MetricsTableContributor';
 export { MatchInfo, ResultListContributor } from './contributors/ResultListContributor';
@@ -44,8 +44,9 @@ export {
     MetricsTable, MetricsTableCell, MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig
 } from './models/metrics-table.config';
 export {
-    Action, ActionFilter, ColorConfig, Column, ComputeConfig, DateExpression, DateUnitEnum, Detail, ElementIdentifier, ExtentFilterGeometry,
-    FeatureRenderMode, FieldsConfiguration, LayerSourceConfig, MetricConfig, SelectedOutputValues, StringifiedTimeShortcut, triggerType
+    Action, ActionFilter, ClusterLayerCourceConfig, ColorConfig, Column, ComputeConfig, CoreLayerSourceConfig, DateExpression,
+    DateUnitEnum, Detail, ElementIdentifier, ExtentFilterGeometry, FeatureLayerSourceConfig, FeatureRenderMode, FieldsConfiguration,
+    LayerSourceConfig, MetricConfig, SelectedOutputValues, StringifiedTimeShortcut, TopologyLayerSourceConfig, triggerType
 } from './models/models';
 export { getAggregationPrecision } from './utils/histoswimUtils';
 export { fix180thMeridian, isClockwise } from './utils/mapUtils';
