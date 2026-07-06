@@ -865,7 +865,7 @@ export class ResultListContributor extends Contributor {
 
     }
 
-    public fetch$(size: number, fields: string[], filter: Filter): Observable<Hits> {
+    public fetch$(size: number, fields: string[], filter: Filter | undefined): Observable<Hits> {
         let sort = '';
         if (this.geoOrderSort) {
             sort = this.geoOrderSort;
@@ -1035,8 +1035,8 @@ export class ResultListContributor extends Contributor {
         return this.data;
 
     }
-    public setSelection(listResult: Array<Map<string, ItemDataType>>, collaboration: Collaboration): any {
-        if (collaboration !== null) {
+    public setSelection(listResult: Array<Map<string, ItemDataType>>, collaboration: Collaboration | undefined): any {
+        if (collaboration !== undefined) {
             const fieldValueMap = new Map<string, ItemDataType>();
             let filterValue: Filter;
             const filters = collaboration.filters.get(this.collection);

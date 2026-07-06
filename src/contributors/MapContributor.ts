@@ -935,6 +935,7 @@ export class MapContributor extends Contributor {
             }
         }
     }
+
     public setLegendSearchData(s: string): void {
         if (this.searchNormalizations) {
             const featuresNormalization = this.searchNormalizations.get(s);
@@ -967,6 +968,7 @@ export class MapContributor extends Contributor {
             }
         }
     }
+
     /**
      * Render raw data provided by `feature` mode sources. It's used for both simple and dynamic mode.
      * @param sources List of sources names (sources must be of the same type : feature)
@@ -1075,7 +1077,6 @@ export class MapContributor extends Contributor {
             this.saveJson(geojson, layerName
                 .concat(new Date().getTime().toString())
                 .concat('-geojson.json'));
-
         }
     }
 
@@ -1099,8 +1100,7 @@ export class MapContributor extends Contributor {
                     this.fix180thMeridianGeom(feature);
                     this.cleanRenderedAggFeature(s, feature, fieldsToKeep);
                     this.normalizeAvgForTopology(s, feature);
-                    // TODO: type of Feature should always be 'Feature'
-                    sourceData.push(feature as GeoJSON.Feature);
+                    sourceData.push(feature);
                 });
             }
 
@@ -2231,7 +2231,7 @@ export class MapContributor extends Contributor {
     }
 
     public static getClusterAggregration(source: ClusterLayerCourceConfig): Aggregation {
-        const ls = this.getClusterSource(source);
+        const ls = MapContributor.getClusterSource(source);
         const aggregation: Aggregation = {
             type: Aggregation.TypeEnum.Geohash,
             field: ls.aggGeoField,
@@ -2274,7 +2274,7 @@ export class MapContributor extends Contributor {
     }
 
     public static getTopologyAggregration(source: TopologyLayerSourceConfig): Aggregation {
-        const ls = this.getTopologySource(source);
+        const ls = MapContributor.getTopologySource(source);
         const aggregation: Aggregation = {
             type: Aggregation.TypeEnum.Term,
             field: ls.geometryId,

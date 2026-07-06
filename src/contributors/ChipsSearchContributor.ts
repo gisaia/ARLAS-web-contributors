@@ -193,7 +193,6 @@ export class ChipsSearchContributor extends Contributor {
                 );
                 countData.subscribe(
                     count => {
-                        // TODO: typing of Hits
                         this.chipMapData.set(value, count.totalnb);
                     }
                 );

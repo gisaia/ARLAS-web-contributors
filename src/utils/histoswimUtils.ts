@@ -93,7 +93,7 @@ export function getSelectionFromValues(selections: SelectedOutputValues[],
 }
 
 export function getSelectionToSet(data: BucketData[] | Map<string, BucketData[]>,
-    collection: string, collaboration: Collaboration, useUtc: boolean
+    collection: string, collaboration: Collaboration | undefined, useUtc: boolean
 ): [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined] {
     let intervalListSelection: SelectedOutputValues[];
     let intervalSelection;

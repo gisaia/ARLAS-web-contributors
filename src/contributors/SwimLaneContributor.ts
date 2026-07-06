@@ -173,7 +173,7 @@ export class SwimLaneContributor extends Contributor {
         });
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             return (this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-            <ComputationRequest>{ filter: undefined, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
+                { filter: undefined, field: this.getXAxisField(), metric: ComputationRequest.MetricEnum.SPANNING }],
                 collaborations, this.collection, this.identifier, {}, false, this.cacheDuration)
                 .pipe(
                     map((computationResponse: ComputationResponse) => {
