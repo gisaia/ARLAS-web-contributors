@@ -37,7 +37,7 @@ import {
 
 export interface MatchInfo {
     matched: Array<boolean>;
-    data: Map<string, ItemDataType>;
+    data: Record<string, ItemDataType>;
 }
 
 /**
