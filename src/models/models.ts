@@ -184,6 +184,16 @@ export interface Column {
     dropdownsize: number;
 }
 
+export interface CardViewProperty {
+    isTitle: boolean;
+    icon: string | undefined;
+    prettyName: string;
+    fieldName: string;
+    dataType: string;
+    process: string;
+    lineNumber: 1 | 2 | 3;
+}
+
 export interface ExportedColumn {
     displayName: string;
     field: string;
