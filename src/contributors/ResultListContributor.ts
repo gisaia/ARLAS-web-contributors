@@ -26,7 +26,7 @@ import {
 import { BehaviorSubject, Observable, filter, finalize, from, map, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json' with { type: 'json' };
 import {
-    Action, ActionFilter, AdditionalInfo, Attachment, AttachmentConfig, Column, Detail,
+    Action, ActionFilter, AdditionalInfo, Attachment, AttachmentConfig, CardViewProperty, Column, Detail,
     ElementIdentifier, ExportedColumn, Field, FieldsConfiguration, ItemDataType, PageEnum, SortEnum
 } from '../models/models';
 import { ProcessError, validProcess } from '../utils/process';
@@ -290,6 +290,16 @@ export class ResultListContributor extends Contributor {
     */
     public fieldsList: Array<{ columnName: string; fieldName: string; dataType: string; useColorService?: boolean; }> = [];
     /**
+    * List of properties configured to display in a card,  @Input() fieldsList of ResultListComponent.
+    */
+    public cardViewProperties: Array<CardViewProperty> = [];
+    /**
+    * List of properties configured to display in a card from configuration
+    */
+    private readonly cardViewPropertiesConfig: Array<CardViewProperty> = this.getConfigValue('cardViewProperties') || [];
+    private cardViewPropertiesProcess: Record<string, Function> = {};
+
+    /**
     * List of values to select mapped to each field represented on the resultList. The list of values to select is wrapped in an Observable.
     */
     public dropDownMapValues: Map<string, Observable<Array<string>>> = new Map<string, Observable<Array<string>>>();
@@ -405,6 +415,29 @@ export class ResultListContributor extends Contributor {
                 this.dropDownMapValues.set(column.fieldName, from([[]]));
             }
         });
+
+
+        this.cardViewProperties = [];
+        this.cardViewPropertiesConfig.forEach(cvProperty => {
+            if (cvProperty.process && cvProperty.process.trim().length > 0 && validProcess(cvProperty.process, 'result')) {
+                try {
+                    const func = new Function('result', '\'use strict\';const r='
+                        + cvProperty.process + '; return r;');
+                    this.cardViewPropertiesProcess[cvProperty.prettyName] = func;
+                } catch (error) {
+                    this.processErrorBus.next({
+                        column: cvProperty.prettyName,
+                        context: 'create',
+                        error
+                    });
+                }
+            }
+
+            this.cardViewProperties.push(cvProperty);
+            this.includesvalues.push(cvProperty.fieldName);
+        });
+
+
         this.includesvalues.push(this.fieldsConfiguration.idFieldName);
         if (this.fieldsConfiguration.titleFieldNames) {
             this.includesvalues = this.includesvalues.concat(this.fieldsConfiguration.titleFieldNames.map(field => field.fieldPath));
@@ -921,7 +954,26 @@ export class ResultListContributor extends Contributor {
                             });
                         }
                     }
-                    fieldValueMap.set(element.fieldName, resultValue);
+                    fieldValueMap.set(this.getTableKey(element), resultValue);
+                });
+
+                this.cardViewProperties.forEach(element => {
+                    const result: string = getElementFromJsonObject(h.data, element.fieldName);
+                    const processFunction = this.cardViewPropertiesProcess[element.prettyName];
+                    let resultValue = result;
+                    if (processFunction) {
+                        try {
+                            resultValue = processFunction(result);
+                        } catch (error) {
+                            this.processErrorBus.next({
+                                column: element.prettyName,
+                                context: 'apply',
+                                value: result,
+                                error
+                            });
+                        }
+                    }
+                    fieldValueMap.set(this.getCardKey(element), resultValue);
                 });
 
                 if (this.fieldsConfiguration.titleFieldNames) {
@@ -973,6 +1025,14 @@ export class ResultListContributor extends Contributor {
         return listResult;
 
     }
+    private getCardKey(element: CardViewProperty): string {
+        return element.fieldName + '_' + element.prettyName + '_' + element.icon + '_card';
+    }
+
+    private getTableKey(element: { columnName: string; fieldName: string; dataType: string; useColorService?: boolean; }): string {
+        return element.fieldName + '_' + element.columnName + '_table';
+    }
+
     public setData(listResult: Array<Map<string, ItemDataType>>) {
         this.data = listResult;
         return this.data;
