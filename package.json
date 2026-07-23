@@ -26,7 +26,7 @@
     "@types/file-saver": "^2.0.1",
     "@types/jsonpath": "^0.2.0",
     "@types/tinycolor2": "^1.4.0",
-    "arlas-web-core": "29.0.0-rc.2",
+    "arlas-web-core": "29.0.0-rc.3",
     "betterknown": "^1.2.0",
     "file-saver": "^2.0.2",
     "jsonpath": "^1.0.0",
