@@ -321,7 +321,6 @@ export interface ClusterLayerCourceConfig extends CoreLayerSourceConfig {
 
 export type LayerSourceConfig = FeatureLayerSourceConfig | TopologyLayerSourceConfig | ClusterLayerCourceConfig;
 
-// TODO: is everything undefined ??
 export interface FetchedHitsConfig {
     sorts?: string[];
     fields?: string[];
@@ -710,13 +709,11 @@ export interface MetricConfig {
     short_format?: boolean;
 }
 
-// TODO: rename ??
 export interface SourcesAgg {
     agg: Aggregation;
     sources: Array<string>;
 }
 
-// TODO: rename ??
 export interface SourcesSearch {
     search: Search;
     sources: Array<string>;

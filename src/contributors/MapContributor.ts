@@ -3545,22 +3545,7 @@ export class MapContributor extends Contributor {
             const v2 = new Set(xyz([[e2[1], e2[2]], [e2[3], e2[0]]], Math.max(Math.ceil(this.zoom - 1), 0)));
             visitedTiles = new Set([...v1, ...v2]);
         }
-        let tiles = new Set<string>();
-        let start = true;
-        sources.forEach(s => {
-            // this loop aims to take the smallest already visited tiles list
-            const visitedTiles = this.sourcesVisitedTiles.get(s);
-            if (visitedTiles) {
-                if (start) {
-                    start = false;
-                    tiles = visitedTiles;
-                } else {
-                    if (visitedTiles.size < tiles.size) {
-                        tiles = visitedTiles;
-                    }
-                }
-            }
-        });
+        const tiles = this.findSmallestVisitedTiles(sources);
         visitedTiles.forEach(vt => {
             const stringVT = tileToString(vt);
             if (!tiles.has(stringVT)) {
@@ -3592,6 +3577,26 @@ export class MapContributor extends Contributor {
             this.featuresOldExtent.set(s, rawExtent);
         });
         return newVisitedTiles;
+    }
+
+    private findSmallestVisitedTiles(sources: string[]) {
+        let start = true;
+        let tiles = new Set<string>();
+        sources.forEach(s => {
+            const visitedTiles = this.sourcesVisitedTiles.get(s);
+            if (visitedTiles) {
+                if (start) {
+                    start = false;
+                    tiles = visitedTiles;
+                } else {
+                    if (visitedTiles.size < tiles.size) {
+                        tiles = visitedTiles;
+                    }
+                }
+            }
+        });
+
+        return tiles
     }
 
     /**
@@ -3652,22 +3657,7 @@ export class MapContributor extends Contributor {
                 this.sourcesPrecisions.set(s, precisions);
             });
         } else {
-            let tiles = new Set<string>();
-            let start = true;
-            aggSource.sources.forEach(s => {
-                // TODO: create method for that
-                const visitedTiles = this.sourcesVisitedTiles.get(s);
-                if (visitedTiles) {
-                    if (start) {
-                        start = false;
-                        tiles = visitedTiles;
-                    } else {
-                        if (visitedTiles.size < tiles.size) {
-                            tiles = visitedTiles;
-                        }
-                    }
-                }
-            });
+            const tiles = this.findSmallestVisitedTiles(aggSource.sources);
             visitedTiles.forEach(vt => {
                 if (!tiles.has(vt)) {
                     newVisitedTiles.add(vt);
