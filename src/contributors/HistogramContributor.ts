@@ -53,6 +53,7 @@ export class HistogramContributor extends Contributor {
     public chartData = new Array<ChartData>();
 
     public chartDataEvent: Subject<ChartData[]> = new Subject();
+
     /**
     * New selection current need to be draw on the histogram (could be set to
     @Input() intervalSelection of HistogramComponent
