@@ -96,17 +96,17 @@ export class ChipsSearchContributor extends Contributor {
             const collaboration = this.collaborativeSearcheService.getCollaboration(this.identifier);
             if (collaboration?.filters) {
                 const filters = collaboration.filters.get(this.collection);
-                if (filters) {
+                if (filters && filters.length > 0) {
                     const filter = filters[0];
 
                     f = Array.from(this.chipMapData.keys());
                     f.forEach(k => {
-                        if (filter.q && !filter.q[0].includes(k)) {
+                        if (filter.q && filter.q.length > 0 && !filter.q[0].includes(k)) {
                             this.chipMapData.delete((k));
                         }
                     });
 
-                    if (filter.q) {
+                    if (filter.q && filter.q.length > 0) {
                         f = filter.q[0];
                     }
                 }

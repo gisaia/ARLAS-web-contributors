@@ -31,7 +31,7 @@ import {
 import { geoJSONToWkt, wktToGeoJSON } from 'betterknown';
 import * as FileSaver from 'file-saver';
 import moment from 'moment';
-import { Observable, Subject, finalize, from, map, mergeAll, of, takeUntil, tap, throwError } from 'rxjs';
+import { Observable, Subject, finalize, from, map, mergeAll, of, takeUntil, tap } from 'rxjs';
 import jsonSchema from '../jsonSchemas/mapContributorConf.schema.json' with { type: 'json' };
 import {
     ClusterAggType, ClusterLayerCourceConfig, ColorConfig, ElementIdentifier, ExtentFilterGeometry, FeatureLayerSourceConfig, FeatureRenderMode,
@@ -952,7 +952,7 @@ export class MapContributor extends Contributor {
                         const featureData = this.featureDataPerSource.get(s);
                         let minValue = '';
                         let maxValue = '';
-                        if (!!featureData && featureData.length > 0 && minMax) {
+                        if (!!featureData && featureData.length > 0 && minMax && minMax.length >= 2) {
                             minValue = this.getAbreviatedNumber(minMax[0]);
                             maxValue = this.getAbreviatedNumber(minMax[1]);
                         }
@@ -1176,8 +1176,8 @@ export class MapContributor extends Contributor {
                 sourceCells.forEach((f, key) => {
                     const fieldsToKeep = new Set<string>();
                     /** cloning features in order to keep the original features intact */
-                    const properties = Object.assign({}, f.properties);
-                    const feature = Object.assign({}, f)  as GeoJSON.Feature;
+                    const properties = { ...f.properties };
+                    const feature = { ...f }  as GeoJSON.Feature;
                     feature.properties = properties;
                     delete feature.properties.geohash;
                     delete feature.properties.parent_geohash;
@@ -1384,9 +1384,10 @@ export class MapContributor extends Contributor {
                 f: [[this.expressionFilter]]
             };
         }
-        const control = this.abortControllers.get(searchId);
+        let control = this.abortControllers.get(searchId);
         if (!control) {
-            return throwError(() => new Error(`No abort controller for ${searchId}`));
+            control = new AbortController();
+            this.abortControllers.set(searchId, control);
         }
 
         this.addFilter(filter, this.additionalFilter);
@@ -1422,9 +1423,10 @@ export class MapContributor extends Contributor {
     public resolveAggSources(visitedTiles: Set<string>, aggId: string, aggregation: Aggregation):
         Observable<FeatureCollection> {
         const tabOfCells: Array<Observable<FeatureCollection>> = [];
-        const control = this.abortControllers.get(aggId);
+        let control = this.abortControllers.get(aggId);
         if (!control) {
-            return throwError(() => new Error(`No abort controller for ${aggId}`));
+            control = new AbortController();
+            this.abortControllers.set(aggId, control);
         }
 
         if (aggregation.type === Aggregation.TypeEnum.Geohash) {
@@ -2029,7 +2031,7 @@ export class MapContributor extends Contributor {
                 const aois: string[] = [];
                 let mapFilter: Filter;
                 const filters = collaboration.filters.get(this.collection);
-                if (filters) {
+                if (filters && filters.length > 0) {
                     mapFilter = filters[0];
                     mapFilter.f?.forEach(exprs => {
                         exprs.forEach(expr => {
@@ -3446,7 +3448,7 @@ export class MapContributor extends Contributor {
             }
             const minMax = n.minMaxPerKey.get(f.properties[perField]);
             const value = this.getValueFromFeature(f, n.on, normalizeField);
-            if (minMax) {
+            if (minMax && minMax.length >= 2) {
                 if (minMax[0] > value) {
                     minMax[0] = value;
                 }
@@ -3456,9 +3458,7 @@ export class MapContributor extends Contributor {
                 n.minMaxPerKey.set(f.properties[perField], minMax);
             }
         } else {
-            if (!n.minMax) {
-                n.minMax = [Number.MAX_VALUE, Number.MIN_VALUE];
-            }
+            n.minMax ??= [Number.MAX_VALUE, Number.MIN_VALUE];
             const minMax = n.minMax;
             const value = this.getValueFromFeature(f, n.on, normalizeField);
             if (minMax[0] > value) {
@@ -3498,7 +3498,7 @@ export class MapContributor extends Contributor {
             const minMax = n.minMax;
             const value = this.getValueFromFeature(f, n.on, normalizeField);
 
-            if (minMax) {
+            if (minMax && minMax.length >= 2) {
                 const minimum = minMax[0];
                 const max = minMax[1];
                 let normalizedValue;
@@ -3596,7 +3596,7 @@ export class MapContributor extends Contributor {
             }
         });
 
-        return tiles
+        return tiles;
     }
 
     /**

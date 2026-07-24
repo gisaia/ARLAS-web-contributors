@@ -205,7 +205,7 @@ export class TreeContributor extends Contributor {
         if (collaboration?.enabled) {
             let filter: Filter | undefined;
             const filters = collaboration.filters.get(this.collection);
-            if (filters) {
+            if (filters && filters.length > 0) {
                 filter = filters[0];
             }
             if (filter) {
