@@ -105,7 +105,7 @@ export function getSelectionToSet(data: BucketData[] | Map<string, BucketData[]>
     if (collaboration) {
         let f: Filter | undefined;
         const filters = collaboration.filters.get(collection);
-        if (filters) {
+        if (filters && filters.length > 0) {
             f = filters[0];
         }
         if (!f) {

@@ -42,13 +42,13 @@ export class AnalyticsContributor extends Contributor {
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
-    private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+    private readonly aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
 
 
     /**
     * Json path to explore element aggregation, count by default
     */
-    private json_path: string = this.getConfigValue('jsonpath') ?? '$.count';
+    private readonly json_path: string = this.getConfigValue('jsonpath') ?? '$.count';
 
     /**
     * Build a new contributor.

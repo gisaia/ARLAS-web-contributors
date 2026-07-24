@@ -253,7 +253,7 @@ export class SwimLaneContributor extends Contributor {
         if (collaboration) {
             let f: Filter | undefined;
             const filters = collaboration.filters.get(this.collection);
-            if (filters) {
+            if (filters && filters.length > 0) {
                 f = filters[0];
             }
             if (f) {
