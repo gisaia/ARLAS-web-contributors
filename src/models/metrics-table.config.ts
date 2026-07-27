@@ -18,7 +18,7 @@
  * under the License.
  */
 
-import { Metric as ArlasApiMetric, Aggregation, AggregationResponse } from 'arlas-api';
+import { Aggregation, AggregationResponse, Metric as ArlasApiMetric } from 'arlas-api';
 
 export interface MetricsTableResponse {
     collection: string;
@@ -32,7 +32,7 @@ export class ComputableResponse {
     public columns: MetricsTableColumn[] = [];
     public metricsResponse: Array<MetricsTableResponse> = [];
 
-    public getMetricResponse(collection): MetricsTableResponse {
+    public getMetricResponse(collection: string): MetricsTableResponse | undefined {
         return this.metricsResponse.find(mr => mr.collection === collection);
     }
 
@@ -48,7 +48,7 @@ export class ComputableResponse {
     }
 
     public static disjointValues(wholeKeys: Set<string>, keysToCheck: Set<string>): string[] {
-        const disjointValues = [];
+        const disjointValues = new Array<string>();
         keysToCheck.forEach(k => {
             if (!wholeKeys.has(k)) {
                 disjointValues.push(k);
@@ -62,6 +62,7 @@ export class ComputableResponse {
         const elements: AggregationResponse[] = [];
         keys.forEach(k => {
             const ar: AggregationResponse = {
+                name: k,
                 key: k,
                 key_as_string: k,
                 count: 0
@@ -76,7 +77,7 @@ export interface MetricsTableColumn {
     collection: string;
     termfield: string;
     metric: ArlasApiMetric.CollectFctEnum | 'count';
-    field?: string;
+    field: string;
 }
 
 export interface MetricsVectorConfig {
@@ -101,7 +102,7 @@ export interface MetricsTableSortConfig {
 
 /**
  * |                             MetricsVectors                            |
- * |        |      MetricsVector 1        |          MetricsVector 2         |
+ * |        |      MetricsVector 1       |          MetricsVector 2        |
  * |        | (c1,f1,m1)  |  (c1,f2,m2)  |  (c2,f'1,m'2)  |  (c2,f'2,m'2)  |
  * | term 1 |      x      |      x       |      x         |      x         |
  * | term 2 |      x      |      x       |      x         |      x         |
@@ -210,10 +211,10 @@ export class MetricsVector {
         let arlasMetrics: ArlasApiMetric[] = [];
         if (this.isSortable() && !this.isSortOnCount()) {
             const sortMetric = sort.metric;
-            if (sortMetric.metric !== 'count') {
+            if (sortMetric && sortMetric.metric !== 'count') {
                 /** Pushing the sortMetric first so that arlas-server aggregation sort on it. */
                 arlasMetrics.push({
-                    collect_fct: sortMetric.metric as ArlasApiMetric.CollectFctEnum,
+                    collect_fct: sortMetric.metric,
                     collect_field: sortMetric.field
                 });
                 /** Pushing the remaining metrics (except for count) */
@@ -225,7 +226,6 @@ export class MetricsVector {
                         collect_field: m.field
                     });
                 });
-                return arlasMetrics;
             }
         } else {
             /** !! Otherwise : Pushing all the metrics (except for count) */
@@ -233,8 +233,8 @@ export class MetricsVector {
                 collect_fct: m.metric as ArlasApiMetric.CollectFctEnum,
                 collect_field: m.field
             }));
-            return arlasMetrics;
         }
+        return arlasMetrics;
     }
 
     public getColumns(): MetricsTableColumn[] {
@@ -288,38 +288,50 @@ export class MetricsVector {
         let i = 0, j = 0;
         const compare = (a: number, b: number): boolean => this.getSortOrder(this.sort) === Aggregation.OrderEnum.Asc ? a < b : a > b;
         // Merge arrays until one is exhausted
-        while (i < baseElements.length && j < complementarElements.length) {
-            if (compare(baseArray[i], complementaryArray[j])) {
+
+        if (baseElements && complementarElements) {
+            while (i < baseElements.length && j < complementarElements.length) {
+                if (compare(baseArray[i], complementaryArray[j])) {
+                    mergedElements.push(baseElements[i]);
+                    i++;
+                } else {
+                    mergedElements.push(complementarElements[j]);
+                    j++;
+                }
+            }
+        }
+
+        if (baseElements) {
+            // Add remaining elements from array1, if any
+            while (i < baseElements.length) {
                 mergedElements.push(baseElements[i]);
                 i++;
-            } else {
+            }
+        }
+
+        if (complementarElements) {
+            // Add remaining elements from array2, if any
+            while (j < complementarElements.length) {
                 mergedElements.push(complementarElements[j]);
                 j++;
             }
         }
 
-        // Add remaining elements from array1, if any
-        while (i < baseElements.length) {
-            mergedElements.push(baseElements[i]);
-            i++;
-        }
-
-        // Add remaining elements from array2, if any
-        while (j < complementarElements.length) {
-            mergedElements.push(complementarElements[j]);
-            j++;
-        }
         mergedResponse.elements = mergedElements;
         return mergedResponse;
     }
 
     private getComparableArray(response: AggregationResponse): number[] {
         if (this.isSortOnCount()) {
-            return response.elements.map(e => e.count);
+            return response.elements?.map(e => e.count) ?? [];
         } else {
             const metricConfig = this.sort.metric;
-            return response.elements.map(e => e.metrics?.find(m => (m.field === metricConfig.field.replace(/\./g, '_')
-             && m.type === metricConfig.metric))?.value);
+            if (!metricConfig) {
+                return [];
+            }
+
+            return response.elements?.map(e => e.metrics?.find(m => (m.field === metricConfig.field.replace(/\./g, '_')
+                && m.type === metricConfig.metric))?.value) ?? [];
         }
     }
 

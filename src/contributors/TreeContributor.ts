@@ -23,7 +23,7 @@ import {
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
 import jp from 'jsonpath';
-import { Observable, Subject, from, map, of, zip } from 'rxjs';
+import { Observable, Subject, from, map, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json' with { type: 'json' };
 import { SimpleNode, TreeNode } from '../models/models';
 
@@ -39,7 +39,7 @@ export class TreeContributor extends Contributor {
     /**
      * Data retrieved from ARLAS-server response and to be returned for the donut/powerbars component as an input
      */
-    public treeData: TreeNode;
+    public treeData?: TreeNode;
     /**
      * The minimum ratio of the node in its level needed to be plotted. Otherwise the node is considered as OTHER
      */
@@ -49,7 +49,7 @@ export class TreeContributor extends Contributor {
      * The field to retrieve the color of the node (optional),
      * this field must be present in the include property of the fetch_hits for all the aggregations
      */
-    public colorField = this.getConfigValue('colorField');
+    public colorField: string = this.getConfigValue('colorField');
     /**
      * List of selected nodes to be returned to a component that accepts tree data as an input
      */
@@ -70,7 +70,7 @@ export class TreeContributor extends Contributor {
      * Type of operator for the filter : equal or not equal
      */
     private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
-        Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
+        Expression.OpEnum[this.getConfigValue('filterOperator')] as unknown as Expression.OpEnum : Expression.OpEnum.Eq;
     public allowOperatorChange = this.getConfigValue('allowOperatorChange') !== undefined ?
         this.getConfigValue('allowOperatorChange') : true;
     public operatorChangedEvent: Subject<Expression.OpEnum> = new Subject();
@@ -139,10 +139,11 @@ export class TreeContributor extends Contributor {
         // TODO : choose which level of aggregation to filter with `search`
         if (this.search.length > 0) {
             this.aggregations[0].include = '.*'.concat(encodeURI(this.search)).concat('.*');
-            const expression: Expression = {};
-            expression.field = this.aggregations[0].field;
-            expression.op = Expression.OpEnum.Like;
-            expression.value = '.*'.concat(this.search).concat('.*');
+            const expression: Expression = {
+                field: this.aggregations[0].field,
+                op: Expression.OpEnum.Like,
+                value: '.*'.concat(this.search).concat('.*')
+            };
             filterAgg.f = [[expression]];
 
         } else {
@@ -168,7 +169,7 @@ export class TreeContributor extends Contributor {
     }
 
     public computeData(aggregationResponse: AggregationResponse): TreeNode {
-        const node: TreeNode = { id: 'root', fieldValue: 'root', fieldName: 'root', isOther: false, children: [] };
+        const node: TreeNode = { id: 'root', fieldValue: 'root', fieldName: 'root', isOther: false, children: [], size: 0 };
         if (this.json_path !== '$.count') {
             let nodeSize = 0;
             if (aggregationResponse && aggregationResponse.elements) {
@@ -180,7 +181,7 @@ export class TreeContributor extends Contributor {
             node.size = nodeSize;
             node.metricValue = 0;
         } else {
-            node.size = aggregationResponse.totalnb;
+            node.size = aggregationResponse.totalnb ?? 0;
             node.metricValue = aggregationResponse.totalnb;
         }
 
@@ -188,22 +189,27 @@ export class TreeContributor extends Contributor {
         return node;
     }
 
-    public setData(data: TreeNode): TreeNode {
+    public setData(data: TreeNode) {
         this.treeData = data;
-        return data;
     }
 
-    public setSelection(data: TreeNode, collaboration: Collaboration): any {
-        const fieldsList = [];
+    public setSelection(data: TreeNode, collaboration: Collaboration | undefined) {
+        if (!this.treeData) {
+            this.selectedNodesPathsList = [];
+            return;
+        }
+
+        const fieldsList = new Array<string>();
         const mapFiledValues = new Map();
-        if (collaboration) {
-            let filter: Filter;
-            if (collaboration.filters && collaboration.filters.get(this.collection)) {
-                filter = collaboration.filters.get(this.collection)[0];
+        if (collaboration?.enabled) {
+            let filter: Filter | undefined;
+            const filters = collaboration.filters.get(this.collection);
+            if (filters && filters.length > 0) {
+                filter = filters[0];
             }
             if (filter) {
                 const fFilters = filter.f;
-                fFilters.forEach(fFilter => {
+                fFilters?.forEach(fFilter => {
                     const values = fFilter[0].value.split(',');
                     const valuesAsSet = new Set<string>();
                     values.forEach(v => valuesAsSet.add(v));
@@ -246,9 +252,11 @@ export class TreeContributor extends Contributor {
                     }
                 });
                 this.selectedNodesPathsList = selectedPaths;
+            } else {
+                this.selectedNodesPathsList = [];
             }
         } else {
-            this.selectedNodesPathsList = new Array<Array<SimpleNode>>();
+            this.selectedNodesPathsList = [];
         }
 
         // This part of code is only used for the powerbars utilisation of the tree contributor
@@ -263,22 +271,23 @@ export class TreeContributor extends Contributor {
                 });
             });
         }
-        const selectedNodesPaths = this.selectedNodesPathsList.map(s => s.map(n => n.fieldValue)).flat();
-        const missingLeaf = [];
+        const selectedNodesPaths = this.selectedNodesPathsList.flatMap(s => s.map(n => n.fieldValue));
+        const missingLeaf = new Array<string>();
         selectedNodesPaths.forEach(f => {
-            if (data.children.map(d => d.fieldValue).indexOf(f) < 0) {
+            if ((data.children ?? []).map(d => d.fieldValue).indexOf(f) < 0) {
                 missingLeaf.push(f);
             }
         });
         const obs = missingLeaf.map(g => {
             if (this.search.length === 0) {
                 const filterAgg: Filter = {};
-                const agg = Object.assign([], this.aggregations);
+                const agg: Aggregation[] = this.aggregations.map(a => ({...a}));
                 agg[0].include = g;
-                const expression: Expression = {};
-                expression.field = this.aggregations[0].field;
-                expression.op = Expression.OpEnum.Eq;
-                expression.value = g;
+                const expression: Expression = {
+                    field: this.aggregations[0].field,
+                    op: Expression.OpEnum.Eq,
+                    value: g
+                };
                 filterAgg.f = [[expression]];
                 return this.collaborativeSearcheService.resolveButNotAggregation(
                     [projType.aggregate, agg], this.collaborativeSearcheService.collaborations,
@@ -300,16 +309,15 @@ export class TreeContributor extends Contributor {
                     }
                 }));
             } else {
-                return of([]);
+                return;
             }
         });
         zip(obs).subscribe(d => this.emitMissingLeaf.next(d));
-        return from([]);
     }
 
     public selectedNodesListChanged(selectedNodesPathsList: Array<Array<SimpleNode>>): void {
         if (selectedNodesPathsList.length > 0) {
-            const filter: Filter = { f: [] };
+            const filter = { f: new Array<Expression[]>() };
             this.aggregations.forEach(aggregation => {
                 const equalExpression: Expression = {
                     field: aggregation.field,
@@ -355,10 +363,11 @@ export class TreeContributor extends Contributor {
         const filterAgg: Filter = {};
         if (this.search.length > 0) {
             this.aggregations[0].include = '.*'.concat(encodeURI(this.search)).concat('.*');
-            const expression: Expression = {};
-            expression.field = this.aggregations[0].field;
-            expression.op = Expression.OpEnum.Like;
-            expression.value = '.*'.concat(this.search).concat('.*');
+            const expression: Expression = {
+                field: this.aggregations[0].field,
+                op: Expression.OpEnum.Like,
+                value: '.*'.concat(this.search).concat('.*')
+            };
             filterAgg.f = [[expression]];
         } else {
             delete this.aggregations[0].include;
@@ -386,19 +395,16 @@ export class TreeContributor extends Contributor {
       * @param selectedNodesPath This path is transmitted to next node level to be enriched if children
       * nodes are to be selected before adding it to `selectedNodesPathsList`
       */
-    private getSelectedNodesPaths(fieldsList: Array<string>, mapFieldValues: Map<string, Set<string>>, data: TreeNode,
-        selectedNodesPathsList?: Array<Array<SimpleNode>>, selectedNodesPath?: Array<SimpleNode>):
-        Array<Array<SimpleNode>> {
-        if (!selectedNodesPathsList) {
-            selectedNodesPathsList = new Array();
-        }
+    private getSelectedNodesPaths(fieldsList: string[], mapFieldValues: Map<string, Set<string>>, data: TreeNode,
+        selectedNodesPathsList?: SimpleNode[][], selectedNodesPath?: SimpleNode[]
+    ): SimpleNode[][] {
+        selectedNodesPathsList ??= new Array();
         const field = fieldsList.length > 0 ? fieldsList[0] : undefined;
         if (field) {
-            mapFieldValues.get(field).forEach(value => {
-                const currentLevelPath = selectedNodesPath ? selectedNodesPath : [];
-                const node: TreeNode = this.getNode(field, value, data);
-                const pathToAddInList: Array<SimpleNode> = [];
-                Object.assign(pathToAddInList, currentLevelPath);
+            mapFieldValues.get(field)?.forEach(value => {
+                const currentLevelPath = selectedNodesPath ?? [];
+                const node = this.getNode(field, value, data);
+                const pathToAddInList = [...currentLevelPath];
                 if (node) {
                     pathToAddInList.push({ fieldName: node.fieldName, fieldValue: node.fieldValue });
                     if (!node.children || node.children.length === 0) {
@@ -429,7 +435,7 @@ export class TreeContributor extends Contributor {
         * @param name Name of the node
         * @param data the tree data from which the node is fetched
         */
-    private getNode(field: string, name: string, data: TreeNode): TreeNode {
+    private getNode(field: string, name: string, data: TreeNode): TreeNode | undefined {
         if (data && data.fieldValue === name && data.fieldName === field) {
             return data;
         } else {
@@ -441,18 +447,18 @@ export class TreeContributor extends Contributor {
                     }
                 }
             } else {
-                return null;
+                return undefined;
             }
         }
     }
 
-    private getDeeper(obj, path, def) {
+    private getDeeper(obj: Record<string, any>, path: string[], def: string) {
         let current = obj;
-        for (let i = 0; i < path.length; i++) {
-            if (!current[path[i]]) {
+        for (const element of path) {
+            if (!current[element]) {
                 return def;
             }
-            current = current[path[i]];
+            current = current[element];
         }
         return current;
     }
@@ -460,9 +466,9 @@ export class TreeContributor extends Contributor {
     private populateChildren(nodeToPopulate: TreeNode, aggregationResponse: AggregationResponse, aggregationLevel: number): void {
         const nodeChildren = nodeToPopulate.children;
         const field = this.aggregations[aggregationLevel].field;
-        const metricValueOfOthers = (this.json_path === '$.count') ? aggregationResponse.sumotherdoccounts : 0;
+        const metricValueOfOthers = (this.json_path === '$.count') ? (aggregationResponse.sumotherdoccounts ?? 0) : 0;
         const aggregationBuckets = aggregationResponse.elements;
-        if (aggregationBuckets !== undefined && aggregationBuckets.length > 0 && aggregationResponse.name !== undefined) {
+        if (nodeChildren && aggregationBuckets !== undefined && aggregationBuckets.length > 0 && aggregationResponse.name !== undefined) {
             let sumOfBucketsMetrics = 0;
             aggregationBuckets.forEach(bucket => {
                 const value = jp.query(bucket, this.json_path)[0];
@@ -475,10 +481,10 @@ export class TreeContributor extends Contributor {
                 const bucketMetricValue = jp.query(bucket, this.json_path)[0];
                 const childNode: TreeNode = {
                     id: field + bucket.key + bucketMetricValue, fieldValue: bucket.key,
-                    fieldName: field, isOther: false, children: []
+                    fieldName: field, isOther: false, children: [], size: 0
                 };
-                if (!!this.colorField) {
-                    childNode.color = this.getDeeper(bucket.hits[0], this.colorField.split('.'), 'D3D3D3');
+                if (this.colorField && bucket.hits) {
+                    childNode.color = this.getDeeper(bucket.hits[0], this.colorField.split('.'), 'D3D3D3') as string;
                 }
                 relativeTotal += bucketMetricValue;
                 if (bucket.elements !== undefined && bucket.elements.length > 0 &&
@@ -526,8 +532,6 @@ export class TreeContributor extends Contributor {
                     nodeChildren.push(arc);
                 }
             }
-        } else {
-            nodeToPopulate = null;
         }
     }
 }

@@ -18,10 +18,11 @@
  */
 
 import {
-    Aggregation, ArlasHit, Expression, Filter, Hits, Projection, Search
+    Aggregation, ArlasHit, Expression, Filter, Hits, Page, Projection, Search
 } from 'arlas-api';
 import {
-    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, FilterOnCollection, projType
+    Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor,
+    projType
 } from 'arlas-web-core';
 import { BehaviorSubject, Observable, filter, finalize, from, map, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json' with { type: 'json' };
@@ -36,7 +37,7 @@ import {
 
 export interface MatchInfo {
     matched: Array<boolean>;
-    data: Map<string, ItemDataType>;
+    data: Record<string, ItemDataType>;
 }
 
 /**
@@ -94,7 +95,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             this.contributor.collection, this.contributor.identifier, filterExpression,
             /** flat */ true, this.contributor.getCacheDuration());
 
-        return searchResult.pipe(map(data => fields.map(f => data.hits[0].data[f.replace(/\./g, '_')])));
+        return searchResult.pipe(map(data => fields.map(f => data.hits?.[0].data[f.replace(/\./g, '_')])));
     }
 
     public getMatch(identifier: string, filters: ActionFilter[][]): Observable<MatchInfo> {
@@ -107,13 +108,13 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
 
         // This makes a AND
         return zip(filters.map(f => {
-            const filterExpression: Filter = {
+            const filterExpression = {
                 f: [[expression]]
             };
             f.forEach(c => {
                 filterExpression.f.push([{
                     field: c.field,
-                    op: Expression.OpEnum[c.op.toString()],
+                    op: Expression.OpEnum[c.op.toString() as any] as unknown as Expression.OpEnum,
                     value: c.value
                 }]);
             });
@@ -187,9 +188,9 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             details.forEach(group => {
                 const detailedDataMap = new Map<string, string>();
                 group.fields.forEach(field => {
-                    const result = getFieldValue(field.path, searchData.hits[0].data);
+                    const result = getFieldValue(field.path, searchData.hits?.[0].data);
                     if (result !== null && result !== undefined && result !== '') {
-                        const processFunction: Function = this.detailsFunctionMap.get(group.name)?.get(field.label);
+                        const processFunction = this.detailsFunctionMap.get(group.name)?.get(field.label);
                         let resultValue = result;
                         if (processFunction) {
                             resultValue = processFunction(result);
@@ -203,17 +204,14 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
             const attachmentsConfig: Array<AttachmentConfig> = this.contributor.getConfigValue('attachments') !== undefined
                 ? this.contributor.getConfigValue('attachments') : [];
             attachmentsConfig.forEach(att => {
-                const attachmentsValues = getFieldValue(att.attachmentsField, searchData.hits[0].data);
+                // Not sure of the type here
+                const attachmentsValues: Attachment[] = getFieldValue(att.attachmentsField, searchData.hits?.[0].data);
                 if (attachmentsValues && isArray(attachmentsValues)) {
                     attachmentsValues.forEach(attachmentValue => {
-                        const label = getFieldValue(att.attachmentLabelField,
-                            attachmentValue)?.toString();
-                        const url = getFieldValue(att.attachementUrlField,
-                            attachmentValue)?.toString();
-                        const type = getFieldValue(att.attachmentTypeField,
-                            attachmentValue)?.toString();
-                        const description = getFieldValue(att.attachmentDescriptionField,
-                            attachmentValue)?.toString();
+                        const label = getFieldValue(att.attachmentLabelField, attachmentValue)?.toString();
+                        const url = getFieldValue(att.attachementUrlField, attachmentValue)?.toString();
+                        const type = getFieldValue(att.attachmentTypeField, attachmentValue)?.toString();
+                        const description = getFieldValue(att.attachmentDescriptionField, attachmentValue)?.toString();
                         attachments.push({
                             label: label,
                             url: url,
@@ -241,12 +239,12 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 const cssFields = action.cssClass;
                 if (cssFields) {
                     if (typeof cssFields === 'string') {
-                        ac.cssClass = getElementFromJsonObject(searchData.hits[0].data, cssFields);
+                        ac.cssClass = getElementFromJsonObject(searchData.hits?.[0].data, cssFields);
                     } else {
                         // array case
                         let css = '';
                         cssFields.forEach((field, index) => css += (index > 0 ? '-' : '')
-                            + getElementFromJsonObject(searchData.hits[0].data, field).trim().replace(' ', '-'));
+                            + getElementFromJsonObject(searchData.hits?.[0].data, field).trim().replace(' ', '-'));
                         ac.cssClass = css;
                     }
                 }
@@ -616,7 +614,7 @@ export class ResultListContributor extends Contributor {
         };
         const searchResult: Observable<Hits> = this.collaborativeSearcheService
             .resolveHits([projType.search, search], this.collaborativeSearcheService.collaborations,
-                this.collection, null, filterExpression, false, this.cacheDuration);
+                this.collection, undefined, filterExpression, false, this.cacheDuration);
         searchResult.pipe(map(data => JSON.stringify(data))).subscribe(
             data => {
                 download(data.toString(), elementidentifier.idValue + '.json', 'text/json');
@@ -690,7 +688,7 @@ export class ResultListContributor extends Contributor {
                     map(f => this.setData(f)),
                     map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
                 )
-                .subscribe(data => data);
+                .subscribe();
         }
     }
     /**
@@ -714,7 +712,7 @@ export class ResultListContributor extends Contributor {
                 map(f => this.setData(f)),
                 map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
             )
-            .subscribe(data => data);
+            .subscribe();
     }
     /**
     * Method call when emit the output setFiltersEvent
@@ -724,12 +722,12 @@ export class ResultListContributor extends Contributor {
         if (filterMap.size === 0) {
             this.collaborativeSearcheService.removeFilter(this.identifier);
         } else {
-            const filterValue: FilterOnCollection = {
-                f: [],
+            const filterValue = {
+                f: new Array<Expression[]>(),
                 collection: this.collection
             };
             filterMap.forEach((k, v) => {
-                let op;
+                let op: Expression.OpEnum;
                 if (v === this.fieldsConfiguration.idFieldName) {
                     op = Expression.OpEnum.Eq;
                     const expressions: Array<Expression> = [];
@@ -738,7 +736,7 @@ export class ResultListContributor extends Contributor {
                             const expression: Expression = {
                                 field: v,
                                 op: op,
-                                value: <string>va
+                                value: va
                             };
                             expressions.push(expression);
                         });
@@ -759,7 +757,7 @@ export class ResultListContributor extends Contributor {
                             const expression: Expression = {
                                 field: v,
                                 op: op,
-                                value: <string>va
+                                value: va
                             };
                             expressions.push(expression);
                         });
@@ -795,7 +793,7 @@ export class ResultListContributor extends Contributor {
         } else {
             sort = currentSort;
         }
-        this.getHitsObservable(this.includesvalues, sort, null, startFrom * this.pageSize)
+        this.getHitsObservable(this.includesvalues, sort, undefined, startFrom * this.pageSize)
             .pipe(
                 map(f => this.computeData(f)),
                 map(f => f.forEach(d => {
@@ -819,7 +817,7 @@ export class ResultListContributor extends Contributor {
         }
         const sortWithId = appendIdToSort(sort, ASC, this.fieldsConfiguration.idFieldName);
         if (after !== undefined) {
-            this.getHitsObservable(this.includesvalues, sortWithId, after, null, whichPage)
+            this.getHitsObservable(this.includesvalues, sortWithId, after as string, undefined, whichPage)
                 .pipe(
                     map(f => this.computeData(f)),
                     map(f => {
@@ -867,7 +865,7 @@ export class ResultListContributor extends Contributor {
 
     }
 
-    public fetch$(size: number, fields: string[], filter: Filter): Observable<Hits> {
+    public fetch$(size: number, fields: string[], filter: Filter | undefined): Observable<Hits> {
         let sort = '';
         if (this.geoOrderSort) {
             sort = this.geoOrderSort;
@@ -877,16 +875,15 @@ export class ResultListContributor extends Contributor {
             }
         }
         const projection: Projection = {};
-        const search: Search = { page: { size } };
+        const search = { page: { size } as Page, projection };
         if (sort) {
             search.page.sort = sort;
         }
-        search.projection = projection;
         projection.includes = fields.join(',');
         const searchResult$ = this.collaborativeSearcheService
             .resolveButNotHits([projType.search, search],
                 this.collaborativeSearcheService.collaborations,
-                this.collection, null, filter, false, this.cacheDuration);
+                this.collection, undefined, filter, false, this.cacheDuration);
         return searchResult$;
     }
 
@@ -904,23 +901,23 @@ export class ResultListContributor extends Contributor {
 
     public computeData(hits: Hits): Array<Map<string, ItemDataType>> {
         const listResult = new Array<Map<string, ItemDataType>>();
-        const next = hits.links.next;
-        const previous = hits.links.previous;
-        let nextAfter;
-        let previousAfter;
+        const next = hits.links?.next;
+        const previous = hits.links?.previous;
+        let nextAfter: string | null = null;
+        let previousAfter: string | null = null;
         if (next) {
             nextAfter = new URL(next.href).searchParams.get('after');
         }
         if (previous) {
             previousAfter = new URL(previous.href).searchParams.get('before');
         }
-        if (hits.nbhits > 0) {
+        if (hits.hits && hits.hits.length > 0) {
             hits.hits.forEach(h => {
                 const fieldValueMap = new Map<string, ItemDataType>();
-                if (next) {
+                if (next && nextAfter) {
                     fieldValueMap.set(this.NEXT_AFTER, nextAfter);
                 }
-                if (previous) {
+                if (previous && previousAfter) {
                     fieldValueMap.set(this.PREVIOUS_AFTER, previousAfter);
                 }
                 if (this.includeMetadata) {
@@ -1038,27 +1035,27 @@ export class ResultListContributor extends Contributor {
         return this.data;
 
     }
-    public setSelection(listResult: Array<Map<string, ItemDataType>>, collaboration: Collaboration): any {
-        if (collaboration !== null) {
+    public setSelection(listResult: Array<Map<string, ItemDataType>>, collaboration: Collaboration | undefined) {
+        if (collaboration !== undefined) {
             const fieldValueMap = new Map<string, ItemDataType>();
             let filterValue: Filter;
-            if (collaboration.filters && collaboration.filters.get(this.collection)) {
-                filterValue = collaboration.filters.get(this.collection)[0];
-            }
-            filterValue.f.forEach(e => {
-                e.forEach(f => {
-                    if (fieldValueMap.get(f.field) === undefined) {
-                        fieldValueMap.set(f.field, f.value);
-                    } else {
-                        fieldValueMap.set(f.field, fieldValueMap.get(f.field) + ',' + f.value);
-                    }
+            const filters = collaboration.filters.get(this.collection);
+            if (filters && filters.length > 0) {
+                filterValue = filters[0];
+                filterValue.f?.forEach(e => {
+                    e.forEach(f => {
+                        if (fieldValueMap.get(f.field) === undefined) {
+                            fieldValueMap.set(f.field, f.value);
+                        } else {
+                            fieldValueMap.set(f.field, fieldValueMap.get(f.field) + ',' + f.value);
+                        }
+                    });
                 });
-            });
+            }
             this.filtersMap = fieldValueMap;
         } else {
             this.filtersMap = new Map<string, ItemDataType>();
         }
-        return from([]);
     }
 
     public resolveDropDownButNot(column: Column) {
@@ -1089,7 +1086,7 @@ export class ResultListContributor extends Contributor {
     private getHitsObservable(includesvalues: Array<string>, sort?: string, reference?: string,
         origin?: number, whichPage?: PageEnum): Observable<Hits> {
         const projection: Projection = {};
-        const search: Search = { page: { size: this.pageSize } };
+        const search = { page: { size: this.pageSize } as Page, projection };
         if (sort) {
             search.page.sort = sort;
         }
@@ -1104,12 +1101,11 @@ export class ResultListContributor extends Contributor {
                 search.page.from = origin;
             }
         }
-        search.projection = projection;
         projection.includes = includesvalues.join(',');
         const searchResult = this.collaborativeSearcheService
             .resolveButNotHits([projType.search, search],
                 this.collaborativeSearcheService.collaborations,
-                this.collection, null, this.filter, false, this.cacheDuration)
+                this.collection, undefined, this.filter, false, this.cacheDuration)
             .pipe(
                 finalize(() => this.collaborativeSearcheService.contribFilterBus.next(this))
             );
@@ -1118,7 +1114,7 @@ export class ResultListContributor extends Contributor {
 
 
     private fieldsFromUrlTemplate(urlTemplate: string): Array<string> {
-        return urlTemplate.match(/{(?:[a-zA-Z0-9_$.]*)}/g)?.map(f => f.replace('{', '').replace('}', '').split('$')[0]);
+        return urlTemplate.match(/{(?:[a-zA-Z0-9_$.]*)}/g)?.map(f => f.replace('{', '').replace('}', '').split('$')[0]) || [];
     }
 
 
@@ -1208,7 +1204,7 @@ export class ResultListContributor extends Contributor {
         }
     }
 
-    private getImageUrlTemplateFunction(urlField): Function | undefined {
+    private getImageUrlTemplateFunction(urlField: string): Function | undefined {
         if (!!this.getConfigValue('process') && this.getConfigValue('process')[urlField] !== undefined) {
             const processUrlTemplate: string = this.getConfigValue('process')[urlField]['process'];
             if (processUrlTemplate && processUrlTemplate.trim().length > 0 && validProcess(processUrlTemplate, 'result')) {

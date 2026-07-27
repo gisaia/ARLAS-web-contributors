@@ -41,9 +41,9 @@ export class ComputeContributor extends Contributor {
     /** Title of the contributor*/
     public title: string = this.getConfigValue('title');
     /** Function to apply to the results of computation metrics*/
-    public processFunction: Function;
+    public processFunction?: Function;
 
-    public metricValue: number;
+    public metricValue?: number;
     /**
     * Build a new contributor.
     * @param identifier  Identifier of contributor.
@@ -71,13 +71,14 @@ export class ComputeContributor extends Contributor {
         return false;
     }
 
-    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<ComputationResponse>> {
+    public fetchData(collaborationEvent: CollaborationEvent): Observable<Array<ComputationResponse | Hits>> {
         if (collaborationEvent.id !== this.identifier || collaborationEvent.operation === OperationEnum.remove) {
             const computationResponse: Observable<Array<ComputationResponse | Hits>> = forkJoin(this.metrics.map(m => {
                 if (m.metric !== 'count') {
                     return this.collaborativeSearcheService.resolveButNotComputation([projType.compute,
-                    <ComputationRequest>{ field: m.field, metric: ComputationRequest.MetricEnum[m.metric.toUpperCase()] }],
-                        this.collaborativeSearcheService.collaborations, this.collection, this.identifier, !!m.filter ? m.filter : {},
+                        { field: m.field,
+                            metric: ComputationRequest.MetricEnum[m.metric.toUpperCase() as any] as unknown as ComputationRequest.MetricEnum }],
+                        this.collaborativeSearcheService.collaborations, this.collection, this.identifier, m.filter ?? {},
                         false, this.cacheDuration);
                 } else {
                     return this.collaborativeSearcheService.resolveButNotHits([projType.count, {}],
@@ -91,11 +92,11 @@ export class ComputeContributor extends Contributor {
         }
     }
 
-    public computeData(data: Array<ComputationResponse | Hits>): Array<ComputationResponse> {
+    public computeData(data: Array<ComputationResponse | Hits>): Array<ComputationResponse | Hits> {
         return data;
     }
 
-    public setData(data: Array<ComputationResponse | Hits>): any {
+    public setData(data: Array<ComputationResponse | Hits>) {
         const m = data.map(d => {
             if ('value' in d) {
                 return (d as ComputationResponse).value;
@@ -109,11 +110,10 @@ export class ComputeContributor extends Contributor {
         } else {
             throw new Error('Invalid compute function: not defined.');
         }
-        return from([]);
     }
 
-    public setSelection(collaboration: Collaboration): any {
-        return from([]);
+    public setSelection(data: Array<ComputationResponse | Hits>, collaboration: Collaboration): any {
+        /** Nothing to do */
     }
 
     /**

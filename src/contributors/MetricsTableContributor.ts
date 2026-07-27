@@ -25,7 +25,7 @@ import {
 import { forkJoin, from, map, mergeMap, Observable, of, Subject, take } from 'rxjs';
 import jsonSchema from '../jsonSchemas/metricsTableContributorConf.schema.json' with { type: 'json' };
 import {
-    ComputableResponse, MetricsTable, MetricsTableRow,
+    ComputableResponse, MetricsTable, MetricsTableColumn, MetricsTableRow,
     MetricsTableSortConfig, MetricsVectorConfig, MetricsVectors
 } from '../models/metrics-table.config';
 
@@ -37,30 +37,25 @@ import {
  */
 export class MetricsTableContributor extends Contributor {
 
-    /** @field */
     /** An object that simplifies building arlas-api aggregation requests from the table
      * configuration.
      */
     public table: MetricsVectors;
-    /** @param */
     /** Number of terms fetched for each collection. The resulted table
      * might have terms between `numberOfBuckets` and `nbCollection * numberOfBuckets`.
      */
     public nbTerms: number;
-    /** @param */
     /** Configuration of the table. It includes what the term fields are for each collection and which
      * metrics to display.
      */
     public configuration: MetricsVectorConfig[];
 
-    /** @param */
     /** Configuration of the sort to apply to the metrics table. */
     public sort: MetricsTableSortConfig;
 
-    /** @param */
     /** Type of operator for the filter : equal or not equal */
-    private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') !== undefined ?
-        Expression.OpEnum[this.getConfigValue('filterOperator') as string] : Expression.OpEnum.Eq;
+    private filterOperator: Expression.OpEnum = this.getConfigValue('filterOperator') === undefined ?
+        Expression.OpEnum.Eq : Expression.OpEnum[this.getConfigValue('filterOperator')] as unknown as Expression.OpEnum;
 
     private operatorChangedEvent: Subject<Expression.OpEnum> = new Subject();
     public operatorChanged$: Observable<Expression.OpEnum> = this.operatorChangedEvent.asObservable();
@@ -68,14 +63,14 @@ export class MetricsTableContributor extends Contributor {
     public maxValue = -Number.MAX_VALUE;
 
     /** The data that will be given as an input of the MetricsTable component. */
-    public data: MetricsTable;
+    public data?: MetricsTable;
     /** List of currently selected terms (rows) of the table. */
     public selectedTerms: Array<string> = [];
 
     /** An intermediate data structure : it restructures the ARLAS-server aggregation. It will be transformed to MetricsTable structure
      * after calling the 'setSelection' method.
      */
-    private computableResponse: ComputableResponse;
+    private computableResponse?: ComputableResponse;
     public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
@@ -106,7 +101,7 @@ export class MetricsTableContributor extends Contributor {
                     this.identifier, {}, false, this.cacheDuration
                 ).pipe(
                     map(ar => {
-                        const keys = new Set(ar.elements.map(e => e.key));
+                        const keys = new Set(ar.elements?.map(e => e.key));
                         keys.forEach(k => allKeys.add(k));
                         return ({
                             collection: v.collection,
@@ -143,7 +138,7 @@ export class MetricsTableContributor extends Contributor {
                                 this.identifier, {}, false, this.cacheDuration
                             ).pipe(
                                 map(ar => {
-                                    const keys = new Set(ar.elements.map(e => e.key));
+                                    const keys = new Set(ar.elements?.map(e => e.key));
                                     keys.forEach(k => {
                                         mr.keys.add(k);
                                     });
@@ -167,7 +162,7 @@ export class MetricsTableContributor extends Contributor {
                 })),
                 ),
                 map(mrs => {
-                    let columns = [];
+                    let columns = new Array<MetricsTableColumn>();
                     mrs.forEach(mr => {
                         columns = columns.concat(mr.vector.getColumns());
                     });
@@ -212,6 +207,7 @@ export class MetricsTableContributor extends Contributor {
                 });
                 if (equalExpression.value !== '') {
                     equalExpression.value = equalExpression.value.substring(0, equalExpression.value.length - 1);
+                    filter.f ??= [];
                     filter.f.push([equalExpression]);
                 }
                 collabFilters.set(v.collection, [filter]);
@@ -227,10 +223,9 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    public setData(data: ComputableResponse): any {
+    public setData(data: ComputableResponse) {
         this.data = this.computeMetricsTable(data);
         this.computableResponse = data;
-        return from([]);
     }
 
     private computeMetricsTable(data: ComputableResponse): MetricsTable {
@@ -242,19 +237,19 @@ export class MetricsTableContributor extends Contributor {
         const metricsResponses = data.metricsResponse;
         const columnsOrder = data.columns;
         metricsResponses.forEach(mr => {
-            mr.aggregationResponse.elements.forEach(element => {
-                const row = { data: [], term: element.key_as_string };
-                row.data = Array(columnsOrder.length).fill(null);
+            mr.aggregationResponse.elements?.forEach(element => {
+                const row: MetricsTableRow = { data: [], term: element.key_as_string };
+                row.data = new Array(columnsOrder.length).fill(null);
                 rowsMap.set(element.key_as_string, row);
-                if (!rows.find(r => r.term === element.key_as_string)) {
+                if (!rows.some(r => r.term === element.key_as_string)) {
                     rows.push(row);
                 }
             });
         });
         metricsResponses.forEach(metricsResponse => {
             const currentCollectionTermfield = metricsResponse.collection + metricsResponse.vector.termfield;
-            metricsResponse.aggregationResponse.elements.forEach(element => {
-                const row: MetricsTableRow = rowsMap.get(element.key_as_string);
+            metricsResponse.aggregationResponse.elements?.forEach(element => {
+                const row = rowsMap.get(element.key_as_string);
                 if (row) {
                     columnsOrder.forEach((col, i) => {
                         if (currentCollectionTermfield === col.collection + col.termfield) {
@@ -282,9 +277,10 @@ export class MetricsTableContributor extends Contributor {
                                     maxColumnValue: 0, maxTableValue: 0, value, metric: col.metric,
                                     column: col.collection, field: col.field
                                 };
-                                if (maxValues.has(uniqueTermMetric) && maxValues.get(uniqueTermMetric) < value) {
+                                const maxValue = maxValues.get(uniqueTermMetric);
+                                if (maxValue !== undefined && maxValue < value) {
                                     maxValues.set(uniqueTermMetric, value);
-                                } else if (!maxValues.has(uniqueTermMetric)) {
+                                } else if (maxValue === undefined) {
                                     maxValues.set(uniqueTermMetric, value);
                                 }
                             }
@@ -308,13 +304,19 @@ export class MetricsTableContributor extends Contributor {
                     } else {
                         maxValueKey = `${cell.column}_${cell.field}_${cell.metric}`;
                     }
-                    cell.maxColumnValue = maxValues.get(maxValueKey);
+                    const maxValue = maxValues.get(maxValueKey);
+                    if (maxValue) {
+                        cell.maxColumnValue = maxValue;
+                    }
                     cell.maxTableValue = maxTableValue;
                 }
             });
         });
         rows.forEach(r => {
-            metricsTable.data.push(rowsMap.get(r.term));
+            const row = rowsMap.get(r.term);
+            if (row) {
+                metricsTable.data.push(row);
+            }
         });
 
         // we update max value.
@@ -331,7 +333,7 @@ export class MetricsTableContributor extends Contributor {
                     filter = filters[0];
                     if (filter) {
                         const fFilters = filter.f;
-                        fFilters.forEach(fFilter => {
+                        fFilters?.forEach(fFilter => {
                             const values = fFilter[0].value.split(',');
                             values.forEach(v => termsSet.add(v));
                         });
@@ -345,8 +347,8 @@ export class MetricsTableContributor extends Contributor {
          * Then it adds a row to metricsTable in order to have a complete table.
          */
         if (termsSet.size > 0) {
-            const missingRows = [];
-            const dataRows = new Set(...this.computableResponse?.metricsResponse.map(r => r.keys));
+            const missingRows = new Array<string>();
+            const dataRows = new Set(...(this.computableResponse?.metricsResponse || []).map(r => r.keys));
             termsSet.forEach(term => {
                 if (!dataRows.has(term)) {
                     missingRows.push(term);
@@ -362,15 +364,19 @@ export class MetricsTableContributor extends Contributor {
                     ).pipe(
                         take(1),
                         map(ar => {
-                            const keys = new Set(ar.elements.map(e => e.key));
+                            const keys = new Set(ar.elements?.map(e => e.key));
                             const baseResponse = cr?.getMetricResponse(v.collection);
                             const aggregationResponse = !!baseResponse ?
                                 v.mergeResponses(baseResponse.aggregationResponse, ar) : ar;
                             const baseKeys = cr?.getMetricResponse(v.collection)?.keys;
-                            const mergedKeys = ComputableResponse.mergeKeys(keys, baseKeys);
+                            const mergedKeys = ComputableResponse.mergeKeys(keys, baseKeys || new Set());
                             const inexistingKeys = ComputableResponse.disjointValues(mergedKeys, new Set(missingRows));
                             const inexistingElements = ComputableResponse.createEmptyArlasElements(inexistingKeys);
-                            inexistingElements.forEach(ie => aggregationResponse.elements.push(ie));
+
+                            aggregationResponse.elements ??= [];
+                            for (const ie of inexistingElements) {
+                                aggregationResponse.elements.push(ie);
+                            }
                             return ({
                                 collection: v.collection,
                                 aggregationResponse,
@@ -397,7 +403,6 @@ export class MetricsTableContributor extends Contributor {
         } else {
             this.selectedTerms = Array.from(termsSet);
         }
-        return from([]);
     }
 
     /**
