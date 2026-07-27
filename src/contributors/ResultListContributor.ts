@@ -688,7 +688,7 @@ export class ResultListContributor extends Contributor {
                     map(f => this.setData(f)),
                     map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
                 )
-                .subscribe(data => data);
+                .subscribe();
         }
     }
     /**
@@ -712,7 +712,7 @@ export class ResultListContributor extends Contributor {
                 map(f => this.setData(f)),
                 map(f => this.setSelection(f, this.collaborativeSearcheService.getCollaboration(this.identifier)))
             )
-            .subscribe(data => data);
+            .subscribe();
     }
     /**
     * Method call when emit the output setFiltersEvent
@@ -1035,12 +1035,12 @@ export class ResultListContributor extends Contributor {
         return this.data;
 
     }
-    public setSelection(listResult: Array<Map<string, ItemDataType>>, collaboration: Collaboration | undefined): any {
+    public setSelection(listResult: Array<Map<string, ItemDataType>>, collaboration: Collaboration | undefined) {
         if (collaboration !== undefined) {
             const fieldValueMap = new Map<string, ItemDataType>();
             let filterValue: Filter;
             const filters = collaboration.filters.get(this.collection);
-            if (filters) {
+            if (filters && filters.length > 0) {
                 filterValue = filters[0];
                 filterValue.f?.forEach(e => {
                     e.forEach(f => {
@@ -1056,7 +1056,6 @@ export class ResultListContributor extends Contributor {
         } else {
             this.filtersMap = new Map<string, ItemDataType>();
         }
-        return from([]);
     }
 
     public resolveDropDownButNot(column: Column) {

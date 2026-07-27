@@ -223,10 +223,9 @@ export class MetricsTableContributor extends Contributor {
     }
 
     /** @override */
-    public setData(data: ComputableResponse): any {
+    public setData(data: ComputableResponse) {
         this.data = this.computeMetricsTable(data);
         this.computableResponse = data;
-        return from([]);
     }
 
     private computeMetricsTable(data: ComputableResponse): MetricsTable {
@@ -404,7 +403,6 @@ export class MetricsTableContributor extends Contributor {
         } else {
             this.selectedTerms = Array.from(termsSet);
         }
-        return from([]);
     }
 
     /**

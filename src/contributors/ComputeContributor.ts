@@ -96,7 +96,7 @@ export class ComputeContributor extends Contributor {
         return data;
     }
 
-    public setData(data: Array<ComputationResponse | Hits>): any {
+    public setData(data: Array<ComputationResponse | Hits>) {
         const m = data.map(d => {
             if ('value' in d) {
                 return (d as ComputationResponse).value;
@@ -110,11 +110,10 @@ export class ComputeContributor extends Contributor {
         } else {
             throw new Error('Invalid compute function: not defined.');
         }
-        return from([]);
     }
 
-    public setSelection(collaboration: Collaboration): any {
-        return from([]);
+    public setSelection(data: Array<ComputationResponse | Hits>, collaboration: Collaboration): any {
+        /** Nothing to do */
     }
 
     /**

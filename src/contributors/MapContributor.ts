@@ -718,11 +718,11 @@ export class MapContributor extends Contributor {
     }
 
     public setData(data: any) {
+        /** Nothing to do */
     }
 
-    public setSelection(data: any, collaboration: Collaboration | undefined): any {
+    public setSelection(data: any, collaboration: Collaboration | undefined) {
         this.setDrawings(collaboration);
-        return from([]);
     }
 
     public setDrawings(collaboration: Collaboration | undefined): void {

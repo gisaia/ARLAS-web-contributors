@@ -23,7 +23,7 @@ import {
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
 import jp from 'jsonpath';
-import { Observable, Subject, from, map, of, zip } from 'rxjs';
+import { Observable, Subject, from, map, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json' with { type: 'json' };
 import { SimpleNode, TreeNode } from '../models/models';
 
@@ -189,15 +189,14 @@ export class TreeContributor extends Contributor {
         return node;
     }
 
-    public setData(data: TreeNode): TreeNode {
+    public setData(data: TreeNode) {
         this.treeData = data;
-        return data;
     }
 
     public setSelection(data: TreeNode, collaboration: Collaboration | undefined) {
         if (!this.treeData) {
             this.selectedNodesPathsList = [];
-            return of([]);
+            return;
         }
 
         const fieldsList = new Array<string>();
@@ -310,11 +309,10 @@ export class TreeContributor extends Contributor {
                     }
                 }));
             } else {
-                return of([]);
+                return;
             }
         });
         zip(obs).subscribe(d => this.emitMissingLeaf.next(d));
-        return from([]);
     }
 
     public selectedNodesListChanged(selectedNodesPathsList: Array<Array<SimpleNode>>): void {
