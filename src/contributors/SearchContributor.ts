@@ -81,12 +81,12 @@ export class SearchContributor extends Contributor {
     public computeData(data: { label: string; hits: Hits; }): { label: string; hits: Hits; } {
         return data;
     }
-    public setData(data: { label: string; hits: Hits; }): any {
-        return from([]);
+    public setData(data: { label: string; hits: Hits; }) {
+        /** Nothing to do */
 
     }
-    public setSelection(collaboration: Collaboration): any {
-        return from([]);
+    public setSelection(data: { label: string; hits: Hits; }, collaboration: Collaboration) {
+        /** Nothing to do */
     }
 
     /**

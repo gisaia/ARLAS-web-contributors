@@ -114,7 +114,7 @@ export class AnalyticsContributor extends Contributor {
         return valueToMetric;
     }
 
-    public setData(data: Map<string, number>): Map<string, number> {
+    public setData(data: Map<string, number>) {
         this.groupIdToValues.forEach((values, key) => {
             if (values.includes('*')) {
                 this.analitycsIdtoShow.set(key, true);
@@ -124,10 +124,9 @@ export class AnalyticsContributor extends Contributor {
                 this.analitycsIdtoShow.set(key, false);
             }
         });
-        return data;
     }
 
-    public setSelection(data: Array<[string, number]>, collaboration: Collaboration): any {
-        return from([]);
+    public setSelection(data: Array<[string, number]>, collaboration: Collaboration) {
+        /** Nothing to do */
     }
 }

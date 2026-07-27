@@ -244,12 +244,11 @@ export class SwimLaneContributor extends Contributor {
         return swimlaneData;
     }
 
-    public setData(data: SwimlaneData): SwimlaneData {
+    public setData(data: SwimlaneData) {
         this.swimData = data;
-        return this.swimData;
     }
 
-    public setSelection(data: SwimlaneData, collaboration: Collaboration): any {
+    public setSelection(data: SwimlaneData, collaboration: Collaboration) {
         if (collaboration) {
             let f: Filter | undefined;
             const filters = collaboration.filters.get(this.collection);
@@ -270,8 +269,6 @@ export class SwimLaneContributor extends Contributor {
         } else {
             this.selectedSwimlanes = new Set();
         }
-        return from([]);
-
     }
 
     public getPackageName(): string {

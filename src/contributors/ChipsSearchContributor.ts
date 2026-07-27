@@ -147,18 +147,17 @@ export class ChipsSearchContributor extends Contributor {
     public computeData(data: { label: string; hits: Hits; }): { label: string; hits: Hits; } {
         return data;
     }
-    public setData(data: { label: string; hits: Hits; }): Observable<any[]> {
+    public setData(data: { label: string; hits: Hits; }) {
         this.chipMapData.set(data.label, data.hits.totalnb);
         let query = '';
         this.chipMapData.forEach((k, q) => {
             query = query + q + '||';
         });
         this.query = query.substring(0, query.length - 2);
-        return from([]);
-
     }
-    public setSelection(collaboration: Collaboration): Observable<any[]> {
-        return from([]);
+
+    public setSelection(data: { label: string; hits: Hits; }, collaboration: Collaboration | undefined) {
+        /** Nothing to do */
     }
 
     /**

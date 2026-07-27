@@ -349,7 +349,7 @@ export class HistogramContributor extends Contributor {
         return dataTab.sort((a, b) => a.key < b.key ? -1 : (a.key > b.key ? 1 : 0));
     }
 
-    public setData(data: ChartData[]): ChartData[] {
+    public setData(data: ChartData[]) {
         if (!this.isOneDimension || this.isOneDimension === undefined) {
             this.chartData = data;
         } else {
@@ -364,7 +364,6 @@ export class HistogramContributor extends Contributor {
         }
 
         this.chartDataEvent.next(this.chartData);
-        return this.chartData;
     }
 
     public setSelection(data: ChartData[], collaboration: Collaboration | undefined) {
@@ -374,7 +373,6 @@ export class HistogramContributor extends Contributor {
         this.startValue = resultList[2];
         this.endValue = resultList[3];
         this.timeLabel = this.getShortcutLabel(this.intervalSelection, this.startValue, this.endValue);
-        return from([]);
     }
 
     protected fetchDataGivenFilter(identifier: string, additionalFilters?: Map<string, Filter>): Observable<AggregationResponse[]> {
