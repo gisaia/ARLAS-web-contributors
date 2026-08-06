@@ -19,6 +19,7 @@
 
 import { Aggregation, Filter, Metric, RawGeometry, Search } from 'arlas-api';
 import moment from 'moment';
+import { Task } from './aias-process';
 
 /**
 * Enum of sorting value define in Arlas-web-components
@@ -610,6 +611,7 @@ export interface AdditionalInfo {
     details?: Map<string, Map<string, string>>;
     actions?: Array<Action>;
     attachments?: Array<Attachment>;
+    tasks?: Task[];
 }
 
 export interface AttachmentConfig {
