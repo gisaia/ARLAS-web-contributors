@@ -35,5 +35,7 @@ jobs:
         run: npm run lint
       - name: License check
         run: npm run license-check
+      - name: Test
+        run: npm run test
       - name: Build
         run: npm run build-release
