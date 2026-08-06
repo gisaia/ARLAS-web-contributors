@@ -22,7 +22,7 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import jp from 'jsonpath';
+import { JSONPath } from 'jsonpath-plus';
 import { Observable, from } from 'rxjs';
 import jsonSchema from '../jsonSchemas/analyticsContributorConf.schema.json' with { type: 'json' };
 
@@ -107,7 +107,7 @@ export class AnalyticsContributor extends Contributor {
         const valueToMetric = new Map<string, number>();
         if (aggregationResonse.elements !== undefined) {
             aggregationResonse.elements.forEach(element => {
-                const value = jp.query(element, this.json_path)[0];
+                const value = JSONPath(this.json_path, element, undefined, undefined)[0];
                 valueToMetric.set(element.key, value);
             });
         }

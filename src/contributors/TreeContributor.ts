@@ -22,7 +22,7 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import jp from 'jsonpath';
+import { JSONPath } from 'jsonpath-plus';
 import { Observable, Subject, from, map, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json' with { type: 'json' };
 import { SimpleNode, TreeNode } from '../models/models';
@@ -174,7 +174,7 @@ export class TreeContributor extends Contributor {
             let nodeSize = 0;
             if (aggregationResponse && aggregationResponse.elements) {
                 aggregationResponse.elements.forEach(element => {
-                    const value = jp.query(element, this.json_path)[0];
+                    const value = JSONPath({ path: this.json_path, json: element })[0];
                     nodeSize += value;
                 });
             }
@@ -296,7 +296,7 @@ export class TreeContributor extends Contributor {
                     let value;
                     if (aggResponse && aggResponse.elements && aggResponse.elements.length > 0) {
                         if (this.json_path !== '$.count') {
-                            value = jp.query(aggResponse.elements[0], this.json_path)[0];
+                            value = JSONPath({ path: this.json_path, json: aggResponse.elements[0] })[0];
                         } else {
                             value = aggResponse.elements[0].count;
                         }
@@ -471,14 +471,14 @@ export class TreeContributor extends Contributor {
         if (nodeChildren && aggregationBuckets !== undefined && aggregationBuckets.length > 0 && aggregationResponse.name !== undefined) {
             let sumOfBucketsMetrics = 0;
             aggregationBuckets.forEach(bucket => {
-                const value = jp.query(bucket, this.json_path)[0];
+                const value = JSONPath({ path: this.json_path, json: bucket })[0];
                 sumOfBucketsMetrics += value;
             });
             let relativeTotal = 0;
             let isOther = false;
             for (let i = 0; i < aggregationBuckets.length && !isOther; i++) {
                 const bucket = aggregationBuckets[i];
-                const bucketMetricValue = jp.query(bucket, this.json_path)[0];
+                const bucketMetricValue = JSONPath({ path: this.json_path, json: bucket })[0];
                 const childNode: TreeNode = {
                     id: field + bucket.key + bucketMetricValue, fieldValue: bucket.key,
                     fieldName: field, isOther: false, children: [], size: 0

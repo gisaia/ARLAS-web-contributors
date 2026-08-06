@@ -21,7 +21,7 @@ import { Aggregation, AggregationResponse, ComputationRequest, ComputationRespon
 import {
     Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import jp from 'jsonpath';
+import { JSONPath } from 'jsonpath-plus';
 import { from, map, mergeMap, Observable } from 'rxjs';
 import jsonSchema from '../jsonSchemas/swimlaneContributorConf.schema.json' with { type: 'json' };
 import { adjustHistogramInterval, getAggregationPrecision, MAX_BUCKETS } from '../utils/histoswimUtils';
@@ -222,7 +222,7 @@ export class SwimLaneContributor extends Contributor {
                 responseStats.nbLanes++;
                 element.elements?.forEach(e => {
                     e.elements?.forEach(el => {
-                        const value = jp.query(el, this.json_path)[0];
+                        const value = JSONPath({ json: el, path: this.json_path })[0];
                         dataTab.push({ key: el.key, value: value });
                         this.updateStats(responseStats, +el.key, value);
                     });

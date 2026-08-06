@@ -18,8 +18,8 @@
  */
 
 import { Aggregation } from 'arlas-api';
-import * as FileSaver from 'file-saver';
-import jp from 'jsonpath';
+import FileSaver from 'file-saver';
+import { JSONPath } from 'jsonpath-plus';
 import tinycolor from 'tinycolor2';
 import { ClusterLayerCourceConfig, FeatureLayerSourceConfig, LayerSourceConfig, TopologyLayerSourceConfig } from '../models/models';
 
@@ -192,10 +192,10 @@ export function getFieldValue(field: string | undefined, data: Object): any {
                 }
             });
             query = query.substring(0, query.length - lastElementLength);
-            result = jp.query(data, query);
+            result = JSONPath({ path: query, json: data });
         } else {
-            const query = jp.stringify(['$', field]);
-            result = jp.query(data, query);
+            const query = '$.' + field;
+            result = JSONPath({ path: query, json: data });
         }
 
         if (result.length === 1) {
