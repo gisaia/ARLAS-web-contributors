@@ -24,9 +24,9 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor,
     projType
 } from 'arlas-web-core';
-import { BehaviorSubject, Observable, filter, finalize, forkJoin, from, map, zip } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, filter, finalize, from, map, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json' with { type: 'json' };
-import { TaskService } from '../models/aias-process';
+import { Task, TaskService } from '../models/aias-process';
 import {
     Action, ActionFilter, AdditionalInfo, Attachment, AttachmentConfig, CardViewProperty, Column, Detail,
     ElementIdentifier, ExportedColumn, Field, FieldsConfiguration, ItemDataType, PageEnum, SortEnum
@@ -50,6 +50,7 @@ export interface DetailedDataRetriever {
     getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
     getMatch(identifier: string, filters: ActionFilter[][]): Observable<MatchInfo>;
+    getTasks(identifier: string): Observable<Task[]>;
 }
 
 /**
@@ -163,6 +164,13 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         return from(new Array(actions));
     }
 
+    public getTasks(identifier: string): Observable<Task[]> {
+        const tasks$ = this.contributor.taskService.getTasks(this.contributor.collection, identifier)
+            .pipe(catchError(e => []));
+
+        return tasks$;
+    }
+
     /**
     * Method to retrieve detail data of an item
     * @param identifier string id of the item
@@ -178,14 +186,13 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         const filterExpression: Filter = {
             f: [[expression]]
         };
-        const searchResult: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
+        const search$: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
             this.contributor.collection, this.contributor.identifier, filterExpression, false, this.contributor.getCacheDuration());
 
-        const tasksResult = this.contributor.taskService.getTasks(this.contributor.collection, identifier);
 
-        const obs: Observable<AdditionalInfo> = forkJoin([searchResult, tasksResult]).pipe(map(r => {
-            const [searchData, tasksData] = r;
+
+        const obs: Observable<AdditionalInfo> = search$.pipe(map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details: Array<Detail> = this.contributor.getConfigValue('details');
             details.forEach(group => {
@@ -254,7 +261,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 actions.push(ac);
 
             });
-            const objectResult: AdditionalInfo = { details: detailsMap, actions, attachments, tasks: tasksData };
+            const objectResult: AdditionalInfo = { details: detailsMap, actions, attachments };
             return objectResult;
 
         }));

@@ -27,8 +27,10 @@ export enum TaskStatus {
   dismissed = 'dismissed'
 }
 
+export type AvailableProcess = 'download' | 'ingest' | 'directory_ingest' | 'enrich' | 'dc3build';
+
 export interface Task {
-  processID: 'download' | 'ingest' | 'directory_ingest' | 'enrich' | 'dc3build';
+  processID: AvailableProcess;
   type: string;
   jobID: string;
   status: TaskStatus;
@@ -45,7 +47,6 @@ export interface Task {
 }
 
 export abstract class TaskService {
-    // TODO: is there a pagination?
     /**
      * Fetches the tasks associated to an Item of the given identifier
      * @param collection Collection of the Item
