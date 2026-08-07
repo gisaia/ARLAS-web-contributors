@@ -39,9 +39,7 @@ export interface Task {
   started: number;
   finished?: number;
   updated?: number;
-  // TODO: unsure it is sent
   progress?: number;
-  // TODO: unsure it is sent
   links?: any;
   resourceID: string;
 }
