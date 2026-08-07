@@ -5,13 +5,13 @@
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "scripts": {
-    "build-release-watch": "tsc -p tsconfig.json --watch && npm run copy-root-schema && npm run copy-npm-readme",
-    "build-release": "tsc -p tsconfig.json && tsc-alias && npm run copy-root-schema && npm run copy-npm-readme",
+    "build-release": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && npm run copy-root-schema && npm run copy-npm-readme",
     "clean": "npm cache clear && rimraf -- dist",
     "lint": "eslint . --ext .ts",
     "copy-root-schema": "cp src/jsonSchemas/rootContributorConf.schema.json dist/jsonSchemas",
     "copy-npm-readme": "cp README-NPM.md dist/README.md",
-    "license-check": "license-check-and-add check -f license-check-and-add.json"
+    "license-check": "license-check-and-add check -f license-check-and-add.json",
+    "test": "vitest run"
   },
   "repository": {
     "type": "git",
@@ -23,13 +23,10 @@
     "@turf/bbox": "^7.3.0",
     "@turf/bbox-polygon": "^7.3.0",
     "@turf/boolean-contains": "^7.3.0",
-    "@types/file-saver": "^2.0.1",
-    "@types/jsonpath": "^0.2.0",
-    "@types/tinycolor2": "^1.4.0",
     "arlas-web-core": "29.0.0-rc.5",
     "betterknown": "^1.2.0",
     "file-saver": "^2.0.2",
-    "jsonpath": "^1.0.0",
+    "jsonpath-plus": "^10.4.0",
     "moment": "^2.29.4",
     "ngeohash": "^0.6.0",
     "rxjs": "^7.4.0",
@@ -37,8 +34,10 @@
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.6.1",
+    "@types/file-saver": "^2.0.1",
     "@types/ngeohash": "^0.6.8",
     "@types/node": "^24.10.1",
+    "@types/tinycolor2": "^1.4.0",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "eslint": "^9.39.1",
@@ -46,7 +45,8 @@
     "license-check-and-add": "^4.0.5",
     "node": "^24.10.1",
     "tsc-alias": "^1.8.16",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.9"
   },
   "bugs": {
     "url": "https://github.com/gisaia/ARLAS-web-contributors/issues"

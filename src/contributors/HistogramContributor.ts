@@ -21,7 +21,7 @@ import { Aggregation, AggregationResponse, ComputationRequest, ComputationRespon
 import {
     Collaboration, CollaborationEvent, CollaborativesearchService, CollectionAggField, ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import jp from 'jsonpath';
+import { JSONPath } from 'jsonpath-plus';
 import { from, map, mergeMap, Observable, Subject, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json' with { type: 'json' };
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
@@ -333,7 +333,7 @@ export class HistogramContributor extends Contributor {
         aggResponses.forEach(aggResponse => {
             if (aggResponse.elements !== undefined) {
                 aggResponse.elements.forEach(element => {
-                    let value = jp.query(element, this.json_path)[0];
+                    let value = JSONPath({ json: element, path: this.json_path })[0];
                     if (this.maxValue <= value) {
                         this.maxValue = value;
                     }
