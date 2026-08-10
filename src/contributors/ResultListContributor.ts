@@ -24,7 +24,7 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor,
     projType
 } from 'arlas-web-core';
-import { BehaviorSubject, Observable, catchError, filter, finalize, from, map, zip } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, filter, finalize, from, map, of, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json' with { type: 'json' };
 import { Task, TaskService } from '../models/aias-process';
 import {
@@ -166,8 +166,10 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
 
     public getTasks(identifier: string): Observable<Task[]> {
         const tasks$ = this.contributor.taskService.getTasks(this.contributor.collection, identifier)
-            .pipe(catchError(e => []));
-
+            .pipe(catchError(e => {
+                console.error(e);
+                return of([]);
+            }));
         return tasks$;
     }
 
