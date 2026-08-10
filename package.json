@@ -23,7 +23,7 @@
     "@turf/bbox": "^7.3.0",
     "@turf/bbox-polygon": "^7.3.0",
     "@turf/boolean-contains": "^7.3.0",
-    "arlas-web-core": "29.0.0-rc.5",
+    "arlas-web-core": "29.0.0-rc.6",
     "betterknown": "^1.2.0",
     "file-saver": "^2.0.2",
     "jsonpath-plus": "^10.4.0",
