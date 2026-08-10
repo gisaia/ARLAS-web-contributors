@@ -24,8 +24,9 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService, ConfigService, Contributor,
     projType
 } from 'arlas-web-core';
-import { BehaviorSubject, Observable, filter, finalize, from, map, zip } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, filter, finalize, from, map, of, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/resultlistContributorConf.schema.json' with { type: 'json' };
+import { Task, TaskService } from '../models/aias-process';
 import {
     Action, ActionFilter, AdditionalInfo, Attachment, AttachmentConfig, CardViewProperty, Column, Detail,
     ElementIdentifier, ExportedColumn, Field, FieldsConfiguration, ItemDataType, PageEnum, SortEnum
@@ -49,6 +50,7 @@ export interface DetailedDataRetriever {
     getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
     getMatch(identifier: string, filters: ActionFilter[][]): Observable<MatchInfo>;
+    getTasks(identifier: string): Observable<Task[]>;
 }
 
 /**
@@ -162,7 +164,14 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         return from(new Array(actions));
     }
 
-
+    public getTasks(identifier: string): Observable<Task[]> {
+        const tasks$ = this.contributor.taskService.getTasks(this.contributor.collection, identifier)
+            .pipe(catchError(e => {
+                console.error(e);
+                return of([]);
+            }));
+        return tasks$;
+    }
 
     /**
     * Method to retrieve detail data of an item
@@ -179,10 +188,13 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         const filterExpression: Filter = {
             f: [[expression]]
         };
-        const searchResult: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
+        const search$: Observable<Hits> = this.contributor.collaborativeSearcheService.resolveHits([
             projType.search, search], this.contributor.collaborativeSearcheService.collaborations,
             this.contributor.collection, this.contributor.identifier, filterExpression, false, this.contributor.getCacheDuration());
-        const obs: Observable<AdditionalInfo> = searchResult.pipe(map(searchData => {
+
+
+
+        const obs: Observable<AdditionalInfo> = search$.pipe(map(searchData => {
             const detailsMap = new Map<string, Map<string, string>>();
             const details: Array<Detail> = this.contributor.getConfigValue('details');
             details.forEach(group => {
@@ -251,7 +263,7 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
                 actions.push(ac);
 
             });
-            const objectResult = { details: detailsMap, actions: actions, attachments: attachments };
+            const objectResult: AdditionalInfo = { details: detailsMap, actions, attachments };
             return objectResult;
 
         }));
@@ -353,6 +365,12 @@ export class ResultListContributor extends Contributor {
      */
     public processErrorBus = new BehaviorSubject<ProcessError | undefined>(undefined);
 
+    public taskService: TaskService;
+    /**
+     * Url at which the status of the AIAS processes for items can be found.
+     */
+    public processStatusUrl: string | undefined;
+
     private includesvalues = new Array<string>();
     private isImageEnabled = false;
     private isThumbnailEnabled = false;
@@ -376,9 +394,12 @@ export class ResultListContributor extends Contributor {
     public constructor(
         identifier: string,
         collaborativeSearcheService: CollaborativesearchService,
-        configService: ConfigService, collection: string
+        configService: ConfigService, collection: string,
+        taskService: TaskService
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
+        this.taskService = taskService;
+
         this.urlImageTemplateFunction = this.getImageUrlTemplateFunction('urlImageTemplate');
         this.urlThumbnailTemplateFunction = this.getImageUrlTemplateFunction('urlThumbnailTemplate');
         this.collections = [];

@@ -40,6 +40,7 @@ export { MatchInfo, ResultListContributor } from './contributors/ResultListContr
 export { SearchContributor } from './contributors/SearchContributor';
 export { SwimLaneContributor } from './contributors/SwimLaneContributor';
 export { TreeContributor } from './contributors/TreeContributor';
+export { AvailableProcess, Task, TaskService, TaskStatus } from './models/aias-process';
 export {
     MetricsTable, MetricsTableCell, MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig
 } from './models/metrics-table.config';
