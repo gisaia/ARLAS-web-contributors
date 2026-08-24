@@ -41,16 +41,16 @@ export interface MatchInfo {
     data: Record<string, ItemDataType>;
 }
 
-/**
-* Interface defined in Arlas-web-components
-*/
 export interface DetailedDataRetriever {
     detailsConfig: Array<Detail>;
     getData(identifier: string): Observable<AdditionalInfo>;
     getValues(identifier: string, fields: string[]): Observable<string[]>;
     getActions(item: any): Observable<Array<Action>>;
     getMatch(identifier: string, filters: ActionFilter[][]): Observable<MatchInfo>;
-    getTasks(identifier: string): Observable<Task[]>;
+    /** Retrieves the tasks associated to an item for all services */
+    getAllTasks(identifier: string): Map<string, Observable<Task[]>>;
+    /** Retrieves the tasks associated to an item for one service */
+    getServiceTasks(identifier: string, service: string): Observable<Task[]>;
 }
 
 /**
@@ -164,13 +164,21 @@ export class ResultListDetailedDataRetriever implements DetailedDataRetriever {
         return from(new Array(actions));
     }
 
-    public getTasks(identifier: string): Observable<Task[]> {
-        const tasks$ = this.contributor.taskService.getTasks(this.contributor.collection, identifier)
-            .pipe(catchError(e => {
+    public getAllTasks(identifier: string): Map<string, Observable<Task[]>> {
+        const tasksMap = this.contributor.taskService.getAllTasks(this.contributor.collection, identifier);
+
+        const tasks$ = new Map<string, Observable<Task[]>>();
+        tasksMap.forEach((t$, service) =>
+            tasks$.set(service, t$.pipe(catchError(e => {
                 console.error(e);
                 return of([]);
-            }));
+            }))));
         return tasks$;
+    }
+
+    public getServiceTasks(identifier: string, service: string): Observable<Task[]> {
+        return this.contributor.taskService.getServiceTasks(this.contributor.collection,
+            identifier, service).pipe(catchError(e => []));
     }
 
     /**

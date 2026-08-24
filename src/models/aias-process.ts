@@ -45,10 +45,18 @@ export interface Task {
 }
 
 export abstract class TaskService {
-    /**
-     * Fetches the tasks associated to an Item of the given identifier
-     * @param collection Collection of the Item
-     * @param identifier Id of the Item
-     */
-    public abstract getTasks(collection: string, identifier: string): Observable<Task[]>;
+  /**
+   * Fetches all the tasks associated to an Item for all available services
+   * @param collection Collection of the Item
+   * @param identifier Id of the Item
+   */
+  public abstract getAllTasks(collection: string, identifier: string): Map<string, Observable<Task[]>>;
+
+  /**
+   * Fetches all the tasks associated to an Item for a specific service
+   * @param collection Collection of the Item
+   * @param identifier Id of the Item
+   * @param service Service
+   */
+  public abstract getServiceTasks(collection: string, identifier: string, service: string): Observable<Task[]>;
 }
