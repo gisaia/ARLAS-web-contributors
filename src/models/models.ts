@@ -162,6 +162,12 @@ export interface FieldsConfiguration {
     useHttpThumbnails?: boolean;
     /** Template of details title */
     detailsTitleTemplate?: string;
+    /** Configuration for the display of quicklooks on the map */
+    displayQuicklookOnMap?: {
+        enabled: boolean;
+        /** Field containing the bounds of the item */
+        boundsFieldName?: string;
+    };
 }
 
 export interface DescribedUrl {

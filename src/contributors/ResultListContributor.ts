@@ -496,6 +496,9 @@ export class ResultListContributor extends Contributor {
         if (this.includeMetadata) {
             this.includeMetadata.forEach(field => this.includesvalues.push(field));
         }
+        if (this.fieldsConfiguration.displayQuicklookOnMap?.enabled && this.fieldsConfiguration.displayQuicklookOnMap.boundsFieldName) {
+            this.includesvalues.push(this.fieldsConfiguration.displayQuicklookOnMap.boundsFieldName);
+        }
 
         if (this.fieldsConfiguration.titleFieldNames) {
             this.fieldsConfiguration.titleFieldNames.forEach(field => {
@@ -1045,6 +1048,12 @@ export class ResultListContributor extends Contributor {
                         h, fieldValueMap);
                     fieldValueMap.set('detailsTitleEnabled', this.isDetailsTitleEnabled.toString());
                 }
+
+                if (this.fieldsConfiguration.displayQuicklookOnMap?.enabled && this.fieldsConfiguration.displayQuicklookOnMap.boundsFieldName) {
+                    const boundsFieldName = this.fieldsConfiguration.displayQuicklookOnMap.boundsFieldName;
+                    fieldValueMap.set(boundsFieldName, getElementFromJsonObject(h.data, boundsFieldName));
+                }
+
                 listResult.push(fieldValueMap);
             });
         }
