@@ -45,7 +45,7 @@ export {
     MetricsTable, MetricsTableCell, MetricsTableHeader, MetricsTableRow, MetricsVector, MetricsVectorConfig
 } from './models/metrics-table.config';
 export {
-    Action, ActionFilter, ClusterLayerCourceConfig, ColorConfig, Column, ComputeConfig, CoreLayerSourceConfig, DateExpression,
+    Action, ActionFilter, CardViewProperty, ClusterLayerCourceConfig, ColorConfig, Column, ComputeConfig, CoreLayerSourceConfig, DateExpression,
     DateUnitEnum, Detail, ElementIdentifier, ExtentFilterGeometry, FeatureLayerSourceConfig, FeatureRenderMode, FieldsConfiguration,
     LayerSourceConfig, MetricConfig, SelectedOutputValues, StringifiedTimeShortcut, TopologyLayerSourceConfig, triggerType
 } from './models/models';
