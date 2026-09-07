@@ -190,14 +190,24 @@ export interface Column {
     dropdownsize: number;
 }
 
+/** Configures how a field is displayed inside a card of the result list. */
 export interface CardViewProperty {
-    isTitle: boolean;
-    icon: string | undefined;
-    prettyName: string;
-    fieldName: string;
-    dataType: string;
-    process: string;
-    lineNumber: 1 | 2 | 3;
+  /** Material icon name displayed next to the field value. */
+  icon?: string;
+  /** Display label for the field. */
+  prettyName: string;
+  /** Backend field name mapped to this card property. */
+  fieldName: string;
+  /** Unit suffix appended to the field value. */
+  dataType: string;
+  /** Optional JavaScript transformation applied to the value before rendering. */
+  process?: string;
+  /** Whether this field is used as the card title. */
+  isTitle: boolean;
+  /** Sort direction (asc / desc / empty). */
+  sort?: string;
+  /** Line index this field belongs to (0-based). Fields on the same line share a row. */
+  lineNumber: number;
 }
 
 export interface ExportedColumn {
