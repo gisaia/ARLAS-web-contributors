@@ -89,6 +89,10 @@ export class SearchContributor extends Contributor {
         /** Nothing to do */
     }
 
+    public clearSelection(){
+        /** Nothing to do */
+    }
+
     /**
     * @returns Pretty name of contributor.
     */

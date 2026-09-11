@@ -17,7 +17,15 @@
  * under the License.
  */
 
-import { Aggregation, AggregationResponse, ComputationRequest, ComputationResponse, Filter, Interval } from 'arlas-api';
+import {
+    Aggregation,
+    AggregationResponse,
+    ComputationRequest,
+    ComputationResponse,
+    Filter,
+    Hits,
+    Interval
+} from 'arlas-api';
 import {
     Collaboration, CollaborationEvent, CollaborativesearchService, CollectionAggField, ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
@@ -26,7 +34,8 @@ import { from, map, mergeMap, Observable, Subject, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/histogramContributorConf.schema.json' with { type: 'json' };
 import { SelectedOutputValues, StringifiedTimeShortcut } from '../models/models';
 import {
-    adjustHistogramInterval, getAggregationPrecision, getSelectionFromValues, getSelectionToSet, MAX_BUCKETS
+    adjustHistogramInterval,
+    getSelectionNoCollaboration, getAggregationPrecision, getSelectionFromValues, getSelectionToSet, MAX_BUCKETS
 } from '../utils/histoswimUtils';
 import { getPredefinedTimeShortcuts } from '../utils/timeShortcutsUtils';
 import { DetailedHistogramContributor } from './DetailedHistogramContributor';
@@ -366,13 +375,27 @@ export class HistogramContributor extends Contributor {
         this.chartDataEvent.next(this.chartData);
     }
 
-    public setSelection(data: ChartData[], collaboration: Collaboration | undefined) {
-        const resultList = getSelectionToSet(data, this.collection, collaboration, this.useUtc);
+    /**
+     * Set all histogram properties
+     * @param resultList
+     * @protected
+     */
+    protected setHistogramProperties(resultList: [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined]){
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];
         this.endValue = resultList[3];
         this.timeLabel = this.getShortcutLabel(this.intervalSelection, this.startValue, this.endValue);
+    }
+
+    public setSelection(data: ChartData[], collaboration: Collaboration | undefined) {
+        const resultList = getSelectionToSet(data, this.collection, collaboration, this.useUtc);
+        this.setHistogramProperties(resultList);
+    }
+
+    public clearSelection(data: ChartData[], collaboration?: Collaboration): void {
+        const resultList = getSelectionNoCollaboration(data);
+        this.setHistogramProperties(resultList);
     }
 
     protected fetchDataGivenFilter(identifier: string, additionalFilters?: Map<string, Filter>): Observable<AggregationResponse[]> {

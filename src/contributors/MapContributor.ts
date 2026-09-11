@@ -725,6 +725,14 @@ export class MapContributor extends Contributor {
         this.setDrawings(collaboration);
     }
 
+    public clearSelection(data: any, collaboration: Collaboration | undefined) {
+        this.geojsondraw = {
+            'type': 'FeatureCollection',
+            'features': []
+        };
+        this.drawingsUpdate.next(this.geojsondraw);
+    }
+
     public setDrawings(collaboration: Collaboration | undefined): void {
         if (collaboration !== undefined) {
             const filters = collaboration.filters.get(this.collection);

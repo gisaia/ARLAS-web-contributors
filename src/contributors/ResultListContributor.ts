@@ -1096,6 +1096,10 @@ export class ResultListContributor extends Contributor {
         }
     }
 
+    public clearSelection(data: any, collaboration?: Collaboration) {
+        this.filtersMap = new Map<string, ItemDataType>();
+    }
+
     public resolveDropDownButNot(column: Column) {
         this.columns.filter(c => c.fieldName !== column.fieldName).forEach(co => {
             if (co.dropdown) {
