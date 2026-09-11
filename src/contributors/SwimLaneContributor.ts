@@ -271,6 +271,10 @@ export class SwimLaneContributor extends Contributor {
         }
     }
 
+    public clearSelection(data: SwimlaneData, collaboration: Collaboration){
+        this.selectedSwimlanes = new Set();
+    }
+
     public getPackageName(): string {
         return 'arlas.web.contributors.swimlane';
     }

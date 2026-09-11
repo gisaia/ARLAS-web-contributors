@@ -159,6 +159,9 @@ export class ChipsSearchContributor extends Contributor {
     public setSelection(data: { label: string; hits: Hits; }, collaboration: Collaboration | undefined) {
         /** Nothing to do */
     }
+    public clearSelection(data: { label: string; hits: Hits; }, collaboration?: Collaboration): void {
+        /** Nothing to do */
+    }
 
     /**
     * @returns Pretty name of contributor based on query propoerty.
