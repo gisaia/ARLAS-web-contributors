@@ -161,34 +161,83 @@ export function getSelectionToSet(data: BucketData[] | Map<string, BucketData[]>
             }
         }
     } else {
-        if (Array.isArray(data)) {
-            if (data.length > 0) {
-                currentIntervalSelected.startvalue = data[0].key;
-                currentIntervalSelected.endvalue = data[data.length - 1].key;
-                if (data.length > 1) {
-                    const dataInterval = getDataInterval(data);
-                    currentIntervalSelected.endvalue += dataInterval;
-                }
-            }
-        } else {
-            const minMax = getMinMax(data);
-            currentIntervalSelected.startvalue = minMax[0];
-            currentIntervalSelected.endvalue = minMax[1];
-
-        }
+        currentIntervalSelected = computeIntervalFromData(data, currentIntervalSelected)
         intervalListSelection = [];
     }
 
     if (currentIntervalSelected.endvalue !== null && currentIntervalSelected.startvalue !== null) {
         intervalSelection = currentIntervalSelected;
         if (!startValue && !endValue) {
-            startValue = Math.round(<number>currentIntervalSelected.startvalue).toString();
-            endValue = Math.round(<number>currentIntervalSelected.endvalue).toString();
+            const int = formatIntervalValuesToString(currentIntervalSelected);
+            startValue = int.startValue;
+            endValue = int.endValue;
         }
     }
 
     return [intervalListSelection, intervalSelection, startValue, endValue];
 }
+
+/**
+ * get selection when no collaboration is set
+ * @param data
+ */
+export function getSelectionNoCollaboration(data: BucketData[] | Map<string, BucketData[]>)
+    : [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined]{
+    let intervalSelection!: SelectedOutputValues;
+    let startValue;
+    let endValue;
+
+    const currentIntervalSelected = computeIntervalFromData(data, {} as SelectedOutputValues)
+
+    if (currentIntervalSelected.endvalue !== null && currentIntervalSelected.startvalue !== null) {
+        intervalSelection = currentIntervalSelected;
+        if (!startValue && !endValue) {
+            const stringInterval = formatIntervalValuesToString(currentIntervalSelected);
+            startValue = stringInterval.startValue;
+            endValue = stringInterval.endValue;
+        }
+    }
+    return [[] as SelectedOutputValues[] , intervalSelection, startValue, endValue];
+}
+
+function formatIntervalValuesToString(currentIntervalSelected :SelectedOutputValues): { startValue: string; endValue: string } {
+    return {
+        startValue: Math.round(currentIntervalSelected.startvalue as number).toString(),
+        endValue: Math.round(currentIntervalSelected.endvalue as number).toString(),
+    };
+}
+
+function computeIntervalFromData(data: BucketData[] | Map<string, BucketData[]>, currentIntervalSelected :SelectedOutputValues) {
+    return Array.isArray(data)
+        ? computeArrayInterval(data, currentIntervalSelected)
+        : computeMinMaxInterval(data, currentIntervalSelected);
+}
+
+
+function computeMinMaxInterval(data: Map<string, BucketData[]>, currentIntervalSelected :SelectedOutputValues ) {
+    const v = {...currentIntervalSelected}
+    const [startvalue, endvalue] = getMinMax(data);
+    v.startvalue = startvalue;
+    v.endvalue = endvalue;
+    return v;
+}
+
+function computeArrayInterval(data: BucketData[], currentIntervalSelected: SelectedOutputValues){
+    const v = {...currentIntervalSelected}
+    if (data.length === 0) {
+        return v;
+    }
+
+    v.startvalue = data[0].key;
+    v.endvalue = data[data.length - 1].key;
+    if (data.length > 1) {
+        const dataInterval = getDataInterval(data);
+        (v.endvalue as any) += dataInterval;
+    }
+    return  v;
+
+}
+
 
 function getMinMax(data: Map<string, BucketData[]>): Array<number> {
     let min: number = Number.POSITIVE_INFINITY;
