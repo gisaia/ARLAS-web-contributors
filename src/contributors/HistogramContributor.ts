@@ -23,7 +23,6 @@ import {
     ComputationRequest,
     ComputationResponse,
     Filter,
-    Hits,
     Interval
 } from 'arlas-api';
 import {

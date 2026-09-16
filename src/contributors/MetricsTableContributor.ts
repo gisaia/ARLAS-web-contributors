@@ -322,11 +322,10 @@ export class MetricsTableContributor extends Contributor {
         // we update max value.
         return metricsTable;
     }
-
+    /** Verifies if selected terms exist in data, fetches the data if so.
+     * Then it adds a row to metricsTable in order to have a complete table.
+     */
     protected setTerms(cr: ComputableResponse, termsSet: Set<string>){
-        /** This block verifies if selected terms exist in data, fetches the data if so.
-         * Then it adds a row to metricsTable in order to have a complete table.
-         */
         if (termsSet.size > 0) {
             const missingRows = new Array<string>();
             const dataRows = new Set(...(this.computableResponse?.metricsResponse || []).map(r => r.keys));
@@ -406,9 +405,7 @@ export class MetricsTableContributor extends Contributor {
             }
         }
 
-        /** This block verifies if selected terms exist in data, fetches the data if so.
-         * Then it adds a row to metricsTable in order to have a complete table.
-         */
+
         this.setTerms(cr, termsSet);
     }
 

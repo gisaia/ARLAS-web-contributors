@@ -168,9 +168,9 @@ export function getSelectionToSet(data: BucketData[] | Map<string, BucketData[]>
     if (currentIntervalSelected.endvalue !== null && currentIntervalSelected.startvalue !== null) {
         intervalSelection = currentIntervalSelected;
         if (!startValue && !endValue) {
-            const int = formatIntervalValuesToString(currentIntervalSelected);
-            startValue = int.startValue;
-            endValue = int.endValue;
+            const interval = formatIntervalValuesToString(currentIntervalSelected);
+            startValue = interval.startValue;
+            endValue = interval.endValue;
         }
     }
 
@@ -182,7 +182,7 @@ export function getSelectionToSet(data: BucketData[] | Map<string, BucketData[]>
  * @param data
  */
 export function getSelectionNoCollaboration(data: BucketData[] | Map<string, BucketData[]>)
-    : [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined]{
+    : [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined ]{
     let intervalSelection!: SelectedOutputValues;
     let startValue;
     let endValue;

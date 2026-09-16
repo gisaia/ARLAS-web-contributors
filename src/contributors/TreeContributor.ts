@@ -26,7 +26,6 @@ import { JSONPath } from 'jsonpath-plus';
 import { Observable, Subject, from, map, zip } from 'rxjs';
 import jsonSchema from '../jsonSchemas/treeContributorConf.schema.json' with { type: 'json' };
 import { SimpleNode, TreeNode } from '../models/models';
-import { SwimlaneData } from './SwimLaneContributor';
 
 /**
  * This contributor fetches data from multiple term aggregations and format the data as a tree.
