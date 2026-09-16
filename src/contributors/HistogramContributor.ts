@@ -379,7 +379,9 @@ export class HistogramContributor extends Contributor {
      * @param resultList
      * @protected
      */
-    protected setHistogramProperties(resultList: [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined]){
+    protected setHistogramProperties(resultList:
+                                     [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined,
+                                             string | undefined]){
         this.intervalListSelection = resultList[0];
         this.intervalSelection = resultList[1];
         this.startValue = resultList[2];
