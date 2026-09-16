@@ -116,6 +116,10 @@ export class ComputeContributor extends Contributor {
         /** Nothing to do */
     }
 
+    public clearSelection(data: Array<ComputationResponse | Hits>, collaboration?: Collaboration): void {
+        /** Nothing to do */
+    }
+
     /**
     * @returns Pretty name of contributor based on query propoerty.
     */

@@ -129,4 +129,8 @@ export class AnalyticsContributor extends Contributor {
     public setSelection(data: Array<[string, number]>, collaboration: Collaboration) {
         /** Nothing to do */
     }
+
+    public clearSelection(data: Array<[string, number]>, collaboration?: Collaboration): void {
+        /** Nothing to do */
+    }
 }

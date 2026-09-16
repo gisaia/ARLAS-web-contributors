@@ -259,6 +259,10 @@ export class TreeContributor extends Contributor {
             this.selectedNodesPathsList = [];
         }
 
+       this.setNodesPathList(data, fieldsList, mapFiledValues);
+    }
+
+    public setNodesPathList(data: TreeNode, fieldsList:  Array<string>, mapFiledValues: Map<any,any>){
         // This part of code is only used for the powerbars utilisation of the tree contributor
         if (fieldsList.length > 0 && this.selectedNodesPathsList.length === 0) {
             this.selectedNodesPathsList = new Array();
@@ -313,6 +317,13 @@ export class TreeContributor extends Contributor {
             }
         });
         zip(obs).subscribe(d => this.emitMissingLeaf.next(d));
+    }
+
+    public clearSelection(data: TreeNode, collaboration: Collaboration){
+        this.selectedNodesPathsList = [];
+        const fieldsList = new Array<string>();
+        const mapFiledValues = new Map();
+        this.setNodesPathList(data, fieldsList, mapFiledValues);
     }
 
     public selectedNodesListChanged(selectedNodesPathsList: Array<Array<SimpleNode>>): void {

@@ -322,30 +322,10 @@ export class MetricsTableContributor extends Contributor {
         // we update max value.
         return metricsTable;
     }
-
-    /** @override */
-    public setSelection(cr: ComputableResponse, collaboration: Collaboration) {
-        const termsSet = new Set<string>();
-        if (collaboration) {
-            let filter: Filter;
-            if (collaboration.filters) {
-                collaboration.filters.forEach((filters, collection) => {
-                    filter = filters[0];
-                    if (filter) {
-                        const fFilters = filter.f;
-                        fFilters?.forEach(fFilter => {
-                            const values = fFilter[0].value.split(',');
-                            values.forEach(v => termsSet.add(v));
-                        });
-                    }
-
-                });
-            }
-        }
-
-        /** This block verifies if selected terms exist in data, fetches the data if so.
-         * Then it adds a row to metricsTable in order to have a complete table.
-         */
+    /** Verifies if selected terms exist in data, fetches the data if so.
+     * Then it adds a row to metricsTable in order to have a complete table.
+     */
+    protected setTerms(cr: ComputableResponse, termsSet: Set<string>){
         if (termsSet.size > 0) {
             const missingRows = new Array<string>();
             const dataRows = new Set(...(this.computableResponse?.metricsResponse || []).map(r => r.keys));
@@ -403,6 +383,35 @@ export class MetricsTableContributor extends Contributor {
         } else {
             this.selectedTerms = Array.from(termsSet);
         }
+    }
+
+    /** @override */
+    public setSelection(cr: ComputableResponse, collaboration: Collaboration) {
+        const termsSet = new Set<string>();
+        if (collaboration) {
+            let filter: Filter;
+            if (collaboration.filters) {
+                collaboration.filters.forEach((filters, collection) => {
+                    filter = filters[0];
+                    if (filter) {
+                        const fFilters = filter.f;
+                        fFilters?.forEach(fFilter => {
+                            const values = fFilter[0].value.split(',');
+                            values.forEach(v => termsSet.add(v));
+                        });
+                    }
+
+                });
+            }
+        }
+
+
+        this.setTerms(cr, termsSet);
+    }
+
+    public clearSelection(cr: ComputableResponse, collaboration: Collaboration | undefined) {
+        const termsSet = new Set<string>();
+        this.setTerms(cr, termsSet);
     }
 
     /**
