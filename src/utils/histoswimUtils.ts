@@ -161,7 +161,7 @@ export function getSelectionToSet(data: BucketData[] | Map<string, BucketData[]>
             }
         }
     } else {
-        currentIntervalSelected = computeIntervalFromData(data, currentIntervalSelected)
+        currentIntervalSelected = computeIntervalFromData(data, currentIntervalSelected);
         intervalListSelection = [];
     }
 
@@ -181,13 +181,13 @@ export function getSelectionToSet(data: BucketData[] | Map<string, BucketData[]>
  * get selection when no collaboration is set
  * @param data
  */
-export function getSelectionNoCollaboration(data: BucketData[] | Map<string, BucketData[]>)
-    : [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined ]{
+export function getSelectionNoCollaboration(data: BucketData[] | Map<string, BucketData[]>):
+    [SelectedOutputValues[], SelectedOutputValues | undefined, string | undefined, string | undefined ]{
     let intervalSelection!: SelectedOutputValues;
     let startValue;
     let endValue;
 
-    const currentIntervalSelected = computeIntervalFromData(data, {} as SelectedOutputValues)
+    const currentIntervalSelected = computeIntervalFromData(data, {} as SelectedOutputValues);
 
     if (currentIntervalSelected.endvalue !== null && currentIntervalSelected.startvalue !== null) {
         intervalSelection = currentIntervalSelected;
@@ -200,22 +200,22 @@ export function getSelectionNoCollaboration(data: BucketData[] | Map<string, Buc
     return [[] as SelectedOutputValues[] , intervalSelection, startValue, endValue];
 }
 
-function formatIntervalValuesToString(currentIntervalSelected :SelectedOutputValues): { startValue: string; endValue: string } {
+function formatIntervalValuesToString(currentIntervalSelected: SelectedOutputValues): { startValue: string; endValue: string; } {
     return {
         startValue: Math.round(currentIntervalSelected.startvalue as number).toString(),
         endValue: Math.round(currentIntervalSelected.endvalue as number).toString(),
     };
 }
 
-function computeIntervalFromData(data: BucketData[] | Map<string, BucketData[]>, currentIntervalSelected :SelectedOutputValues) {
+function computeIntervalFromData(data: BucketData[] | Map<string, BucketData[]>, currentIntervalSelected: SelectedOutputValues) {
     return Array.isArray(data)
         ? computeArrayInterval(data, currentIntervalSelected)
         : computeMinMaxInterval(data, currentIntervalSelected);
 }
 
 
-function computeMinMaxInterval(data: Map<string, BucketData[]>, currentIntervalSelected :SelectedOutputValues ) {
-    const v = {...currentIntervalSelected}
+function computeMinMaxInterval(data: Map<string, BucketData[]>, currentIntervalSelected: SelectedOutputValues ) {
+    const v = {...currentIntervalSelected};
     const [startvalue, endvalue] = getMinMax(data);
     v.startvalue = startvalue;
     v.endvalue = endvalue;
@@ -223,7 +223,7 @@ function computeMinMaxInterval(data: Map<string, BucketData[]>, currentIntervalS
 }
 
 function computeArrayInterval(data: BucketData[], currentIntervalSelected: SelectedOutputValues){
-    const v = {...currentIntervalSelected}
+    const v = {...currentIntervalSelected};
     if (data.length === 0) {
         return v;
     }

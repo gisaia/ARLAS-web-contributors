@@ -259,7 +259,7 @@ export class TreeContributor extends Contributor {
             this.selectedNodesPathsList = [];
         }
 
-       this.setNodesPathList(data, fieldsList, mapFiledValues)
+       this.setNodesPathList(data, fieldsList, mapFiledValues);
     }
 
     public setNodesPathList(data: TreeNode, fieldsList:  Array<string>, mapFiledValues: Map<any,any>){
