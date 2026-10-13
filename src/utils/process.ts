@@ -32,14 +32,35 @@ export interface ProcessError {
 }
 
 export function validProcess(process: string, variableName: string): boolean {
+
     return !!process && process.length < 250
-        && !process.includes('document')
-        && !process.includes('window')
-        && !process.includes('eval')
         && !process.includes('localStorage')
-        && !process.includes('this')
-        && !process.includes('function')
+        && !process.includes('sessionStorage')
         && !process.includes('Function')
+        && !process.toLowerCase().includes('document')
+        && !process.toLowerCase().includes('window')
+        && !process.toLowerCase().includes('global')
+        && !process.toLowerCase().includes('eval')
+        && !process.toLowerCase().includes('location')
+        && !process.toLowerCase().includes('this')
+        && !process.toLowerCase().includes('localstorage')
+        && !process.toLowerCase().includes('sessionstorage')
+        && !process.toLowerCase().includes('function')
+        && !process.toLowerCase().includes('buffer')
+        && !process.toLowerCase().includes('event')
+        && !process.toLowerCase().includes('http')
+        && !process.toLowerCase().includes('ws')
+        && !process.toLowerCase().includes('ftp')
+        && !process.toLowerCase().includes('for')
+        && !process.toLowerCase().includes('some')
+        && !process.toLowerCase().includes('every')
+        && !process.toLowerCase().includes('while')
+        && !process.toLowerCase().includes('switch')
+        && !process.toLowerCase().includes('case')
+        && !process.toLowerCase().includes('listener')
+        && !process.toLowerCase().includes('link')
+        && !process.toLowerCase().includes('script')
+        && !process.toLowerCase().includes('style')
         && processPassesAllowList(process, variableName);
 }
 
@@ -172,7 +193,7 @@ export function processPassesAllowList(processToExecute: string, variableName: s
     ];
 
     const chars = [
-        '\\[', '\\]', '.', ';', ',', '(', ')', ':', '?', '!','&'
+        '\\[', '\\]', '.', ';', ',', '(', ')', ':', '?', '!', '&'
     ];
 
     const comparisonOps = [
