@@ -14,6 +14,7 @@
         "esModuleInterop": true,
         "stripInternal": true,
         "skipLibCheck": true,
+        "strict": true,
         "typeRoots": [
             "node_modules/@types",
             "node_modules/@turf"
@@ -22,21 +23,5 @@
             "ESNext",
             "dom"
         ]
-    },
-    "files": [
-        "src/index.ts"
-    ],
-    "include": [
-        "src/**/*",
-        "eslint.config.mjs"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist",
-        "eslint.config.mjs"
-    ],
-    "tsc-alias": {
-        "resolveFullPaths": true,
-        "verbose": false
     }
 }

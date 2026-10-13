@@ -1,0 +1,16 @@
+{
+    "extends": "./tsconfig.json",
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "eslint.config.mjs",
+        "src/**/*.spec.ts"
+    ],
+    "tsc-alias": {
+        "resolveFullPaths": true,
+        "verbose": false
+    }
+}

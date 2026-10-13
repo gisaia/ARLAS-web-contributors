@@ -24,8 +24,8 @@ Please find the documentation of all the contributors [here](https://docs.arlas.
 ## Build
 
 To build the project you need to have installed
-- [Node](https://nodejs.org/en/) version >= 16.3.0
-- [npm](https://github.com/npm/npm) version >= 8.3.0
+- [Node](https://nodejs.org/en/) version >= 22.23.3
+- [npm](https://github.com/npm/npm) version >= 12.2.0
 
 Then, clone the project
 

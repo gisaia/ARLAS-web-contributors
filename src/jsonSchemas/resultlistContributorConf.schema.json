@@ -129,8 +129,50 @@
                         "type": "number"
                     },
                     "useColorService": {
-                        "description": "Wether if use color service for column value",
+                        "description": "Whether to use color service for column value",
                         "type": "boolean"
+                    }
+                }
+            }
+        },
+        "cardViewProperties": {
+            "description": "Configuration of a card in Card View",
+            "type": "array",
+            "items": {
+                "description": "Card view property",
+                "type": "object",
+                "properties": {
+                    "prettyName": {
+                        "description": "Name of property view in the card",
+                        "type": "string"
+                    },
+                    "fieldName": {
+                        "description": "Field of property",
+                        "type": "string"
+                    },
+                    "dataType": {
+                        "description": "Unit of property (ex: °C, km ..)",
+                        "type": "string"
+                    },
+                    "process": {
+                        "description": "Process transformation to display (ex : result.trim())",
+                        "type": "string"
+                    },
+                    "useColorService": {
+                        "description": "Whether to use color service for property value",
+                        "type": "boolean"
+                    },
+                    "isTitle": {
+                        "description": "Whether to use this property in card title",
+                        "type": "boolean"
+                    },
+                    "lineNumber": {
+                        "description": "Line on which the property appears on the card (1, 2 or 3)",
+                        "type": "number"
+                    },
+                    "icon": {
+                        "description": "Icon name to display with the property value",
+                        "type": "string"
                     }
                 }
             }

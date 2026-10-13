@@ -22,7 +22,7 @@ import {
     Collaboration, CollaborationEvent, CollaborativesearchService,
     ConfigService, Contributor, OperationEnum, projType
 } from 'arlas-web-core';
-import jp from 'jsonpath';
+import { JSONPath } from 'jsonpath-plus';
 import { Observable, from } from 'rxjs';
 import jsonSchema from '../jsonSchemas/analyticsContributorConf.schema.json' with { type: 'json' };
 
@@ -42,13 +42,13 @@ export class AnalyticsContributor extends Contributor {
     /**
     * ARLAS Server Aggregation used to draw the chart, define in configuration
     */
-    private aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
+    private readonly aggregations: Array<Aggregation> = this.getConfigValue('aggregationmodels');
 
 
     /**
     * Json path to explore element aggregation, count by default
     */
-    private json_path: string = this.getConfigValue('jsonpath') !== undefined ? this.getConfigValue('jsonpath') : '$.count';
+    private readonly json_path: string = this.getConfigValue('jsonpath') ?? '$.count';
 
     /**
     * Build a new contributor.
@@ -61,7 +61,7 @@ export class AnalyticsContributor extends Contributor {
         collaborativeSearcheService: CollaborativesearchService,
         configService: ConfigService,
         collection: string,
-        private groupIdToValues: Map<string, Array<string>>
+        private readonly groupIdToValues: Map<string, Array<string>>
     ) {
         super(identifier, configService, collaborativeSearcheService, collection);
         this.collections = [];
@@ -107,16 +107,16 @@ export class AnalyticsContributor extends Contributor {
         const valueToMetric = new Map<string, number>();
         if (aggregationResonse.elements !== undefined) {
             aggregationResonse.elements.forEach(element => {
-                const value = jp.query(element, this.json_path)[0];
+                const value = JSONPath(this.json_path, element, undefined, undefined)[0];
                 valueToMetric.set(element.key, value);
             });
         }
         return valueToMetric;
     }
 
-    public setData(data: Map<string, number>): Map<string, number> {
+    public setData(data: Map<string, number>) {
         this.groupIdToValues.forEach((values, key) => {
-            if (values.indexOf('*') > -1) {
+            if (values.includes('*')) {
                 this.analitycsIdtoShow.set(key, true);
             } else if (values.map(v => data.get(v)).filter(v => v !== undefined && v > 0).length > 0) {
                 this.analitycsIdtoShow.set(key, true);
@@ -124,10 +124,13 @@ export class AnalyticsContributor extends Contributor {
                 this.analitycsIdtoShow.set(key, false);
             }
         });
-        return data;
     }
 
-    public setSelection(data: Array<[string, number]>, collaboration: Collaboration): any {
-        return from([]);
+    public setSelection(data: Array<[string, number]>, collaboration: Collaboration) {
+        /** Nothing to do */
+    }
+
+    public clearSelection(data: Array<[string, number]>, collaboration?: Collaboration): void {
+        /** Nothing to do */
     }
 }
